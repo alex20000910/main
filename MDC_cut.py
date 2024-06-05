@@ -1759,21 +1759,48 @@ def o_fite():
 
 
 def gl1(x, x0, a, w, y0):
+    """
+    Calculate the value of a Lorentzian function at a given x-coordinate.
+
+    Parameters:
+    x (float): The x-coordinate at which to evaluate the function.
+    x0 (float): The center of the Lorentzian function.
+    a (float): The amplitude of the Lorentzian function.
+    w (float): The full width at half maximum (FWHM) of the Lorentzian function.
+    y0 (float): The y-offset of the Lorentzian function.
+
+    Returns:
+    float: The value of the Lorentzian function at the given x-coordinate.
+    """
     v = a/(1+(x-x0)**2/(1/2*w)**2)+y0
     return v
 
+def gl2(x, x1, h1, w1, y1, x2, h2, w2, y2):
+    """
+    Calculates the sum of two Lorentzian functions.
+
+    Parameters:
+    x (float): The input value.
+    x1 (float): The center of the first Lorentzian function.
+    h1 (float): The height of the first Lorentzian function.
+    w1 (float): The width of the first Lorentzian function.
+    y1 (float): The y-offset of the first Lorentzian function.
+    x2 (float): The center of the second Lorentzian function.
+    h2 (float): The height of the second Lorentzian function.
+    w2 (float): The width of the second Lorentzian function.
+    y2 (float): The y-offset of the second Lorentzian function.
+
+    Returns:
+    float: The sum of the two Lorentzian functions.
+    """
+    v1 = h1/(1+(x-x1)**2/(1/2*w1)**2)+y1
+    v2 = h2/(1+(x-x2)**2/(1/2*w2)**2)+y2
+    return v1+v2
 
 wr1 = 0
 wr2 = 0
 fa1 = 0
 fa2 = 0
-
-
-def gl2(x, x1, h1, w1, y1, x2, h2, w2, y2):
-    v1 = h1/(1+(x-x1)**2/(1/2*w1)**2)+y1
-    v2 = h2/(1+(x-x2)**2/(1/2*w2)**2)+y2
-    return v1+v2
-
 
 #######################################################
 #######################################################
@@ -3276,7 +3303,7 @@ def mfit():
                     if flmposcst == 1:
                         pars.add('xr1', value=xr1, vary=False)
                         pars.add('xr2', value=xr2, vary=False)
-                        pars.add('x1', expr='(x2-xr2)/xr1')
+                        pars.add('x1', expr="(x2-xr2) / xr1")
                     else:
                         pars.add('x1', value=maa2[i, 0], min=kmin[i], max=kmax[i])
                         
