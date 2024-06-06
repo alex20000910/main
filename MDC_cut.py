@@ -1125,6 +1125,7 @@ def loadmfit_():
                 smfp = f['smfp']
                 smfi = f['smfi']
                 smresult = f['smresult']
+                print(smresult[166][1])
             rpos = np.copy(pos)
             ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19) **
                              0.5/10**-10*(h/2/np.pi))*180/np.pi
@@ -1950,9 +1951,9 @@ def putfitpar(inpars, modelpars=None, show_correl=True, min_correl=0.1,
             nout = f"{name}:{space}"
             inval = '(init = ?)'
             if par.init_value is not None:
-                inval = f'(init = {par.init_value:.7g})'
+                inval = f'(init = {par.init_value:.5g})'
             if modelpars is not None and name in modelpars:
-                inval = f'{inval}, model_value = {modelpars[name].value:.7g}'
+                inval = f'{inval}, model_value = {modelpars[name].value:.5g}'
             try:
                 sval = gformat(par.value)
             except (TypeError, ValueError):
@@ -1970,7 +1971,7 @@ def putfitpar(inpars, modelpars=None, show_correl=True, min_correl=0.1,
             elif par.expr is not None:
                 add(f"    {nout} {sval} == '{par.expr}'")
             else:
-                add(f"    {nout} {par.value: .7g} (fixed)")
+                add(f"    {nout} {par.value: .5g} (fixed)")
     return buff
 
 
@@ -1987,6 +1988,21 @@ def fitpar1(result, lm1, lm2, lm3, lm4, lm5, lm6):
 def fitpar2(result, lm1, lm2, lm3, lm4, lm5, lm6):
     s = putfitpar(result)
     for i in s:
+        '''preprocess the string to put values in the labels'''
+        if 'x1*xr1+xr2' in i:
+            if xr2>=0:
+                i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1+'+str(xr2))
+            else:
+                i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1-'+str(-xr2))
+        if "(x2-xr2) / xr1" in i:
+            if xr2>=0:
+                i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2-'+str(xr2) + ')/'+str(xr1))
+            else:
+                i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2+'+str(-xr2) + ')/'+str(xr1))
+        if 'w1/wr1*wr2' in i:
+            i = i.replace(' == \'w1/wr1*wr2\'', '=w1/'+str(wr1)+'*'+str(wr2))
+            
+        '''assign the values to the labels'''
         if 'x1:' in i:
             x1 = i
         if 'x2:' in i:
@@ -3004,8 +3020,23 @@ def pack_fitpar(mresult):
             try:
                 s = putfitpar(result)
                 for i in range(len(o[ii])):
-                    o[ii][i]=''
+                    o[ii][i]=""
                 for i in s:
+                    '''preprocess the string to put values in the labels'''
+                    if 'x1*xr1+xr2' in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1+'+str(xr2))
+                        else:
+                            i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1-'+str(-xr2))
+                    if "(x2-xr2) / xr1" in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2-'+str(xr2) + ')/'+str(xr1))
+                        else:
+                            i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2+'+str(-xr2) + ')/'+str(xr1))
+                    if 'w1/wr1*wr2' in i:
+                        i = i.replace(' == \'w1/wr1*wr2\'', '=w1/'+str(wr1)+'*'+str(wr2))
+                    
+                    '''assign the values to the labels'''
                     if 'x:' in i:
                         o[ii][0]=i
                     if 'h:' in i:
@@ -3015,7 +3046,11 @@ def pack_fitpar(mresult):
                     if 'x1:' in i:
                         o[ii][0]=i
                     if 'x2:' in i:
+                        print('x2')
+                        print(i)
+                        print(str(i))
                         o[ii][1]=i
+                        print(o[ii][1])
                     if 'h1:' in i:
                         o[ii][2]=i
                     if 'h2:' in i:
@@ -3060,7 +3095,7 @@ def pack_fitpar(mresult):
                     o[ii].append(i)
     return o
 def mfitjob():
-    global fmxx, fmyy, fmx, fmy, mvv, maa1, maa2, kmin, kmax, mfi, mfi_err, mfi_x, st, mst, result, fa1, fa2, fit_warn, wr1, wr2, mresult
+    global fmxx, fmyy, fmx, fmy, mvv, maa1, maa2, kmin, kmax, mfi, mfi_err, mfi_x, st, mst, result, fa1, fa2, fit_warn, wr1, wr2, mresult, xr1, xr2
     if len(mfi) < 1:
         mfi, mfi_err, mfi_x = [], [], []
     else:
@@ -3318,7 +3353,7 @@ def mfitjob():
 
 
 def mfit():
-    global fmxx, fmyy, fmx, fmy, mvv, maa1, maa2, kmin, kmax, mfi, mfi_err, mfi_x, result, fa1, fa2, fit_warn, wr1, wr2, flmcomp1, flmcomp2, mbcomp1, mbcomp2, mresult
+    global fmxx, fmyy, fmx, fmy, mvv, maa1, maa2, kmin, kmax, mfi, mfi_err, mfi_x, result, fa1, fa2, fit_warn, wr1, wr2, flmcomp1, flmcomp2, mbcomp1, mbcomp2, mresult, xr1, xr2
     mbcomp1.config(bg='white')
     mbcomp2.config(bg='white')
     mfi, mfi_err, mfi_x = list(mfi), list(mfi_err), list(mfi_x)
@@ -3499,7 +3534,7 @@ def mfit():
 
 
 def fmrmv():
-    global mbrmv, flmrmv, mirmv, kmin, kmax, mfi, mfi_err, mfi_x, cki, mfp, mresult
+    global mbrmv, flmrmv, mirmv, kmin, kmax, mfi, mfi_err, mfi_x, cki, mfp, mresult, smresult
     i = mfiti.get()
     flmrmv *= -1
     if flmrmv == 1:
@@ -3519,6 +3554,9 @@ def fmrmv():
                 mfi_err.remove(i)
             if i in cki:
                 cki.remove(i)
+            for ii in range(len(smresult[i])):
+                    smresult[i][ii]=''
+            mresult[i]=[]
         mplfi()
         mbrmv.config(text='Start Remove', bg='white')
         mfitplot()
@@ -4245,22 +4283,22 @@ def mjob():     # MDC Fitting GUI
     frfitpar = tk.Frame(master=frpara00, bd=5, bg='white')
     frfitpar.grid(row=0, column=0)
     lm1 = tk.Label(frfitpar, anchor='w', text='', font=(
-        "Arial", 16, "bold"), width='50', height='1', bd=5, bg='white')
+        "Arial", 16, "bold"), width='55', height='1', bd=5, bg='white')
     lm1.grid(row=0, column=0)
     lm2 = tk.Label(frfitpar, anchor='w', text='', font=(
-        "Arial", 16, "bold"), width='50', height='1', bd=5, bg='white')
+        "Arial", 16, "bold"), width='55', height='1', bd=5, bg='white')
     lm2.grid(row=1, column=0)
     lm3 = tk.Label(frfitpar, anchor='w', text='', font=(
-        "Arial", 16, "bold"), width='50', height='1', bd=5, bg='white')
+        "Arial", 16, "bold"), width='55', height='1', bd=5, bg='white')
     lm3.grid(row=2, column=0)
     lm4 = tk.Label(frfitpar, anchor='w', text='', font=(
-        "Arial", 16, "bold"), width='50', height='1', bd=5, bg='white')
+        "Arial", 16, "bold"), width='55', height='1', bd=5, bg='white')
     lm4.grid(row=3, column=0)
     lm5 = tk.Label(frfitpar, anchor='w', text='', font=(
-        "Arial", 16, "bold"), width='50', height='1', bd=5, bg='white')
+        "Arial", 16, "bold"), width='55', height='1', bd=5, bg='white')
     lm5.grid(row=4, column=0)
     lm6 = tk.Label(frfitpar, anchor='w', text='', font=(
-        "Arial", 16, "bold"), width='50', height='1', bd=5, bg='white')
+        "Arial", 16, "bold"), width='55', height='1', bd=5, bg='white')
     lm6.grid(row=5, column=0)
 
     frYN = tk.Frame(master=frfitpar, bd=5, bg='white')
