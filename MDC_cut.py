@@ -1106,6 +1106,10 @@ def loadmfit_():
 
         skmin, skmax = np.float64(skmin), np.float64(skmax)
         fpr = 1
+        try:
+            smresult=[]
+        except:
+            pass
         os.chdir(cdir)
     elif ".npz" in file:
         try:
@@ -3158,7 +3162,7 @@ def mfitjob():
                         t = 5
                         while t > 0 and fit_warn == 1:
                             result = fitter.minimize()
-                            a2 = toa2()
+                            a1 = toa1()
                             checkfit()
                             t -= 1
                 else:
@@ -3292,8 +3296,13 @@ def mfitjob():
                                 t -= 1
                     else:
                         fit_warn = 0
+            try:
+                '''using lmfit'''
                 mresult[i] = result
                 result = []
+            except:
+                '''Casa Result'''
+                pass
             if fit_warn == 0:
                 if i not in mfi:
                     mfi.append(i)
@@ -3873,8 +3882,9 @@ def mfitplot():  # mfiti Scale
             try:
                 vv = smresult[i]
                 for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], vv):
-                    l.config(text=v)
-                    l.config(anchor='w')
+                    if 'nofit' not in v:
+                        l.config(text=v)
+                        l.config(anchor='w')
             except:
                 pass
             try:
