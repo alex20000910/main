@@ -855,7 +855,7 @@ def loadmfit_():
     file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(
         ("VMS files", "*.vms"), ("NPZ files", "*.npz"),))
     global h, m, fwhm, fev, pos, limg, img, name, ophi, rpos, st, kmax, kmin, lmgg
-    global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x
+    global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x, smresult
     mfpath = ''
     yy = []
     for n in range(len(ev)):
@@ -1106,6 +1106,10 @@ def loadmfit_():
 
         skmin, skmax = np.float64(skmin), np.float64(skmax)
         fpr = 1
+        try:
+            smresult=[]
+        except:
+            pass
         os.chdir(cdir)
     elif ".npz" in file:
         try:
@@ -1120,6 +1124,7 @@ def loadmfit_():
                 smaa2 = f['smaa2']
                 smfp = f['smfp']
                 smfi = f['smfi']
+                smresult = f['smresult']
             rpos = np.copy(pos)
             ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19) **
                              0.5/10**-10*(h/2/np.pi))*180/np.pi
@@ -1135,9 +1140,12 @@ def loadmfit_():
                 pr_load(data, rdd)
         except:
             pass
-    if ".vms" in file or ".npz" in file:
+    if ".vms" in file:
         np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
                  kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
+    elif ".npz" in file:
+        np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
+                 kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult)
     limg.config(image=img[np.random.randint(len(img))])
     print('Done')
     st.put('Done')
@@ -2989,7 +2997,68 @@ def fmcgl2():
         mbcgl2.config(text='Start Add 2 Peaks', bg='white')
         mfitplot()
 
-
+def pack_fitpar(mresult):
+    if len(smresult) > 0:
+        o=smresult
+        for ii,result in enumerate(mresult):
+            try:
+                s = putfitpar(result)
+                for i in range(len(o[ii])):
+                    o[ii][i]=''
+                for i in s:
+                    if 'x:' in i:
+                        o[ii][0]=i
+                    if 'h:' in i:
+                        o[ii][1]=i
+                    if 'w:' in i:
+                        o[ii][2]=i
+                    if 'x1:' in i:
+                        o[ii][0]=i
+                    if 'x2:' in i:
+                        o[ii][1]=i
+                    if 'h1:' in i:
+                        o[ii][2]=i
+                    if 'h2:' in i:
+                        o[ii][3]=i
+                    if 'w1:' in i:
+                        o[ii][4]=i
+                    if 'w2:' in i:
+                        o[ii][5]=i
+            except:
+                pass
+    else:
+        o=[[]for i in range(len(mresult))]
+        for ii,result in enumerate(mresult):
+            try:
+                s = putfitpar(result)
+            except:
+                s=[]
+                if mfp[ii]==2:
+                    for i in ['x1: nofit','x2: nofit','h1: nofit','h2: nofit','w1: nofit','w2: nofit']:
+                        s.append(i)
+                elif mfp[ii]==1:
+                    for i in ['x: nofit','h: nofit','w: nofit']:
+                        s.append(i)
+            for i in s:
+                if 'x:' in i:
+                    o[ii].append(i)
+                if 'h:' in i:
+                    o[ii].append(i)
+                if 'w:' in i:
+                    o[ii].append(i)
+                if 'x1:' in i:
+                    o[ii].append(i)
+                if 'x2:' in i:
+                    o[ii].append(i)
+                if 'h1:' in i:
+                    o[ii].append(i)
+                if 'h2:' in i:
+                    o[ii].append(i)
+                if 'w1:' in i:
+                    o[ii].append(i)
+                if 'w2:' in i:
+                    o[ii].append(i)
+    return o
 def mfitjob():
     global fmxx, fmyy, fmx, fmy, mvv, maa1, maa2, kmin, kmax, mfi, mfi_err, mfi_x, st, mst, result, fa1, fa2, fit_warn, wr1, wr2, mresult
     if len(mfi) < 1:
@@ -3042,7 +3111,7 @@ def mfitjob():
                         t = 5
                         while t > 0 and fit_warn == 1:
                             result = fitter.minimize()
-                            a2 = toa2()
+                            a1 = toa1()
                             checkfit()
                             t -= 1
                 else:
@@ -3174,8 +3243,13 @@ def mfitjob():
                                 t -= 1
                     else:
                         fit_warn = 0
+            try:
+                '''using lmfit'''
                 mresult[i] = result
                 result = []
+            except:
+                '''Casa Result'''
+                pass
             if fit_warn == 0:
                 if i not in mfi:
                     mfi.append(i)
@@ -3279,7 +3353,7 @@ def mfit():
                 t = 5
                 while t > 0 and fit_warn == 1:
                     result = fitter.minimize()
-                    a2 = toa2()
+                    a1 = toa1()
                     checkfit()
                     t -= 1
         elif mfp[i] == 2:
@@ -3470,7 +3544,7 @@ def savemfit():
                                 initialfile=name+"_mfit.npz", filetype=[("NPZ files", ".npz"),])
     if len(path) > 2:
         np.savez(path, path=rdd, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
-                 skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
+                 skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=pack_fitpar(mresult))
 
 
 scki = []
@@ -3650,9 +3724,18 @@ def mfitplot():  # mfiti Scale
                     vv.append(f"")
                 else:
                     vv.append(f"{gformat(maa1[i, ii])}")
+                    
             for l, n, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], [f"x: ", f"h: ", f"w: ", f"", f"", f""], vv):
                 l.config(text=n+v)
                 l.config(anchor='center')
+            try:
+                vv=smresult[i]
+                for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], vv):
+                    if 'nofit' not in v:
+                        l.config(text=v)
+                        l.config(anchor='w')
+            except:
+                pass
             try:
                 fitpar1(mresult[i], lm1, lm2, lm3, lm4, lm5, lm6)
             except:
@@ -3708,6 +3791,14 @@ def mfitplot():  # mfiti Scale
             for l, n, v in zip([lm1, lm3, lm5, lm2, lm4, lm6], [f"x1: ", f"h1: ", f"w1: ", f"x2: ", f"h2: ", f"w2: "], vv):
                 l.config(text=n+v)
                 l.config(anchor='center')
+            try:
+                vv=smresult[i]
+                for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], vv):
+                    if 'nofit' not in v:
+                        l.config(text=v)
+                        l.config(anchor='w')
+            except:
+                pass
             try:
                 fitpar2(mresult[i], lm1, lm2, lm3, lm4, lm5, lm6)
             except:
@@ -6395,6 +6486,11 @@ try:
         smfp = f['smfp']
         smfi = f['smfi']
         print('MDC Fitted Data preloaded (Casa)')
+        try:
+            smresult = f['smresult']
+            print('MDC Fitted Data preloaded (lmfit)')
+        except:
+            pass
     fpr = 1
 except:
     print('No MDC fitted data preloaded (Casa)')
