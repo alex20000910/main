@@ -1984,6 +1984,19 @@ def fitpar1(result, lm1, lm2, lm3, lm4, lm5, lm6):
 def fitpar2(result, lm1, lm2, lm3, lm4, lm5, lm6):
     s = putfitpar(result)
     for i in s:
+        '''preprocess the string to put values in the labels'''
+        if 'x1*xr1+xr2' in i:
+            if xr2>=0:
+                i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1+'+str(xr2))
+            else:
+                i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1-'+str(-xr2))
+        if "(x2-xr2) / xr1" in i:
+            if xr2>=0:
+                i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2-'+str(xr2) + ')/'+str(xr1))
+            else:
+                i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2+'+str(-xr2) + ')/'+str(xr1))
+        if 'w1/wr1*wr2' in i:
+            i = i.replace(' == \'w1/wr1*wr2\'', '=w1/'+str(wr1)+'*'+str(wr2))
         if 'x1:' in i:
             x1 = i
         if 'x2:' in i:
@@ -3532,7 +3545,7 @@ def mfit():
 
 
 def fmrmv():
-    global mbrmv, flmrmv, mirmv, kmin, kmax, mfi, mfi_err, mfi_x, cki, mfp, mresult
+    global mbrmv, flmrmv, mirmv, kmin, kmax, mfi, mfi_err, mfi_x, cki, mfp, mresult, smresult, smcst
     i = mfiti.get()
     flmrmv *= -1
     if flmrmv == 1:
@@ -3552,6 +3565,10 @@ def fmrmv():
                 mfi_err.remove(i)
             if i in cki:
                 cki.remove(i)
+            mresult[i] = []
+            for j in range(6):
+                smresult[i][j] = 'nofit'
+                smcst[i][j] = 0
         mplfi()
         mbrmv.config(text='Start Remove', bg='white')
         mfitplot()
@@ -3781,6 +3798,13 @@ def mfitplot():  # mfiti Scale
                 l.config(text=n+v)
                 l.config(anchor='center')
             try:
+                vv = smresult[i]
+                for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], vv):
+                    l.config(text=v)
+                    l.config(anchor='w')
+            except:
+                pass
+            try:
                 fitpar1(mresult[i], lm1, lm2, lm3, lm4, lm5, lm6)
             except:
                 pass
@@ -3846,6 +3870,13 @@ def mfitplot():  # mfiti Scale
             for l, n, v in zip([lm1, lm3, lm5, lm2, lm4, lm6], [f"x1: ", f"h1: ", f"w1: ", f"x2: ", f"h2: ", f"w2: "], vv):
                 l.config(text=n+v)
                 l.config(anchor='center')
+            try:
+                vv = smresult[i]
+                for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], vv):
+                    l.config(text=v)
+                    l.config(anchor='w')
+            except:
+                pass
             try:
                 fitpar2(mresult[i], lm1, lm2, lm3, lm4, lm5, lm6)
             except:
