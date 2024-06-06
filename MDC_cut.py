@@ -855,7 +855,7 @@ def loadmfit_():
     file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(
         ("VMS files", "*.vms"), ("NPZ files", "*.npz"),))
     global h, m, fwhm, fev, pos, limg, img, name, ophi, rpos, st, kmax, kmin, lmgg
-    global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x
+    global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x, smresult, smcst
     mfpath = ''
     yy = []
     for n in range(len(ev)):
@@ -1120,6 +1120,8 @@ def loadmfit_():
                 smaa2 = f['smaa2']
                 smfp = f['smfp']
                 smfi = f['smfi']
+                smresult = f['smresult']
+                smcst = f['smcst']
             rpos = np.copy(pos)
             ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19) **
                              0.5/10**-10*(h/2/np.pi))*180/np.pi
@@ -1135,9 +1137,12 @@ def loadmfit_():
                 pr_load(data, rdd)
         except:
             pass
-    if ".vms" in file or ".npz" in file:
+    if ".vms" in file:
         np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
                  kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
+    elif ".npz" in file:
+        np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
+                 kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
     limg.config(image=img[np.random.randint(len(img))])
     print('Done')
     st.put('Done')
@@ -2989,9 +2994,106 @@ def fmcgl2():
         mbcgl2.config(text='Start Add 2 Peaks', bg='white')
         mfitplot()
 
-
+def pack_fitpar(mresult):
+    if len(smresult) > 1:
+        o=smresult
+        for ii,result in enumerate(mresult):
+            try:
+                s = putfitpar(result)
+                for i in range(len(o[ii])):
+                    o[ii][i]=""
+                for i in s:
+                    '''preprocess the string to put values in the labels'''
+                    if 'x1*xr1+xr2' in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1+'+str(xr2))
+                        else:
+                            i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1-'+str(-xr2))
+                    if "(x2-xr2) / xr1" in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2-'+str(xr2) + ')/'+str(xr1))
+                        else:
+                            i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2+'+str(-xr2) + ')/'+str(xr1))
+                    if 'w1/wr1*wr2' in i:
+                        i = i.replace(' == \'w1/wr1*wr2\'', '=w1/'+str(wr1)+'*'+str(wr2))
+                    
+                    '''assign the values to the labels'''
+                    if 'x:' in i:
+                        o[ii][0]=i
+                    if 'h:' in i:
+                        o[ii][1]=i
+                    if 'w:' in i:
+                        o[ii][2]=i
+                    if 'x1:' in i:
+                        o[ii][0]=i
+                    if 'x2:' in i:
+                        o[ii][1]=i
+                    if 'h1:' in i:
+                        o[ii][2]=i
+                    if 'h2:' in i:
+                        o[ii][3]=i
+                    if 'w1:' in i:
+                        o[ii][4]=i
+                    if 'w2:' in i:
+                        o[ii][5]=i
+            except:
+                pass
+    else:
+        o=[[]for i in range(len(mresult))]
+        for ii,result in enumerate(mresult):
+            try:
+                s = putfitpar(result)
+            except:
+                s=[]
+                if mfp[ii]==2:
+                    for i in ['x1: nofit','x2: nofit','h1: nofit','h2: nofit','w1: nofit','w2: nofit']:
+                        s.append(i)
+                elif mfp[ii]==1:
+                    for i in ['x: nofit','h: nofit','w: nofit','n1: nofit','n2: nofit','n3: nofit']:
+                        s.append(i)
+            for i in s:
+                if 'nofit' in i:
+                    o[ii].append(i)
+                else:
+                    '''preprocess the string to put values in the labels'''
+                    if 'x1*xr1+xr2' in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1+'+str(xr2))
+                        else:
+                            i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1-'+str(-xr2))
+                    if "(x2-xr2) / xr1" in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2-'+str(xr2) + ')/'+str(xr1))
+                        else:
+                            i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2+'+str(-xr2) + ')/'+str(xr1))
+                    if 'w1/wr1*wr2' in i:
+                        i = i.replace(' == \'w1/wr1*wr2\'', '=w1/'+str(wr1)+'*'+str(wr2))
+                    
+                    '''assign the values to the labels'''
+                    if 'x:' in i:
+                        o[ii].append(i)
+                    if 'h:' in i:
+                        o[ii].append(i)
+                    if 'w:' in i:
+                        o[ii].append(i)
+                        o[ii].append('')
+                        o[ii].append('')
+                        o[ii].append('')
+                    if 'x1:' in i:
+                        o[ii].append(i)
+                    if 'x2:' in i:
+                        o[ii].append(i)
+                    if 'h1:' in i:
+                        o[ii].append(i)
+                    if 'h2:' in i:
+                        o[ii].append(i)
+                    if 'w1:' in i:
+                        o[ii].append(i)
+                    if 'w2:' in i:
+                        o[ii].append(i)
+    return o
 def mfitjob():
-    global fmxx, fmyy, fmx, fmy, mvv, maa1, maa2, kmin, kmax, mfi, mfi_err, mfi_x, st, mst, result, fa1, fa2, fit_warn, wr1, wr2, mresult
+    global fmxx, fmyy, fmx, fmy, mvv, maa1, maa2, kmin, kmax, mfi, mfi_err, mfi_x, st, mst, result, fa1, fa2, fit_warn, wr1, wr2, mresult, xr1, xr2, smcst
     if len(mfi) < 1:
         mfi, mfi_err, mfi_x = [], [], []
     else:
@@ -3023,6 +3125,7 @@ def mfitjob():
             #     a2=[(kmin[i]+kmax[i])/2,(np.max(y)-mbase[i]),5,mbase[i],(kmin[i]+kmax[i])/2,(np.max(y)-mbase[i]),5,mbase[i]]
             # elif (kmin[i],kmax[i])!=((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi),(2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
             if mfp[i] == 1:
+                smcst[i] = [0, 0, 0, 0, 0, 0]
                 if i in mfi_err and (kmin[i], kmax[i]) != ((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
                     # a1,b=curve_fit(gl1,xx,yy-lnr_bg(yy),bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
                     # fit_warn=0
@@ -3070,7 +3173,7 @@ def mfitjob():
                             t = 5
                             while t > 0 and fit_warn == 1:
                                 result = fitter.minimize()
-                                a2 = toa2()
+                                a1 = toa1()
                                 checkfit()
                                 t -= 1
                     else:
@@ -3081,6 +3184,7 @@ def mfitjob():
                     xr1, xr2 = float(mxf1.get()), float(mxf2.get())
                     wr1, wr2 = float(mwf1.get()), float(mwf2.get())
                     fa1, fa2 = float(maf1.get()), float(maf2.get())
+                    smcst[i]=[xr1,xr2,wr1,wr2,fa1,fa2]
                     pars.add(
                         'x1', value=kmin[i]+(kmax[i]-kmin[i])*0.3, min=kmin[i], max=kmax[i])
                     if flmposcst == 1:
@@ -3133,6 +3237,7 @@ def mfitjob():
                         xr1, xr2 = float(mxf1.get()), float(mxf2.get())
                         wr1, wr2 = float(mwf1.get()), float(mwf2.get())
                         fa1, fa2 = float(maf1.get()), float(maf2.get())
+                        smcst[i]=[xr1,xr2,wr1,wr2,fa1,fa2]
                         pars.add(
                             'x1', value=kmin[i]+(kmax[i]-kmin[i])*0.3, min=kmin[i], max=kmax[i])
                         if flmposcst == 1:
@@ -3244,7 +3349,7 @@ def mfitjob():
 
 
 def mfit():
-    global fmxx, fmyy, fmx, fmy, mvv, maa1, maa2, kmin, kmax, mfi, mfi_err, mfi_x, result, fa1, fa2, fit_warn, wr1, wr2, flmcomp1, flmcomp2, mbcomp1, mbcomp2, mresult
+    global fmxx, fmyy, fmx, fmy, mvv, maa1, maa2, kmin, kmax, mfi, mfi_err, mfi_x, result, fa1, fa2, fit_warn, wr1, wr2, flmcomp1, flmcomp2, mbcomp1, mbcomp2, mresult, xr1, xr2, smcst
     mbcomp1.config(bg='white')
     mbcomp2.config(bg='white')
     mfi, mfi_err, mfi_x = list(mfi), list(mfi_err), list(mfi_x)
@@ -3262,6 +3367,7 @@ def mfit():
     yy = np.where(yy > mbase[i], yy, mbase[i])
     try:
         if mfp[i] == 1:
+            smcst[i] = [0, 0, 0, 0, 0, 0]
             # a1,b=curve_fit(gl1,xx,yy-lnr_bg(yy),bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
             # fit_warn=0
             pars = Parameters()
@@ -3287,6 +3393,7 @@ def mfit():
             xr1, xr2 = float(mxf1.get()), float(mxf2.get())
             wr1, wr2 = float(mwf1.get()), float(mwf2.get())
             fa1, fa2 = float(maf1.get()), float(maf2.get())
+            smcst[i] = [xr1, xr2, wr1, wr2, fa1, fa2]
             if flmcomp == 1:
                 if flmcomp1 == 1:
                     flmcomp1 = -1
@@ -3466,11 +3573,13 @@ def fmedmove(event):
 
 
 def savemfit():
+    global smresult
+    smresult = pack_fitpar(mresult)
     path = fd.asksaveasfilename(title="Save MDC Fitted Data", initialdir=rdd,
                                 initialfile=name+"_mfit.npz", filetype=[("NPZ files", ".npz"),])
     if len(path) > 2:
         np.savez(path, path=rdd, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
-                 skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
+                 skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
 
 
 scki = []
@@ -3595,7 +3704,7 @@ def mplfi():
 
 
 def mfitplot():  # mfiti Scale
-    global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6
+    global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6, mxf1, mxf2, mwf1, mwf2, maf1, maf2
     i = mfiti.get()
     mfitfig.clear()
     mfitax = mfitfig.subplots()
@@ -3618,7 +3727,25 @@ def mfitplot():  # mfiti Scale
     if i in mfi_x:
         for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], ['', '', '', '', '', '']):
             l.config(text=v)
+        try:
+            mxf1.set(str(smcst[i][0]))
+            mxf2.set(str(smcst[i][1]))
+            mwf1.set(str(smcst[i][2]))
+            mwf2.set(str(smcst[i][3]))
+            maf1.set(str(smcst[i][4]))
+            maf2.set(str(smcst[i][5]))
+        except:
+            pass
     if mfp[i] == 1:
+        try:
+            mxf1.set(str(smcst[i][0]))
+            mxf2.set(str(smcst[i][1]))
+            mwf1.set(str(smcst[i][2]))
+            mwf2.set(str(smcst[i][3]))
+            maf1.set(str(smcst[i][4]))
+            maf2.set(str(smcst[i][5]))
+        except:
+            pass
         if maa1[i, 0] == (kmin[i]+kmax[i])/2 and maa1[i, 2] == 0.5:
             fl, = mfitax.plot(x, gl1(x, *maa1[i, :])+lbg, 'r-', lw=2)
         else:
@@ -3698,6 +3825,17 @@ def mfitplot():  # mfiti Scale
                        # Area 2
                        * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)])))
             mfitax.text(txmin+dx, tymax-4*dy, 'Area 2: '+str(round(s, 2)))
+            try:
+                if smcst[i][4] != 0 and smcst[i][5] != 0:
+                    mfitax.text(txmin+dx, tymax-5*dy, 'A1:A2='+str(smcst[i][4])+':'+str(smcst[i][5]))
+                mxf1.set(str(smcst[i][0]))
+                mxf2.set(str(smcst[i][1]))
+                mwf1.set(str(smcst[i][2]))
+                mwf2.set(str(smcst[i][3]))
+                maf1.set(str(smcst[i][4]))
+                maf2.set(str(smcst[i][5]))
+            except:
+                pass
             vv = []
             for ii in range(6):
                 if ii < 3:
@@ -4081,7 +4219,7 @@ def fmposcst():
 
 
 def mjob():     # MDC Fitting GUI
-    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, mbposcst, flmposcst
+    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst
     mgg = tk.Toplevel(g, bg='white')
     mgg.title('MDC Lorentz Fit')
     mst = queue.Queue(maxsize=0)
@@ -4286,6 +4424,12 @@ def mjob():     # MDC Fitting GUI
     bend.grid(row=1, column=0)
 
     mresult = [[]for i in range(len(ev))]
+    try:
+        flsmresult = smresult
+        flsmcst = smcst
+    except:
+        smcst=np.zeros(len(ev)*6).reshape(len(ev),6)
+        smresult = [1]
     if mprfit == 1:
         fmfall()
     else:
@@ -6394,7 +6538,12 @@ try:
         smaa2 = f['smaa2']
         smfp = f['smfp']
         smfi = f['smfi']
-        print('MDC Fitted Data preloaded (Casa)')
+        try:
+            smresult = f['smresult']
+            smcst = f['smcst']
+            print('MDC Fitted Data preloaded (lmfit)')
+        except:
+            print('MDC Fitted Data preloaded (Casa)')
     fpr = 1
 except:
     print('No MDC fitted data preloaded (Casa)')
