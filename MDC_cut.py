@@ -2553,7 +2553,7 @@ def efitplot():  # efiti Scale
             efitax.fill_between(np.concatenate(fexx[i, np.argwhere(fexx[i, :] >= -20)]), np.float64(
                 np.concatenate(sbg.transpose())), np.concatenate(gl2_1), facecolor='green', alpha=0.5)
             efitax.fill_between(np.concatenate(fexx[i, np.argwhere(fexx[i, :] >= -20)]), np.float64(
-                np.concatenate(sbg.transpose())), np.concatenate(gl2_2), facecolor='yellow', alpha=0.5)
+                np.concatenate(sbg.transpose())), np.concatenate(gl2_2), facecolor='purple', alpha=0.5)
 
     if bg_warn == 1:  # shirley base line warn
         efitax.plot(fexx[i, np.argwhere(fexx[i, :] >= -20)], sbg, 'r--')
@@ -3004,7 +3004,7 @@ def fmcgl2():
                 mfi.remove(i)
             if i in mfi_err:
                 mfi_err.remove(i)
-        mbcgl2.config(text='Start Add 2 Peaks', bg='white')
+        mbcgl2.config(text='Add 2 Peaks', bg='white')
         mfitplot()
 
 def pack_fitpar(mresult):
@@ -3575,7 +3575,7 @@ def fmrmv():
                 smresult[i][j] = 'nofit'
                 smcst[i][j] = 0
         mplfi()
-        mbrmv.config(text='Start Remove', bg='white')
+        mbrmv.config(text='Remove', bg='white')
         mfitplot()
 
 
@@ -3609,6 +3609,26 @@ scki = []
 
 def fmend():
     global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
+    plt.figure()
+    s1,s2=[],[]
+    for i in range(len(ev)):
+        if i in mfi_err or i in mfi:
+            x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+            ty = gl1(x, *maa2[i, :4])
+            s1.append(np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
+                        # Area 1
+                        * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)]))))
+            ty = gl1(x, *maa2[i, -4:])
+            s2.append(np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
+                        # Area 2
+                        * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)]))))
+        else:
+            s1.append(0)
+            s2.append(0)
+    plt.plot(ev,s1,label='Area 1',c='g')
+    plt.plot(ev,s2,label='Area 2',c='purple')
+    plt.legend()
+    plt.show()
     fev, pos, fwhm = [], [], []
     skmin, skmax, smaa1, smaa2 = kmin, kmax, maa1, maa2
     smfp = mfp
@@ -3830,7 +3850,7 @@ def mfitplot():  # mfiti Scale
             gl2_2 = gl1(x, *maa2[i, -4:])+lbg
             fl, = mfitax.plot(x, gl2(x, *maa2[i, :])+lbg, 'b-', lw=2)
             mfitax.fill_between(x, lbg, gl2_1, facecolor='green', alpha=0.5)
-            mfitax.fill_between(x, lbg, gl2_2, facecolor='yellow', alpha=0.5)
+            mfitax.fill_between(x, lbg, gl2_2, facecolor='purple', alpha=0.5)
         if i in mfi_err or i in mfi:
             if i in mfi:
                 mfitax.plot(x, gl2(x, *maa2[i, :]) +
@@ -4125,13 +4145,13 @@ def mfcomp2():
     if flmcomp1 == -1:
         flmcomp2 *= -1
         if flmcomp2 == 1:
-            mbcomp2.config(text='Comp 2', bg='yellow')
+            mbcomp2.config(text='Comp 2', bg='purple')
         else:
             mbcomp2.config(text='Comp 2', bg='white')
     else:
         flmcomp1 *= -1
         flmcomp2 *= -1
-        mbcomp2.config(text='Comp 2', bg='yellow')
+        mbcomp2.config(text='Comp 2', bg='purple')
         mbcomp1.config(text='Comp 1', bg='white')
 
 
@@ -4153,15 +4173,24 @@ def fmaccept():
 
 
 def fmreject():
-    global mfi, mfi_x, mfi_err
+    global mfi, mfi_x, mfi_err, mbreject, flmreject, mirej
     i = mfiti.get()
-    if i not in mfi_x:
-        mfi_x.append(i)
-    if i in mfi:
-        mfi.remove(i)
-    if i in mfi_err:
-        mfi_err.remove(i)
-    mplfi()
+    flmreject *= -1
+    if flmreject == 1:
+        mirej = i
+        mbreject.config(text='End Reject', bg='red')
+    else:
+        ti = sorted([i, mirej])
+        for i in np.linspace(ti[0], ti[1], ti[1]-ti[0]+1, dtype=int):
+            if i not in mfi_x:
+                mfi_x.append(i)
+            if i in mfi:
+                mfi.remove(i)
+            if i in mfi_err:
+                mfi_err.remove(i)
+        mplfi()
+        mbreject.config(text='Reject', bg='white')
+    
 
 
 def o_fmwf1(*e):
@@ -4248,7 +4277,7 @@ def fmposcst():
     if flmposcst == 1:
         min_x1.config(state='normal')
         min_x2.config(state='normal')
-        mbposcst.config(bg='yellow')
+        mbposcst.config(bg='purple')
     else:
         min_x1.config(state='disabled')
         min_x2.config(state='disabled')
@@ -4256,7 +4285,7 @@ def fmposcst():
 
 
 def mjob():     # MDC Fitting GUI
-    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst
+    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject
     mgg = tk.Toplevel(g, bg='white')
     mgg.title('MDC Lorentz Fit')
     mst = queue.Queue(maxsize=0)
@@ -4361,10 +4390,10 @@ def mjob():     # MDC Fitting GUI
     l1.grid(row=1, column=0)
     froperind = tk.Frame(master=frpara00, bd=5, bg='white')
     froperind.grid(row=2, column=0)
-    mbcgl2 = tk.Button(froperind, text='Start Add 2 Peaks', command=fmcgl2,
+    mbcgl2 = tk.Button(froperind, text='Add 2 Peaks', command=fmcgl2,
                        width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
     mbcgl2.grid(row=0, column=0)
-    mbrmv = tk.Button(froperind, text='Start Remove', command=fmrmv,
+    mbrmv = tk.Button(froperind, text='Remove', command=fmrmv,
                       width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
     mbrmv.grid(row=0, column=1)
     mbcomp1 = tk.Button(froperind, text='Comp 1', command=mfcomp1,
@@ -4451,6 +4480,7 @@ def mjob():     # MDC Fitting GUI
                       width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
     bfall.grid(row=0, column=0)
 
+    flmreject = -1
     flmposcst = -1
     flmrmv = -1
     flmcomp1 = -1
