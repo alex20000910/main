@@ -1,14 +1,4 @@
 # MDC cut GUI
-from lmfit.printfuncs import *
-from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.widgets import SpanSelector
-from matplotlib.widgets import RectangleSelector
-import matplotlib as mpl
-from matplotlib.widgets import Cursor
-from PIL import Image, ImageTk
-from matplotlib.figure import Figure
-import matplotlib.backends.backend_tkagg as tkagg
-import matplotlib.pyplot as plt
 import os
 import json
 import tkinter as tk
@@ -20,8 +10,6 @@ import threading
 import warnings
 from ctypes import windll
 import re
-
-
 def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
@@ -29,8 +17,6 @@ def install(s: str):
         os.system('pip install '+s)
     else:
         quit()
-
-
 try:
     import numpy as np
 except ModuleNotFoundError:
@@ -51,6 +37,15 @@ try:
 except ModuleNotFoundError:
     install('matplotlib')
     import matplotlib
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.widgets import SpanSelector
+from matplotlib.widgets import RectangleSelector
+import matplotlib as mpl
+from matplotlib.widgets import Cursor
+from PIL import Image, ImageTk
+from matplotlib.figure import Figure
+import matplotlib.backends.backend_tkagg as tkagg
+import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 try:
     from scipy.optimize import curve_fit
@@ -62,6 +57,7 @@ try:
 except ModuleNotFoundError:
     install('lmfit')
     from lmfit import Parameters, Minimizer, report_fit
+from lmfit.printfuncs import *
 try:
     import tqdm
 except ModuleNotFoundError:
