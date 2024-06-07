@@ -849,7 +849,7 @@ def loadmfit_re():
 
 def loadmfit_():
     file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(
-        ("VMS files", "*.vms"), ("NPZ files", "*.npz"),))
+        ("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
     global h, m, fwhm, fev, pos, limg, img, name, ophi, rpos, st, kmax, kmin, lmgg
     global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x, smresult, smcst
     mfpath = ''
@@ -3605,15 +3605,33 @@ def savemfit():
 
 
 scki = []
-
-
-def fmend():
-    global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
+def fmresidual():
+    plt.figure()
+    s3,s4=[],[]
+    for i in range(len(ev)):
+        if i in mfi_err or i in mfi:
+            x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+            y = fmyy[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+            lbg=lnr_bg(fmyy[i, :len(x)])
+            s3.append(np.std(gl2(x, *maa2[i, :])+lbg-y))  # STD
+            s4.append(np.sqrt(np.mean((gl2(x, *maa2[i, :])+lbg-y)**2)))  # RMS
+        else:
+            s3.append(0)
+            s4.append(0)
+    plt.plot(ev,s3,label='STD',c='r')
+    plt.plot(ev,s4,label='RMS',c='b')
+    plt.title('Residual')
+    plt.xlabel('Kinetic Energy (eV)')
+    plt.ylabel('Intensity (Counts)')
+    plt.legend()
+    plt.show()
+def fmarea():
     plt.figure()
     s1,s2=[],[]
     for i in range(len(ev)):
         if i in mfi_err or i in mfi:
             x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+            y = fmyy[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
             ty = gl1(x, *maa2[i, :4])
             s1.append(np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
                         # Area 1
@@ -3625,10 +3643,67 @@ def fmend():
         else:
             s1.append(0)
             s2.append(0)
-    plt.plot(ev,s1,label='Area 1',c='g')
-    plt.plot(ev,s2,label='Area 2',c='purple')
+    plt.plot(ev,s1,label='Area 1',c='r')
+    plt.plot(ev,s2,label='Area 2',c='b')
+    plt.title('Area')
+    plt.xlabel('Kinetic Energy (eV)')
+    plt.ylabel('Intensity (Counts)')
     plt.legend()
     plt.show()
+def fmfwhm():
+    global pos, fwhm, fev
+    fev, pos, fwhm = [], [], []
+    f=plt.figure()
+    a1=f.add_subplot(311)
+    a2=f.add_subplot(312)
+    a3=f.add_subplot(313)
+    x=[]
+    y1=[]
+    y2=[]
+    for i, v in enumerate(mfi):
+        if mfp[v] == 1:
+            fev.append(ev[v])
+            pos.append(maa1[v, 0])
+            fwhm.append(maa1[v, 2])
+        elif mfp[v] == 2:
+            x.append(ev[v])
+            y1.append(maa2[v, 2])
+            y2.append(maa2[v, 6])
+            
+            fev.append(ev[v])
+            fev.append(ev[v])
+            pos.append(maa2[v, 0])
+            pos.append(maa2[v, 4])
+            fwhm.append(maa2[v, 2])
+            fwhm.append(maa2[v, 6])
+    ha=a1.scatter(x,y1,c='r')
+    a1.set_title('FWHM')
+    a1.set_ylabel('FWHM ($\AA$)')
+    a1.legend([ha],['Comp 1'])
+    hb=a2.scatter(x,y2,c='b')
+    a2.set_ylabel('FWHM ($\AA$)')
+    a2.legend([hb],['Comp 2'])
+    h2=a3.scatter(x,y2,c='b')
+    h1=a3.scatter(x,y1,c='r')
+    a3.set_xlabel('Kinetic Energy (eV)')
+    a3.set_ylabel('FWHM ($\AA$)')
+    a3.legend([h1,h2],['Comp 1','Comp 2'])
+    plt.tight_layout()
+    plt.show()
+def fmpreview():
+    mprvg = tk.Toplevel(g)
+    mprvg.geometry('300x200')
+    mprvg.title(' Preview MDC Result')
+    bmresidual = tk.Button(mprvg, text='Residual', command=fmresidual, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
+    bmresidual.pack()
+    bmarea = tk.Button(mprvg, text='Area', command=fmarea, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
+    bmarea.pack()
+    bmfwhm = tk.Button(mprvg, text='FWHM', command=fmfwhm, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
+    bmfwhm.pack()
+    mprvg.update()
+    
+def fmend():
+    global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
     fev, pos, fwhm = [], [], []
     skmin, skmax, smaa1, smaa2 = kmin, kmax, maa1, maa2
     smfp = mfp
@@ -4486,9 +4561,13 @@ def mjob():     # MDC Fitting GUI
     flmcomp1 = -1
     flmcomp2 = -1
 
+    bprv = tk.Button(frout, text='Preview', command=fmpreview, width=30,
+                     height=1, font={'Arial', 18, "bold"}, bg='white')
+    bprv.grid(row=1, column=0)
+    
     bend = tk.Button(frout, text='Finish', command=fmend, width=30,
                      height=1, font={'Arial', 18, "bold"}, bg='white')
-    bend.grid(row=1, column=0)
+    bend.grid(row=2, column=0)
 
     mresult = [[]for i in range(len(ev))]
     try:
