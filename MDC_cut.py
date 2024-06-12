@@ -6601,6 +6601,39 @@ def tstate():
     except KeyboardInterrupt:
         pass
 
+def lm2p():
+    t = threading.Thread(target=loadmfit_2p)
+    t.daemon = True
+    t.start()
+
+
+def lmre():
+    t = threading.Thread(target=loadmfit_re)
+    t.daemon = True
+    t.start()
+
+
+def lm():
+    t = threading.Thread(target=loadmfit_)
+    t.daemon = True
+    t.start()
+
+
+def o_loadmfit():
+    global g, st, lmgg
+    lmgg = tk.Toplevel(g)
+    lmgg.title('Load MDC fitted File')
+    lmgg.geometry('400x200')  # format:'1400x800'
+    b1 = tk.Button(lmgg, command=lm2p, text='vms 1 peak to 2 peaks', font=(
+        "Arial", 12, "bold"), fg='red', width=30, height='1', bd=10)
+    b1.pack()
+    b2 = tk.Button(lmgg, command=lmre, text='reverse vms axis', font=(
+        "Arial", 12, "bold"), fg='red', width=30, height='1', bd=10)
+    b2.pack()
+    b3 = tk.Button(lmgg, command=lm, text='load MDC fitted File', font=(
+        "Arial", 12, "bold"), fg='red', width=30, height='1', bd=10)
+    b3.pack()
+    lmgg.update()
 
 try:
     with np.load('rd.npz', 'rb') as f:
@@ -6727,42 +6760,6 @@ try:
 except:
     print('No MDC fitted data preloaded')
 '''
-
-
-def lm2p():
-    t = threading.Thread(target=loadmfit_2p)
-    t.daemon = True
-    t.start()
-
-
-def lmre():
-    t = threading.Thread(target=loadmfit_re)
-    t.daemon = True
-    t.start()
-
-
-def lm():
-    t = threading.Thread(target=loadmfit_)
-    t.daemon = True
-    t.start()
-
-
-def o_loadmfit():
-    global g, st, lmgg
-    lmgg = tk.Toplevel(g)
-    lmgg.title('Load MDC fitted File')
-    lmgg.geometry('400x200')  # format:'1400x800'
-    b1 = tk.Button(lmgg, command=lm2p, text='vms 1 peak to 2 peaks', font=(
-        "Arial", 12, "bold"), fg='red', width=30, height='1', bd=10)
-    b1.pack()
-    b2 = tk.Button(lmgg, command=lmre, text='reverse vms axis', font=(
-        "Arial", 12, "bold"), fg='red', width=30, height='1', bd=10)
-    b2.pack()
-    b3 = tk.Button(lmgg, command=lm, text='load MDC fitted File', font=(
-        "Arial", 12, "bold"), fg='red', width=30, height='1', bd=10)
-    b3.pack()
-    lmgg.update()
-
 
 g = tk.Tk()
 windll.shcore.SetProcessDpiAwareness(1)
