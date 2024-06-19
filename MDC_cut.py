@@ -523,7 +523,7 @@ def o_angcut():
     st.put('Done')
 
 
-def re(a, b):
+def res(a, b):
     det = [1 for i in range(len(a)-1)]
     while sum(det) != 0:
         for i in range(len(a)-1):
@@ -908,31 +908,25 @@ def loadmfit_():
                         if (ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
                             tkk = (2*m*ev[fi]*1.6*10**-19)**0.5 * \
                                 np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+                            if float(tpos) > 1200:
+                                tkk+=1486.6
                             d = tkk[1]-tkk[0]
                             tr = float(tpos)+float(tfwhm)/2
                             tl = float(tpos)-float(tfwhm)/2
                             ri = int((tr-tkk[0])/d)
                             li = int((tl-tkk[0])/d)
-                            if ri > 492:
-                                ri = 492
                             tr = tkk[ri]+(float(tr)-(tkk[0]+ri*d)
                                           )/d*(tkk[ri+1]-tkk[ri])
                             tl = tkk[li]+(float(tl)-(tkk[0]+li*d)
                                           )/d*(tkk[li+1]-tkk[li])
                             tfwhm = tr-tl
                             tpi = int((float(tpos)-tkk[0])/d)
-                            if tpi > 492:
-                                tpi = 492
                             tpos = tkk[tpi]+(float(tpos)-(tkk[0]+tpi*d)
                                              )/d*(tkk[tpi+1]-tkk[tpi])
                             tpi = int((float(tkmax)-tkk[0])/d)
-                            if tpi > 492:
-                                tpi = 492
                             tkmax = tkk[tpi]+(float(tkmax) -
                                               (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
                             tpi = int((float(tkmin)-tkk[0])/d)
-                            if tpi > 492:
-                                tpi = 492
                             tkmin = tkk[tpi]+(float(tkmin) -
                                               (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
 
@@ -978,31 +972,25 @@ def loadmfit_():
                         if (ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
                             tkk = (2*m*ev[fi]*1.6*10**-19)**0.5 * \
                                 np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+                            if float(tpos) > 1200:
+                                tkk+=1486.6
                             d = tkk[1]-tkk[0]
                             tr = float(tpos)+float(tfwhm)/2
                             tl = float(tpos)-float(tfwhm)/2
                             ri = int((tr-tkk[0])/d)
                             li = int((tl-tkk[0])/d)
-                            if ri > 492:
-                                ri = 492
                             tr = tkk[ri]+(float(tr)-(tkk[0]+ri*d)
                                           )/d*(tkk[ri+1]-tkk[ri])
                             tl = tkk[li]+(float(tl)-(tkk[0]+li*d)
                                           )/d*(tkk[li+1]-tkk[li])
                             tfwhm = tr-tl
                             tpi = int((float(tpos)-tkk[0])/d)
-                            if tpi > 492:
-                                tpi = 492
                             tpos = tkk[tpi]+(float(tpos)-(tkk[0]+tpi*d)
                                              )/d*(tkk[tpi+1]-tkk[tpi])
                             tpi = int((float(tkmax)-tkk[0])/d)
-                            if tpi > 492:
-                                tpi = 492
                             tkmax = tkk[tpi]+(float(tkmax) -
                                               (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
                             tpi = int((float(tkmin)-tkk[0])/d)
-                            if tpi > 492:
-                                tpi = 492
                             tkmin = tkk[tpi]+(float(tkmin) -
                                               (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
 
@@ -1058,17 +1046,17 @@ def loadmfit_():
             np.sin((np.float64(k_offset.get())+okMphi) /
                    180*np.pi)*10**-10/(h/2/np.pi)
 
-        rpos = re(fev, rpos)
-        ophi = re(fev, ophi)
-        fwhm = re(fev, fwhm)
-        pos = re(fev, pos)
-        kmin = re(fev, kmin)
-        kmax = re(fev, kmax)
-        fev = re(fev, fev)
+        rpos = res(fev, rpos)
+        ophi = res(fev, ophi)
+        fwhm = res(fev, fwhm)
+        pos = res(fev, pos)
+        kmin = res(fev, kmin)
+        kmax = res(fev, kmax)
+        fev = res(fev, fev)
 
-        smfi = re(smfi, smfi)
-        tkmin = re(smfi, skmin)
-        tkmax = re(smfi, skmax)
+        smfi = res(smfi, smfi)
+        tkmin = res(smfi, skmin)
+        tkmax = res(smfi, skmax)
         skmin, skmax = [], []
         smaa1 = np.float64(np.arange(4*len(ev)).reshape(len(ev), 4))
         smaa2 = np.float64(np.arange(8*len(ev)).reshape(len(ev), 8))
@@ -1506,17 +1494,17 @@ def o_loadefit():
         fk = (2*m*epos*1.6*10**-19)**0.5 * \
             np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
 
-        epos = re(fphi, epos)
-        ffphi = re(fphi, ffphi)
-        efwhm = re(fphi, efwhm)
-        fk = re(fphi, fk)
-        emin = re(fphi, emin)
-        emax = re(fphi, emax)
-        fphi = re(fphi, fphi)
+        epos = res(fphi, epos)
+        ffphi = res(fphi, ffphi)
+        efwhm = res(fphi, efwhm)
+        fk = res(fphi, fk)
+        emin = res(fphi, emin)
+        emax = res(fphi, emax)
+        fphi = res(fphi, fphi)
 
-        sefi = re(tphi, sefi)
-        temin = re(tphi, semin)
-        temax = re(tphi, semax)
+        sefi = res(tphi, sefi)
+        temin = res(tphi, semin)
+        temax = res(tphi, semax)
         semin, semax = [], []
         seaa1 = np.float64(np.arange(4*len(phi)).reshape(len(phi), 4))
         seaa2 = np.float64(np.arange(8*len(phi)).reshape(len(phi), 8))
@@ -1588,172 +1576,172 @@ def o_loadefit():
 ##################################################################
 ##################################################################
 ##################################################################
-'''
-def gl(x,x0,a,w,y0):
-    v=a/(1+(x-x0)**2/(1/2*w)**2)+y0
-    return v
 
-def o_efitplot(*e):
-    global ef,st
-    if len(evv)==0:
-        ef=1
-        egg.destroy()
-    else:
-        ef=0
-        i=efiti.get()
-        efitfig.clear()
-        fitax=efitfig.subplots()
-        fitax.set_title('Pos:'+str(round(eaa[i,0],3))+' (eV)'+', FWHM:'+str(round(eaa[i,2],3))+' (eV)'+', Deg:'+str(round(evv[i],3))+r' $^{\circ}$')
-        fitax.scatter(fex[i,:],fey[i,:],c='k',s=4)
-        fitax.plot(fexx[i,np.argwhere(fexx[i,:]>=-20)],gl(fexx[i,np.argwhere(fexx[i,:]>=-20)],eaa[i,0],eaa[i,1],eaa[i,2],eaa[i,3]),'b-',lw=2)
-        fitax.scatter(fexx[i,np.argwhere(fexx[i,:]>=-20)],feyy[i,np.argwhere(feyy[i,:]>=-20)],c='g',s=4)
-        fitax.axvline(min(fexx[i,np.argwhere(fexx[i,:]>=-20)]),c='r')
-        fitax.axvline(max(fexx[i,np.argwhere(fexx[i,:]>=-20)]),c='r')
-        fitax.set_xlabel('Kinetic Energy (eV)',fontsize=14)
-        fitax.set_ylabel('Intensity (Counts)',fontsize=14)
-        efitout.draw()
+# def gl(x,x0,a,w,y0):
+#     v=a/(1+(x-x0)**2/(1/2*w)**2)+y0
+#     return v
 
-def o_mfitplot(*e):
-    global mf,st
-    if len(mvv)==0:
-        mf=1
-        mgg.destroy()
-    else:
-        mf=0
-        i=mfiti.get()
-        mfitfig.clear()
-        fitax=mfitfig.subplots()
-        fitax.set_title('Pos:'+str(round(maa[i,0],3))+r' $(\frac{2\pi}{\AA})$'+', FWHM:'+str(round(maa[i,2],3))+r' $(\frac{2\pi}{\AA})$'+', Kinetic Energy:'+str(round(mvv[i],3))+' eV')
-        fitax.scatter(fmx[i,:],fmy[i,:],c='k',s=4)
-        fitax.plot(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],gl(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],maa[i,0],maa[i,1],maa[i,2],maa[i,3]),'b-',lw=2)
-        fitax.scatter(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],y,c='g',s=4)
-        fitax.axvline(min(fmxx[i,np.argwhere(fmxx[i,:]>=-20)]),c='r')
-        fitax.axvline(max(fmxx[i,np.argwhere(fmxx[i,:]>=-20)]),c='r')
-        fitax.set_xlabel(r'k ($\frac{2\pi}{\AA}$)',fontsize=14)
-        fitax.set_ylabel('Intensity (Counts)',fontsize=14)
-        mfitout.draw()
+# def o_efitplot(*e):
+#     global ef,st
+#     if len(evv)==0:
+#         ef=1
+#         egg.destroy()
+#     else:
+#         ef=0
+#         i=efiti.get()
+#         efitfig.clear()
+#         fitax=efitfig.subplots()
+#         fitax.set_title('Pos:'+str(round(eaa[i,0],3))+' (eV)'+', FWHM:'+str(round(eaa[i,2],3))+' (eV)'+', Deg:'+str(round(evv[i],3))+r' $^{\circ}$')
+#         fitax.scatter(fex[i,:],fey[i,:],c='k',s=4)
+#         fitax.plot(fexx[i,np.argwhere(fexx[i,:]>=-20)],gl(fexx[i,np.argwhere(fexx[i,:]>=-20)],eaa[i,0],eaa[i,1],eaa[i,2],eaa[i,3]),'b-',lw=2)
+#         fitax.scatter(fexx[i,np.argwhere(fexx[i,:]>=-20)],feyy[i,np.argwhere(feyy[i,:]>=-20)],c='g',s=4)
+#         fitax.axvline(min(fexx[i,np.argwhere(fexx[i,:]>=-20)]),c='r')
+#         fitax.axvline(max(fexx[i,np.argwhere(fexx[i,:]>=-20)]),c='r')
+#         fitax.set_xlabel('Kinetic Energy (eV)',fontsize=14)
+#         fitax.set_ylabel('Intensity (Counts)',fontsize=14)
+#         efitout.draw()
+
+# def o_mfitplot(*e):
+#     global mf,st
+#     if len(mvv)==0:
+#         mf=1
+#         mgg.destroy()
+#     else:
+#         mf=0
+#         i=mfiti.get()
+#         mfitfig.clear()
+#         fitax=mfitfig.subplots()
+#         fitax.set_title('Pos:'+str(round(maa[i,0],3))+r' $(\frac{2\pi}{\AA})$'+', FWHM:'+str(round(maa[i,2],3))+r' $(\frac{2\pi}{\AA})$'+', Kinetic Energy:'+str(round(mvv[i],3))+' eV')
+#         fitax.scatter(fmx[i,:],fmy[i,:],c='k',s=4)
+#         fitax.plot(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],gl(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],maa[i,0],maa[i,1],maa[i,2],maa[i,3]),'b-',lw=2)
+#         fitax.scatter(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],y,c='g',s=4)
+#         fitax.axvline(min(fmxx[i,np.argwhere(fmxx[i,:]>=-20)]),c='r')
+#         fitax.axvline(max(fmxx[i,np.argwhere(fmxx[i,:]>=-20)]),c='r')
+#         fitax.set_xlabel(r'k ($\frac{2\pi}{\AA}$)',fontsize=14)
+#         fitax.set_ylabel('Intensity (Counts)',fontsize=14)
+#         mfitout.draw()
     
-def o_ejob():
-    global g,efiti,efitfig,efitout,egg
-    egg=tk.Toplevel(g)
-    egg.title('EDC Lorentz Fit')
-    fr=tk.Frame(master=egg,bd=5)
-    fr.grid(row=0,column=0)
-    efitfig = Figure(figsize=(8,6),layout='constrained')
-    efitout = tkagg.FigureCanvasTkAgg(efitfig, master=fr)
-    efitout.get_tk_widget().grid(row=0,column=0)
-    # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
-    # bstop.grid(row=1,column=0)
-    efiti=tk.IntVar()
-    efiti.set(0)
-    efiti.trace_add('write',o_efitplot)
-    sc=tk.Frame(master=egg,bd=5)
-    sc.grid(row=1,column=0)
-    chi=tk.Scale(sc,from_=0,to=np.size(eaa,0)-1,orient='horizontal',variable=efiti,state='active',bg='white',fg='black',length=400,width=50,resolution=1)
-    chi.pack()
-    o_efitplot()
-    egg.update()
+# def o_ejob():
+#     global g,efiti,efitfig,efitout,egg
+#     egg=tk.Toplevel(g)
+#     egg.title('EDC Lorentz Fit')
+#     fr=tk.Frame(master=egg,bd=5)
+#     fr.grid(row=0,column=0)
+#     efitfig = Figure(figsize=(8,6),layout='constrained')
+#     efitout = tkagg.FigureCanvasTkAgg(efitfig, master=fr)
+#     efitout.get_tk_widget().grid(row=0,column=0)
+#     # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
+#     # bstop.grid(row=1,column=0)
+#     efiti=tk.IntVar()
+#     efiti.set(0)
+#     efiti.trace_add('write',o_efitplot)
+#     sc=tk.Frame(master=egg,bd=5)
+#     sc.grid(row=1,column=0)
+#     chi=tk.Scale(sc,from_=0,to=np.size(eaa,0)-1,orient='horizontal',variable=efiti,state='active',bg='white',fg='black',length=400,width=50,resolution=1)
+#     chi.pack()
+#     o_efitplot()
+#     egg.update()
 
-def o_mjob():
-    global g,mfiti,mfitfig,mfitout,mgg
-    mgg=tk.Toplevel(g)
-    mgg.title('MDC Lorentz Fit')
-    fr=tk.Frame(master=mgg,bd=5)
-    fr.grid(row=0,column=0)
-    mfitfig = Figure(figsize=(8,6),layout='constrained')
-    mfitout = tkagg.FigureCanvasTkAgg(mfitfig, master=fr)
-    mfitout.get_tk_widget().grid(row=0,column=0)
-    # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
-    # bstop.grid(row=1,column=0)
-    mfiti=tk.IntVar()
-    mfiti.set(0)
-    mfiti.trace_add('write',o_mfitplot)
-    sc=tk.Frame(master=mgg,bd=5)
-    sc.grid(row=1,column=0)
-    chi=tk.Scale(sc,from_=0,to=np.size(maa,0)-1,orient='horizontal',variable=mfiti,state='active',bg='white',fg='black',length=400,width=50,resolution=1)
-    chi.pack()
-    o_mfitplot()
-    mgg.update()
+# def o_mjob():
+#     global g,mfiti,mfitfig,mfitout,mgg
+#     mgg=tk.Toplevel(g)
+#     mgg.title('MDC Lorentz Fit')
+#     fr=tk.Frame(master=mgg,bd=5)
+#     fr.grid(row=0,column=0)
+#     mfitfig = Figure(figsize=(8,6),layout='constrained')
+#     mfitout = tkagg.FigureCanvasTkAgg(mfitfig, master=fr)
+#     mfitout.get_tk_widget().grid(row=0,column=0)
+#     # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
+#     # bstop.grid(row=1,column=0)
+#     mfiti=tk.IntVar()
+#     mfiti.set(0)
+#     mfiti.trace_add('write',o_mfitplot)
+#     sc=tk.Frame(master=mgg,bd=5)
+#     sc.grid(row=1,column=0)
+#     chi=tk.Scale(sc,from_=0,to=np.size(maa,0)-1,orient='horizontal',variable=mfiti,state='active',bg='white',fg='black',length=400,width=50,resolution=1)
+#     chi.pack()
+#     o_mfitplot()
+#     mgg.update()
 
-def o_fitm():
-    global mf,pos,fwhm,base,k_offset,st,mvv,maa,fmxx,fmyy,fmx,fmy
-    try:
-        fmxx=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
-        fmyy=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
-        fmxx=fmxx/fmxx*-50
-        fmyy=fmyy/fmyy*-50
-        fmx=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
-        fmy=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
-        mvv=np.float64(np.arange(len(fev)))
-        maa=np.float64(np.arange(4*len(fev)).reshape(len(fev),4))
-        for i,v in enumerate(fev):
-            ecut=data.sel(eV=v,method='nearest')
-            x = (2*m*v*1.6*10**-19)**0.5*np.sin((phi+np.float64(k_offset.get()))/180*np.pi)*10**-10/(h/2/np.pi)
-            y=ecut.to_numpy().reshape(len(x))
-            tx=x[np.argwhere(x>=kmin[i])].flatten()
-            xx=tx[np.argwhere(tx<=kmax[i])].flatten()
-            ty=y[np.argwhere(x>=kmin[i])].flatten()
-            yy=ty[np.argwhere(tx<=kmax[i])].flatten()
-            yy=np.where(yy>int(base.get()),yy,int(base.get()))
-            a,b=curve_fit(gl,xx,yy,bounds=([pos[i]-0.01,(np.max(y)-int(base.get()))/10,0,int(base.get())-1],[pos[i]+0.01,np.max(y)-int(base.get()),0.3,int(base.get())+1]))
-            pos[i]=a[0]
-            fwhm[i]=a[2]
-            print('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
-            st.put('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
+# def o_fitm():
+#     global mf,pos,fwhm,base,k_offset,st,mvv,maa,fmxx,fmyy,fmx,fmy
+#     try:
+#         fmxx=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
+#         fmyy=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
+#         fmxx=fmxx/fmxx*-50
+#         fmyy=fmyy/fmyy*-50
+#         fmx=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
+#         fmy=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
+#         mvv=np.float64(np.arange(len(fev)))
+#         maa=np.float64(np.arange(4*len(fev)).reshape(len(fev),4))
+#         for i,v in enumerate(fev):
+#             ecut=data.sel(eV=v,method='nearest')
+#             x = (2*m*v*1.6*10**-19)**0.5*np.sin((phi+np.float64(k_offset.get()))/180*np.pi)*10**-10/(h/2/np.pi)
+#             y=ecut.to_numpy().reshape(len(x))
+#             tx=x[np.argwhere(x>=kmin[i])].flatten()
+#             xx=tx[np.argwhere(tx<=kmax[i])].flatten()
+#             ty=y[np.argwhere(x>=kmin[i])].flatten()
+#             yy=ty[np.argwhere(tx<=kmax[i])].flatten()
+#             yy=np.where(yy>int(base.get()),yy,int(base.get()))
+#             a,b=curve_fit(gl,xx,yy,bounds=([pos[i]-0.01,(np.max(y)-int(base.get()))/10,0,int(base.get())-1],[pos[i]+0.01,np.max(y)-int(base.get()),0.3,int(base.get())+1]))
+#             pos[i]=a[0]
+#             fwhm[i]=a[2]
+#             print('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
+#             st.put('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
             
-            fmxx[i,0:len(xx)]=xx
-            fmyy[i,0:len(yy)]=yy
-            fmx[i,:]=x
-            fmy[i,:]=y
-            mvv[i]=v
-            maa[i,:]=a
+#             fmxx[i,0:len(xx)]=xx
+#             fmyy[i,0:len(yy)]=yy
+#             fmx[i,:]=x
+#             fmy[i,:]=y
+#             mvv[i]=v
+#             maa[i,:]=a
             
-        tt1=threading.Thread(target=o_mjob)
-        tt1.daemon=True
-        tt1.start()
-    except:
-        mf=1
-        pass
-def o_fite():
-    global ef,pos,fwhm,base,k_offset,st,evv,eaa,fexx,feyy,fex,fey
-    try:
-        fexx=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
-        feyy=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
-        fexx=fexx/fexx*-50
-        feyy=feyy/feyy*-50
-        fex=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
-        fey=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
-        evv=np.float64(np.arange(len(fphi)))
-        eaa=np.float64(np.arange(4*len(fphi)).reshape(len(fphi),4))
-        for i,v in enumerate(fphi):
-            angcut=data.sel(phi=v,method='nearest')
-            x = ev
-            y=angcut.to_numpy().reshape(len(x))
-            tx=x[np.argwhere(x>=emin[i])].flatten()
-            xx=tx[np.argwhere(tx<=emax[i])].flatten()
-            ty=y[np.argwhere(x>=emin[i])].flatten()
-            yy=ty[np.argwhere(tx<=emax[i])].flatten()
-            yy=np.where(yy>int(base.get()),yy,int(base.get()))
+#         tt1=threading.Thread(target=o_mjob)
+#         tt1.daemon=True
+#         tt1.start()
+#     except:
+#         mf=1
+#         pass
+# def o_fite():
+#     global ef,pos,fwhm,base,k_offset,st,evv,eaa,fexx,feyy,fex,fey
+#     try:
+#         fexx=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
+#         feyy=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
+#         fexx=fexx/fexx*-50
+#         feyy=feyy/feyy*-50
+#         fex=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
+#         fey=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
+#         evv=np.float64(np.arange(len(fphi)))
+#         eaa=np.float64(np.arange(4*len(fphi)).reshape(len(fphi),4))
+#         for i,v in enumerate(fphi):
+#             angcut=data.sel(phi=v,method='nearest')
+#             x = ev
+#             y=angcut.to_numpy().reshape(len(x))
+#             tx=x[np.argwhere(x>=emin[i])].flatten()
+#             xx=tx[np.argwhere(tx<=emax[i])].flatten()
+#             ty=y[np.argwhere(x>=emin[i])].flatten()
+#             yy=ty[np.argwhere(tx<=emax[i])].flatten()
+#             yy=np.where(yy>int(base.get()),yy,int(base.get()))
             
-            a,b=curve_fit(gl,xx,yy,bounds=([epos[i]-0.1,(np.max(y)-int(base.get()))/10,0,int(base.get())-1],[epos[i]+0.1,np.max(y)-int(base.get()),3,int(base.get())+1]))
-            epos[i]=a[0]
-            efwhm[i]=a[2]
-            print('EDC '+str(round((i+1)/len(fphi)*100))+'%'+' ('+str(len(fphi))+')')
-            st.put('EDC '+str(round((i+1)/len(fphi)*100))+'%'+' ('+str(len(fphi))+')')
+#             a,b=curve_fit(gl,xx,yy,bounds=([epos[i]-0.1,(np.max(y)-int(base.get()))/10,0,int(base.get())-1],[epos[i]+0.1,np.max(y)-int(base.get()),3,int(base.get())+1]))
+#             epos[i]=a[0]
+#             efwhm[i]=a[2]
+#             print('EDC '+str(round((i+1)/len(fphi)*100))+'%'+' ('+str(len(fphi))+')')
+#             st.put('EDC '+str(round((i+1)/len(fphi)*100))+'%'+' ('+str(len(fphi))+')')
             
-            fexx[i,0:len(xx)]=xx
-            feyy[i,0:len(yy)]=yy
-            fex[i,:]=x
-            fey[i,:]=y
-            evv[i]=v
-            eaa[i,:]=a
+#             fexx[i,0:len(xx)]=xx
+#             feyy[i,0:len(yy)]=yy
+#             fex[i,:]=x
+#             fey[i,:]=y
+#             evv[i]=v
+#             eaa[i,:]=a
             
-        tt2=threading.Thread(target=o_ejob)
-        tt2.daemon=True
-        tt2.start()
-    except:
-        ef=1
-'''
+#         tt2=threading.Thread(target=o_ejob)
+#         tt2.daemon=True
+#         tt2.start()
+#     except:
+#         ef=1
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -3604,7 +3592,6 @@ def savemfit():
                  skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
 
 
-scki = []
 def fmresidual():
     plt.figure()
     s3,s4=[],[]
@@ -3651,7 +3638,7 @@ def fmarea():
     plt.legend()
     plt.show()
 def fmfwhm():
-    global pos, fwhm, fev
+    global pos, fwhm, fev, rpos, ophi
     fev, pos, fwhm = [], [], []
     f=plt.figure()
     a1=f.add_subplot(311)
@@ -3676,23 +3663,130 @@ def fmfwhm():
             pos.append(maa2[v, 4])
             fwhm.append(maa2[v, 2])
             fwhm.append(maa2[v, 6])
+    fev = np.float64(fev)
+    rpos = np.float64(pos)
+    
+    ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    pos = (2*m*fev*1.6*10**-19)**0.5 * np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+
+    rpos = res(fev, rpos)
+    ophi = res(fev, ophi)
+    fwhm = res(fev, fwhm)
+    pos = res(fev, pos)
+    fev = res(fev, fev)
+    
     ha=a1.scatter(x,y1,c='r')
     a1.set_title('FWHM')
-    a1.set_ylabel('FWHM ($\AA$)')
+    a1.set_ylabel(r'FWHM ($\AA$)')
     a1.legend([ha],['Comp 1'])
     hb=a2.scatter(x,y2,c='b')
-    a2.set_ylabel('FWHM ($\AA$)')
+    a2.set_ylabel(r'FWHM ($\AA$)')
     a2.legend([hb],['Comp 2'])
     h2=a3.scatter(x,y2,c='b')
     h1=a3.scatter(x,y1,c='r')
     a3.set_xlabel('Kinetic Energy (eV)')
-    a3.set_ylabel('FWHM ($\AA$)')
+    a3.set_ylabel(r'FWHM ($\AA$)')
     a3.legend([h1,h2],['Comp 1','Comp 2'])
     plt.tight_layout()
     plt.show()
+
+def fmimse():
+    global pos, fwhm, fev, rpos, ophi
+    fev, pos, fwhm = [], [], []
+    f=plt.figure()
+    a1=f.add_subplot(221)
+    a2=f.add_subplot(222)
+    a3=f.add_subplot(223)
+    a4=f.add_subplot(224)
+    y=[]
+    pos1=[]
+    pos2=[]
+    fwhm1=[]
+    fwhm2=[]
+    for i, v in enumerate(mfi):
+        if mfp[v] == 1:
+            fev.append(ev[v])
+            pos.append(maa1[v, 0])
+            fwhm.append(maa1[v, 2])
+        elif mfp[v] == 2:
+            y.append(ev[v])
+            pos1.append(maa2[v, 0])
+            pos2.append(maa2[v, 4])
+            fwhm1.append(maa2[v, 2])
+            fwhm2.append(maa2[v, 6])
+            
+            fev.append(ev[v])
+            fev.append(ev[v])
+            pos.append(maa2[v, 0])
+            pos.append(maa2[v, 4])
+            fwhm.append(maa2[v, 2])
+            fwhm.append(maa2[v, 6])
+    y = np.float64(y)
+    fev = np.float64(fev)
+    rpos = np.float64(pos)
+    
+    ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    pos = (2*m*fev*1.6*10**-19)**0.5 * np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+    
+    rpos = res(fev, rpos)
+    ophi = res(fev, ophi)
+    fwhm = res(fev, fwhm)
+    pos = res(fev, pos)
+    fev = res(fev, fev)
+    
+    pos1 = res(y, pos1)
+    pos2 = res(y, pos2)
+    fwhm1 = res(y, fwhm1)
+    fwhm2 = res(y, fwhm2)
+    y = res(y, y)
+    
+    xx = np.diff(y)
+    yy1 = np.diff(pos1)
+    yy2 = np.diff(pos2)
+    
+    # eliminate infinite vf
+    for i in range(len(yy1)):
+        if xx[i]/yy1[i] > 20000:
+            yy1[i] = 0
+    for i in range(len(yy2)):
+        if xx[i]/yy2[i] > 20000:
+            yy2[i] = 0
+    
+    v1 = xx/yy1
+    v2 = xx/yy2
+    yy1 = v1*fwhm1[1::]/2
+    yy2 = v2*fwhm2[1::]/2
+    xx/=2
+    print(len(y))
+    print(len(xx))
+    x = ((y[-1:0:-1]+xx[::-1])-21.2)*1000
+    print(len(x))
+    ha=a1.scatter(x,v1,c='r')
+    hb=a2.scatter(x,v2,c='b')
+    h1=a3.scatter(x,yy1*1000,c='r')
+    h2=a4.scatter(x,yy2*1000,c='b')
+    a1.set_title('Group Velocity')
+    a1.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+    a1.set_ylabel(r'v ($eV\AA$)', font='Arial', fontsize=14)
+    a1.legend([ha],['Comp 1'])
+    a2.set_title('Group Velocity')
+    a2.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+    a2.set_ylabel(r'v ($eV\AA$)', font='Arial', fontsize=14)
+    a2.legend([hb],['Comp 2'])
+    a3.set_title('Imaginary Part')
+    a3.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+    a3.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
+    a3.legend([h1],['Comp 1'])
+    a4.set_title('Imaginary Part')
+    a4.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+    a4.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
+    a4.legend([h2],['Comp 2'])
+    plt.tight_layout()
+    plt.show()
+    
 def fmpreview():
     mprvg = tk.Toplevel(g)
-    mprvg.geometry('300x200')
+    mprvg.geometry('300x250')
     mprvg.title(' Preview MDC Result')
     bmresidual = tk.Button(mprvg, text='Residual', command=fmresidual, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
     bmresidual.pack()
@@ -3700,8 +3794,11 @@ def fmpreview():
     bmarea.pack()
     bmfwhm = tk.Button(mprvg, text='FWHM', command=fmfwhm, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
     bmfwhm.pack()
+    bmimse = tk.Button(mprvg, text='Imaginary Part', command=fmimse, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
+    bmimse.pack()
     mprvg.update()
     
+scki = []    
 def fmend():
     global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
     fev, pos, fwhm = [], [], []
@@ -4952,6 +5049,7 @@ def chcmp(*e):
     a = lcmpd.subplots()
     h = lcmpd.colorbar(mpl.cm.ScalarMappable(
         norm=norm, cmap=value3.get()), cax=a, orientation='vertical', label='')
+    h.set_ticks(h.get_ticks())
     h.set_ticklabels(h.get_ticks(), font='Arial')
     cmpg.draw()
 
@@ -5073,6 +5171,7 @@ def o_plot1(*e):
                 )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
+                cb.set_ticks(cb.get_ticks())
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
             elif value.get() == 'Second Derivative':
                 ao = fig.subplots()
@@ -5083,6 +5182,7 @@ def o_plot1(*e):
                 )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
+                cb.set_ticks(cb.get_ticks())
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
             else:
                 ao = fig.subplots()
@@ -5094,6 +5194,7 @@ def o_plot1(*e):
                     pz = data.to_numpy()
                     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                     cb = fig.colorbar(h0)
+                    cb.set_ticks(cb.get_ticks())
                     cb.set_ticklabels(cb.get_ticks(), font='Arial')
                 if value.get() == 'MDC Normalized':
                     pbar = tqdm.tqdm(
@@ -5411,10 +5512,10 @@ def o_plot3(*e):
 
             px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
-            print(np.float64(k_offset.get()))
             pz = data.to_numpy()
             h0 = bo.pcolormesh(px, py, pz, cmap=value3.get())
             cb = fig.colorbar(h0)
+            cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial',
                               fontsize=14, minor=False)
             #   MDC Norm
@@ -5750,9 +5851,11 @@ def exp(*e):
             # h1 = a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
             h1 = a.pcolormesh(mx, my, mz, cmap=value3.get())
             cb = f.colorbar(h1)
+            cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial')
             h2 = a0.pcolormesh(mx, my, mz, cmap=value3.get())
             cb1 = f0.colorbar(h2)
+            cb1.set_ticks(cb1.get_ticks())
             cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
 
             acx.set_xticks([])
@@ -5782,8 +5885,10 @@ def exp(*e):
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
+            cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial')
             cb1 = f0.colorbar(h2)
+            cb1.set_ticks(cb1.get_ticks())
             cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
@@ -5811,8 +5916,10 @@ def exp(*e):
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
+            cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial')
             cb1 = f0.colorbar(h2)
+            cb1.set_ticks(cb1.get_ticks())
             cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
@@ -5841,8 +5948,10 @@ def exp(*e):
                 h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
                 h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = f.colorbar(h1)
+                cb.set_ticks(cb.get_ticks())
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
                 cb1 = f0.colorbar(h2)
+                cb1.set_ticks(cb1.get_ticks())
                 cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
 
                 n = a1.hist(pz.flatten(), bins=np.linspace(
@@ -6085,6 +6194,7 @@ def exp(*e):
             pz = data.to_numpy()
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
+            cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial',
                               fontsize=14, minor=False)
             a.set_title(value2.get(), font='Arial', fontsize=18)
@@ -6118,6 +6228,7 @@ def exp(*e):
                 pass
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb1 = f0.colorbar(h2)
+            cb1.set_ticks(cb1.get_ticks())
             cb1.set_ticklabels(cb1.get_ticks(), font='Arial',
                                fontsize=14, minor=False)
             a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
