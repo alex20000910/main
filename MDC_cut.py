@@ -3559,9 +3559,12 @@ def fmrmv():
             if i in cki:
                 cki.remove(i)
             mresult[i] = []
-            for j in range(6):
-                smresult[i][j] = 'nofit'
-                smcst[i][j] = 0
+            try:
+                for j in range(6):
+                    smresult[i][j] = 'nofit'
+                    smcst[i][j] = 0
+            except:
+                pass
         mplfi()
         mbrmv.config(text='Remove', bg='white')
         mfitplot()
