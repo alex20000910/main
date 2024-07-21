@@ -183,6 +183,7 @@ def load_json(path_to_file: str) -> xr.DataArray:
     Slit = f['Region']['Slit']
     aq = f['Region']['Acquisition']
     name = f['Region']['Name']
+    description = f['Region']['Description']
     if e_mode == 'Kinetic':
         e = np.linspace(e_low, e_high, e_num)
         CenterEnergy = str(CenterEnergy)+' eV (K.E.)'
@@ -212,7 +213,8 @@ def load_json(path_to_file: str) -> xr.DataArray:
                                                                  'PassEnergy': str(PassEnergy)+' eV',
                                                                  'Slit': Slit,
                                                                  'Dwell': str(Dwell)+' s',
-                                                                 'Iterations': Iterations
+                                                                 'Iterations': Iterations,
+                                                                 'Description': description
                                                                  })
     return data
 
@@ -251,17 +253,24 @@ def load_h5(path_to_file: str) -> xr.DataArray:
     t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
     t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
     t_name = np.array(f.get('Region').get('Name'), dtype=str)
+    t_description = np.array(f.get('Region').get('Description'), dtype=str)
     e_mode = ''
     LensMode = ''
     Slit = ''
     aq = ''
     name = ''
+    description = ''
     for i in range(60):  # proper length long enough
         e_mode += t_e_mode[i]
         LensMode += t_LensMode[i]
         Slit += t_Slit[i]
         aq += t_aq[i]
         name += t_name[i]
+    for i in range(500):
+        try:
+            description += t_description[i]
+        except:
+            pass
     if e_mode == 'Kinetic':
         e = np.linspace(e_low, e_high, e_num)
         CenterEnergy = str(CenterEnergy)+' eV (K.E.)'
@@ -291,7 +300,8 @@ def load_h5(path_to_file: str) -> xr.DataArray:
                                                                  'PassEnergy': str(PassEnergy)+' eV',
                                                                  'Slit': Slit,
                                                                  'Dwell': str(Dwell)+' s',
-                                                                 'Iterations': Iterations
+                                                                 'Iterations': Iterations,
+                                                                 'Description': description
                                                                  })
     return data
 
@@ -330,6 +340,24 @@ def rplot(f, canvas):
     # a.set_yticklabels(labels=a.get_yticklabels(),font='Arial',fontsize=10);
     canvas.draw()
 
+def trans_plot():
+    def job():
+        f=plt.figure(figsize=(15,9))
+        a1=f.add_subplot(211)
+        a2=f.add_subplot(212)
+        tx, ty = np.meshgrid(ev, phi)
+        tz = data.to_numpy().transpose()
+        a1.pcolormesh(tx,ty,tz,cmap='turbo')
+        a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
+        print(len(ev))
+        print(len(np.sum(tz,axis=0)))
+        a2.scatter(ev, np.sum(tz,axis=0), c='k', marker='o', s=0.9)
+        a2.set_xlabel('Kinetic Energy (eV)', font='Arial', fontsize=18)
+        a2.set_ylabel('Intensity (Counts)', font='Arial', fontsize=18)
+        plt.tight_layout()
+        plt.show()
+    threading.Thread(target=job).start()
+    
 
 def o_cal(*e):
     """
@@ -377,37 +405,49 @@ def cal(*e):
 
 
 def pr_load(data, path):
-    global name
-    key = str(data.attrs.keys()).removeprefix(
-        'dict_keys([').removesuffix('])').split(',')
-    lst = np.arange(len(key))
-    value = str(data.attrs.values()).removeprefix(
-        'dict_values([').removesuffix('])').split(',')
-    name = str('%s' % value[0].removeprefix("'").removesuffix("'"))
-    print('%s :' % key[0].removeprefix("'").removesuffix("'"),
-          '%s' % value[0].removeprefix("'").removesuffix("'"))
-    st = '%s : ' % key[0].removeprefix("'").removesuffix(
-        "'")+'%s' % value[0].removeprefix("'").removesuffix("'")+'\n'
-    lst[0] = len(st.split('\n')[0])
-    for i in range(1, len(key)):
-        st += '%s : ' % key[i].removeprefix(" '").removesuffix(
-            "'")+'%s' % value[i].removeprefix(" '").removesuffix("'")+'\n'
-        lst[i] = len(st.split('\n')[i])
-        print('%s :' % key[i].removeprefix(" '").removesuffix(
-            "'"), '%s' % value[i].removeprefix(" '").removesuffix("'"))
+    global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon
+    dvalue = [data.attrs[i] for i in data.attrs.keys()]
+    st=''
+    lst=[]
+    for _ in data.attrs.keys():
+        if _ != 'Description':
+            st+=str(_)+' : '+str(data.attrs[_])+'\n'
+            lst.append(len(str(_)+' : '+str(data.attrs[_])))
+            print(_,':', data.attrs[_])
+        else:
+            t=str(data.attrs[_]).split('\n')
+            st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                         ')+'\n'
+            lst.append(len(' : '+t[0]))
+            for i in range(1,len(t)):
+                lst.append(len('              '+t[i]))
+            print(_,':', data.attrs[_].replace('\n','\n              '))
     print()
     # info.config(text=st,justify='left')
-    info.config(state='normal')
+    info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
     info.insert(tk.END, st+'\n')
     info.see(tk.END)
-    info.config(height=len(key)+2, width=max(lst), state='disabled')
+    info.config(state='disabled')
     global ev, phi
     ev, phi = data.indexes.values()
     ev = np.float64(ev)
     phi = np.float64(phi)
+    name=dvalue[0]
+    e_photon=np.float64(dvalue[3].split(' ')[0])
+    lensmode=dvalue[8]
+    if lensmode=='Transmission':
+        trans_plot()
+        menu1.config(state='disabled')
+        menu2.config(state='disabled')
+        menu3.config(state='disabled')
+        b_fit.config(state='disabled')
+    else:
+        menu1.config(state='normal')
+        menu2.config(state='normal')
+        menu3.config(state='normal')
+        b_fit.config(state='normal')
     os.chdir(cdir)
     np.savez('rd', path=path, name=name, ev=ev,
-             phi=phi, st=st, key=key, lst=lst)
+             phi=phi, st=st, lst=lst)
 
 
 fpr = 0
@@ -3762,7 +3802,7 @@ def fmimse():
     xx/=2
     print(len(y))
     print(len(xx))
-    x = ((y[-1:0:-1]+xx[::-1])-21.2)*1000
+    x = ((y[-1:0:-1]+xx[::-1])-e_photon)*1000
     print(len(x))
     ha=a1.scatter(x,v1,c='r')
     hb=a2.scatter(x,v2,c='b')
@@ -5251,7 +5291,7 @@ def o_plot2(*e):
         climoff()
         if value1.get() == 'MDC fitted Data':
             try:
-                x = (fev-21.2)*1000
+                x = (fev-e_photon)*1000
                 # y = (fwhm*6.626*10**-34/2/3.1415926/(10**-10))**2/2/(9.11*10**-31)/(1.6*10**-19)*1000
             except:
                 print(r'Please Load MDC fitted file')
@@ -5289,7 +5329,7 @@ def o_plot2(*e):
                 a[0].set_ylabel('Binding Energy (meV)',
                                 font='Arial', fontsize=14)
                 a[0].tick_params(direction='in')
-                a[0].scatter(x, (epos-21.2)*1000, c='black', s=5)
+                a[0].scatter(x, (epos-e_photon)*1000, c='black', s=5)
 
                 a[1].set_xlabel(
                     r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
@@ -5301,7 +5341,7 @@ def o_plot2(*e):
                 st.put('Please load EDC fitted file')
         elif value1.get() == 'Real Part':
             try:
-                x = (fev-21.2)*1000
+                x = (fev-e_photon)*1000
                 y = pos
             except:
                 print('Please load MDC fitted file')
@@ -5339,7 +5379,7 @@ def o_plot2(*e):
             # a[1].set_xlim([-0.05,0.05])
         elif value1.get() == 'Imaginary Part':
             try:
-                tbe = (fev-21.2)*1000
+                tbe = (fev-e_photon)*1000
             except:
                 print(r'Please Load MDC fitted file')
                 st.put(r'Please Load MDC fitted file')
@@ -5378,7 +5418,7 @@ def o_plot2(*e):
             a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
 
-            x = (fev-21.2)*1000
+            x = (fev-e_photon)*1000
             y = fwhm
             b.plot(x, y, c='black', linestyle='-', marker='.')
             b.tick_params(direction='in')
@@ -5401,7 +5441,7 @@ def o_plot3(*e):
         value1.set('---Plot2---')
         fig.clear()
         try:
-            x = (fev-21.2)*1000
+            x = (fev-e_photon)*1000
             y = pos
         except:
             print('Please load MDC fitted file')
@@ -5413,7 +5453,7 @@ def o_plot3(*e):
                             np.float64(bb_offset.get()))
                 rx = x
                 ry = x-yy
-                tbe = (fev-21.2)*1000
+                tbe = (fev-e_photon)*1000
                 x = interp(tbe, be+np.float64(bb_offset.get()),
                            k*np.float64(bbk_offset.get()))
                 y = interp(x, k*np.float64(bbk_offset.get()),
@@ -5562,7 +5602,7 @@ def o_plot3(*e):
             try:
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be +
-                                   np.float64(bb_offset.get()))/1000+21.2, linewidth=0.3, c='red')
+                                   np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
             except:
                 bo.set_title('Data Plot with Pos w/o Bare Band',
                              font='Arial', fontsize=18)
@@ -5638,7 +5678,7 @@ def select_callback(eclick, erelease):
 
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     ta2, = a.plot(k*np.float64(bbk_offset.get()), (be +
-                                  np.float64(bb_offset.get()))/1000+21.2, linewidth=5, c='red')
+                                  np.float64(bb_offset.get()))/1000+e_photon, linewidth=5, c='red')
             f.show()
         else:
             try:
@@ -5665,7 +5705,7 @@ def select_callback(eclick, erelease):
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     ta2.remove()
                     ta2, = a.plot(k*np.float64(bbk_offset.get()), (be +
-                                  np.float64(bb_offset.get()))/1000+21.2, linewidth=0.3, c='red')
+                                  np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
             except:
                 pass
             f.show()
@@ -5696,7 +5736,7 @@ def select_callback(eclick, erelease):
             if value2.get() == 'Data Plot with Pos and Bare Band':
                 ta2.remove()
                 ta2, = a.plot(k*np.float64(bbk_offset.get()), (be +
-                              np.float64(bb_offset.get()))/1000+21.2, linewidth=0.3, c='red')
+                              np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
         except:
             pass
         f.show()
@@ -6004,7 +6044,7 @@ def exp(*e):
     if pflag == 2:
         f, a = plt.subplots(2, 1, dpi=150)
         if value1.get() == 'MDC fitted Data':
-            x = (fev-21.2)*1000
+            x = (fev-e_photon)*1000
 
             a[0].set_title('MDC Fitting Result', font='Arial', fontsize=18)
             a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
@@ -6026,7 +6066,7 @@ def exp(*e):
                 r'Position ($\frac{2\pi}{\AA}$', font='Arial', fontsize=14)
             a[0].set_ylabel('Binding Energy (meV))', font='Arial', fontsize=14)
             a[0].tick_params(direction='in')
-            a[0].scatter(x, (epos-21.2)*1000, c='black', s=5)
+            a[0].scatter(x, (epos-e_photon)*1000, c='black', s=5)
 
             a[1].set_xlabel(
                 r'Position ($\frac{2\pi}{\AA}$', font='Arial', fontsize=14)
@@ -6034,7 +6074,7 @@ def exp(*e):
             a[1].tick_params(direction='in')
             a[1].scatter(x, efwhm*1000, c='black', s=5)
         elif value1.get() == 'Real Part':
-            x = (fev-21.2)*1000
+            x = (fev-e_photon)*1000
             y = pos
             a[0].set_title('Real Part', font='Arial', fontsize=18)
             a[0].plot(rx, ry, c='black', linestyle='-', marker='.')
@@ -6059,7 +6099,7 @@ def exp(*e):
             # a[1].set_xlim([-0.05,0.05])
         elif value1.get() == 'Imaginary Part':
 
-            tbe = (fev-21.2)*1000
+            tbe = (fev-e_photon)*1000
 
             x = interp(tbe, be+np.float64(bb_offset.get()),
                        k*np.float64(bbk_offset.get()))
@@ -6088,7 +6128,7 @@ def exp(*e):
             a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
 
-            x = (fev-21.2)*1000
+            x = (fev-e_photon)*1000
             y = fwhm
             b.plot(x, y, c='black', linestyle='-', marker='.')
             b.tick_params(direction='in')
@@ -6096,7 +6136,7 @@ def exp(*e):
             b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
                          font='Arial', fontsize=14)
 
-            x = (fev-21.2)*1000
+            x = (fev-e_photon)*1000
             y = pos
             yy = interp(y, k*np.float64(bbk_offset.get()), be +
                         np.float64(bb_offset.get()))  # interp x into be,k set
@@ -6284,9 +6324,9 @@ def exp(*e):
             try:
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     a.plot(k*np.float64(bbk_offset.get()), (be +
-                           np.float64(bb_offset.get()))/1000+21.2, linewidth=0.3, c='red')
+                           np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
                     a0.plot(k*np.float64(bbk_offset.get()), (be +
-                            np.float64(bb_offset.get()))/1000+21.2, linewidth=0.3, c='red')
+                            np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
             except:
                 pass
             cursor = Cursor(a, useblit=True, color='red', linewidth=1)
@@ -6434,7 +6474,7 @@ def press(event):
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     tb2.remove()
                     tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be +
-                                   np.float64(bb_offset.get()))/1000+21.2, linewidth=0.3, c='red')
+                                   np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
             except:
                 pass
             out.draw()
@@ -6507,7 +6547,7 @@ def release(event):
                         pass
                     if value2.get() == 'Data Plot with Pos and Bare Band':
                         tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be +
-                                       np.float64(bb_offset.get()))/1000+21.2, linewidth=5, c='red')
+                                       np.float64(bb_offset.get()))/1000+e_photon, linewidth=5, c='red')
             else:
                 try:
                     if mp == 1:
@@ -6545,7 +6585,7 @@ def release(event):
                     if value2.get() == 'Data Plot with Pos and Bare Band':
                         tb2.remove()
                         tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be+np.float64(
-                            bb_offset.get()))/1000+21.2, linewidth=0.3, c='red')
+                            bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
                 except:
                     pass
             out.draw()
@@ -6756,16 +6796,21 @@ try:
         ev = f['ev']
         phi = f['phi']
         st = str(f['st'])
-        key = f['key']
         lst = f['lst']
-        print('Raw Data preloaded:\n\n')
-        print(st+'\n')
+        print('\nRaw Data preloaded:\n\n')
         if '.h5' in path:
             data = load_h5(path)
         elif '.json' in path:
             data = load_json(path)
         else:
             data = load_txt(path)
+        for _ in data.attrs.keys():
+            if _ != 'Description':
+                print(_,':', data.attrs[_])
+            else:
+                print(_,':', data.attrs[_].replace('\n','\n              '))
+        dvalue = [data.attrs[i] for i in data.attrs.keys()]
+        lensmode = dvalue[8]
         rdd = path
 except:
     print('No Raw Data preloaded')
@@ -6916,10 +6961,10 @@ info.pack()
 xscroll.config(command=info.xview)
 yscroll.config(command=info.yview)
 try:
-    info.config(state='normal')
-    info.insert(tk.END, st+'\n')
+    info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
+    info.insert(tk.END, '\n'+st+'\n')
     info.see(tk.END)
-    info.config(height=len(key)+2, width=max(lst), state='disabled')
+    info.config(state='disabled')
 except:
     pass
 
@@ -7163,6 +7208,21 @@ menu3 = tk.OptionMenu(plots, value2, *optionList2)
 menu3.grid(row=3, column=1)
 value2.trace('w', plot3)
 
+try:
+    if lensmode=='Transmission':
+        trans_plot()
+        menu1.config(state='disabled')
+        menu2.config(state='disabled')
+        menu3.config(state='disabled')
+        b_fit.config(state='disabled')
+    else:
+        menu1.config(state='normal')
+        menu2.config(state='normal')
+        menu3.config(state='normal')
+        b_fit.config(state='normal')
+except:
+    pass
+    
 bb_offset = tk.StringVar()
 bb_offset.set('0')
 bb_offset.trace_add('write', fbb_offset)
