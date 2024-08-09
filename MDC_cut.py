@@ -63,6 +63,11 @@ try:
 except ModuleNotFoundError:
     install('tqdm')
     import tqdm
+try:
+    import win32clipboard
+except ModuleNotFoundError:
+    install('pywin32')
+    import win32clipboard
 
 h = 6.626*10**-34
 m = 9.11*10**-31
@@ -265,8 +270,11 @@ def load_h5(path_to_file: str) -> xr.DataArray:
         LensMode += t_LensMode[i]
         Slit += t_Slit[i]
         aq += t_aq[i]
-        name += t_name[i]
-    for i in range(500):
+    for i in range(600):
+        try:
+            name += t_name[i]
+        except:
+            pass
         try:
             description += t_description[i]
         except:
@@ -305,7 +313,47 @@ def load_h5(path_to_file: str) -> xr.DataArray:
                                                                  })
     return data
 
+def g_emode():
+    global gfe,fe_in,b_emode,emf,v_fe
+    gfe=tk.Toplevel(g,bg='white')
+    gfe.title('Fermi Level')
+    fr=tk.Frame(gfe,bg='white')
+    fr.grid(row=0,column=0)
+    l_in = tk.Label(fr, text='Fermi Level (eV) : ', font=('Arial', 16, "bold"), bg='white')
+    l_in.grid(row=0,column=0)
+    fe_in = tk.Entry(fr, font=("Arial", 16, "bold"), width=10, textvariable=v_fe, bd=5)
+    fe_in.grid(row=0,column=1)
+    fr1 = tk.Frame(gfe,bg='white')
+    fr1.grid(row=1,column=0)
+    b1=tk.Button(fr1,text='Confirm',command=save_fe, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b1.grid(row=1,column=0)
+    gfe.update()
 
+def emode():
+    global gfe,fe_in,b_emode,emf,v_fe
+    try:
+        gfe.destroy()
+    except:
+        pass
+    if emf=='KE':
+        emf='BE'
+        b_emode.config(text='B.E.')
+        g_emode()
+    else:
+        emf='KE'
+        b_emode.config(text='K.E.')
+        g_emode()
+
+def save_fe():
+    global gfe,fe_in,vfe
+    try:
+        vfe=float(fe_in.get())
+        gfe.destroy()
+    except:
+        tk.messagebox.showwarning("Warning","Invalid Input")
+        gfe.destroy()
+        g_emode()
+    
 def rplot(f, canvas):
     """
     Plot the raw data on a given canvas.
@@ -325,7 +373,10 @@ def rplot(f, canvas):
     rcy = f.add_axes([0.82, 0.1, 0.12, 0.6])
     rcx.set_xticks([])
     rcy.set_yticks([])
-    tx, ty = np.meshgrid(phi, ev)
+    if emf=='KE':
+        tx, ty = np.meshgrid(phi, ev)
+    else:
+        tx, ty = np.meshgrid(phi, vfe-ev)
     tz = data.to_numpy()
     # h1 = a.scatter(tx,ty,c=tz,marker='o',s=0.9,cmap=value3.get());
     h0 = ao.pcolormesh(tx, ty, tz, cmap=value3.get())
@@ -333,31 +384,762 @@ def rplot(f, canvas):
     # a.set_title('Raw Data',font='Arial',fontsize=16)
     ao.set_title('Raw Data', font='Arial', fontsize=16)
     ao.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=12)
-    ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+    if emf=='KE':
+        ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+    else:
+        ao.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+        ao.invert_yaxis()
     xl = ao.get_xlim()
     yl = ao.get_ylim()
     # a.set_xticklabels(labels=a.get_xticklabels(),font='Arial',fontsize=10);
     # a.set_yticklabels(labels=a.get_yticklabels(),font='Arial',fontsize=10);
     canvas.draw()
 
-def trans_plot():
-    def job():
-        f=plt.figure(figsize=(15,9))
-        a1=f.add_subplot(211)
-        a2=f.add_subplot(212)
-        tx, ty = np.meshgrid(ev, phi)
-        tz = data.to_numpy().transpose()
-        a1.pcolormesh(tx,ty,tz,cmap='turbo')
-        a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
-        print(len(ev))
-        print(len(np.sum(tz,axis=0)))
-        a2.scatter(ev, np.sum(tz,axis=0), c='k', marker='o', s=0.9)
-        a2.set_xlabel('Kinetic Energy (eV)', font='Arial', fontsize=18)
-        a2.set_ylabel('Intensity (Counts)', font='Arial', fontsize=18)
-        plt.tight_layout()
-        plt.show()
-    threading.Thread(target=job).start()
+def cexcitation_h5(s:str):
+    if '.h5' in rdd:
+        with h5py.File(rdd, 'r+') as hf:
+            # Read the dataset
+            data = hf['Region']['ExcitationEnergy']['Value'][:]
+            print("Original:", data)
+            
+            # Prepare the new data
+            # s1 = b'BUF : 1.68E-6 mbar'
+            # s2 = b'0.50kV 100mA'
+            # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+            
+            # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
+            new_data = np.array([float(s)], dtype=float)  # Use vlen=str for variable-length strings
+            
+            # Delete the old dataset
+            del hf['Region']['ExcitationEnergy']['Value']
+            
+            # Create a new dataset with the same name but with the new data
+            hf.create_dataset('Region/ExcitationEnergy/Value', data=new_data, dtype=float)
+            
+            # Verify changes
+            modified_data = hf['Region']['ExcitationEnergy']['Value'][:]
+            print("Modified:", modified_data)
+
+def cexcitation_json(s:str):
+    if '.json' in rdd:
+        with open(rdd, 'r') as f:
+            data = json.load(f)
+            print("Original:", data['Region']['ExcitationEnergy']['Value'])
+        data['Region']['ExcitationEnergy']['Value'] = float(s)
+        with open(rdd, 'w') as f:
+            json.dump(data, f, indent=2)
+            print("Modified:", data['Region']['ExcitationEnergy']['Value'])
+
+def cexcitation_save_str():
+    s=t_cein.get('1.0',tk.END)
+    if s:
+        s = s.replace('\n\n\n\n\n', '')
+        s = s.replace('\n\n\n\n', '')
+        s = s.replace('\n\n\n', '')
+        s = s.replace('\n\n', '')
+        s = s.replace('\n', '')
+        if '.h5' in rdd:
+            cexcitation_h5(s)
+            data = load_h5(rdd)  # data save as xarray.DataArray format
+            pr_load(data, rdd)
+        elif '.json' in rdd:
+            cexcitation_json(s)
+            data = load_json(rdd)
+            pr_load(data, rdd)
+    gcestr.destroy()
+
+def cexcitation():
+    global gcestr,t_cein
+    tk.messagebox.showwarning("Warning","Floats Input Only")
+    gcestr=tk.Toplevel(g,bg='white')
+    gcestr.title('Excitation Energy')
+    fr=tk.Frame(gcestr,bg='white')
+    fr.grid(row=0,column=0)
+    t_cein = tk.Text(fr, height=1, width=60)
+    t_cein.grid(row=0,column=0)
+    try:
+        t_cein.insert(tk.END, str(e_photon))
+    except:
+        t_cein.insert(tk.END, '1000.0')
+    t_cein.config(font=('Arial', 16))
+    fr1 = tk.Frame(gcestr,bg='white')
+    fr1.grid(row=1,column=0)
+    b1=tk.Button(fr1,text='Confirm',command=cexcitation_save_str, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b1.grid(row=1,column=0)
+    b2=tk.Button(fr1,text='Cancel',command=gcestr.destroy, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b2.grid(row=1,column=1)
+    gcestr.update()
+
+def cname_h5(s:str):
+    if '.h5' in rdd:
+        with h5py.File(rdd, 'r+') as hf:
+            # Read the dataset
+            data = hf['Region']['Name'][:]
+            print("Original:", data)
+            
+            # Prepare the new data
+            # s1 = b'BUF : 1.68E-6 mbar'
+            # s2 = b'0.50kV 100mA'
+            # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+            
+            # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
+            new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+            
+            # Delete the old dataset
+            del hf['Region']['Name']
+            
+            # Create a new dataset with the same name but with the new data
+            hf.create_dataset('Region/Name', data=new_data, dtype=h5py.special_dtype(vlen=str))
+            
+            # Verify changes
+            modified_data = hf['Region']['Name'][:]
+            print("Modified:", modified_data)
+
+def cname_json(s:str):
+    if '.json' in rdd:
+        with open(rdd, 'r') as f:
+            data = json.load(f)
+            print("Original:", data['Region']['Name'])
+        data['Region']['Name'] = s
+        with open(rdd, 'w') as f:
+            json.dump(data, f, indent=2)
+            print("Modified:", data['Region']['Name'])
+            
+def cname_save_str():
+    s=t_cin.get('1.0',tk.END)
+    if s:
+        s = s.replace('\n\n\n\n\n', '')
+        s = s.replace('\n\n\n\n', '')
+        s = s.replace('\n\n\n', '')
+        s = s.replace('\n\n', '')
+        s = s.replace('\n', '')
+        if '.h5' in rdd:
+            cname_h5(s)
+            data = load_h5(rdd)  # data save as xarray.DataArray format
+            pr_load(data, rdd)
+        elif '.json' in rdd:
+            cname_json(s)
+            data = load_json(rdd)
+            pr_load(data, rdd)
+    gcstr.destroy()
     
+def cname():
+    global gcstr,t_cin
+    tk.messagebox.showwarning("Warning","English Only\nNo Chinese Characters allowed")
+    gcstr=tk.Toplevel(g,bg='white')
+    gcstr.title('Name')
+    fr=tk.Frame(gcstr,bg='white')
+    fr.grid(row=0,column=0)
+    t_cin = tk.Text(fr, height=1, width=60, bd=5, padx=10, pady=10)
+    t_cin.grid(row=0,column=0)
+    t_cin.insert(tk.END, name)
+    t_cin.config(font=('Arial', 20))
+    t_cin.focus_set()
+    fr1 = tk.Frame(gcstr,bg='white')
+    fr1.grid(row=1,column=0)
+    b1=tk.Button(fr1,text='Confirm',command=cname_save_str, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b1.grid(row=1,column=0)
+    b2=tk.Button(fr1,text='Cancel',command=gcstr.destroy, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b2.grid(row=1,column=1)
+    gcstr.update()
+
+def desc_h5(s:str):
+    if '.h5' in rdd:
+        with h5py.File(rdd, 'r+') as hf:
+            # Read the dataset
+            data = hf['Region']['Description'][:]
+            print("Original:", data)
+            
+            # Prepare the new data
+            # s1 = b'BUF : 1.68E-6 mbar'
+            # s2 = b'0.50kV 100mA'
+            # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+            
+            # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
+            new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+            
+            # Delete the old dataset
+            del hf['Region']['Description']
+            
+            # Create a new dataset with the same name but with the new data
+            hf.create_dataset('Region/Description', data=new_data, dtype=h5py.special_dtype(vlen=str))
+            
+            # Verify changes
+            modified_data = hf['Region']['Description'][:]
+            print("Modified:", modified_data)
+
+def desc_json(s:str):
+    if '.json' in rdd:
+        with open(rdd, 'r') as f:
+            data = json.load(f)
+            print("Original:", data['Region']['Description'])
+        data['Region']['Description'] = s
+        with open(rdd, 'w') as f:
+            json.dump(data, f, indent=2)
+            print("Modified:", data['Region']['Description'])
+            
+def save_str():
+    s=t_in.get('1.0',tk.END)
+    if s:
+        s = s.replace('\n\n\n\n\n', '\n')
+        s = s.replace('\n\n\n\n', '\n')
+        s = s.replace('\n\n\n', '\n')
+        s = s.replace('\n\n', '\n')
+        if '.h5' in rdd:
+            desc_h5(s)
+            data = load_h5(rdd)  # data save as xarray.DataArray format
+            pr_load(data, rdd)
+        elif '.json' in rdd:
+            desc_json(s)
+            data = load_json(rdd)
+            pr_load(data, rdd)
+    gstr.destroy()
+    
+def desc():
+    global gstr,t_in
+    tk.messagebox.showwarning("Warning","English Only\nNo Chinese Characters allowed")
+    gstr=tk.Toplevel(g,bg='white')
+    gstr.title('Description')
+    fr=tk.Frame(gstr,bg='white')
+    fr.grid(row=0,column=0)
+    t_in = tk.Text(fr, height=10, width=50, bd=5, padx=10, pady=10)
+    t_in.grid(row=0,column=0)
+    t_in.insert(tk.END, description)
+    t_in.config(font=('Arial', 16))
+    t_in.focus_set()
+    fr1 = tk.Frame(gstr,bg='white')
+    fr1.grid(row=1,column=0)
+    b1=tk.Button(fr1,text='Confirm',command=save_str, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b1.grid(row=1,column=0)
+    b2=tk.Button(fr1,text='Cancel',command=gstr.destroy, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b2.grid(row=1,column=1)
+    gstr.update()
+
+def smooth(x,l=3):
+    for i in range(len(x)):
+        if i>=l//2 and i+1<len(x)-l//2:
+            x[i]=np.mean(x[i-l//2:i+l//2])
+    return x
+
+def copy_to_clipboard():
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    image = Image.open(buf)
+    output = io.BytesIO()
+    
+    image.convert("RGB").save(output, "BMP")
+    data = output.getvalue()[14:]
+    output.close()
+    send_to_clipboard(win32clipboard.CF_DIB, data)
+    
+def send_to_clipboard(clip_type, data):
+    win32clipboard.OpenClipboard()
+    win32clipboard.EmptyClipboard()
+    win32clipboard.SetClipboardData(clip_type, data)
+    win32clipboard.CloseClipboard()
+
+class spectrogram:
+    
+    def __init__(self, g, data, ev, phi, e_photon, lensmode, rdd, name, cmap, tst, lst) -> None:
+        self.g = g
+        self.tp_cf = True
+        self.data = data
+        self.ev = ev
+        self.phi = phi
+        self.e_photon = e_photon
+        self.lensmode = lensmode
+        self.rdd = rdd
+        self.name = name
+        self.cmap = cmap
+        self.tst = tst
+        self.lst = lst
+        self.x = ev
+        self.y = np.sum(data.to_numpy().transpose(),axis=0)
+        self.s_exp=self.name+'.txt'
+        self.s_exp_casa=self.name+'_Casa.txt'
+        self.s_yl='Intensity (Counts)'
+        self.type='raw'
+        
+    def select_all(self, event):
+        event.widget.tag_add(tk.SEL, "1.0", tk.END)
+        event.widget.mark_set(tk.INSERT, "1.0")
+        event.widget.see(tk.INSERT)
+        return 'break'
+    
+    def __copy_to_clipboard(self):
+        buf1 = io.BytesIO()
+        buf2 = io.BytesIO()
+        self.rpf.savefig(buf1, format='png')
+        self.tpf.savefig(buf2, format='png')
+        buf1.seek(0)
+        buf2.seek(0)
+        image1 = Image.open(buf1)
+        Image2 = Image.open(buf2)
+        image = Image.new('RGB', (image1.width, image1.height + Image2.height))
+        image.paste(image1, (0, 0))
+        image.paste(Image2, (0, image1.height))
+        output = io.BytesIO()
+        
+        image.convert("RGB").save(output, "BMP")
+        data = output.getvalue()[14:]
+        output.close()
+        send_to_clipboard(win32clipboard.CF_DIB, data)
+        
+        # image.save(output, format='PNG')
+        # data = output.getvalue()[14:]
+        # output.close()
+
+        # self.g.clipboard_clear()
+        # self.g.clipboard_append(data)
+        # self.g.update()  # now it stays on the clipboard after the window is closed
+    
+    def setdata(self, x, y, dtype='raw', unit='Counts'):
+        self.x=x
+        self.y=y
+        self.type=dtype
+        if len(x)!=len(y):
+            print('len(x):',len(x),'len(y):',len(y))
+            raise ValueError('The length of x and y must be the same.')
+        if dtype=='raw':
+            self.s_yl='Intensity (Counts)'
+            self.s_exp=self.name+'.txt'
+            self.s_exp_casa=self.name+'_Casa.txt'
+        else:
+            self.s_yl='Intensity ('+unit+')'
+            self.s_exp=self.name+'_'+dtype+'.txt'
+            self.s_exp_casa=self.name+'_'+dtype+'_Casa.txt'
+        
+    def plot(self):
+        # global tpf,tpo,rpf,rpo,l_cx,l_cy,l_dy
+        self.tpg = tk.Toplevel(self.g, bg='white')
+        self.tpg.title('Spectrogram: '+self.name)
+        
+        fr_fig=tk.Frame(self.tpg,bg='white',bd=0)
+        fr_fig.grid(row=0,column=0)
+        
+        self.rpf = Figure(figsize=(15, 4.5), layout='constrained')
+        self.rpo = tkagg.FigureCanvasTkAgg(self.rpf, master=fr_fig)
+        self.rpo.get_tk_widget().grid(row=0, column=0)
+        self.rpo.mpl_connect('motion_notify_event', self.__tp_move_)
+        self.rpo.mpl_connect('button_press_event', self.__tp_press_)
+        self.rpo.mpl_connect('button_release_event', self.__tp_release_)
+        
+        self.tpf = Figure(figsize=(15, 4.5), layout='constrained')
+        self.tpo = tkagg.FigureCanvasTkAgg(self.tpf, master=fr_fig)
+        self.tpo.get_tk_widget().grid(row=1, column=0)
+        self.tpo.mpl_connect('motion_notify_event', self.__tp_move)
+        self.tpo.mpl_connect('button_press_event', self.__tp_press)
+        self.tpo.mpl_connect('button_release_event', self.__tp_release)
+        
+        fr_info=tk.Frame(self.tpg,bg='white',bd=10)
+        fr_info.grid(row=0,column=1)
+        
+        self.l_path = tk.Text(fr_info, wrap='word', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled',height=3,width=30)
+        self.l_path.grid(row=0, column=0)
+        self.l_path.config(width=max(self.lst)+1, state='normal')
+        self.l_path.delete(1.0, tk.END)
+        self.l_path.insert(tk.END,self.rdd)
+        self.l_path.see(1.0)
+        self.l_path.config(state='disabled')
+        
+        self.info = tk.Text(fr_info, wrap='none', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled', height=10, width=30)
+        self.info.grid(row=1, column=0)
+        self.info.bind("<FocusIn>", self.select_all)
+        self.info.config(height=len(self.tst.split('\n')), width=max(self.lst)+1, state='normal')
+        self.info.insert(tk.END, self.tst)
+        self.info.see(tk.END)
+        self.info.config(state='disabled')
+        
+        self.l_cx=tk.Label(fr_info,text='%9s'%'Energy : ',fg='green',font=('Arial',18),bg='white',width=20,anchor='w')
+        self.l_cx.grid(row=2,column=0)
+        
+        self.l_cy=tk.Label(fr_info,text='%10s'%'Cursor : ',font=('Arial',18),bg='white',width=20,anchor='w')
+        self.l_cy.grid(row=3,column=0)
+        
+        self.l_dy=tk.Label(fr_info,text='%11s'%'Data : ',fg='red',font=('Arial',18),bg='white',width=20,anchor='w')
+        self.l_dy.grid(row=4,column=0)
+        
+        self.b_exp = tk.Button(fr_info, text='Export Raw Data ( .txt )', command=self.__export, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
+        self.b_exp.grid(row=5, column=0)
+        
+        self.b_exp_casa = tk.Button(fr_info, text='Export Raw Data ( _Casa.txt )', command=self.__export_casa, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
+        self.b_exp_casa.grid(row=6, column=0)
+        
+        self.copy_button = tk.Button(fr_info, text="Copy Image to Clipboard", width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5, command=self.__copy_to_clipboard)
+        self.copy_button.grid(row=7, column=0)
+        
+        self.__trans_plot_job()
+        # self.tpg.update()
+        self.tpg.mainloop()
+    
+    def __export(self):
+        os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+        x,y=self.x,self.y
+        f = open(self.s_exp, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
+        f.write('Kinetic Energy'+'\t'+'Intensity'+'\n')
+        for i in range(len(x)):
+            f.write('%-6e' % x[i]+'\t'+'%-6e' % y[i]+'\n')
+        f.close()
+    
+    def __export_casa(self):
+        os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+        x,y=self.e_photon-self.x,self.y
+        f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
+        f.write('#Wave Vector'+'\t'+'#Intensity'+'\n')
+        for i in range(len(x)):
+            f.write('%-6e' % x[i]+'\t'+'%-6e' % y[i]+'\n')
+        f.close()
+    
+    def __tp_move_(self, event):
+        # global rpf, rpo, tpf, tpo, tr_a1, tr_a2, xx2, yy2, aa1, aa2, cur, l_cx, l_cy, l_dy
+        self.rpf.canvas.get_tk_widget().config(cursor="")
+        if event.inaxes:
+            self.rpf.canvas.get_tk_widget().config(cursor="tcross")
+            self.out = False
+            try:
+                self.xx2.remove()
+                self.yy2.remove()
+                self.cur.remove()
+                # self.aa1.remove()
+                self.aa2.remove()
+            except:
+                pass
+            if self.lensmode == 'Transmission':
+                unit=' mm'
+            else:
+                unit=' deg'
+            cxdata = event.xdata
+            cydata = event.ydata
+            self.tx = cxdata
+            xf = (cxdata > self.oxl[0] and cxdata < self.oxl[1])
+            yf = (cydata > self.tr_a1.get_ylim()[0] and cydata < self.tr_a1.get_ylim()[1])
+            if xf and yf:
+                tz = self.data.to_numpy().transpose()
+                x = self.x
+                y = self.y
+                yy = self.phi
+                xi = 0
+                yi = 0
+                for i,v in enumerate(x):
+                    if abs(v-cxdata) <= (self.ev[1]-self.ev[0])/2:
+                        xi=i
+                
+                for i,v in enumerate(yy):
+                    if abs(v-cydata) <= (self.phi[1]-self.phi[0])/2:
+                        yi=i
+                try:
+                    self.l_cx.config(text='%9s%8.3f%3s'%('Energy : ',cxdata,' eV'))
+                    self.l_cy.config(text='%10s%11.4g%4s'%('Cursor : ',cydata,unit))
+                    self.l_dy.config(text='%11s%11.4g'%('Data : ',tz[yi][xi]))
+                except:
+                    pass
+                # self.xx1.set_data([cxdata,cxdata], self.oy1)
+                self.xx2=self.tr_a2.axvline(cxdata,color='g')
+                self.yy2=self.tr_a2.axhline(-max(y),color='grey')
+                x,y=x[xi],y[xi]
+                self.cur=self.tr_a2.scatter(x,y,c='r',marker='o',s=30)
+                self.tr_a2.set_ylim(self.oy2)
+                if not self.tp_cf:
+                    # aa1=self.tr_a1.fill_between([ox,cxdata],oy1[0],oy1[1],color='g',alpha=0.2)
+                    self.aa2=self.tr_a2.fill_between([self.ox,cxdata],self.oy2[0],self.oy2[1],color='g',alpha=0.2)
+                    self.tr_a2.set_ylim(self.oy2)
+        else:
+            try:
+                self.xx2.remove()
+                self.yy2.remove()
+                self.cur.remove()
+                # self.xx2.remove()
+                # self.yy2.remove()
+                # self.cur.remove()
+                # self.aa1.remove()
+                # self.aa2.remove()
+            except:
+                pass
+        # self.rpo.draw()
+        self.tpo.draw()
+
+    def __tp_press_(self, event):
+        # global tp_cf, rpf, rpo ,tpf, tpo , tr_a1, tr_a2 , x1 , x2 , ox, aa1, aa2
+        if event.button == 1 and self.tp_cf:
+            self.tp_cf = False
+            # self.x1 = self.tr_a1.axvline(event.xdata, color='g')
+            # self.x1.set_data([event.xdata,event.xdata], self.oy1)
+            self.x2 = self.tr_a2.axvline(event.xdata, color='g')
+            self.tr_a2.set_ylim(self.oy2)
+            self.ox=event.xdata
+
+        elif event.button == 3:
+            self.rpf.canvas.get_tk_widget().config(cursor="watch")
+            self.tp_cf = True
+            self.__re_tr_a1_plot(self.oxl[0],self.oxl[1])
+            # self.tr_a1.set_xlim(self.oxl)
+            # self.tr_a2.set_xlim(self.oxl)
+            self.__tp_a2_plot(self.oxl[0],self.oxl[1])
+            self.rpo.draw()
+            self.rpf.canvas.get_tk_widget().config(cursor="tcross")
+        self.tpo.draw()
+        
+
+    def __tp_release_(self, event):
+        # global tp_cf, rpf, rpo ,tpf, tpo , tr_a1, tr_a2, x1, x2 , ox, aa1, aa2
+        if event.button == 1 and not self.tp_cf:
+            self.rpf.canvas.get_tk_widget().config(cursor="watch")
+            self.tp_cf = True
+            try:
+                # self.x1.remove()
+                # self.x1.set_data([],[])
+                self.x2.remove()
+                # self.aa1.remove()
+                self.aa2.remove()
+            except:
+                pass
+            if self.out == False:
+                self.__re_tr_a1_plot(sorted([self.ox, self.tx])[0],sorted([self.ox, self.tx])[1])
+                # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
+                # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
+                self.__tp_a2_plot(sorted([self.ox, self.tx])[0],sorted([self.ox, self.tx])[1])
+            else:
+                if self.tx >= self.ox:
+                    self.__re_tr_a1_plot(self.ox,self.tr_a2.get_xlim()[1])
+                    # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
+                    # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
+                    self.__tp_a2_plot(self.ox,self.tr_a2.get_xlim()[1])
+                elif self.tx <= self.ox:
+                    self.__re_tr_a1_plot(self.tr_a2.get_xlim()[0],self.ox)
+                    # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
+                    # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
+                    self.__tp_a2_plot(self.tr_a2.get_xlim()[0],self.ox)
+            self.rpo.draw()
+            self.tpo.draw()
+            self.rpf.canvas.get_tk_widget().config(cursor="tcross")
+        
+        
+    def __tp_move(self, event):
+        # global tpf, tpo, tr_a1, tr_a2, tpf, xx2, yy2, aa1, aa2, cur, l_cx, l_cy, l_dy
+        self.tpf.canvas.get_tk_widget().config(cursor="")
+        if event.inaxes:
+            self.out = False
+            try:
+                self.xx2.remove()
+                self.yy2.remove()
+                self.cur.remove()
+                # self.aa1.remove()
+                self.aa2.remove()
+            except:
+                pass
+            self.tpf.canvas.get_tk_widget().config(cursor="tcross")
+            cxdata = event.xdata
+            cydata = event.ydata
+            self.tx = cxdata
+            xf = (cxdata >= self.oxl[0] and cxdata <= self.oxl[1])
+            yf = (cydata >= self.tr_a2.get_ylim()[0] and cydata <= self.tr_a2.get_ylim()[1])
+            if xf and yf:
+                y = self.y
+                x = self.x
+                xi = 0
+                for i,v in enumerate(x):
+                    if abs(v-cxdata) <= (self.ev[1]-self.ev[0])/2:
+                        xi=i
+                x = x[xi]
+                y = y[xi]
+                try:
+                    self.l_cx.config(text='%9s%8.3f%3s'%('Energy : ',cxdata,' eV'))
+                    self.l_cy.config(text='%10s%11.4g'%('Cursor : ',cydata))
+                    self.l_dy.config(text='%11s%11.4g'%('Data : ',y))
+                except:
+                    pass
+                self.xx2=self.tr_a2.axvline(cxdata,color='g')
+                self.yy2=self.tr_a2.axhline(cydata,color='grey')
+                self.cur=self.tr_a2.scatter(x,y,c='r',marker='o',s=30)
+                self.tr_a2.set_ylim(self.oy2)
+                if not self.tp_cf:
+                    # self.aa1=self.tr_a1.fill_between([self.ox,cxdata],self.oy1[0],self.oy1[1],color='g',alpha=0.2)
+                    self.aa2=self.tr_a2.fill_between([self.ox,cxdata],self.oy2[0],self.oy2[1],color='g',alpha=0.2)
+                    self.tr_a2.set_ylim(self.oy2)
+        else:
+            try:
+                self.xx2.remove()
+                self.yy2.remove()
+                self.cur.remove()
+                # self.xx2.remove()
+                # self.yy2.remove()
+                # self.cur.remove()
+                # self.aa1.remove()
+                # self.aa2.remove()
+            except:
+                pass
+        # self.rpo.draw()
+        self.tpo.draw()
+
+
+    def __tp_press(self, event):
+        # global tp_cf, rpf, rpo ,tpf, tpo , tr_a1, tr_a2 , x1 , x2 , ox, aa1, aa2
+        if event.button == 1 and self.tp_cf:
+            self.tp_cf = False
+            # self.x1 = self.tr_a1.axvline(event.xdata, color='g')
+            self.x2 = self.tr_a2.axvline(event.xdata, color='g')
+            self.tr_a2.set_ylim(self.oy2)
+            self.ox=event.xdata
+
+        elif event.button == 3:
+            self.tpf.canvas.get_tk_widget().config(cursor="watch")
+            self.tp_cf = True
+            self.__re_tr_a1_plot(self.oxl[0],self.oxl[1])
+            # self.tr_a1.set_xlim(self.oxl)
+            # self.tr_a2.set_xlim(self.oxl)
+            self.__tp_a2_plot(self.oxl[0],self.oxl[1])
+            self.rpo.draw()
+            self.tpf.canvas.get_tk_widget().config(cursor="tcross")
+        self.tpo.draw()
+        
+        
+    def __tp_release(self, event):
+        # global tp_cf, rpf, rpo ,tpf, tpo , tr_a1, tr_a2, x1, x2 , ox, aa1, aa2
+        if event.button == 1 and not self.tp_cf:
+            self.tpf.canvas.get_tk_widget().config(cursor="watch")
+            self.tp_cf = True
+            try:
+                # self.x1.remove()
+                self.x2.remove()
+                # self.aa1.remove()
+                self.aa2.remove()
+            except:
+                pass
+            if self.out == False:
+                self.__re_tr_a1_plot(sorted([self.ox, self.tx])[0],sorted([self.ox, self.tx])[1])
+                # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
+                # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
+                self.__tp_a2_plot(sorted([self.ox, self.tx])[0],sorted([self.ox, self.tx])[1])
+            else:
+                if self.tx >= self.ox:
+                    self.__re_tr_a1_plot(self.ox,self.tr_a2.get_xlim()[1])
+                    # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
+                    # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
+                    self.__tp_a2_plot(self.ox,self.tr_a2.get_xlim()[1])
+                elif self.tx <= self.ox:
+                    self.__re_tr_a1_plot(self.tr_a2.get_xlim()[0],self.ox)
+                    # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
+                    # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
+                    self.__tp_a2_plot(self.tr_a2.get_xlim()[0],self.ox)
+                
+            self.rpo.draw()
+            self.tpo.draw()
+            self.tpf.canvas.get_tk_widget().config(cursor="tcross")
+            
+            
+    def __re_tr_a1_plot(self,xx1,xx2):
+        z = self.data.to_numpy().transpose()
+        # self.tr_a1.scatter(self.ev, np.sum(tz,axis=0), c='k', marker='o', s=0.9)
+        x = self.ev
+        xi=[]
+        for i,v in enumerate(x):
+            if v>=xx1 and v<=xx2:
+                xi.append(i)
+        x = x[xi]
+        tx, ty = np.meshgrid(x, self.phi)
+        tz = tx*0
+        tz[0:, 0:] = z[0:, xi]
+        self.tr_a1.clear()
+        self.tr_a1.pcolormesh(tx,ty,tz,cmap=self.cmap)
+        if self.lensmode=='Transmission':
+            self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
+        else:
+            self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
+        self.tr_a1.set_xticks([])
+        self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=14)
+        
+        
+    def __tp_a1_plot(self):
+        # global tr_a2, oy2
+        tx, ty = np.meshgrid(self.ev, self.phi)
+        tz = self.data.to_numpy().transpose()
+        # self.tr_a1.scatter(self.ev, np.sum(tz,axis=0), c='k', marker='o', s=0.9)
+        self.tr_a1.pcolormesh(tx,ty,tz,cmap=self.cmap)
+        if self.lensmode=='Transmission':
+            self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
+        else:
+            self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
+        self.tr_a1.set_xticks([])
+        self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=14)
+        # self.tr_a1.set_xlim(self.tr_a1.get_xlim())
+        # self.x1, = self.tr_a1.plot([],[],'g-')
+        # self.xx1, = self.tr_a1.plot([],[],'g-')
+        self.oxl=self.tr_a1.get_xlim()
+        self.oy1=self.tr_a1.get_ylim()
+    
+    def __tp_a2_plot(self,xx1,xx2):
+        # global tr_a2, oy2
+        y = self.y
+        x = self.x
+        xi=[]
+        for i,v in enumerate(x):
+            if v>=xx1 and v<=xx2:
+                xi.append(i)
+        x = x[xi]
+        y = y[xi]
+        self.tr_a2.clear()
+        if self.type=='fd':
+            self.tr_a2.plot(x,y, color='k')
+        else:
+            if abs(xx1-xx2)>abs(self.oxl[1]-self.oxl[0])/2:
+                self.tr_a2.scatter(x,y, c='k', marker='o', s=0.9)
+            elif abs(xx1-xx2)>abs(self.oxl[1]-self.oxl[0])/4:
+                self.tr_a2.scatter(x,y, c='k', marker='o', s=10)
+            else:
+                self.tr_a2.scatter(x,y, c='k', marker='o', s=30)
+        self.tr_a2.ticklabel_format(style='plain', axis='y', scilimits=(0,0))
+        self.tr_a2.set_xlim(self.tr_a1.get_xlim())
+        self.tr_a2.set_xlabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+        self.tr_a2.set_ylabel(self.s_yl, font='Arial', fontsize=16)
+        self.tr_a2.set_xticklabels(labels=self.tr_a2.get_xticklabels(), font='Arial', fontsize=14)
+        self.tr_a2.set_yticklabels(labels=self.tr_a2.get_yticklabels(), font='Arial', fontsize=14)
+        self.oy2=self.tr_a2.get_ylim()
+
+    def __trans_plot_job(self):
+        # global rpf,rpo,tpf,tpo,tr_a1,tr_a2,oxl,oy1
+        self.tr_a1=self.rpf.add_axes([0.1, 0.05, 0.85, 0.9])
+        self.tr_a2=self.tpf.add_axes([0.1, 0.15, 0.85, 0.82])
+        self.__tp_a1_plot()
+        self.__tp_a2_plot(self.oxl[0],self.oxl[1])
+        # self.rpf.tight_layout()
+        # self.tpf.tight_layout()
+        self.rpo.draw()
+        self.tpo.draw()
+            
+def trans_plot():
+    global gtp
+    gtp=tk.Toplevel(g)
+    gtp.title('Spectrogram')
+    b_raw = tk.Button(gtp, text='Raw', command=raw_plot, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b_raw.grid(row=0, column=0)
+    b_smooth = tk.Button(gtp, text='Smooth', command=smooth_plot, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b_smooth.grid(row=0, column=1)
+    b_fd = tk.Button(gtp, text='First Derivative', command=fd_plot, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b_fd.grid(row=0, column=2)
+    gtp.update()
+
+def raw_plot():
+    gtp.destroy()
+    cmap=value3.get()
+    s=spectrogram(g, data, ev, phi, e_photon, lensmode, rdd, name, cmap, tst, lst)
+    s.plot()
+
+def smooth_plot():
+    gtp.destroy()
+    cmap=value3.get()
+    y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
+    s=spectrogram(g, data, ev, phi, e_photon, lensmode, rdd, name, cmap, tst, lst)
+    s.setdata(ev, y, dtype='smooth', unit='Counts')
+    s.plot()
+
+def fd_plot():
+    gtp.destroy()
+    cmap=value3.get()
+    y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
+    s=spectrogram(g, data, ev, phi, e_photon, lensmode, rdd, name, cmap, tst, lst)
+    s.setdata(ev[0:-1]+(ev[1]-ev[0])/2, np.diff(y)/np.diff(ev), dtype='fd', unit='dN/dE')
+    s.plot()
 
 def o_cal(*e):
     """
@@ -405,7 +1187,7 @@ def cal(*e):
 
 
 def pr_load(data, path):
-    global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon
+    global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst
     dvalue = [data.attrs[i] for i in data.attrs.keys()]
     st=''
     lst=[]
@@ -415,16 +1197,26 @@ def pr_load(data, path):
             lst.append(len(str(_)+' : '+str(data.attrs[_])))
             print(_,':', data.attrs[_])
         else:
-            t=str(data.attrs[_]).split('\n')
-            st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                         ')+'\n'
+            ts=str(data.attrs[_])
+            ts=ts.replace('\n\n\n','\n')
+            ts=ts.replace('\n\n','\n')
+            t=ts.split('\n')
+            st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                     ')
+            # st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                         ')
             lst.append(len(' : '+t[0]))
             for i in range(1,len(t)):
                 lst.append(len('              '+t[i]))
             print(_,':', data.attrs[_].replace('\n','\n              '))
     print()
+    tst=st
     # info.config(text=st,justify='left')
+    l_path.config(width=max(lst), state='normal')
+    l_path.delete(1.0, tk.END)
+    l_path.insert(tk.END,path)
+    l_path.see(1.0)
+    l_path.config(state='disabled')
     info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
-    info.insert(tk.END, st+'\n')
+    info.insert(tk.END, '\n'+st+'\n')
     info.see(tk.END)
     info.config(state='disabled')
     global ev, phi
@@ -434,16 +1226,22 @@ def pr_load(data, path):
     name=dvalue[0]
     e_photon=np.float64(dvalue[3].split(' ')[0])
     lensmode=dvalue[8]
+    description=dvalue[-1]
+    description=description.replace('\n\n\n\n\n','\n')
+    description=description.replace('\n\n\n\n','\n')
+    description=description.replace('\n\n\n','\n')
+    description=description.replace('\n\n','\n')
     if lensmode=='Transmission':
-        trans_plot()
         menu1.config(state='disabled')
         menu2.config(state='disabled')
         menu3.config(state='disabled')
+        in_fit.config(state='disabled')
         b_fit.config(state='disabled')
     else:
         menu1.config(state='normal')
         menu2.config(state='normal')
         menu3.config(state='normal')
+        in_fit.config(state='normal')
         b_fit.config(state='normal')
     os.chdir(cdir)
     np.savez('rd', path=path, name=name, ev=ev,
@@ -459,14 +1257,27 @@ def o_load():
         ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     if len(tpath) > 2:
+        b_name.config(state='normal')
+        b_excitation.config(state='normal')
+        b_desc.config(state='normal')
         rdd = tpath
         fpr = 0
     else:
+        b_name.config(state='disable')
+        b_excitation.config(state='disable')
+        b_desc.config(state='disable')
         rdd = path
     limg.config(image=img[np.random.randint(len(img))])
     if '.h5' in tpath:
         data = load_h5(tpath)  # data save as xarray.DataArray format
         pr_load(data, tpath)
+        tname = tpath.split('/')
+        tname = tname[-1].split('#id#')[0]
+        print(tname)
+        if tname != name:
+            print('name need correction')
+        else:
+            print('name correct')
         st.put('Done')
     elif '.json' in tpath:
         data = load_json(tpath)
@@ -604,6 +1415,10 @@ def loadmfit_re():
         t_pos = []
         t_kmax = []
         t_kmin = []
+        smfi = []
+        skmin = []
+        skmax = []
+        smfp = [1 for i in range(len(ev))]
         os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
         fc = open('rev_'+file.split('/')[-1], 'w', encoding='utf-8')
         ff = open(name+'_mdc_fitted_raw_data.txt', 'w',
@@ -967,6 +1782,8 @@ def loadmfit_():
                             tkmax = tkk[tpi]+(float(tkmax) -
                                               (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
                             tpi = int((float(tkmin)-tkk[0])/d)
+                            if tpi > 492:
+                                tpi = 492
                             tkmin = tkk[tpi]+(float(tkmin) -
                                               (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
 
@@ -1031,6 +1848,8 @@ def loadmfit_():
                             tkmax = tkk[tpi]+(float(tkmax) -
                                               (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
                             tpi = int((float(tkmin)-tkk[0])/d)
+                            if tpi > 492:
+                                tpi = 492
                             tkmin = tkk[tpi]+(float(tkmin) -
                                               (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
 
@@ -2483,7 +3302,7 @@ def feend():
     eedydata.grid(row=0, column=1)
 
     bsave = tk.Button(master=eendg, text='Save Fitted Data', command=saveefit,
-                      width=30, height=1, font={'Arial', 18, "bold"}, bg='white', bd=10)
+                      width=30, height=1, font=('Arial', 14, "bold"), bg='white', bd=10)
     bsave.grid(row=1, column=0)
 
     eendg.update()
@@ -2849,7 +3668,7 @@ def ejob():     # MDC Fitting GUI
     egg.title('EDC Lorentz Fit')
     est = queue.Queue(maxsize=0)
     estate = tk.Label(egg, text='', font=(
-        "Arial", 20, "bold"), bg="white", fg="black")
+        "Arial", 14, "bold"), bg="white", fg="black")
     estate.grid(row=0, column=0)
 
     fr = tk.Frame(master=egg, bg='white')
@@ -2857,10 +3676,10 @@ def ejob():     # MDC Fitting GUI
     frind = tk.Frame(master=fr, bg='white')
     frind.grid(row=0, column=0)
     elind = tk.Button(frind, text='<<', command=eflind, width=10,
-                      height=5, font={'Arial', 50, "bold"}, bg='white')
+                      height=5, font=('Arial', 12, "bold"), bg='white')
     elind.grid(row=0, column=0)
     erind = tk.Button(frind, text='>>', command=efrind, width=10,
-                      height=5, font={'Arial', 50, "bold"}, bg='white')
+                      height=5, font=('Arial', 12, "bold"), bg='white')
     erind.grid(row=0, column=2)
 
     efiti = tk.IntVar()
@@ -2920,10 +3739,10 @@ def ejob():     # MDC Fitting GUI
     froperind = tk.Frame(master=frpara00, bd=5, bg='white')
     froperind.grid(row=1, column=0)
     ebcgl2 = tk.Button(froperind, text='Start Add 2 Peaks', command=fecgl2,
-                       width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
+                       width=30, height=1, font=('Arial', 16, "bold"), bg='white')
     ebcgl2.grid(row=0, column=0)
     ebrmv = tk.Button(froperind, text='Start Remove', command=fermv,
-                      width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
+                      width=30, height=1, font=('Arial', 16, "bold"), bg='white')
     ebrmv.grid(row=0, column=1)
 
     frwr = tk.Frame(master=froperind, bd=5, bg='white')
@@ -2937,13 +3756,13 @@ def ejob():     # MDC Fitting GUI
     ewf1 = tk.StringVar()
     ewf1.set('0')
     ewf1.trace_add('write', fewf1)
-    ein_w1 = tk.Entry(frwr, font=("Arial", 10, "bold"),
+    ein_w1 = tk.Entry(frwr, font=("Arial", 12, "bold"),
                       width=7, textvariable=ewf1, bd=5)
     ein_w1.grid(row=1, column=0)
     ewf2 = tk.StringVar()
     ewf2.set('0')
     ewf2.trace_add('write', fewf2)
-    ein_w2 = tk.Entry(frwr, font=("Arial", 10, "bold"),
+    ein_w2 = tk.Entry(frwr, font=("Arial", 12, "bold"),
                       width=7, textvariable=ewf2, bd=5)
     ein_w2.grid(row=1, column=2)
 
@@ -2958,24 +3777,24 @@ def ejob():     # MDC Fitting GUI
     eaf1 = tk.StringVar()
     eaf1.set('0')
     eaf1.trace_add('write', feaf1)
-    ein_a1 = tk.Entry(frar, font=("Arial", 10, "bold"),
+    ein_a1 = tk.Entry(frar, font=("Arial", 12, "bold"),
                       width=7, textvariable=eaf1, bd=5)
     ein_a1.grid(row=1, column=0)
     eaf2 = tk.StringVar()
     eaf2.set('0')
     eaf2.trace_add('write', feaf2)
-    ein_a2 = tk.Entry(frar, font=("Arial", 10, "bold"),
+    ein_a2 = tk.Entry(frar, font=("Arial", 12, "bold"),
                       width=7, textvariable=eaf2, bd=5)
     ein_a2.grid(row=1, column=2)
 
     frout = tk.Frame(master=egg, bd=5, bg='white')
     frout.grid(row=2, column=0)
     bfall = tk.Button(frout, text='Fit All', command=fefall,
-                      width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
+                      width=30, height=1, font=('Arial', 14, "bold"), bg='white')
     bfall.grid(row=0, column=0)
     flermv = -1
     bend = tk.Button(frout, text='Finish', command=feend, width=30,
-                     height=1, font={'Arial', 18, "bold"}, bg='white')
+                     height=1, font=('Arial', 16, "bold"), bg='white')
     bend.grid(row=1, column=0)
 
     if eprfit == 1:
@@ -3802,7 +4621,7 @@ def fmimse():
     xx/=2
     print(len(y))
     print(len(xx))
-    x = ((y[-1:0:-1]+xx[::-1])-e_photon)*1000
+    x = ((y[-1:0:-1]+xx[::-1])-vfe)*1000
     print(len(x))
     ha=a1.scatter(x,v1,c='r')
     hb=a2.scatter(x,v2,c='b')
@@ -3829,15 +4648,15 @@ def fmimse():
     
 def fmpreview():
     mprvg = tk.Toplevel(g)
-    mprvg.geometry('300x250')
+    mprvg.geometry('300x320')
     mprvg.title(' Preview MDC Result')
-    bmresidual = tk.Button(mprvg, text='Residual', command=fmresidual, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
+    bmresidual = tk.Button(mprvg, text='Residual', command=fmresidual, width=30, height=2, font=('Arial', 16, "bold"), bg='white', bd=10)
     bmresidual.pack()
-    bmarea = tk.Button(mprvg, text='Area', command=fmarea, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
+    bmarea = tk.Button(mprvg, text='Area', command=fmarea, width=30, height=2, font=('Arial', 16, "bold"), bg='white', bd=10)
     bmarea.pack()
-    bmfwhm = tk.Button(mprvg, text='FWHM', command=fmfwhm, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
+    bmfwhm = tk.Button(mprvg, text='FWHM', command=fmfwhm, width=30, height=2, font=('Arial', 16, "bold"), bg='white', bd=10)
     bmfwhm.pack()
-    bmimse = tk.Button(mprvg, text='Imaginary Part', command=fmimse, width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
+    bmimse = tk.Button(mprvg, text='Imaginary Part', command=fmimse, width=30, height=2, font=('Arial', 16, "bold"), bg='white', bd=10)
     bmimse.pack()
     mprvg.update()
     
@@ -3891,7 +4710,7 @@ def fmend():
     medydata.grid(row=0, column=1)
 
     bsave = tk.Button(master=mendg, text='Save Fitted Data', command=savemfit,
-                      width=30, height=2, font={'Arial', 18, "bold"}, bg='white', bd=10)
+                      width=30, height=2, font=('Arial', 14, "bold"), bg='white', bd=10)
     bsave.grid(row=1, column=0)
 
     mendg.update()
@@ -4505,17 +5324,17 @@ def mjob():     # MDC Fitting GUI
     mgg.title('MDC Lorentz Fit')
     mst = queue.Queue(maxsize=0)
     mstate = tk.Label(mgg, text='', font=(
-        "Arial", 20, "bold"), bg="white", fg="black")
+        "Arial", 14, "bold"), bg="white", fg="black")
     mstate.grid(row=0, column=0)
     fr = tk.Frame(master=mgg, bg='white')
     fr.grid(row=1, column=0)
     frind = tk.Frame(master=fr, bg='white')
     frind.grid(row=0, column=0)
     mlind = tk.Button(frind, text='<<', command=mflind, width=10,
-                      height=5, font={'Arial', 50, "bold"}, bg='white')
+                      height=5, font=('Arial', 12, "bold"), bg='white')
     mlind.grid(row=0, column=0)
     mrind = tk.Button(frind, text='>>', command=mfrind, width=10,
-                      height=5, font={'Arial', 50, "bold"}, bg='white')
+                      height=5, font=('Arial', 12, "bold"), bg='white')
     mrind.grid(row=0, column=2)
 
     mfiti = tk.IntVar()
@@ -4594,10 +5413,10 @@ def mjob():     # MDC Fitting GUI
     frYN = tk.Frame(master=frfitpar, bd=5, bg='white')
     frYN.grid(row=6, column=0)
     mbaccept = tk.Button(frYN, text='Accept', command=fmaccept,
-                         width=30, height=1, font={'Arial', 24, "bold"}, bg='white')
+                         width=30, height=1, font=('Arial', 14, "bold"), bg='white')
     mbaccept.grid(row=0, column=0)
     mbreject = tk.Button(frYN, text='Reject', command=fmreject,
-                         width=30, height=1, font={'Arial', 24, "bold"}, bg='white')
+                         width=30, height=1, font=('Arial', 14, "bold"), bg='white')
     mbreject.grid(row=0, column=1)
 
     l1 = tk.Label(frpara00, text='Index Operation', font=(
@@ -4606,20 +5425,20 @@ def mjob():     # MDC Fitting GUI
     froperind = tk.Frame(master=frpara00, bd=5, bg='white')
     froperind.grid(row=2, column=0)
     mbcgl2 = tk.Button(froperind, text='Add 2 Peaks', command=fmcgl2,
-                       width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
+                       width=30, height=1, font=('Arial', 14, "bold"), bg='white')
     mbcgl2.grid(row=0, column=0)
     mbrmv = tk.Button(froperind, text='Remove', command=fmrmv,
-                      width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
+                      width=30, height=1, font=('Arial', 14, "bold"), bg='white')
     mbrmv.grid(row=0, column=1)
     mbcomp1 = tk.Button(froperind, text='Comp 1', command=mfcomp1,
-                        width=20, height=1, font={'Arial', 18, "bold"}, bg='white')
+                        width=14, height=1, font=('Arial', 14, "bold"), bg='white')
     mbcomp1.grid(row=1, column=0)
     mbcomp2 = tk.Button(froperind, text='Comp 2', command=mfcomp2,
-                        width=20, height=1, font={'Arial', 18, "bold"}, bg='white')
+                        width=14, height=1, font=('Arial', 14, "bold"), bg='white')
     mbcomp2.grid(row=1, column=1)
 
     mbfitcp = tk.Button(master=frpara00, text='Fit Components', command=ffitcp,
-                        width=40, height=1, font={'Arial', 18, "bold"}, bg='white')
+                        width=40, height=1, font=('Arial', 14, "bold"), bg='white')
     mbfitcp.grid(row=3, column=0)
 
     frwr = tk.Frame(master=frpara00, bd=5, bg='white')
@@ -4633,13 +5452,13 @@ def mjob():     # MDC Fitting GUI
     mwf1 = tk.StringVar()
     mwf1.set('0')
     mwf1.trace_add('write', fmwf1)
-    min_w1 = tk.Entry(frwr, font=("Arial", 10, "bold"),
+    min_w1 = tk.Entry(frwr, font=("Arial", 12, "bold"),
                       width=7, textvariable=mwf1, bd=5)
     min_w1.grid(row=1, column=0)
     mwf2 = tk.StringVar()
     mwf2.set('0')
     mwf2.trace_add('write', fmwf2)
-    min_w2 = tk.Entry(frwr, font=("Arial", 10, "bold"),
+    min_w2 = tk.Entry(frwr, font=("Arial", 12, "bold"),
                       width=7, textvariable=mwf2, bd=5)
     min_w2.grid(row=1, column=2)
 
@@ -4654,18 +5473,18 @@ def mjob():     # MDC Fitting GUI
     maf1 = tk.StringVar()
     maf1.set('0')
     maf1.trace_add('write', fmaf1)
-    min_a1 = tk.Entry(frar, font=("Arial", 10, "bold"),
+    min_a1 = tk.Entry(frar, font=("Arial", 12, "bold"),
                       width=7, textvariable=maf1, bd=5)
     min_a1.grid(row=1, column=0)
     maf2 = tk.StringVar()
     maf2.set('0')
     maf2.trace_add('write', fmaf2)
-    min_a2 = tk.Entry(frar, font=("Arial", 10, "bold"),
+    min_a2 = tk.Entry(frar, font=("Arial", 12, "bold"),
                       width=7, textvariable=maf2, bd=5)
     min_a2.grid(row=1, column=2)
 
     mbposcst = tk.Button(frpara00, text='Position constraint', command=fmposcst,
-                         width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
+                         width=30, height=1, font=('Arial', 14, "bold"), bg='white')
     mbposcst.grid(row=6, column=0)
 
     frxr = tk.Frame(master=frpara00, bd=5, bg='white', padx=30)
@@ -4676,7 +5495,7 @@ def mjob():     # MDC Fitting GUI
     mxf1 = tk.StringVar()
     mxf1.set('1')
     mxf1.trace_add('write', fmxf1)
-    min_x1 = tk.Entry(frxr, font=("Arial", 10, "bold"), width=7,
+    min_x1 = tk.Entry(frxr, font=("Arial", 12, "bold"), width=7,
                       textvariable=mxf1, bd=5, state='disabled')
     min_x1.grid(row=0, column=1)
     l3 = tk.Label(frxr, text='* x1 +', font=("Arial", 12, "bold"),
@@ -4685,14 +5504,14 @@ def mjob():     # MDC Fitting GUI
     mxf2 = tk.StringVar()
     mxf2.set('0')
     mxf2.trace_add('write', fmxf2)
-    min_x2 = tk.Entry(frxr, font=("Arial", 10, "bold"), width=7,
+    min_x2 = tk.Entry(frxr, font=("Arial", 12, "bold"), width=7,
                       textvariable=mxf2, bd=5, state='disabled')
     min_x2.grid(row=0, column=3)
 
     frout = tk.Frame(master=mgg, bd=5, bg='white')
     frout.grid(row=2, column=0)
     bfall = tk.Button(frout, text='Fit All', command=fmfall,
-                      width=30, height=1, font={'Arial', 18, "bold"}, bg='white')
+                      width=30, height=1, font=('Arial', 14, "bold"), bg='white')
     bfall.grid(row=0, column=0)
 
     flmreject = -1
@@ -4702,11 +5521,11 @@ def mjob():     # MDC Fitting GUI
     flmcomp2 = -1
 
     bprv = tk.Button(frout, text='Preview', command=fmpreview, width=30,
-                     height=1, font={'Arial', 18, "bold"}, bg='white')
+                     height=1, font=('Arial', 14, "bold"), bg='white')
     bprv.grid(row=1, column=0)
     
     bend = tk.Button(frout, text='Finish', command=fmend, width=30,
-                     height=1, font={'Arial', 18, "bold"}, bg='white')
+                     height=1, font=('Arial', 14, "bold"), bg='white')
     bend.grid(row=2, column=0)
 
     mresult = [[]for i in range(len(ev))]
@@ -5171,14 +5990,14 @@ def o_bareband():
         print('Loading...')
         st.put('Loading...')
     t_k = []
-    t_be = []
+    t_ke = []
     with open(file) as f:
         for i, line in enumerate(f):
             if i != 0:  # ignore 1st row data (index = 0)
                 t_k.append(line.split('\t')[0])
-                t_be.append(line.split('\t')[1].replace('\n', ''))
+                t_ke.append(line.split('\t')[1].replace('\n', ''))
     # [::-1] inverse the order for np.interp (xp values should be increasing)
-    be = np.float64(t_be)*1000
+    be = np.float64(t_ke)*1000
     # [::-1] inverse the order for np.interp (xp values should be increasing)
     k = np.float64(t_k)
     os.chdir(cdir)
@@ -5209,7 +6028,10 @@ def o_plot1(*e):
             if value.get() == 'First Derivative':
                 ao = fig.subplots()
                 pz = np.diff(data.to_numpy())/np.diff(phi)
-                px, py = np.meshgrid(phi[0:-1], ev)
+                if emf=='KE':
+                    px, py = np.meshgrid(phi[0:-1], ev)
+                else:
+                    px, py = np.meshgrid(phi[0:-1], vfe-ev)
                 px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
                 )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
@@ -5220,7 +6042,10 @@ def o_plot1(*e):
                 ao = fig.subplots()
                 pz = np.diff(data.to_numpy())/np.diff(phi)
                 pz = np.diff(pz)/np.diff(phi[0:-1])
-                px, py = np.meshgrid(phi[0:-2], ev)
+                if emf=='KE':
+                    px, py = np.meshgrid(phi[0:-2], ev)
+                else:
+                    px, py = np.meshgrid(phi[0:-2], vfe-ev)
                 px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
                 )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
@@ -5231,7 +6056,10 @@ def o_plot1(*e):
                 ao = fig.subplots()
                 if value.get() == 'E-K Diagram':
                     # h1=a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
-                    px, py = np.meshgrid(phi, ev)
+                    if emf=='KE':
+                        px, py = np.meshgrid(phi, ev)
+                    else:
+                        px, py = np.meshgrid(phi, vfe-ev)
                     px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
                     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
@@ -5252,7 +6080,10 @@ def o_plot1(*e):
                         # ty=np.arange(len(x), dtype=float)
                         # my[len(phi)*n:len(phi)*(n+1)]=np.full_like(ty, ev[n])
                         # a.scatter(x,np.full_like(ty, ev[n]),c=np.array(y,dtype=int),marker='o',s=0.9,cmap=value3.get());
-                        px, py = np.meshgrid(x, ev[n:(n+2)])
+                        if emf=='KE':
+                            px, py = np.meshgrid(x, ev[n:(n+2)])
+                        else:
+                            px, py = np.meshgrid(x, vfe-ev[n:(n+2)])
                         ao.pcolormesh(px, py, np.full_like(
                             np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
                         pbar.update(1)
@@ -5262,7 +6093,11 @@ def o_plot1(*e):
                     pbar.close()
             ao.set_title(value.get(), font='Arial', fontsize=16)
             ao.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
-            ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=14)
+            if emf=='KE':
+                ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=14)
+            else:
+                ao.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=14)
+                ao.invert_yaxis()
             xl = ao.get_xlim()
             yl = ao.get_ylim()
         try:
@@ -5291,7 +6126,7 @@ def o_plot2(*e):
         climoff()
         if value1.get() == 'MDC fitted Data':
             try:
-                x = (fev-e_photon)*1000
+                x = (vfe-fev)*1000
                 # y = (fwhm*6.626*10**-34/2/3.1415926/(10**-10))**2/2/(9.11*10**-31)/(1.6*10**-19)*1000
             except:
                 print(r'Please Load MDC fitted file')
@@ -5312,6 +6147,9 @@ def o_plot2(*e):
                     r'FWHM ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
                 a[1].tick_params(direction='in')
                 a[1].scatter(x, fwhm, c='black', s=5)
+                
+                a[0].invert_xaxis()
+                a[1].invert_xaxis()
             except:
                 print('Please load MDC fitted file')
                 st.put('Please load MDC fitted file')
@@ -5329,19 +6167,21 @@ def o_plot2(*e):
                 a[0].set_ylabel('Binding Energy (meV)',
                                 font='Arial', fontsize=14)
                 a[0].tick_params(direction='in')
-                a[0].scatter(x, (epos-e_photon)*1000, c='black', s=5)
+                a[0].scatter(x, (epos-vfe)*1000, c='black', s=5)
 
                 a[1].set_xlabel(
                     r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
                 a[1].set_ylabel('FWHM (meV)', font='Arial', fontsize=14)
                 a[1].tick_params(direction='in')
                 a[1].scatter(x, efwhm*1000, c='black', s=5)
+                
+                a[0].invert_yaxis()
             except:
                 print('Please load EDC fitted file')
                 st.put('Please load EDC fitted file')
         elif value1.get() == 'Real Part':
             try:
-                x = (fev-e_photon)*1000
+                x = (vfe-fev)*1000
                 y = pos
             except:
                 print('Please load MDC fitted file')
@@ -5365,13 +6205,16 @@ def o_plot2(*e):
 
             h1 = a[1].scatter(y, x, c='black', s=5)
             h2 = a[1].scatter(k*np.float64(bbk_offset.get()),
-                              be+np.float64(bb_offset.get()), c='red', s=5)
+                              -be+np.float64(bb_offset.get()), c='red', s=5)
 
             a[1].legend([h1, h2], ['fitted data', 'bare band'])
             a[1].tick_params(direction='in')
             a[1].set_ylabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a[1].set_xlabel(
                 r'Pos ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
+            
+            a[0].invert_xaxis()
+            a[1].invert_yaxis()
 
             # a[0].set_xlim([-1000,50])
             # a[0].set_ylim([-100,500])
@@ -5379,15 +6222,15 @@ def o_plot2(*e):
             # a[1].set_xlim([-0.05,0.05])
         elif value1.get() == 'Imaginary Part':
             try:
-                tbe = (fev-e_photon)*1000
+                tbe = (vfe-fev)*1000
             except:
                 print(r'Please Load MDC fitted file')
                 st.put(r'Please Load MDC fitted file')
             try:
-                x = interp(tbe, be+np.float64(bb_offset.get()),
+                x = interp(tbe, -be+np.float64(bb_offset.get()),
                            k*np.float64(bbk_offset.get()))
                 y = interp(x, k*np.float64(bbk_offset.get()),
-                           be+np.float64(bb_offset.get()))
+                           -be+np.float64(bb_offset.get()))
             except:
                 print('Please load Bare Band file')
                 st.put('Please load Bare Band file')
@@ -5418,13 +6261,16 @@ def o_plot2(*e):
             a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
 
-            x = (fev-e_photon)*1000
+            x = (vfe-fev)*1000
             y = fwhm
             b.plot(x, y, c='black', linestyle='-', marker='.')
             b.tick_params(direction='in')
             b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
                          font='Arial', fontsize=14)
+            
+            a.invert_xaxis()
+            b.invert_xaxis()
         out.draw()
         print('Done')
         st.put('Done')
@@ -5440,8 +6286,12 @@ def o_plot3(*e):
         value.set('---Plot1---')
         value1.set('---Plot2---')
         fig.clear()
+        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+                        10**-10*(h/2/np.pi))*180/np.pi
+        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+            np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
         try:
-            x = (fev-e_photon)*1000
+            x = (vfe-fev)*1000
             y = pos
         except:
             print('Please load MDC fitted file')
@@ -5453,11 +6303,11 @@ def o_plot3(*e):
                             np.float64(bb_offset.get()))
                 rx = x
                 ry = x-yy
-                tbe = (fev-e_photon)*1000
-                x = interp(tbe, be+np.float64(bb_offset.get()),
+                tbe = (vfe-fev)*1000
+                x = interp(tbe, -be+np.float64(bb_offset.get()),
                            k*np.float64(bbk_offset.get()))
                 y = interp(x, k*np.float64(bbk_offset.get()),
-                           be+np.float64(bb_offset.get()))
+                           -be+np.float64(bb_offset.get()))
                 xx = np.diff(x)
                 yy = np.diff(y)
 
@@ -5551,8 +6401,10 @@ def o_plot3(*e):
             b.legend(handles, labels)
         elif value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
             bo = fig.subplots()
-            px, py = np.meshgrid(phi, ev)
-
+            if emf=='KE':
+                px, py = np.meshgrid(phi, ev)
+            else:
+                px, py =np.meshgrid(phi, vfe-ev)
             px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             pz = data.to_numpy()
@@ -5569,12 +6421,18 @@ def o_plot3(*e):
             # a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)',fontsize=14)
             # a.set_ylabel('Kinetic Energy (eV)',fontsize=14)
             bo.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
-            bo.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+            if emf=='KE':
+                bo.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+            else:
+                bo.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
             # b.set_xticklabels(labels=b.get_xticklabels(),fontsize=14)
             # b.set_yticklabels(labels=b.get_yticklabels(),fontsize=14)
             try:
                 if mp == 1:
-                    tb0 = bo.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        tb0 = bo.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    else:
+                        tb0 = bo.scatter(pos, vfe-fev, marker='.', s=0.3, c='black')
                 if mf == 1:
                     ophimin = np.arcsin(
                         (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
@@ -5584,30 +6442,46 @@ def o_plot3(*e):
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
                     posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-                    tb0_ = bo.scatter([posmin, posmax], [
-                                      fev, fev], marker='|', c='grey', s=10, alpha=0.8)
+                    if emf=='KE':
+                        tb0_ = bo.scatter([posmin, posmax], [
+                                        fev, fev], marker='|', c='grey', s=10, alpha=0.8)
+                    else:
+                        tb0_ = bo.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=10, alpha=0.8)    
             except:
                 pass
             try:
                 if ep == 1:
-                    tb1 = bo.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        tb1 = bo.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    else:
+                        tb1 = bo.scatter(fk, vfe-epos, marker='.', s=0.3, c='black')
                 if ef == 1:
                     eposmin = epos-efwhm/2
                     eposmax = epos+efwhm/2
-                    tb1_ = bo.scatter(
-                        [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=10, alpha=0.8)
-
+                    if emf=='KE':
+                        tb1_ = bo.scatter(
+                            [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=10, alpha=0.8)
+                    else:
+                        tb1_ = bo.scatter(
+                            [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=10, alpha=0.8)
+                    
             except:
                 pass
             try:
                 if value2.get() == 'Data Plot with Pos and Bare Band':
-                    tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be +
-                                   np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
+                    if emf=='KE':
+                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be +
+                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                    else:
+                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
+                                np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
             except:
                 bo.set_title('Data Plot with Pos w/o Bare Band',
                              font='Arial', fontsize=18)
                 print('Please load Bare Band file')
                 st.put('Please load Bare Band file')
+            if emf=='BE':
+                bo.invert_yaxis()
         try:
             if value2.get() != 'Real & Imaginary' and value2.get() != 'KK Transform':
                 xl = bo.get_xlim()
@@ -5637,7 +6511,10 @@ def select_callback(eclick, erelease):
     x2, y2 = erelease.xdata, erelease.ydata
     if eclick.button == 1:
         a.set_xlim(sorted([x1, x2]))
-        a.set_ylim(sorted([y1, y2]))
+        if emf=='KE':
+            a.set_ylim(sorted([y1, y2]))
+        else:
+            a.set_ylim(sorted([y1, y2], reverse=True))
         f.show()
         if abs(x1-x2) < (xl[1]-xl[0])/3*2 or abs(y1-y2) < (yl[1]-yl[0])/3*2:
             try:
@@ -5661,51 +6538,89 @@ def select_callback(eclick, erelease):
             if value2.get() == 'Data Plot with Pos and Bare Band' or value2.get() == 'Data Plot with Pos':
                 try:
                     if mp == 1:
-                        ta0 = a.scatter(pos, fev, marker='.', s=30, c='black')
+                        if emf=='KE':
+                            ta0 = a.scatter(pos, fev, marker='.', s=30, c='black')
+                        else:
+                            ta0 = a.scatter(pos, vfe-fev, marker='.', s=30, c='black')
                     if mf == 1:
-                        ta0_ = a.scatter([posmin, posmax], [
+                        if emf=='KE':
+                            ta0_ = a.scatter([posmin, posmax], [
                                          fev, fev], marker='|', c='grey', s=50, alpha=0.8)
+                        else:
+                            ta0_ = a.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=50, alpha=0.8)
                 except:
                     pass
                 try:
                     if ep == 1:
-                        ta1 = a.scatter(fk, epos, marker='.', s=30, c='black')
+                        if emf=='KE':
+                            ta1 = a.scatter(fk, epos, marker='.', s=30, c='black')
+                        else:
+                            ta1 = a.scatter(fk, vfe-epos, marker='.', s=30, c='black')
+                            
                     if ef == 1:
-                        ta1_ = a.scatter(
-                            [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=50, alpha=0.8)
+                        if emf=='KE':
+                            ta1_ = a.scatter(
+                                [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=50, alpha=0.8)
+                        else:
+                            ta1_ = a.scatter(
+                                [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=50, alpha=0.8)
                 except:
                     pass
 
                 if value2.get() == 'Data Plot with Pos and Bare Band':
-                    ta2, = a.plot(k*np.float64(bbk_offset.get()), (be +
-                                  np.float64(bb_offset.get()))/1000+e_photon, linewidth=5, c='red')
+                    if emf=='KE':
+                        ta2, = a.plot(k*np.float64(bbk_offset.get()), (be +
+                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=5, c='red')
+                    else:
+                        ta2, = a.plot(k*np.float64(bbk_offset.get()), (-be +
+                                    np.float64(bb_offset.get()))/1000, linewidth=5, c='red')
             f.show()
         else:
             try:
                 if mp == 1:
                     ta0.remove()
-                    ta0 = a.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        ta0 = a.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    else:
+                        ta0 = a.scatter(pos, vfe-fev, marker='.', s=0.3, c='black')
+                        
                 if mf == 1:
                     ta0_.remove()
-                    ta0_ = a.scatter([posmin, posmax], [fev, fev],
-                                     marker='|', c='grey', s=10, alpha=0.8)
+                    if emf=='KE':
+                        ta0_ = a.scatter([posmin, posmax], [fev, fev],
+                                        marker='|', c='grey', s=10, alpha=0.8)
+                    else:
+                        ta0_ = a.scatter([posmin, posmax], [vfe-fev, vfe-fev],
+                                        marker='|', c='grey', s=10, alpha=0.8)
             except:
                 pass
             try:
                 if ep == 1:
                     ta1.remove()
-                    ta1 = a.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        ta1 = a.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    else:
+                        ta1 = a.scatter(fk, vfe-epos, marker='.', s=0.3, c='black')
+                        
                 if ef == 1:
                     ta1_.remove()
-                    ta1_ = a.scatter([fk, fk], [eposmin, eposmax],
+                    if emf=='KE':
+                        ta1_ = a.scatter([fk, fk], [eposmin, eposmax],
+                                     marker='_', c='grey', s=10, alpha=0.8)
+                    else:
+                        ta1_ = a.scatter([fk, fk], [vfe-eposmin, vfe-eposmax],
                                      marker='_', c='grey', s=10, alpha=0.8)
             except:
                 pass
             try:
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     ta2.remove()
-                    ta2, = a.plot(k*np.float64(bbk_offset.get()), (be +
-                                  np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
+                    if emf =='KE':
+                        ta2, = a.plot(k*np.float64(bbk_offset.get()), (be +
+                                  np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                    else:
+                        ta2, = a.plot(k*np.float64(bbk_offset.get()), (-be +
+                                  np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
             except:
                 pass
             f.show()
@@ -5715,28 +6630,48 @@ def select_callback(eclick, erelease):
         try:
             if mp == 1:
                 ta0.remove()
-                ta0 = a.scatter(pos, fev, marker='.', s=0.3, c='black')
+                if emf=='KE':
+                    ta0 = a.scatter(pos, fev, marker='.', s=0.3, c='black')
+                else:
+                    ta0 = a.scatter(pos, vfe-fev, marker='.', s=0.3, c='black')
+                    
             if mf == 1:
                 ta0_.remove()
-                ta0_ = a.scatter([posmin, posmax], [fev, fev],
+                if emf=='KE':
+                    ta0_ = a.scatter([posmin, posmax], [fev, fev],
+                                 marker='|', c='grey', s=10, alpha=0.8)
+                else:
+                    ta0_ = a.scatter([posmin, posmax], [vfe-fev, vfe-fev],
                                  marker='|', c='grey', s=10, alpha=0.8)
         except:
             pass
         try:
             if ep == 1:
                 ta1.remove()
-                ta1 = a.scatter(fk, epos, marker='.', s=0.3, c='black')
+                if emf=='KE':
+                    ta1 = a.scatter(fk, epos, marker='.', s=0.3, c='black')
+                else:
+                    ta1 = a.scatter(fk, vfe-epos, marker='.', s=0.3, c='black')
+                    
             if ef == 1:
                 ta1_.remove()
-                ta1_ = a.scatter([fk, fk], [eposmin, eposmax],
+                if emf=='KE':
+                    ta1_ = a.scatter([fk, fk], [eposmin, eposmax],
+                                 marker='_', c='grey', s=10, alpha=0.8)
+                else:
+                    ta1_ = a.scatter([fk, fk], [vfe-eposmin, vfe-eposmax],
                                  marker='_', c='grey', s=10, alpha=0.8)
         except:
             pass
         try:
             if value2.get() == 'Data Plot with Pos and Bare Band':
                 ta2.remove()
-                ta2, = a.plot(k*np.float64(bbk_offset.get()), (be +
-                              np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
+                if emf=='KE':
+                    ta2, = a.plot(k*np.float64(bbk_offset.get()), (be +
+                                np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                else:
+                    ta2, = a.plot(k*np.float64(bbk_offset.get()), (-be +
+                              np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
         except:
             pass
         f.show()
@@ -5787,37 +6722,56 @@ cf = True
 
 
 def cut_move(event):
-    global cxdata, cydata, acx, acy, a, f
+    global cxdata, cydata, acx, acy, a, f, xx ,yy
     # ,x,y
     f.canvas.get_tk_widget().config(cursor="")
     if event.inaxes:
         cxdata = event.xdata
         cydata = event.ydata
-        xf = (cxdata > a.get_xlim()[0] and cxdata < a.get_xlim()[1])
-        yf = (cydata > a.get_ylim()[0] and cydata < a.get_ylim()[1])
-        if xf and yf and cf:
+        xf = (cxdata >= a.get_xlim()[0] and cxdata <= a.get_xlim()[1])
+        if emf=='KE':
+            yf = (cydata >= a.get_ylim()[0] and cydata <= a.get_ylim()[1])
+        else:
+            yf = (cydata <= a.get_ylim()[0] and cydata >= a.get_ylim()[1])
+        if xf and yf:
             f.canvas.get_tk_widget().config(cursor="crosshair")
-            dx = data.sel(
-                eV=cydata, method='nearest').to_numpy().reshape(len(phi))
-            dy = data.sel(
-                phi=cxdata, method='nearest').to_numpy().reshape(len(ev))
-            # try:
-            #     x.remove()
-            #     y.remove()
-            # except:
-            #     pass
-            # x=a.axvline(cxdata,color='r')
-            # y=a.axhline(cydata,color='r')
-            acx.clear()
-            acy.clear()
-            acx.plot(phi, dx, c='black')
-            acy.plot(dy, ev, c='black')
-            acx.set_xticks([])
-            acy.set_yticks([])
-            acx.set_xlim(a.get_xlim())
-            acy.set_ylim(a.get_ylim())
-            # f.canvas.draw_idle()
-            f.show()
+            try:
+                xx.remove()
+                yy.remove()
+            except:
+                pass
+            xx=a.axvline(cxdata,color='r')
+            yy=a.axhline(cydata,color='r')
+            if cf:
+                if emf=='KE':
+                    dx = data.sel(
+                        eV=cydata, method='nearest').to_numpy().reshape(len(phi))
+                else:
+                    dx = data.sel(eV=vfe-cydata, method='nearest').to_numpy().reshape(len(phi))
+                dy = data.sel(
+                    phi=cxdata, method='nearest').to_numpy().reshape(len(ev))
+                acx.clear()
+                acy.clear()
+                acx.plot(phi, dx, c='black')
+                if emf=='KE':
+                    acy.plot(dy, ev, c='black')
+                else:
+                    acy.plot(dy, vfe-ev, c='black')
+                acx.set_xticks([])
+                acy.set_yticks([])
+                acx.set_xlim(a.get_xlim())
+                acy.set_ylim(a.get_ylim())
+                # f.canvas.draw_idle()
+    else:
+        try:
+            if cf:
+                acx.clear()
+                acy.clear()
+            xx.remove()
+            yy.remove()
+        except:
+            pass
+    f.show()
 
 
 def cut_select(event):
@@ -5831,14 +6785,21 @@ def cut_select(event):
         y.remove()
         x = a.axvline(event.xdata, color='red')
         y = a.axhline(event.ydata, color='red')
-        dx = data.sel(eV=event.ydata,
-                      method='nearest').to_numpy().reshape(len(phi))
+        if emf=='KE':
+            dx = data.sel(eV=event.ydata,
+                        method='nearest').to_numpy().reshape(len(phi))
+        else:
+            dx = data.sel(eV=vfe-event.ydata,
+                        method='nearest').to_numpy().reshape(len(phi))
         dy = data.sel(phi=event.xdata,
                       method='nearest').to_numpy().reshape(len(ev))
         acx.clear()
         acy.clear()
         acx.plot(phi, dx, c='black')
-        acy.plot(dy, ev, c='black')
+        if emf=='KE':
+            acy.plot(dy, ev, c='black')
+        else:
+            acy.plot(dy, vfe-ev, c='black')
         acx.set_xticks([])
         acy.set_yticks([])
         acx.set_xlim(a.get_xlim())
@@ -5890,9 +6851,16 @@ def exp(*e):
             acy = plt.axes([0.82, 0.08, 0.15, 0.6])
             plt.connect('motion_notify_event', cut_move)
             plt.connect('button_press_event', cut_select)
-            mx, my = np.meshgrid(phi, ev)
+            if emf=='KE':
+                mx, my = np.meshgrid(phi, ev)
+            else:
+                mx, my = np.meshgrid(phi, vfe-ev)
             # h1 = a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
             h1 = a.pcolormesh(mx, my, mz, cmap=value3.get())
+            if emf=='KE':
+                yl = a.get_ylim()
+            else:
+                yl = sorted(a.get_ylim(), reverse=True)
             cb = f.colorbar(h1)
             cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial')
@@ -5903,7 +6871,7 @@ def exp(*e):
 
             acx.set_xticks([])
             acy.set_yticks([])
-
+            
             n = a1.hist(mz.flatten(), bins=np.linspace(
                 min(mz.flatten()), max(mz.flatten()), 50), color='green')
             a1.set_xlabel('Intensity')
@@ -5922,10 +6890,17 @@ def exp(*e):
             ))
         elif value.get() == 'First Derivative':
             pz = np.diff(data.to_numpy())/np.diff(phi)
-            px, py = np.meshgrid(phi[0:-1], ev)
+            if emf=='KE':
+                px, py = np.meshgrid(phi[0:-1], ev)
+            else:
+                px, py = np.meshgrid(phi[0:-1], vfe-ev)
             px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
+            if emf=='KE':
+                yl = a.get_ylim()
+            else:
+                yl = sorted(a.get_ylim(), reverse=True)
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
             cb.set_ticks(cb.get_ticks())
@@ -5953,10 +6928,17 @@ def exp(*e):
         elif value.get() == 'Second Derivative':
             pz = np.diff(data.to_numpy())/np.diff(phi)
             pz = np.diff(pz)/np.diff(phi[0:-1])
-            px, py = np.meshgrid(phi[0:-2], ev)
+            if emf=='KE':
+                px, py = np.meshgrid(phi[0:-2], ev)
+            else:
+                px, py = np.meshgrid(phi[0:-2], vfe-ev)
             px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
+            if emf=='KE':
+                yl = a.get_ylim()
+            else:
+                yl = sorted(a.get_ylim(), reverse=True)
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
             cb.set_ticks(cb.get_ticks())
@@ -5984,11 +6966,18 @@ def exp(*e):
         else:
             if value.get() == 'E-K Diagram':
                 # h1=a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
-                px, py = np.meshgrid(phi, ev)
+                if emf=='KE':
+                    px, py = np.meshgrid(phi, ev)
+                else:
+                    px, py = np.meshgrid(phi, vfe-ev)
                 px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
                 )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                 pz = data.to_numpy()
                 h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
+                if emf=='KE':
+                    yl = a.get_ylim()
+                else:
+                    yl = sorted(a.get_ylim(), reverse=True)
                 h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = f.colorbar(h1)
                 cb.set_ticks(cb.get_ticks())
@@ -6024,27 +7013,40 @@ def exp(*e):
                     # ty=np.arange(len(x), dtype=float)
                     # my[len(phi)*n:len(phi)*(n+1)]=np.full_like(ty, ev[n])
                     # a.scatter(x,np.full_like(ty, ev[n]),c=np.array(y,dtype=int),marker='o',s=0.9,cmap=value3.get());
-                    px, py = np.meshgrid(x, ev[n:n+2])
+                    if emf=='KE':
+                        px, py = np.meshgrid(x, ev[n:n+2])
+                    else:
+                        px, py = np.meshgrid(x, vfe-ev[n:n+2])
                     a.pcolormesh(px, py, np.full_like(
                         np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
+                    if emf=='KE':
+                        yl = a.get_ylim()
+                    else:
+                        yl = sorted(a.get_ylim(), reverse=True)
                     a0.pcolormesh(px, py, np.full_like(
                         np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
 
         a.set_title(value.get(), font='Arial', fontsize=18)
         a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
-        a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
         a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
-        a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+        if emf=='KE':
+            a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+            a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+        else:
+            a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+            a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+            a.invert_yaxis()
+            a0.invert_yaxis()
         if value.get() == 'Raw Data':
             a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
             a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
         # a.set_xticklabels(labels=a.get_xticklabels(),fontsize=10)
         # a.set_yticklabels(labels=a.get_yticklabels(),fontsize=10)
-        cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+        # cursor = Cursor(a, useblit=True, color='red', linewidth=1)
     if pflag == 2:
         f, a = plt.subplots(2, 1, dpi=150)
         if value1.get() == 'MDC fitted Data':
-            x = (fev-e_photon)*1000
+            x = (vfe-fev)*1000
 
             a[0].set_title('MDC Fitting Result', font='Arial', fontsize=18)
             a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
@@ -6058,6 +7060,9 @@ def exp(*e):
                 r'FWHM ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
             a[1].tick_params(direction='in')
             a[1].scatter(x, fwhm, c='black', s=5)
+            
+            a[0].invert_xaxis()
+            a[1].invert_xaxis()
         elif value1.get() == 'EDC fitted Data':
             x = fk
 
@@ -6066,15 +7071,18 @@ def exp(*e):
                 r'Position ($\frac{2\pi}{\AA}$', font='Arial', fontsize=14)
             a[0].set_ylabel('Binding Energy (meV))', font='Arial', fontsize=14)
             a[0].tick_params(direction='in')
-            a[0].scatter(x, (epos-e_photon)*1000, c='black', s=5)
+            a[0].scatter(x, (epos-vfe)*1000, c='black', s=5)
 
             a[1].set_xlabel(
                 r'Position ($\frac{2\pi}{\AA}$', font='Arial', fontsize=14)
             a[1].set_ylabel('FWHM (meV)', font='Arial', fontsize=14)
             a[1].tick_params(direction='in')
             a[1].scatter(x, efwhm*1000, c='black', s=5)
+            
+            a[0].invert_yaxis()
+            
         elif value1.get() == 'Real Part':
-            x = (fev-e_photon)*1000
+            x = (vfe-fev)*1000
             y = pos
             a[0].set_title('Real Part', font='Arial', fontsize=18)
             a[0].plot(rx, ry, c='black', linestyle='-', marker='.')
@@ -6085,13 +7093,16 @@ def exp(*e):
 
             h1 = a[1].scatter(y, x, c='black', s=5)
             h2 = a[1].scatter(k*np.float64(bbk_offset.get()),
-                              be+np.float64(bb_offset.get()), c='red', s=5)
+                              -be+np.float64(bb_offset.get()), c='red', s=5)
 
             a[1].legend([h1, h2], ['fitted data', 'bare band'])
             a[1].tick_params(direction='in')
             a[1].set_ylabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a[1].set_xlabel(
                 r'Pos ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
+            
+            a[0].invert_xaxis()
+            a[1].invert_yaxis()
 
             # a[0].set_xlim([-1000,50])
             # a[0].set_ylim([-100,500])
@@ -6099,12 +7110,12 @@ def exp(*e):
             # a[1].set_xlim([-0.05,0.05])
         elif value1.get() == 'Imaginary Part':
 
-            tbe = (fev-e_photon)*1000
+            tbe = (vfe-fev)*1000
 
-            x = interp(tbe, be+np.float64(bb_offset.get()),
+            x = interp(tbe, -be+np.float64(bb_offset.get()),
                        k*np.float64(bbk_offset.get()))
             y = interp(x, k*np.float64(bbk_offset.get()),
-                       be+np.float64(bb_offset.get()))
+                       -be+np.float64(bb_offset.get()))
             xx = np.diff(x)
             yy = np.diff(y)
 
@@ -6128,7 +7139,7 @@ def exp(*e):
             a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
 
-            x = (fev-e_photon)*1000
+            x = (vfe-fev)*1000
             y = fwhm
             b.plot(x, y, c='black', linestyle='-', marker='.')
             b.tick_params(direction='in')
@@ -6136,10 +7147,13 @@ def exp(*e):
             b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
                          font='Arial', fontsize=14)
 
-            x = (fev-e_photon)*1000
+            x = (vfe-fev)*1000
             y = pos
             yy = interp(y, k*np.float64(bbk_offset.get()), be +
                         np.float64(bb_offset.get()))  # interp x into be,k set
+            
+            a.invert_xaxis()
+            b.invert_xaxis()
     if pflag == 3:
         if value2.get() == 'Real & Imaginary':
             f, a = plt.subplots(2, 1, dpi=150)
@@ -6152,6 +7166,9 @@ def exp(*e):
             a[1].tick_params(direction='in')
             a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a[1].set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
+            
+            a[0].invert_xaxis()
+            a[1].invert_xaxis()
         elif value2.get() == 'KK Transform':
             f, ax = plt.subplots(2, 1, dpi=150)
             a = ax[0]
@@ -6216,6 +7233,9 @@ def exp(*e):
                    label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
             handles, labels = b.get_legend_handles_labels()
             b.legend(handles, labels)
+            
+            a.invert_xaxis()
+            b.invert_xaxis()
         elif value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
             f0 = plt.figure(figsize=(8, 7), layout='constrained')
             a0 = plt.axes([0.13, 0.45, 0.8, 0.5])
@@ -6231,21 +7251,37 @@ def exp(*e):
                 props=props))
             # f0.canvas.mpl_connect('key_press_event',toggle_selector)
             f, a = plt.subplots(dpi=150)
-            px, py = np.meshgrid(phi, ev)
+            if emf=='KE':
+                px, py = np.meshgrid(phi, ev)
+            else:
+                px, py = np.meshgrid(phi, vfe-ev)
+                
             px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             pz = data.to_numpy()
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
+            if emf=='KE':
+                yl = a.get_ylim()
+            else:
+                yl = sorted(a.get_ylim(), reverse=True)
             cb = f.colorbar(h1)
             cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial',
                               fontsize=14, minor=False)
             a.set_title(value2.get(), font='Arial', fontsize=18)
             a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
-            a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+            if emf=='KE':
+                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+            else:
+                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                
             try:
                 if mp == 1:
-                    a.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        a.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    else:
+                        a.scatter(pos, vfe-fev, marker='.', s=0.3, c='black')
+                        
                 if mf == 1:
                     ophimin = np.arcsin(
                         (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
@@ -6255,18 +7291,31 @@ def exp(*e):
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
                     posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-                    a.scatter([posmin, posmax], [fev, fev],
-                              marker='|', c='grey', s=10, alpha=0.8)
+                    if emf=='KE':
+                        a.scatter([posmin, posmax], [fev, fev],
+                                marker='|', c='grey', s=10, alpha=0.8)
+                    else:
+                        a.scatter([posmin, posmax], [vfe-fev, vfe-fev],
+                                marker='|', c='grey', s=10, alpha=0.8)
             except:
                 pass
             try:
                 if ep == 1:
-                    a.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        a.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    else:
+                        a.scatter(fk, vfe-epos, marker='.', s=0.3, c='black')
+                            
                 if ef == 1:
                     eposmin = epos-efwhm/2
                     eposmax = epos+efwhm/2
-                    a.scatter([fk, fk], [eposmin, eposmax],
-                              marker='_', c='grey', s=10, alpha=0.8)
+                    if emf=='KE':
+                        a.scatter([fk, fk], [eposmin, eposmax],
+                                marker='_', c='grey', s=10, alpha=0.8)
+                    else:
+                        a.scatter([fk, fk], [vfe-eposmin, vfe-eposmax],
+                                marker='_', c='grey', s=10, alpha=0.8)
+                        
             except:
                 pass
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
@@ -6275,10 +7324,18 @@ def exp(*e):
             cb1.set_ticklabels(cb1.get_ticks(), font='Arial',
                                fontsize=14, minor=False)
             a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
-            a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+            if emf=='KE':
+                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+            else:
+                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                
             try:
                 if mp == 1:
-                    a0.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        a0.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    else:
+                        a0.scatter(pos, vfe-fev, marker='.', s=0.3, c='black')
+                        
                 if mf == 1:
                     ophimin = np.arcsin(
                         (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
@@ -6288,18 +7345,30 @@ def exp(*e):
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
                     posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-                    a0.scatter([posmin, posmax], [fev, fev],
-                               marker='|', c='grey', s=10, alpha=0.8)
+                    if emf=='KE':
+                        a0.scatter([posmin, posmax], [fev, fev],
+                                marker='|', c='grey', s=10, alpha=0.8)
+                    else:
+                        a0.scatter([posmin, posmax], [vfe-fev, vfe-fev],
+                                marker='|', c='grey', s=10, alpha=0.8)
             except:
                 pass
             try:
                 if ep == 1:
-                    a0.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        a0.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    else:
+                        a0.scatter(fk, vfe-epos, marker='.', s=0.3, c='black')
+                        
                 if ef == 1:
                     eposmin = epos-efwhm/2
                     eposmax = epos+efwhm/2
-                    a0.scatter([fk, fk], [eposmin, eposmax],
-                               marker='_', c='grey', s=10, alpha=0.8)
+                    if emf=='KE':
+                        a0.scatter([fk, fk], [eposmin, eposmax],
+                                marker='_', c='grey', s=10, alpha=0.8)
+                    else:
+                        a0.scatter([fk, fk], [vfe-eposmin, vfe-eposmax],
+                                marker='_', c='grey', s=10, alpha=0.8)
             except:
                 pass
             # b.set_xticklabels(labels=b.get_xticklabels(),font='Arial',fontsize=14)
@@ -6323,12 +7392,21 @@ def exp(*e):
             ))
             try:
                 if value2.get() == 'Data Plot with Pos and Bare Band':
-                    a.plot(k*np.float64(bbk_offset.get()), (be +
-                           np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
-                    a0.plot(k*np.float64(bbk_offset.get()), (be +
-                            np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
+                    if emf=='KE':
+                        a.plot(k*np.float64(bbk_offset.get()), (be +
+                            np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                        a0.plot(k*np.float64(bbk_offset.get()), (be +
+                                np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                    else:
+                        a.plot(k*np.float64(bbk_offset.get()), (-be +
+                            np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
+                        a0.plot(k*np.float64(bbk_offset.get()), (-be +
+                                np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
             except:
                 pass
+            if emf=='BE':
+                a.invert_yaxis()
+                a0.invert_yaxis()
             cursor = Cursor(a, useblit=True, color='red', linewidth=1)
     try:
         if value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and value2.get() != 'KK Transform':
@@ -6383,11 +7461,18 @@ def move(event):
             if event.inaxes:
                 cxdata = event.xdata
                 cydata = event.ydata
-                xf = (cxdata > ao.get_xlim()[0] and cxdata < ao.get_xlim()[1])
-                yf = (cydata > ao.get_ylim()[0] and cydata < ao.get_ylim()[1])
+                xf = (cxdata >= ao.get_xlim()[0] and cxdata <= ao.get_xlim()[1])
+                if emf=='KE':
+                    yf = (cydata >= ao.get_ylim()[0] and cydata <= ao.get_ylim()[1])
+                else:
+                    yf = (cydata <= ao.get_ylim()[0] and cydata >= ao.get_ylim()[1])
                 if xf and yf:
-                    dx = data.sel(
-                        eV=cydata, method='nearest').to_numpy().reshape(len(phi))
+                    if emf=='KE':
+                        dx = data.sel(
+                            eV=cydata, method='nearest').to_numpy().reshape(len(phi))
+                    else:
+                        dx = data.sel(
+                            eV=vfe-cydata, method='nearest').to_numpy().reshape(len(phi))
                     dy = data.sel(
                         phi=cxdata, method='nearest').to_numpy().reshape(len(ev))
                     # try:
@@ -6400,7 +7485,10 @@ def move(event):
                     rcx.clear()
                     rcy.clear()
                     rcx.plot(phi, dx, c='black')
-                    rcy.plot(dy, ev, c='black')
+                    if emf=='KE':
+                        rcy.plot(dy, ev, c='black')
+                    else:
+                        rcy.plot(dy, vfe-ev, c='black')
                     rcx.set_xticks([])
                     rcy.set_yticks([])
                     rcx.set_xlim(ao.get_xlim())
@@ -6443,7 +7531,11 @@ def press(event):
             try:
                 if mp == 1:
                     tb0.remove()
-                    tb0 = bo.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        tb0 = bo.scatter(pos, fev, marker='.', s=0.3, c='black')
+                    else:
+                        tb0 = bo.scatter(pos, vfe-fev, marker='.', s=0.3, c='black')
+                        
                 if mf == 1:
                     tb0_.remove()
                     ophimin = np.arcsin(
@@ -6454,27 +7546,44 @@ def press(event):
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
                     posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-                    tb0_ = bo.scatter([posmin, posmax], [
-                                      fev, fev], marker='|', c='grey', s=10, alpha=0.8)
+                    if emf=='KE':
+                        tb0_ = bo.scatter([posmin, posmax], [
+                                        fev, fev], marker='|', c='grey', s=10, alpha=0.8)
+                    else:
+                        tb0_ = bo.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=10, alpha=0.8)
             except:
                 pass
             try:
                 if ep == 1:
                     tb1.remove()
-                    tb1 = bo.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    if emf=='KE':
+                        tb1 = bo.scatter(fk, epos, marker='.', s=0.3, c='black')
+                    else:
+                        tb1 = bo.scatter(fk, vfe-epos, marker='.', s=0.3, c='black')
+                        
                 if ef == 1:
                     tb1_.remove()
                     eposmin = epos-efwhm/2
                     eposmax = epos+efwhm/2
-                    tb1_ = bo.scatter(
-                        [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=10, alpha=0.8)
+                    if emf=='KE':
+                        tb1_ = bo.scatter(
+                            [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=10, alpha=0.8)
+                    else:
+                        tb1_ = bo.scatter(
+                            [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=10, alpha=0.8)
             except:
                 pass
             try:
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     tb2.remove()
-                    tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be +
-                                   np.float64(bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
+                    if emf=='KE':
+                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be +
+                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                    else:
+                        print('plotting bb0')
+                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
+                                    np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
+                        print('plotted bb0')
             except:
                 pass
             out.draw()
@@ -6491,11 +7600,17 @@ def release(event):
         x2, y2 = event.xdata, event.ydata
         if value2.get() == '---Plot3---':
             ao.set_xlim(sorted([x1, x2]))
-            ao.set_ylim(sorted([y1, y2]))
+            if emf=='KE':    
+                ao.set_ylim(sorted([y1, y2]))
+            else:
+                ao.set_ylim(sorted([y1, y2], reverse=True))
             out.draw()
         else:
             bo.set_xlim(sorted([x1, x2]))
-            bo.set_ylim(sorted([y1, y2]))
+            if emf=='KE':    
+                bo.set_ylim(sorted([y1, y2]))
+            else:
+                bo.set_ylim(sorted([y1, y2], reverse=True))
             if abs(x1-x2) < (xl[1]-xl[0])/3*2 or abs(y1-y2) < (yl[1]-yl[0])/3*2:
                 try:
                     if mp == 1:
@@ -6518,8 +7633,12 @@ def release(event):
                 if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
                     try:
                         if mp == 1:
-                            tb0 = bo.scatter(
-                                pos, fev, marker='.', s=30, c='black')
+                            if emf=='KE':
+                                tb0 = bo.scatter(
+                                    pos, fev, marker='.', s=30, c='black')
+                            else:
+                                tb0 = bo.scatter(
+                                    pos, vfe-fev, marker='.', s=30, c='black')
                         if mf == 1:
                             ophimin = np.arcsin(
                                 (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
@@ -6529,31 +7648,50 @@ def release(event):
                                 (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
                             posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
                                 (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-                            tb0_ = bo.scatter([posmin, posmax], [
-                                              fev, fev], marker='|', c='grey', s=50, alpha=0.8)
+                            if emf=='KE':
+                                tb0_ = bo.scatter([posmin, posmax], [
+                                                fev, fev], marker='|', c='grey', s=50, alpha=0.8)
+                            else:
+                                tb0_ = bo.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=50, alpha=0.8)
 
                     except:
                         pass
                     try:
                         if ep == 1:
-                            tb1 = bo.scatter(
-                                fk, epos, marker='.', s=30, c='black')
+                            if emf=='KE':
+                                tb1 = bo.scatter(
+                                    fk, epos, marker='.', s=30, c='black')
+                            else:
+                                tb1 = bo.scatter(
+                                    fk, vfe-epos, marker='.', s=30, c='black')
                         if ef == 1:
                             eposmin = epos-efwhm/2
                             eposmax = epos+efwhm/2
-                            tb1_ = bo.scatter(
-                                [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=50, alpha=0.8)
+                            if emf=='KE':
+                                tb1_ = bo.scatter(
+                                    [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=50, alpha=0.8)
+                            else:
+                                tb1_ = bo.scatter(
+                                [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=50, alpha=0.8)
                     except:
                         pass
                     if value2.get() == 'Data Plot with Pos and Bare Band':
-                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be +
-                                       np.float64(bb_offset.get()))/1000+e_photon, linewidth=5, c='red')
+                        if emf=='KE':
+                            tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be +
+                                        np.float64(bb_offset.get()))/1000+vfe, linewidth=5, c='red')
+                        else:
+                            tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
+                                        np.float64(bb_offset.get()))/1000, linewidth=5, c='red')
             else:
                 try:
                     if mp == 1:
                         tb0.remove()
-                        tb0 = bo.scatter(pos, fev, marker='.',
-                                         s=0.3, c='black')
+                        if emf=='KE':
+                            tb0 = bo.scatter(pos, fev, marker='.',
+                                            s=0.3, c='black')
+                        else:
+                            tb0 = bo.scatter(pos, vfe-fev, marker='.',
+                                            s=0.3, c='black')
                     if mf == 1:
                         tb0_.remove()
                         ophimin = np.arcsin(
@@ -6564,28 +7702,43 @@ def release(event):
                             (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
                         posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-                        tb0_ = bo.scatter([posmin, posmax], [
-                                          fev, fev], marker='|', c='grey', s=10, alpha=0.8)
+                        if emf=='KE':
+                            tb0_ = bo.scatter([posmin, posmax], [
+                                            fev, fev], marker='|', c='grey', s=10, alpha=0.8)
+                        else:
+                            tb0_ = bo.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=10, alpha=0.8)
                 except:
                     pass
                 try:
                     if ep == 1:
                         tb1.remove()
-                        tb1 = bo.scatter(fk, epos, marker='.',
-                                         s=0.3, c='black')
+                        if emf=='KE':
+                            tb1 = bo.scatter(fk, epos, marker='.',
+                                            s=0.3, c='black')
+                        else:
+                            tb1 = bo.scatter(fk, vfe-epos, marker='.',
+                                        s=0.3, c='black')
                     if ef == 1:
                         tb1_.remove()
                         eposmin = epos-efwhm/2
                         eposmax = epos+efwhm/2
-                        tb1_ = bo.scatter(
-                            [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=10, alpha=0.8)
+                        if emf=='KE':
+                            tb1_ = bo.scatter(
+                                [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=10, alpha=0.8)
+                        else:
+                            tb1_ = bo.scatter(
+                                [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=10, alpha=0.8)
                 except:
                     pass
                 try:
                     if value2.get() == 'Data Plot with Pos and Bare Band':
                         tb2.remove()
-                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be+np.float64(
-                            bb_offset.get()))/1000+e_photon, linewidth=0.3, c='red')
+                        if emf=='KE':
+                            tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be+np.float64(
+                                bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                        else:
+                            tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be+np.float64(
+                                bb_offset.get()))/1000, linewidth=0.3, c='red')
                 except:
                     pass
             out.draw()
@@ -6886,6 +8039,12 @@ try:
 except:
     print('No MDC fitted data preloaded (Casa)')
 
+emf='KE'
+try:
+    vfe=e_photon
+except:
+    vfe=21.2
+
 '''
 try:
     with np.load('efpara.npz','rb') as f:
@@ -6921,6 +8080,8 @@ except:
 '''
 
 g = tk.Tk()
+v_fe = tk.StringVar()
+v_fe.set(str(vfe))
 windll.shcore.SetProcessDpiAwareness(1)
 ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
 g.tk.call('tk', 'scaling', ScaleFactor/75)
@@ -6948,8 +8109,10 @@ gicon = "iVBORw0KGgoAAAANSUhEUgAABHEAAARxCAMAAACRNutzAAAAAXNSR0IArs4c6QAAAARnQU1
 g.iconphoto(False, tk.PhotoImage(data=b64decode(icon)))
 # g.wm_iconphoto(False, tk.PhotoImage(data=b64decode(icon)))
 
-fr = tk.Frame(g)
+fr = tk.Frame(g,bg='white')
 fr.grid(row=0, column=0, padx=10, pady=10)
+l_path = tk.Text(fr, wrap='word', font=("Arial", 12, "bold"), bg="white", fg="black", state='disabled',height=3,width=30, padx=5, pady=5)
+l_path.pack(fill='x')
 # info = tk.Label(g,text='                                   \n\n\n\n\n\n\n\n\n\n\n\n\n', font=("Arial", 14, "bold"), bg="white", fg="black",padx = 30,pady=30)
 xscroll = tk.Scrollbar(fr, orient='horizontal')
 xscroll.pack(side='bottom', fill='x')
@@ -6960,13 +8123,21 @@ info = tk.Text(fr, wrap='none', font=("Arial", 14, "bold"), bg="white", fg="blac
 info.pack()
 xscroll.config(command=info.xview)
 yscroll.config(command=info.yview)
-try:
-    info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
-    info.insert(tk.END, '\n'+st+'\n')
-    info.see(tk.END)
-    info.config(state='disabled')
-except:
-    pass
+fr_mod = tk.Frame(fr,bg='white')
+fr_mod.pack()
+b_name = tk.Button(fr_mod, text='Modify Name', font=('Arial', 10, 'bold'),command=cname)
+b_name.grid(row=0,column=0)
+b_excitation = tk.Button(fr_mod, text='Modify Excitation Energy', font=('Arial', 10, 'bold'),command=cexcitation)
+b_excitation.grid(row=0,column=1)
+b_desc = tk.Button(fr_mod, text='Modify Description', font=('Arial', 10, 'bold'),command=desc)
+b_desc.grid(row=0,column=2)
+# try:
+#     info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
+#     info.insert(tk.END, '\n'+st+'\n')
+#     info.see(tk.END)
+#     info.config(state='disabled')
+# except:
+#     pass
 
 img1 = Image.open(io.BytesIO(b64decode(icon1))).resize([250, 250])
 tk_img1 = ImageTk.PhotoImage(img1)
@@ -7004,7 +8175,7 @@ mid.grid(row=0, column=1)
 
 st = queue.Queue(maxsize=0)
 state = tk.Label(mid, text='', font=(
-    "Arial", 20, "bold"), bg="white", fg="black")
+    "Arial", 14, "bold"), bg="white", fg="black")
 state.grid(row=0, column=0)
 
 limg = tk.Label(mid, image=img[np.random.randint(
@@ -7140,21 +8311,35 @@ cmlf.grid(row=1, column=0)
 
 # Define your custom colors (as RGB tuples)
 # (value,(color))
-custom_colors = [(0, (1, 1, 1)),
+custom_colors1 = [(0, (1, 1, 1)),
                  (0.5, (0, 0, 1)),
                  (0.85, (0, 1, 1)),
                  (1, (1, 1, 0.26))]
 
 # Create a custom colormap
 custom_cmap = LinearSegmentedColormap.from_list(
-    'custom_cmap', custom_colors, N=256)
+    'custom_cmap', custom_colors1, N=256)
 mpl.colormaps.register(custom_cmap)
+
+# Define your custom colors (as RGB tuples)
+# (value,(color))
+custom_colors2 = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
+                 (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
+                 (0.4, (0, 0.4*0.82, 0)),
+                 (0.6, (0.5*0.82, 1*0.82, 0)),
+                 (0.8,(1*0.82, 1*0.82, 0)),
+                 (1, (1*0.82, 0, 0))]
+# Create a custom colormap
+prevac_cmap = LinearSegmentedColormap.from_list(
+    'prevac_cmap', custom_colors2, N=256)
+mpl.colormaps.register(prevac_cmap)
+
 # plt.register_cmap('custom_cmap', custom_cmap)
-optionList3 = ['terrain', 'custom_cmap', 'viridis', 'turbo',
+optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap', 'viridis', 'turbo',
                'inferno', 'plasma', 'copper', 'grey', 'bwr']   # 選項
 cmp = plt.colormaps()
 value3 = tk.StringVar()                                        # 取值
-value3.set('terrain')
+value3.set('prevac_cmap')
 value3.trace_add('write', chcmp)
 setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
 setcmap.grid(row=0, column=1)
@@ -7167,15 +8352,23 @@ c1.grid(row=0, column=0)
 c2 = tk.Label(cmlf, text='All:', font=("Arial", 12), bg="white", height='1')
 c2.grid(row=1, column=0)
 
+frraw = tk.Frame(plots, bg='white')
+frraw.grid(row=1, column=1)
 
 optionList = ['Raw Data', 'E-K Diagram', 'MDC Normalized',
               'First Derivative', 'Second Derivative']   # 選項
 value = tk.StringVar()                                        # 取值
 value.set('---Plot1---')
 # 第二個參數是取值，第三個開始是選項，使用星號展開
-menu1 = tk.OptionMenu(plots, value, *optionList)
-menu1.grid(row=1, column=1)
+menu1 = tk.OptionMenu(frraw, value, *optionList)
+menu1.grid(row=0, column=0)
 value.trace_add('write', plot1)
+
+b_spec = tk.Button(frraw, text='Spectrogram', fg='red', font=("Arial", 12, "bold"),width=10, height='1', command=trans_plot, bd=5)
+b_spec.grid(row=0, column=1)
+
+b_emode = tk.Button(frraw, text='K.E.', fg='blue', font=("Arial", 12, "bold"), width=5, height='1', command=emode, bd=5)
+b_emode.grid(row=0, column=2)
 
 frfit = tk.Frame(plots, bg='white')
 frfit.grid(row=2, column=1)
@@ -7207,21 +8400,6 @@ value2.set('---Plot3---')
 menu3 = tk.OptionMenu(plots, value2, *optionList2)
 menu3.grid(row=3, column=1)
 value2.trace('w', plot3)
-
-try:
-    if lensmode=='Transmission':
-        trans_plot()
-        menu1.config(state='disabled')
-        menu2.config(state='disabled')
-        menu3.config(state='disabled')
-        b_fit.config(state='disabled')
-    else:
-        menu1.config(state='normal')
-        menu2.config(state='normal')
-        menu3.config(state='normal')
-        b_fit.config(state='normal')
-except:
-    pass
     
 bb_offset = tk.StringVar()
 bb_offset.set('0')
@@ -7283,6 +8461,8 @@ xdata.grid(row=0, column=0)
 ydata = tk.Label(xydata, text='ydata:', font=(
     "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
 ydata.grid(row=0, column=1)
+b_copyimg = tk.Button(xydata, text='Copy Image to Clipboard', font=('Arial', 12, 'bold'), command=copy_to_clipboard, bd=10)
+b_copyimg.grid(row=0, column=2)
 
 exf = tk.Frame(g, bg='white')
 exf.grid(row=1, column=2)
@@ -7337,5 +8517,10 @@ exte.grid(row=3, column=0)
 tt = threading.Thread(target=tstate)
 tt.daemon = True
 tt.start()
+try:
+    info.config(state='normal')
+    pr_load(data,path)
+except:
+    pass
 g.update()
 g.mainloop()
