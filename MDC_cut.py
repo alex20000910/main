@@ -3676,6 +3676,9 @@ def feaf2(*e):
 def ejob():     # MDC Fitting GUI
     global g, efiti, efitfig, efitout, egg, exdata, eydata, edxdata, edydata, eiout, eifig, efi, efi_err, efi_x, ebrmv, flermv, ebcgl2, efp, flecgl2, fpr, est, estate, ewf1, ewf2, eaf1, eaf2, elind, erind, ein_w1, ein_w2, ein_a1, ein_a2
     egg = tk.Toplevel(g, bg='white')
+    screen_width = g.winfo_screenwidth()
+    screen_height = g.winfo_screenheight()
+    egg.geometry(f"{screen_width}x{screen_height}")
     egg.title('EDC Lorentz Fit')
     est = queue.Queue(maxsize=0)
     estate = tk.Label(egg, text='', font=(
@@ -4524,7 +4527,8 @@ def fmfwhm():
     a1=f.add_subplot(311)
     a2=f.add_subplot(312)
     a3=f.add_subplot(313)
-    x=[]
+    x1=[]
+    x2=[]
     y1=[]
     y2=[]
     for i, v in enumerate(mfi):
@@ -4532,8 +4536,11 @@ def fmfwhm():
             fev.append(ev[v])
             pos.append(maa1[v, 0])
             fwhm.append(maa1[v, 2])
+            x1.append(ev[v])
+            y1.append(maa2[v, 2])
         elif mfp[v] == 2:
-            x.append(ev[v])
+            x1.append(ev[v])
+            x2.append(ev[v])
             y1.append(maa2[v, 2])
             y2.append(maa2[v, 6])
             
@@ -4555,15 +4562,15 @@ def fmfwhm():
     pos = res(fev, pos)
     fev = res(fev, fev)
     
-    ha=a1.scatter(x,y1,c='r')
+    ha=a1.scatter(x1,y1,c='r')
     a1.set_title('FWHM')
     a1.set_ylabel(r'FWHM ($\AA$)')
     a1.legend([ha],['Comp 1'])
-    hb=a2.scatter(x,y2,c='b')
+    hb=a2.scatter(x2,y2,c='b')
     a2.set_ylabel(r'FWHM ($\AA$)')
     a2.legend([hb],['Comp 2'])
-    h2=a3.scatter(x,y2,c='b')
-    h1=a3.scatter(x,y1,c='r')
+    h2=a3.scatter(x2,y2,c='b')
+    h1=a3.scatter(x1,y1,c='r')
     a3.set_xlabel('Kinetic Energy (eV)')
     a3.set_ylabel(r'FWHM ($\AA$)')
     a3.legend([h1,h2],['Comp 1','Comp 2'])
@@ -4678,8 +4685,9 @@ def fmpreview():
     bmimse.pack()
     mprvg.update()
     
-scki = []    
-def fmend():
+scki = []
+
+def mprend():
     global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
     fev, pos, fwhm = [], [], []
     skmin, skmax, smaa1, smaa2 = kmin, kmax, maa1, maa2
@@ -4708,6 +4716,10 @@ def fmend():
             
     rpos, fev, pos, fwhm = np.float64(pos), np.float64(
         fev), np.float64(pos), np.float64(fwhm)
+
+def fmend():
+    global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
+    mprend()
     scki = cki
     fpr = 1
     mendg = tk.Toplevel(g)
@@ -4926,14 +4938,90 @@ def mplfi():
     miout.draw()
 
 
+def mprplot(xl):
+    i = mfiti.get()
+    mfitprfig1.clear()
+    mfitprfig2.clear()
+    mfitprfig3.clear()
+    a = mfitprfig1.subplots()
+    b = mfitprfig2.subplots()
+    c = mfitprfig3.subplots(2, 1)
+    c[1].set_xlabel('Binding Energy (eV)')
+    c[0].set_ylabel(r'FWHM ($\AA$)')
+    c[1].set_ylabel(r'FWHM ($\AA$)')
+    c[0].set_xticks([])
+    c[0].invert_xaxis()
+    c[1].invert_xaxis()
+    x1=[]
+    x2=[]
+    y1=[]
+    y2=[]
+    for j, v in enumerate(mfi):
+        if mfp[v] == 1:
+            x1.append(vfe-ev[v])
+            y1.append(maa2[v, 2])
+        elif mfp[v] == 2:
+            x1.append(vfe-ev[v])
+            x2.append(vfe-ev[v])
+            y1.append(maa2[v, 2])
+            y2.append(maa2[v, 6])
+    c[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')
+    c[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')
+    l1=c[0].legend()
+    l2=c[1].legend()
+    l1.draw_frame(False)
+    l2.draw_frame(False)
+    mprend()
+    if emf=='KE':
+        px, py = np.meshgrid(phi, ev)
+        b.scatter(pos+fwhm/2, fev, c='r', s=0.5)
+        b.scatter(pos-fwhm/2, fev, c='r', s=0.5)
+        b.scatter(pos, fev, c='k', s=0.5)
+    else:
+        px, py = np.meshgrid(phi, vfe-ev)
+        b.scatter(pos+fwhm/2, vfe-fev, c='r', s=0.5)
+        b.scatter(pos-fwhm/2, vfe-fev, c='r', s=0.5)
+        b.scatter(pos, vfe-fev, c='k', s=0.5)
+    b.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
+    # px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+    # )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+    )**0.5*np.sin(px/180*np.pi)*10**-10/(h/2/np.pi)
+    pz = data.to_numpy()
+    a.pcolormesh(px, py, pz, cmap=value3.get())
+    oyl=a.get_ylim()
+    
+    a.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
+    b.plot(b.get_xlim(), [ev[i], ev[i]], 'b-')
+    c[0].plot([vfe-ev[i],vfe-ev[i]],c[0].get_ylim(),'b-')
+    c[1].plot([vfe-ev[i],vfe-ev[i]],c[1].get_ylim(),'r-')
+    
+    de=(ev[1]-ev[0])*8
+    a.plot([xl[0], xl[0]],[ev[i]-de, ev[i]+de], 'r-')
+    a.plot([xl[1], xl[1]],[ev[i]-de, ev[i]+de], 'r-')
+    a.set_ylim(oyl)
+    if emf=='KE':
+        a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+        b.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+    else:
+        a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+        b.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+        a.invert_yaxis()
+        b.invert_yaxis()
+    mfitprout1.draw()
+    mfitprout2.draw()
+    mfitprout3.draw()
+
 def mfitplot():  # mfiti Scale
-    global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6, mxf1, mxf2, mwf1, mwf2, maf1, maf2
+    global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6, mxf1, mxf2, mwf1, mwf2, maf1, maf2, mt1, mt2, mt3, mt4, mt5
     i = mfiti.get()
     mfitfig.clear()
     mfitax = mfitfig.subplots()
     # 'Pos:'+str(round(maa1[i,0],3))+r' $(\frac{2\pi}{\AA})$'+', FWHM:'+str(round(maa1[i,2],3))+r' $(\frac{2\pi}{\AA})$'
-    mfitax.set_title('Kinetic Energy:' +
-                     str(round(mvv[i], 3))+' eV, '+str(mfp[i])+' Peak')
+    if emf=='KE':
+        mfitax.set_title('Kinetic Energy:' + str(round(mvv[i], 3))+' eV, '+str(mfp[i])+' Peak')
+    else:
+        mfitax.set_title('Binding Energy:' + str(round(vfe-mvv[i], 3))+' eV, '+str(mfp[i])+' Peak')
     mfitax.scatter(fmx[i, :], fmy[i, :], c='k', s=4)
     tyl = mfitax.get_ylim()
     txl = mfitax.get_xlim()
@@ -4982,18 +5070,17 @@ def mfitplot():  # mfiti Scale
             else:
                 mfitax.plot(x, gl1(x, *maa1[i, :]) +
                             lbg-y+tymax+dy, color='red', lw=1)
-
             # s=(np.sum((gl1(x,*maa1[i,:])+lbg-y)**2)/(max(x)-min(x)))**0.5
             s = np.std(gl1(x, *maa1[i, :])+lbg-y)  # STD
-            mfitax.text(txmin+dx, tymax-dy, 'Residual STD: '+str(round(s, 2)))
+            mt1=mfitax.text(txmin+dx, tymax-dy, 'Residual STD: '+str(round(s, 2)))
             s = np.sqrt(np.mean((gl1(x, *maa1[i, :])+lbg-y)**2))  # RMS
-            mfitax.text(txmin+dx, tymax-2*dy,
+            mt2=mfitax.text(txmin+dx, tymax-2*dy,
                         'Residual RMS: '+str(round(s, 2)))
             ty = gl1(x, *maa1[i, :])
             s = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
-                       # Area
-                       * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)])))
-            mfitax.text(txmin+dx, tymax-3*dy, 'Area: '+str(round(s, 2)))
+                    # Area
+                    * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)])))
+            mt3=mfitax.text(txmin+dx, tymax-3*dy, 'Area: '+str(round(s, 2)))
             vv = []
             for ii in range(6):
                 if ii > 2:
@@ -5041,23 +5128,23 @@ def mfitplot():  # mfiti Scale
                             lbg-y+tymax+dy, color='red', lw=1)
             # s=(np.sum((gl2(x,*maa2[i,:])+lbg-y)**2)/(max(x)-min(x)))**0.5
             s = np.std(gl2(x, *maa2[i, :])+lbg-y)  # STD
-            mfitax.text(txmin+dx, tymax-dy, 'Residual STD: '+str(round(s, 2)))
+            mt1=mfitax.text(txmin+dx, tymax-dy, 'Residual STD: '+str(round(s, 2)))
             s = np.sqrt(np.mean((gl2(x, *maa2[i, :])+lbg-y)**2))  # RMS
-            mfitax.text(txmin+dx, tymax-2*dy,
+            mt2=mfitax.text(txmin+dx, tymax-2*dy,
                         'Residual RMS: '+str(round(s, 2)))
             ty = gl1(x, *maa2[i, :4])
             s = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
-                       # Area 1
-                       * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)])))
-            mfitax.text(txmin+dx, tymax-3*dy, 'Area 1: '+str(round(s, 2)))
+                    # Area 1
+                    * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)])))
+            mt3=mfitax.text(txmin+dx, tymax-3*dy, 'Area 1: '+str(round(s, 2)))
             ty = gl1(x, *maa2[i, -4:])
             s = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
-                       # Area 2
-                       * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)])))
-            mfitax.text(txmin+dx, tymax-4*dy, 'Area 2: '+str(round(s, 2)))
+                    # Area 2
+                    * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)])))
+            mt4=mfitax.text(txmin+dx, tymax-4*dy, 'Area 2: '+str(round(s, 2)))
             try:
                 if smcst[i][4] != 0 and smcst[i][5] != 0:
-                    mfitax.text(txmin+dx, tymax-5*dy, 'A1:A2='+str(smcst[i][4])+':'+str(smcst[i][5]))
+                    mt5=mfitax.text(txmin+dx, tymax-5*dy, 'A1:A2='+str(smcst[i][4])+':'+str(smcst[i][5]))
                 mxf1.set(str(smcst[i][0]))
                 mxf2.set(str(smcst[i][1]))
                 mwf1.set(str(smcst[i][2]))
@@ -5108,6 +5195,7 @@ def mfitplot():  # mfiti Scale
     myl = mfitax.get_ylim()
     tmxl = np.copy(mxl)
     mfitout.draw()
+    mprplot(mxl)
     mplfi()
 
 
@@ -5217,10 +5305,16 @@ def mpress(event):
             mfitout.get_tk_widget().delete('rec')
             mdxdata.config(text='dx:')
             mdydata.config(text='dy:')
+            mt1.set_visible(True)
+            mt2.set_visible(True)
+            mt3.set_visible(True)
+            mt4.set_visible(True)
+            mt5.set_visible(True)
         except:
             pass
         mfitax.set_xlim(mxl)
         mfitax.set_ylim(myl)
+        mprplot(mxl)
         mfitout.draw()
         mmof = 1
 
@@ -5240,10 +5334,16 @@ def mrelease(event):
         if fklmin == 0 and fklmax == 0 and fkregion == 0 and (x2, y2) == (x1, y1) and px1 > tpx1 and px1 < tpx2 and py1 > tpy1 and py1 < tpy2:
             try:
                 mfitout.get_tk_widget().delete('rec')
+                mt1.set_visible(False)
+                mt2.set_visible(False)
+                mt3.set_visible(False)
+                mt4.set_visible(False)
+                mt5.set_visible(False)
             except:
                 pass
             mfitax.set_xlim(sorted([tx1, tx2]))
             mfitax.set_ylim(sorted([ty1, ty2]))
+            mprplot(sorted([tx1, tx2]))
             tmxl = sorted([x1, x2])
             mfitout.draw()
         elif fklmin == 1 or fklmax == 1 or fkregion == 1:
@@ -5466,15 +5566,34 @@ def fmposcst():
 
 
 def mjob():     # MDC Fitting GUI
-    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject
+    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3
     mgg = tk.Toplevel(g, bg='white')
+    screen_width = g.winfo_screenwidth()
+    screen_height = g.winfo_screenheight()
+    mgg.geometry(f"{screen_width}x{screen_height}")
     mgg.title('MDC Lorentz Fit')
+    fr_pr1 = tk.Frame(master=mgg, bg='white')
+    fr_pr1.grid(row=1, column=0)
+    mfitprfig2 = Figure(figsize=(3, 3), layout='constrained')
+    mfitprout2 = tkagg.FigureCanvasTkAgg(mfitprfig2, master=fr_pr1)
+    mfitprout2.get_tk_widget().grid(row=0, column=0)
+    mfitprfig3 = Figure(figsize=(3, 3), layout='constrained')
+    mfitprout3 = tkagg.FigureCanvasTkAgg(mfitprfig3, master=fr_pr1)
+    mfitprout3.get_tk_widget().grid(row=1, column=0)
+    
+    fr_pr2 = tk.Frame(master=mgg, bg='white')
+    fr_pr2.grid(row=2, column=0)
+    mfitprfig1 = Figure(figsize=(3, 2), layout='constrained')
+    mfitprout1 = tkagg.FigureCanvasTkAgg(mfitprfig1, master=fr_pr2)
+    mfitprout1.get_tk_widget().grid(row=0, column=0)
+    
+    
     mst = queue.Queue(maxsize=0)
     mstate = tk.Label(mgg, text='', font=(
         "Arial", 14, "bold"), bg="white", fg="black")
-    mstate.grid(row=0, column=0)
+    mstate.grid(row=0, column=1)
     fr = tk.Frame(master=mgg, bg='white')
-    fr.grid(row=1, column=0)
+    fr.grid(row=1, column=1)
     frind = tk.Frame(master=fr, bg='white')
     frind.grid(row=0, column=0)
     mlind = tk.Button(frind, text='<<', command=mflind, width=10,
@@ -5523,7 +5642,7 @@ def mjob():     # MDC Fitting GUI
     # bstop.grid(row=1,column=0)
 
     frpara = tk.Frame(master=mgg, bd=5, bg='white')
-    frpara.grid(row=1, column=1)
+    frpara.grid(row=1, column=2)
     try:
         if fpr == 1:
             mfp = list(smfp)
@@ -5656,7 +5775,7 @@ def mjob():     # MDC Fitting GUI
     min_x2.grid(row=0, column=3)
 
     frout = tk.Frame(master=mgg, bd=5, bg='white')
-    frout.grid(row=2, column=0)
+    frout.grid(row=2, column=1)
     bfall = tk.Button(frout, text='Fit All', command=fmfall,
                       width=30, height=1, font=('Arial', 14, "bold"), bg='white')
     bfall.grid(row=0, column=0)
@@ -5957,6 +6076,8 @@ def o_fbb_offset(*e):
     if '' == bb_offset.get():
         bb_offset.set('0')
         bboffset.select_range(0, 1)
+    os.chdir(cdir)
+    np.savez('bb', path=bpath, be=be, k=k, bbo=float(bb_offset.get()), bbk=float(bbk_offset.get()))
 
 
 def fbb_offset(*e):
@@ -5970,6 +6091,8 @@ def o_fbbk_offset(*e):
     if '' == bbk_offset.get():
         bbk_offset.set('1')
         bbkoffset.select_range(0, 1)
+    os.chdir(cdir)
+    np.savez('bb', path=bpath, be=be, k=k, bbo=float(bb_offset.get()), bbk=float(bbk_offset.get()))
 
 
 def fbbk_offset(*e):
@@ -6005,7 +6128,7 @@ def flowlim(*e):
 
 
 def o_reload(*e):
-    global k_offset, fev, ophi, rpos, pos, ffphi, fwhm, fk, st, kmin, kmax
+    global k_offset, fev, ophi, rpos, pos, ffphi, fwhm, fk, st, kmin, kmax, smresult, smcst, smaa1, smaa2, smfp, smfi, skmin, skmax, epos, efwhm, ffphi, fk, emin, emax, seaa1, seaa2, sefp, sefi, semin, semax, smresult, smcst
     if '' == k_offset.get():
         k_offset.set('0')
         koffset.select_range(0, 1)
@@ -6013,27 +6136,39 @@ def o_reload(*e):
                      10**-10*(h/2/np.pi))*180/np.pi
     pos = (2*m*fev*1.6*10**-19)**0.5 * \
         np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-    okmphi = np.arcsin(kmin/(2*m*fev*1.6*10**-19)**0.5 /
-                       10**-10*(h/2/np.pi))*180/np.pi
-    kmin = (2*m*fev*1.6*10**-19)**0.5 * \
-        np.sin((np.float64(k_offset.get())+okmphi) /
-               180*np.pi)*10**-10/(h/2/np.pi)
-    okMphi = np.arcsin(kmax/(2*m*fev*1.6*10**-19)**0.5 /
-                       10**-10*(h/2/np.pi))*180/np.pi
-    kmax = (2*m*fev*1.6*10**-19)**0.5 * \
-        np.sin((np.float64(k_offset.get())+okMphi) /
-               180*np.pi)*10**-10/(h/2/np.pi)
-    ffphi = np.float64(k_offset.get())+fphi
-    fk = (2*m*epos*1.6*10**-19)**0.5 * \
-        np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
+    ophimin = np.arcsin(
+        (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    ophimax = np.arcsin(
+        (rpos+fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    kmin = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+        (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
+    kmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+        (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
+    print('kmin: ',len(kmin))
+    print('fev: ',len(fev))
+    # okmphi = np.arcsin(kmin/(2*m*fev*1.6*10**-19)**0.5 /
+    #                    10**-10*(h/2/np.pi))*180/np.pi
+    # kmin = (2*m*fev*1.6*10**-19)**0.5 * \
+    #     np.sin((np.float64(k_offset.get())+okmphi) /
+    #            180*np.pi)*10**-10/(h/2/np.pi)
+    # okMphi = np.arcsin(kmax/(2*m*fev*1.6*10**-19)**0.5 /
+    #                    10**-10*(h/2/np.pi))*180/np.pi
+    # kmax = (2*m*fev*1.6*10**-19)**0.5 * \
+    #     np.sin((np.float64(k_offset.get())+okMphi) /
+    #            180*np.pi)*10**-10/(h/2/np.pi)
     os.chdir(cdir)
     try:
-        np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos,
-                 ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin, kmax=kmax)
+        np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
+                 kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
+        np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
+                 kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
     except:
         try:
-            np.savez('efit', ko=k_offset.get(), fphi=fphi, epos=epos,
-                     ffphi=ffphi, efwhm=efwhm, fk=fk, emin=emin, emax=emax)
+            ffphi = np.float64(k_offset.get())+fphi
+            fk = (2*m*epos*1.6*10**-19)**0.5 * \
+                np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
+            np.savez('efit', ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
+                 emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
         except:
             pass
         pass
@@ -6168,28 +6303,33 @@ def interp(x: float, xp: float, fp: float) -> np.ndarray:
 def o_bareband():
     file = fd.askopenfilename(title="Select TXT file",
                               filetypes=(("TXT files", "*.txt"),))
-
     # global be,k,rx,ry,ix,iy,limg,img
-    global be, k, limg, img, st
+    global be, k, limg, img, st, bpath
     if len(file) > 0:
+        bpath = file
         print('Loading...')
         st.put('Loading...')
-    t_k = []
-    t_ke = []
-    with open(file) as f:
-        for i, line in enumerate(f):
-            if i != 0:  # ignore 1st row data (index = 0)
-                t_k.append(line.split('\t')[0])
-                t_ke.append(line.split('\t')[1].replace('\n', ''))
-    # [::-1] inverse the order for np.interp (xp values should be increasing)
-    be = np.float64(t_ke)*1000
-    # [::-1] inverse the order for np.interp (xp values should be increasing)
-    k = np.float64(t_k)
-    os.chdir(cdir)
-    np.savez('bb', path=file, be=be, k=k)
-    limg.config(image=img[np.random.randint(len(img))])
-    print('Done')
-    st.put('Done')
+        t_k = []
+        t_ke = []
+        with open(file) as f:
+            for i, line in enumerate(f):
+                if i != 0:  # ignore 1st row data (index = 0)
+                    t_k.append(line.split('\t')[0])
+                    t_ke.append(line.split('\t')[1].replace('\n', ''))
+        # [::-1] inverse the order for np.interp (xp values should be increasing)
+        be = np.float64(t_ke)*1000
+        # [::-1] inverse the order for np.interp (xp values should be increasing)
+        k = np.float64(t_k)
+        os.chdir(cdir)
+        np.savez('bb', path=file, be=be, k=k, bbo=0, bbk=1)
+        limg.config(image=img[np.random.randint(len(img))])
+        print('Done')
+        st.put('Done')
+    else:
+        limg.config(image=img[np.random.randint(len(img))])
+        print('No file selected')
+        st.put('No file selected')
+    
 
 
 def o_plot1(*e):
@@ -8407,11 +8547,13 @@ except:
 
 try:
     with np.load('bb.npz', 'rb') as f:
-        path = str(f['path'])
+        bpath = str(f['path'])
         be = f['be']
         k = f['k']
+        bbo = f['bbo']
+        bbk = f['bbk']
         print('Bare Band file preloaded:')
-        print(path+'\n')
+        print(bpath+'\n')
 except:
     print('No Bare Band file preloaded')
 
@@ -8841,13 +8983,19 @@ menu3.grid(row=3, column=1)
 value2.trace('w', plot3)
     
 bb_offset = tk.StringVar()
-bb_offset.set('0')
+try:
+    bb_offset.set(bbo)
+except:
+    bb_offset.set('0')
 bb_offset.trace_add('write', fbb_offset)
 bboffset = tk.Entry(plots, font=("Arial", 12, "bold"),
                     width=15, textvariable=bb_offset, bd=10)
 bboffset.grid(row=4, column=1)
 bbk_offset = tk.StringVar()
-bbk_offset.set('1')
+try:
+    bbk_offset.set(bbk)
+except:
+    bbk_offset.set('1')
 bbk_offset.trace_add('write', fbbk_offset)
 bbkoffset = tk.Entry(plots, font=("Arial", 12, "bold"),
                      width=15, textvariable=bbk_offset, bd=10)
