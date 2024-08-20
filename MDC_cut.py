@@ -334,11 +334,12 @@ def g_emode():
     gfe.update()
 
 def emode():
-    global gfe,fe_in,b_emode,emf,v_fe
+    global gfe,fe_in,b_emode,emf,v_fe,mfpr
     try:
         gfe.destroy()
     except:
         pass
+    mfpr=0
     if emf=='KE':
         emf='BE'
         b_emode.config(text='B.E.')
@@ -3847,6 +3848,7 @@ def ejob():     # MDC Fitting GUI
 
 def fmcgl2():
     global mbcgl2, kmin, kmax, flmcgl2, micgl2, mfp, mbcomp1, mbcomp2, flmcomp1, flmcomp2
+    msave_state()
     mbcomp1.config(state='active')
     mbcomp2.config(state='active')
     flmcomp1, flmcomp2 = -1, -1
@@ -3972,6 +3974,7 @@ def mfitjob():
         mfi, mfi_err, mfi_x = [], [], []
     else:
         mfi, mfi_err, mfi_x = list(mfi), list(mfi_err), list(mfi_x)
+    msave_state()
     pbar = tqdm.tqdm(total=len(ev), desc='Fitting MDC', colour='green')
     for i in range(len(ev)):
         mbase[i] = int(base.get())  # 待調整
@@ -4232,6 +4235,7 @@ def mfit():
     mbcomp1.config(bg='white')
     mbcomp2.config(bg='white')
     mfi, mfi_err, mfi_x = list(mfi), list(mfi_err), list(mfi_x)
+    msave_state()
     i = mfiti.get()
     mbase[i] = int(base.get())  # 待調整
     fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
@@ -4409,9 +4413,97 @@ def mfit():
     elif mfp[i] == 2:
         maa2[i, :] = a2
 
+# 初始化撤銷和重做堆疊
+mundo_stack = []
+mredo_stack = []
+
+def msave_state():
+    # 保存當前狀態到撤銷堆疊，並清空重做堆疊
+    smresult = pack_fitpar(mresult)
+    state = {
+        'mfi': mfi.copy(),
+        'mfp': mfp.copy(),
+        'kmin': kmin.copy(),
+        'kmax': kmax.copy(),
+        'maa1': maa1.copy(),
+        'maa2': maa2.copy(),
+        'smresult': smresult.copy(),
+        'smcst': smcst.copy(),
+        'mfi_err': mfi_err.copy()
+    }
+    mundo_stack.append(state)
+    mredo_stack.clear()
+
+def mundo():
+    if mundo_stack:
+        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, smcst, mfi_err
+        # 從撤銷堆疊中彈出上一個狀態並恢復，並將當前狀態推入重做堆疊
+        state = mundo_stack.pop()
+        smresult = pack_fitpar(mresult)
+        mredo_stack.append({
+            'mfi': mfi.copy(),
+            'mfp': mfp.copy(),
+            'kmin': kmin.copy(),
+            'kmax': kmax.copy(),
+            'maa1': maa1.copy(),
+            'maa2': maa2.copy(),
+            'smresult': smresult.copy(),
+            'smcst': smcst.copy(),
+            'mfi_err': mfi_err.copy()
+        })
+        mfi = state['mfi']
+        mfp = state['mfp']
+        kmin = state['kmin']
+        kmax = state['kmax']
+        maa1 = state['maa1']
+        maa2 = state['maa2']
+        smresult = state['smresult']
+        smcst = state['smcst']
+        mfi_err = state['mfi_err']
+        mst.put("Undo")
+        print("Undo")
+        mfitplot()
+    else:
+        mst.put("No more actions to undo.")
+        print("No more actions to undo.")
+
+def mredo():
+    if mredo_stack:
+        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, smcst, mfi_err
+        # 從重做堆疊中彈出上一個狀態並恢復，並將當前狀態推入撤銷堆疊
+        state = mredo_stack.pop()
+        smresult = pack_fitpar(mresult)
+        mundo_stack.append({
+            'mfi': mfi.copy(),
+            'mfp': mfp.copy(),
+            'kmin': kmin.copy(),
+            'kmax': kmax.copy(),
+            'maa1': maa1.copy(),
+            'maa2': maa2.copy(),
+            'smresult': smresult.copy(),
+            'smcst': smcst.copy(),
+            'mfi_err': mfi_err.copy()
+        })
+        mfi = state['mfi']
+        mfp = state['mfp']
+        kmin = state['kmin']
+        kmax = state['kmax']
+        maa1 = state['maa1']
+        maa2 = state['maa2']
+        smresult = state['smresult']
+        smcst = state['smcst']
+        mfi_err = state['mfi_err']
+        mst.put("Redo")
+        print("Redo")
+        mfitplot()
+    else:
+        mst.put("No more actions to redo.")
+        print("No more actions to redo.")
+
 
 def fmrmv():
     global mbrmv, flmrmv, mirmv, kmin, kmax, mfi, mfi_err, mfi_x, cki, mfp, mresult, smresult, smcst
+    msave_state()
     i = mfiti.get()
     flmrmv *= -1
     if flmrmv == 1:
@@ -4935,23 +5027,116 @@ def mplfi():
     except ValueError:
         pass
     miax.set_yticks([])
+    mprplot(mxl)
     miout.draw()
 
+#####################################################################stable below
+###############################################################################
+# def mprplot(xl):
+#     i = mfiti.get()
+#     mfitprfig1.clear()
+#     mfitprfig2.clear()
+#     mfitprfig3.clear()
+#     a = mfitprfig1.subplots()
+#     b = mfitprfig2.subplots()
+#     c = mfitprfig3.subplots(2, 1)
+#     c[1].set_xlabel('Binding Energy (eV)')
+#     c[0].set_ylabel(r'FWHM ($\AA$)')
+#     c[1].set_ylabel(r'FWHM ($\AA$)')
+#     c[0].set_xticks([])
+#     c[0].invert_xaxis()
+#     c[1].invert_xaxis()
+#     x1=[]
+#     x2=[]
+#     y1=[]
+#     y2=[]
+#     for j, v in enumerate(mfi):
+#         if mfp[v] == 1:
+#             x1.append(vfe-ev[v])
+#             y1.append(maa2[v, 2])
+#         elif mfp[v] == 2:
+#             x1.append(vfe-ev[v])
+#             x2.append(vfe-ev[v])
+#             y1.append(maa2[v, 2])
+#             y2.append(maa2[v, 6])
+#     c[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')
+#     c[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')
+#     l1=c[0].legend()
+#     l2=c[1].legend()
+#     l1.draw_frame(False)
+#     l2.draw_frame(False)
+#     mprend()
+#     if emf=='KE':
+#         px, py = np.meshgrid(phi, ev)
+#         b.scatter(pos+fwhm/2, fev, c='r', s=0.5)
+#         b.scatter(pos-fwhm/2, fev, c='r', s=0.5)
+#         b.scatter(pos, fev, c='k', s=0.5)
+#     else:
+#         px, py = np.meshgrid(phi, vfe-ev)
+#         b.scatter(pos+fwhm/2, vfe-fev, c='r', s=0.5)
+#         b.scatter(pos-fwhm/2, vfe-fev, c='r', s=0.5)
+#         b.scatter(pos, vfe-fev, c='k', s=0.5)
+#     b.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
+#     # px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+#     # )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+#     px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+#     )**0.5*np.sin(px/180*np.pi)*10**-10/(h/2/np.pi)
+#     pz = data.to_numpy()
+#     a.pcolormesh(px, py, pz, cmap=value3.get())
+#     oyl=a.get_ylim()
+    
+#     if emf=='KE':
+#         a.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
+#         b.plot(b.get_xlim(), [ev[i], ev[i]], 'b-')
+#     else:
+#         a.plot([xl[0], xl[1]], [vfe-ev[i], vfe-ev[i]], 'r-')
+#         b.plot(b.get_xlim(), [vfe-ev[i], vfe-ev[i]], 'b-')
+#     c[0].plot([vfe-ev[i],vfe-ev[i]],c[0].get_ylim(),'b-')
+#     c[1].plot([vfe-ev[i],vfe-ev[i]],c[1].get_ylim(),'r-')
+    
+#     de=(ev[1]-ev[0])*8
 
-def mprplot(xl):
+#     a.set_ylim(oyl)
+#     if emf=='KE':
+#         a.plot([xl[0], xl[0]],[ev[i]-de, ev[i]+de], 'r-')
+#         a.plot([xl[1], xl[1]],[ev[i]-de, ev[i]+de], 'r-')
+#         a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+#         b.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+#     else:
+#         a.plot([xl[0], xl[0]],[vfe-ev[i]-de, vfe-ev[i]+de], 'r-')
+#         a.plot([xl[1], xl[1]],[vfe-ev[i]-de, vfe-ev[i]+de], 'r-')
+#         a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+#         b.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+#         a.invert_yaxis()
+#         b.invert_yaxis()
+#     mfitprout1.draw()
+#     mfitprout2.draw()
+#     mfitprout3.draw()
+###############################################################################
+############################################################################### stable above
+
+
+############################################################################### try below
+###############################################################################
+def mprplot_job0():
+    global mfitprfig2, mfitprfig3, mfitprout2, mfitprout3, mfprb, mfprc
     i = mfiti.get()
-    mfitprfig1.clear()
     mfitprfig2.clear()
     mfitprfig3.clear()
-    a = mfitprfig1.subplots()
-    b = mfitprfig2.subplots()
-    c = mfitprfig3.subplots(2, 1)
-    c[1].set_xlabel('Binding Energy (eV)')
-    c[0].set_ylabel(r'FWHM ($\AA$)')
-    c[1].set_ylabel(r'FWHM ($\AA$)')
-    c[0].set_xticks([])
-    c[0].invert_xaxis()
-    c[1].invert_xaxis()
+    mfprb = mfitprfig2.subplots()
+    mfprc = mfitprfig3.subplots(2, 1)
+    mfprc[1].set_xlabel('Binding Energy (eV)')
+    mfprc[0].set_ylabel(r'FWHM ($\AA$)')
+    mfprc[1].set_ylabel(r'FWHM ($\AA$)')
+    mfprc[0].set_xticks([])
+    mfprc[0].invert_xaxis()
+    mfprc[1].invert_xaxis()
+    mfprb.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
+    if emf=='KE':
+        mfprb.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+    else:
+        mfprb.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+        mfprb.invert_yaxis()
     x1=[]
     x2=[]
     y1=[]
@@ -4965,52 +5150,100 @@ def mprplot(xl):
             x2.append(vfe-ev[v])
             y1.append(maa2[v, 2])
             y2.append(maa2[v, 6])
-    c[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')
-    c[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')
-    l1=c[0].legend()
-    l2=c[1].legend()
+    mfprc[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')
+    mfprc[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')
+    l1 = mfprc[0].legend()
+    l2 = mfprc[1].legend()
     l1.draw_frame(False)
     l2.draw_frame(False)
     mprend()
-    if emf=='KE':
-        px, py = np.meshgrid(phi, ev)
-        b.scatter(pos+fwhm/2, fev, c='r', s=0.5)
-        b.scatter(pos-fwhm/2, fev, c='r', s=0.5)
-        b.scatter(pos, fev, c='k', s=0.5)
+    if emf == 'KE':
+        mfprb.scatter(pos + fwhm / 2, fev, c='r', s=0.5)
+        mfprb.scatter(pos - fwhm / 2, fev, c='r', s=0.5)
+        mfprb.scatter(pos, fev, c='k', s=0.5)
     else:
-        px, py = np.meshgrid(phi, vfe-ev)
-        b.scatter(pos+fwhm/2, vfe-fev, c='r', s=0.5)
-        b.scatter(pos-fwhm/2, vfe-fev, c='r', s=0.5)
-        b.scatter(pos, vfe-fev, c='k', s=0.5)
-    b.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
-    # px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
-    # )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
-    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
-    )**0.5*np.sin(px/180*np.pi)*10**-10/(h/2/np.pi)
-    pz = data.to_numpy()
-    a.pcolormesh(px, py, pz, cmap=value3.get())
-    oyl=a.get_ylim()
-    
-    a.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
-    b.plot(b.get_xlim(), [ev[i], ev[i]], 'b-')
-    c[0].plot([vfe-ev[i],vfe-ev[i]],c[0].get_ylim(),'b-')
-    c[1].plot([vfe-ev[i],vfe-ev[i]],c[1].get_ylim(),'r-')
-    
-    de=(ev[1]-ev[0])*8
-    a.plot([xl[0], xl[0]],[ev[i]-de, ev[i]+de], 'r-')
-    a.plot([xl[1], xl[1]],[ev[i]-de, ev[i]+de], 'r-')
-    a.set_ylim(oyl)
-    if emf=='KE':
-        a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
-        b.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+        mfprb.scatter(pos + fwhm / 2, vfe - fev, c='r', s=0.5)
+        mfprb.scatter(pos - fwhm / 2, vfe - fev, c='r', s=0.5)
+        mfprb.scatter(pos, vfe - fev, c='k', s=0.5)
+
+    if emf == 'KE':
+        mfprb.plot(mfprb.get_xlim(), [ev[i], ev[i]], 'b-')
     else:
-        a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
-        b.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
-        a.invert_yaxis()
-        b.invert_yaxis()
-    mfitprout1.draw()
+        mfprb.plot(mfprb.get_xlim(), [vfe - ev[i], vfe - ev[i]], 'b-')
+    mfprc[0].plot([vfe - ev[i], vfe - ev[i]], mfprc[0].get_ylim(), 'b-')
+    mfprc[1].plot([vfe - ev[i], vfe - ev[i]], mfprc[1].get_ylim(), 'r-')
+    
     mfitprout2.draw()
     mfitprout3.draw()
+    
+def mprplot_job(xl):
+    global mfitprfig1, mfitprout1, mfpra, mfprl1, mfprl2, mfprl3, mfpr
+    i = mfiti.get()
+    if mfpr == 0:
+        mfpr = 1
+        mfitprfig1.clear()
+        mfpra = mfitprfig1.subplots()
+        mprend()
+        if emf == 'KE':
+            px, py = np.meshgrid(phi, ev)
+            mfpra.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+        else:
+            px, py = np.meshgrid(phi, vfe - ev)
+            mfpra.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+            mfpra.invert_yaxis()
+        px = (2 * m * np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev) * 1.6 * 10 ** -19).transpose(
+        ) ** 0.5 * np.sin(px / 180 * np.pi) * 10 ** -10 / (h / 2 / np.pi)
+        pz = data.to_numpy()
+        mfpra.pcolormesh(px, py, pz, cmap=value3.get())
+        oyl = mfpra.get_ylim()
+
+        if emf == 'KE':
+            mfprl1,=mfpra.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
+        else:
+            mfprl1,=mfpra.plot([xl[0], xl[1]], [vfe - ev[i], vfe - ev[i]], 'r-')
+
+        de = (ev[1] - ev[0]) * 8
+        mfprl2,=mfpra.plot([xl[0], xl[0]], [ev[i] - de, ev[i] + de], 'r-')
+        mfprl3,=mfpra.plot([xl[1], xl[1]], [ev[i] - de, ev[i] + de], 'r-')
+        mfpra.set_ylim(oyl)
+    else:
+        mprend()
+        de = (ev[1] - ev[0]) * 8
+        if emf == 'KE':
+            mfpra.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+            mfprl1.set_xdata([xl[0], xl[1]])
+            mfprl1.set_ydata([ev[i], ev[i]])
+            mfprl2.set_ydata([ev[i] - de, ev[i] + de])
+            mfprl3.set_ydata([ev[i] - de, ev[i] + de])
+            # mfprl1,=mfpra.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
+        else:
+            mfpra.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+            mfpra.invert_yaxis()
+            mfprl1.set_xdata([xl[0], xl[1]])
+            mfprl1.set_ydata([vfe - ev[i], vfe - ev[i]])
+            mfprl2.set_ydata([vfe - ev[i] - de, vfe - ev[i] + de])
+            mfprl3.set_ydata([vfe - ev[i] - de, vfe - ev[i] + de])
+            # mfprl1,=mfpra.plot([xl[0], xl[1]], [vfe - ev[i], vfe - ev[i]], 'r-')
+        mfprl2.set_xdata([xl[0], xl[0]])
+        mfprl3.set_xdata([xl[1], xl[1]])
+        # mfprl2,=mfpra.plot([xl[0], xl[0]], [ev[i] - de, ev[i] + de], 'r-')
+        # mfprl3,=mfpra.plot([xl[1], xl[1]], [ev[i] - de, ev[i] + de], 'r-')
+        
+    mfitprout1.draw()
+    
+    
+def mprplot_job1(xl):
+    t = threading.Thread(target=mprplot_job, args=(xl,))
+    t.daemon = True
+    t.start()
+mfpr=0
+def mprplot(xl):
+    mprplot_job0()
+    mprplot_job1(xl)
+
+###############################################################################
+############################################################################### try above
+
 
 def mfitplot():  # mfiti Scale
     global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6, mxf1, mxf2, mwf1, mwf2, maf1, maf2, mt1, mt2, mt3, mt4, mt5
@@ -5443,6 +5676,7 @@ def ffitcp():
 
 def fmaccept():
     global mfi, mfi_x, mfi_err
+    msave_state()
     i = mfiti.get()
     if i not in mfi:
         mfi.append(i)
@@ -5450,11 +5684,12 @@ def fmaccept():
         mfi_x.remove(i)
     if i in mfi_err:
         mfi_err.remove(i)
-    mplfi()
+    mfitplot()
 
 
 def fmreject():
     global mfi, mfi_x, mfi_err, mbreject, flmreject, mirej
+    msave_state()
     i = mfiti.get()
     flmreject *= -1
     if flmreject == 1:
@@ -5469,8 +5704,8 @@ def fmreject():
                 mfi.remove(i)
             if i in mfi_err:
                 mfi_err.remove(i)
-        mplfi()
         mbreject.config(text='Reject', bg='white')
+        mfitplot()
     
 
 
@@ -5652,8 +5887,14 @@ def mjob():     # MDC Fitting GUI
     except:
         mfp = [1 for i in range(len(ev))]
     flmcgl2 = -1
+    frre = tk.Frame(master=frpara, bd=5, bg='white')
+    frre.grid(row=0, column=0)
+    b_mundo = tk.Button(frre, text='Undo', command=mundo,width=30, height=1, font=('Arial', 14, "bold"), bg='white')
+    b_mundo.grid(row=0, column=0)
+    b_mredo = tk.Button(frre, text='Redo', command=mredo,width=30, height=1, font=('Arial', 14, "bold"), bg='white')
+    b_mredo.grid(row=0, column=1)
     frpara00 = tk.Frame(master=frpara, bd=5, bg='white')
-    frpara00.grid(row=0, column=0)
+    frpara00.grid(row=1, column=0)
 
     frfitpar = tk.Frame(master=frpara00, bd=5, bg='white')
     frfitpar.grid(row=0, column=0)
@@ -6128,7 +6369,7 @@ def flowlim(*e):
 
 
 def o_reload(*e):
-    global k_offset, fev, ophi, rpos, pos, ffphi, fwhm, fk, st, kmin, kmax, smresult, smcst, smaa1, smaa2, smfp, smfi, skmin, skmax, epos, efwhm, ffphi, fk, emin, emax, seaa1, seaa2, sefp, sefi, semin, semax, smresult, smcst
+    global k_offset, fev, ophi, rpos, pos, ffphi, fwhm, fk, st, kmin, kmax, smresult, smcst, smaa1, smaa2, smfp, smfi, skmin, skmax, epos, efwhm, ffphi, fk, emin, emax, seaa1, seaa2, sefp, sefi, semin, semax
     if '' == k_offset.get():
         k_offset.set('0')
         koffset.select_range(0, 1)
