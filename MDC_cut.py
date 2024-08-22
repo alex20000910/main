@@ -5121,69 +5121,37 @@ def mplfi():
 
 ############################################################################### try below
 ###############################################################################
-def _mprplot_job0():
-    global mfitprfig2, mfitprfig3, mfitprout2, mfitprout3, mfprb, mfprc
-    i = mfiti.get()
-    mfitprfig2.clear()
-    mfitprfig3.clear()
-    mfprb = mfitprfig2.subplots()
-    mfprc = mfitprfig3.subplots(2, 1)
-    mfprc[1].set_xlabel('Binding Energy (eV)')
-    mfprc[0].set_ylabel(r'FWHM ($\AA$)')
-    mfprc[1].set_ylabel(r'FWHM ($\AA$)')
-    mfprc[0].set_xticks([])
-    mfprc[0].invert_xaxis()
-    mfprc[1].invert_xaxis()
-    mfprb.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
-    if emf=='KE':
-        mfprb.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
-    else:
-        mfprb.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
-        mfprb.invert_yaxis()
-    x1=[]
-    x2=[]
-    y1=[]
-    y2=[]
-    for j, v in enumerate(mfi):
-        if mfp[v] == 1:
-            x1.append(vfe-ev[v])
-            y1.append(maa2[v, 2])
-        elif mfp[v] == 2:
-            x1.append(vfe-ev[v])
-            x2.append(vfe-ev[v])
-            y1.append(maa2[v, 2])
-            y2.append(maa2[v, 6])
-    mfprc[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')    #plot
-    mfprc[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')    #plot
-    # mfprc[0].scatter(x1, y1, c='r', s=0.5, label='Comp 1')    #scatter
-    # mfprc[1].scatter(x2, y2, c='b', s=0.5, label='Comp 2')    #scatter
-    l1 = mfprc[0].legend()
-    l2 = mfprc[1].legend()
-    l1.draw_frame(False)
-    l2.draw_frame(False)
-    mprend()
-    if emf == 'KE':
-        mfprb.scatter(pos + fwhm / 2, fev, c='r', s=0.5)
-        mfprb.scatter(pos - fwhm / 2, fev, c='r', s=0.5)
-        mfprb.scatter(pos, fev, c='k', s=0.5)
-    else:
-        mfprb.scatter(pos + fwhm / 2, vfe - fev, c='r', s=0.5)
-        mfprb.scatter(pos - fwhm / 2, vfe - fev, c='r', s=0.5)
-        mfprb.scatter(pos, vfe - fev, c='k', s=0.5)
 
-    if emf == 'KE':
-        mfprb.plot(mfprb.get_xlim(), [ev[i], ev[i]], 'b-')
-    else:
-        mfprb.plot(mfprb.get_xlim(), [vfe - ev[i], vfe - ev[i]], 'b-')
-    mfprc[0].plot([vfe - ev[i], vfe - ev[i]], mfprc[0].get_ylim(), 'b-')
-    mfprc[1].plot([vfe - ev[i], vfe - ev[i]], mfprc[1].get_ylim(), 'r-')
-    
-    mpr2draw()
-    mpr3draw()
-    
 def _mpr2draw():
-    global mfitprout2
-    mfitprout2.draw()
+    global mfitprfig2, mfitprout2, mfprb
+    i = mfiti.get()
+    try:
+        mfitprfig2.clear()
+        mfprb = mfitprfig2.subplots()
+        mfprb.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
+        if emf=='KE':
+            mfprb.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+        else:
+            mfprb.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+            mfprb.invert_yaxis()
+        mprend()
+        if emf == 'KE':
+            mfprb.scatter(pos + fwhm / 2, fev, c='r', s=0.5)
+            mfprb.scatter(pos - fwhm / 2, fev, c='r', s=0.5)
+            mfprb.scatter(pos, fev, c='k', s=0.5)
+        else:
+            mfprb.scatter(pos + fwhm / 2, vfe - fev, c='r', s=0.5)
+            mfprb.scatter(pos - fwhm / 2, vfe - fev, c='r', s=0.5)
+            mfprb.scatter(pos, vfe - fev, c='k', s=0.5)
+
+        if emf == 'KE':
+            mfprb.plot(mfprb.get_xlim(), [ev[i], ev[i]], 'b-')
+        else:
+            mfprb.plot(mfprb.get_xlim(), [vfe - ev[i], vfe - ev[i]], 'b-')
+        
+        mfitprout2.draw()
+    except:
+        pass
     
 def mpr2draw():
     t = threading.Thread(target=_mpr2draw)
@@ -5191,8 +5159,43 @@ def mpr2draw():
     t.start()
     
 def _mpr3draw():
-    global mfitprout3
-    mfitprout3.draw()
+    global mfitprfig3, mfitprout3, mfprc
+    i = mfiti.get()
+    try:
+        mfitprfig3.clear()
+        mfprc = mfitprfig3.subplots(2, 1)
+        mfprc[1].set_xlabel('Binding Energy (eV)')
+        mfprc[0].set_ylabel(r'FWHM ($\AA$)')
+        mfprc[1].set_ylabel(r'FWHM ($\AA$)')
+        mfprc[0].set_xticks([])
+        mfprc[0].invert_xaxis()
+        mfprc[1].invert_xaxis()
+        x1=[]
+        x2=[]
+        y1=[]
+        y2=[]
+        for j, v in enumerate(mfi):
+            if mfp[v] == 1:
+                x1.append(vfe-ev[v])
+                y1.append(maa2[v, 2])
+            elif mfp[v] == 2:
+                x1.append(vfe-ev[v])
+                x2.append(vfe-ev[v])
+                y1.append(maa2[v, 2])
+                y2.append(maa2[v, 6])
+        mfprc[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')    #plot
+        mfprc[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')    #plot
+        # mfprc[0].scatter(x1, y1, c='r', s=0.5, label='Comp 1')    #scatter
+        # mfprc[1].scatter(x2, y2, c='b', s=0.5, label='Comp 2')    #scatter
+        l1 = mfprc[0].legend()
+        l2 = mfprc[1].legend()
+        l1.draw_frame(False)
+        l2.draw_frame(False)
+        mfprc[0].plot([vfe - ev[i], vfe - ev[i]], mfprc[0].get_ylim(), 'b-')
+        mfprc[1].plot([vfe - ev[i], vfe - ev[i]], mfprc[1].get_ylim(), 'r-')
+        mfitprout3.draw()
+    except:
+        pass
     
 def mpr3draw():
     t = threading.Thread(target=_mpr3draw)
@@ -5260,14 +5263,10 @@ def mprplot_job1(xl):
     t.daemon = True
     t.start()
 
-def mprplot_job0():
-    t = threading.Thread(target=_mprplot_job0)
-    t.daemon = True
-    t.start()
-
 def mprplot(xl):
     if mpr==1:
-        mprplot_job0()
+        mpr2draw()
+        mpr3draw()
         mprplot_job1(xl)
 
 def f_pr():
