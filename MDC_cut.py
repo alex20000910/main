@@ -1,5 +1,5 @@
 # MDC cut GUI
-import os
+import os, inspect
 import json
 import tkinter as tk
 from tkinter import filedialog as fd
@@ -78,7 +78,8 @@ m = 9.11*10**-31
 mp, ep, mf, ef = 1, 1, 1, 1
 fk = []
 fev = []
-cdir = os.getcwd()
+# cdir = os.getcwd()
+cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
 def load_txt(path_to_file: str) -> xr.DataArray:
@@ -1267,9 +1268,10 @@ def o_load():
         data = load_h5(tpath)  # data save as xarray.DataArray format
         pr_load(data, tpath)
         tname = tpath.split('/')
-        tname = tname[-1].split('#id#')[0]
+        tname = tname[-1].split('#id#')[0].replace('.h5', '')
         print(tname)
         if tname != name:
+            print('path: ',tname, '\nh5: ', name)
             print('name need correction')
         else:
             print('name correct')
@@ -5002,6 +5004,7 @@ def fchki(*e):
     except:
         pass
     mfitplot()
+    mprplot(mxl)
 
 
 def mplfi():
@@ -5118,7 +5121,7 @@ def mplfi():
 
 ############################################################################### try below
 ###############################################################################
-def mprplot_job0():
+def _mprplot_job0():
     global mfitprfig2, mfitprfig3, mfitprout2, mfitprout3, mfprb, mfprc
     i = mfiti.get()
     mfitprfig2.clear()
@@ -5150,8 +5153,10 @@ def mprplot_job0():
             x2.append(vfe-ev[v])
             y1.append(maa2[v, 2])
             y2.append(maa2[v, 6])
-    mfprc[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')
-    mfprc[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')
+    mfprc[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')    #plot
+    mfprc[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')    #plot
+    # mfprc[0].scatter(x1, y1, c='r', s=0.5, label='Comp 1')    #scatter
+    # mfprc[1].scatter(x2, y2, c='b', s=0.5, label='Comp 2')    #scatter
     l1 = mfprc[0].legend()
     l2 = mfprc[1].legend()
     l1.draw_frame(False)
@@ -5173,10 +5178,28 @@ def mprplot_job0():
     mfprc[0].plot([vfe - ev[i], vfe - ev[i]], mfprc[0].get_ylim(), 'b-')
     mfprc[1].plot([vfe - ev[i], vfe - ev[i]], mfprc[1].get_ylim(), 'r-')
     
+    mpr2draw()
+    mpr3draw()
+    
+def _mpr2draw():
+    global mfitprout2
     mfitprout2.draw()
+    
+def mpr2draw():
+    t = threading.Thread(target=_mpr2draw)
+    t.daemon = True
+    t.start()
+    
+def _mpr3draw():
+    global mfitprout3
     mfitprout3.draw()
     
-def mprplot_job(xl):
+def mpr3draw():
+    t = threading.Thread(target=_mpr3draw)
+    t.daemon = True
+    t.start()
+
+def _mprplot_job1(xl):
     global mfitprfig1, mfitprout1, mfpra, mfprl1, mfprl2, mfprl3, mfpr
     i = mfiti.get()
     if mfpr == 0:
@@ -5233,13 +5256,37 @@ def mprplot_job(xl):
     
     
 def mprplot_job1(xl):
-    t = threading.Thread(target=mprplot_job, args=(xl,))
+    t = threading.Thread(target=_mprplot_job1, args=(xl,))
     t.daemon = True
     t.start()
-mfpr=0
+
+def mprplot_job0():
+    t = threading.Thread(target=_mprplot_job0)
+    t.daemon = True
+    t.start()
+
 def mprplot(xl):
-    mprplot_job0()
-    mprplot_job1(xl)
+    if mpr==1:
+        mprplot_job0()
+        mprplot_job1(xl)
+
+def f_pr():
+    global mfpr, mpr, mfitprfig1, mfitprfig2, mfitprfig3, mfitprout1, mfitprout2, mfitprout3
+    mfpr=0
+    if mpr==1:
+        mpr=0
+        b_pr.config(text='Real Time Preview OFF')
+        mfitprfig1.clear()
+        mfitprfig2.clear()
+        mfitprfig3.clear()
+        mfitprout1.draw()
+        mfitprout2.draw()
+        mfitprout3.draw()
+    else:
+        mpr=1
+        mprplot(mxl)
+        b_pr.config(text='Real Time Preview ON')
+        
 
 ###############################################################################
 ############################################################################### try above
@@ -5428,7 +5475,6 @@ def mfitplot():  # mfiti Scale
     myl = mfitax.get_ylim()
     tmxl = np.copy(mxl)
     mfitout.draw()
-    mprplot(mxl)
     mplfi()
 
 
@@ -5801,20 +5847,28 @@ def fmposcst():
 
 
 def mjob():     # MDC Fitting GUI
-    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3
+    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mprf, mpr, b_pr
     mgg = tk.Toplevel(g, bg='white')
     screen_width = g.winfo_screenwidth()
     screen_height = g.winfo_screenheight()
     mgg.geometry(f"{screen_width}x{screen_height}")
     mgg.title('MDC Lorentz Fit')
+    
+    mpr=1   #button flag 1:ON 0:OFF
+    # b_pr = tk.Button(mgg, text='Real Time Preview ON', command=f_pr, width=20, height=2, font=('Arial', 12, "bold"), bg='white')
+    # b_pr.grid(row=0, column=0)
+    
+    mfpr = 0    #preview plot pcolormesh flag 1:setdata 0:pcolormesh
     fr_pr1 = tk.Frame(master=mgg, bg='white')
     fr_pr1.grid(row=1, column=0)
+    b_pr = tk.Button(fr_pr1, text='Real Time Preview ON', command=f_pr, width=20, height=2, font=('Arial', 12, "bold"), bg='white')
+    b_pr.grid(row=0, column=0)
     mfitprfig2 = Figure(figsize=(3, 3), layout='constrained')
     mfitprout2 = tkagg.FigureCanvasTkAgg(mfitprfig2, master=fr_pr1)
-    mfitprout2.get_tk_widget().grid(row=0, column=0)
+    mfitprout2.get_tk_widget().grid(row=1, column=0)
     mfitprfig3 = Figure(figsize=(3, 3), layout='constrained')
     mfitprout3 = tkagg.FigureCanvasTkAgg(mfitprfig3, master=fr_pr1)
-    mfitprout3.get_tk_widget().grid(row=1, column=0)
+    mfitprout3.get_tk_widget().grid(row=2, column=0)
     
     fr_pr2 = tk.Frame(master=mgg, bg='white')
     fr_pr2.grid(row=2, column=0)
