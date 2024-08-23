@@ -82,7 +82,7 @@ fev = []
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
-def load_txt(path_to_file: str) -> xr.DataArray:
+def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
     """
     Load data from a text file and convert it into an xarray DataArray.
 
@@ -318,6 +318,49 @@ def load_h5(path_to_file: str) -> xr.DataArray:
                                                                  })
     return data
 
+def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
+    """
+    Args:
+        path_to_file (str): _description_
+
+    Returns:
+        xr.DataArray: _description_
+    """
+    name=path_to_file.split('/')[-1].removesuffix('.txt')
+    e = np.linspace(21.2-1,21.2+0.2,659)    #fix BE 1.2-0.2
+    a = np.linspace(-10,10,494)     #A20
+    description='SKNET'
+    e_low = np.min(np.float64(e))
+    e_high = np.max(np.float64(e))
+    e_photon = 21.2
+    #   attrs
+    e_mode = 'Kinetic'
+    LensMode = 'Unknown'
+    PassEnergy = 'Unknown'
+    Dwell = 'Unknown'
+    CenterEnergy = np.average(np.float64(e))
+    Iterations = 'Unknown'
+    Step = abs(e[1]-e[0])
+    Slit = 'Unknown'
+    aq = 'SRNET'
+    data = np.loadtxt(path_to_file).transpose()
+    data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
+                                                                 'Acquisition': aq,
+                                                                 'EnergyMode': e_mode,
+                                                                 'ExcitationEnergy': str(e_photon)+' eV',
+                                                                 'CenterEnergy': CenterEnergy,
+                                                                 'HighEnergy': e_high,
+                                                                 'LowEnergy': e_low,
+                                                                 'Step': str(Step)+' eV',
+                                                                 'LensMode': LensMode,
+                                                                 'PassEnergy': str(PassEnergy)+' eV',
+                                                                 'Slit': Slit,
+                                                                 'Dwell': str(Dwell)+' s',
+                                                                 'Iterations': Iterations,
+                                                                 'Description': description
+                                                                 })
+    return data
+    
 def g_emode():
     global gfe,fe_in,b_emode,emf,v_fe
     gfe=tk.Toplevel(g,bg='white')
@@ -397,6 +440,7 @@ def rplot(f, canvas):
         ao.invert_yaxis()
     xl = ao.get_xlim()
     yl = ao.get_ylim()
+    np.save('raw_data.npy',tz.T/np.max(tz))
     # a.set_xticklabels(labels=a.get_xticklabels(),font='Arial',fontsize=10);
     # a.set_yticklabels(labels=a.get_yticklabels(),font='Arial',fontsize=10);
     canvas.draw()
@@ -5244,7 +5288,6 @@ def _mprplot_job1(xl):
             # mfprl1,=mfpra.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
         else:
             mfpra.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
-            mfpra.invert_yaxis()
             mfprl1.set_xdata([xl[0], xl[1]])
             mfprl1.set_ydata([vfe - ev[i], vfe - ev[i]])
             mfprl2.set_ydata([vfe - ev[i] - de, vfe - ev[i] + de])
