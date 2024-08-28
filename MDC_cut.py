@@ -7228,6 +7228,8 @@ def o_plot3(*e):
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             pz = data.to_numpy()
             h0 = bo.pcolormesh(px, py, pz, cmap=value3.get())
+            txl = bo.get_xlim()
+            tyl = bo.get_ylim()
             cb = fig.colorbar(h0)
             cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial',
@@ -7294,6 +7296,8 @@ def o_plot3(*e):
                     else:
                         tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
                                 np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
+                    bo.set_xlim(txl)
+                    bo.set_ylim(tyl)
             except:
                 bo.set_title('Data Plot with Pos w/o Bare Band',
                              font='Arial', fontsize=18)
@@ -8343,6 +8347,8 @@ def exp(*e):
                 pass
             a0.set_xlim(xl)
             a0.set_ylim(yl)
+            a.set_xlim(xl)
+            a.set_ylim(yl)
             if value.get() != 'Raw Data':
                 plt.tight_layout()
             # if value.get()=='Raw Data':
