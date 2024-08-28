@@ -5201,9 +5201,9 @@ def _mpr2draw():
             mfprb.scatter(pos, vfe - fev, c='k', s=0.5)
 
         if emf == 'KE':
-            mfprb.plot(mfprb.get_xlim(), [ev[i], ev[i]], 'b-')
+            mfprb.plot(mfprb.get_xlim(), [ev[i], ev[i]], 'b-', alpha=0.5)
         else:
-            mfprb.plot(mfprb.get_xlim(), [vfe - ev[i], vfe - ev[i]], 'b-')
+            mfprb.plot(mfprb.get_xlim(), [vfe - ev[i], vfe - ev[i]], 'b-', alpha=0.5)
         
         mfitprout2.draw()
     except:
@@ -5247,8 +5247,8 @@ def _mpr3draw():
         l2 = mfprc[1].legend()
         l1.draw_frame(False)
         l2.draw_frame(False)
-        mfprc[0].plot([vfe - ev[i], vfe - ev[i]], mfprc[0].get_ylim(), 'b-')
-        mfprc[1].plot([vfe - ev[i], vfe - ev[i]], mfprc[1].get_ylim(), 'r-')
+        mfprc[0].plot([vfe - ev[i], vfe - ev[i]], mfprc[0].get_ylim(), 'b-', alpha=0.5)
+        mfprc[1].plot([vfe - ev[i], vfe - ev[i]], mfprc[1].get_ylim(), 'r-', alpha=0.5)
         mfitprout3.draw()
     except:
         pass
