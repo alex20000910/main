@@ -387,6 +387,10 @@ def g_emode():
     fr1.grid(row=1,column=0)
     b1=tk.Button(fr1,text='Confirm',command=save_fe, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b1.grid(row=1,column=0)
+    gfe.bind('<Return>', on_enter)
+    gfe.focus_set()
+    fe_in.focus_set()
+    fe_in.icursor(tk.END)
     gfe.update()
 
 def emode():
@@ -414,7 +418,10 @@ def save_fe():
         tk.messagebox.showwarning("Warning","Invalid Input\n"+str(sys.exc_info()[1]))
         gfe.destroy()
         g_emode()
-    
+
+def on_enter(event):
+    save_fe()
+
 def rplot(f, canvas):
     """
     Plot the raw data on a given canvas.
@@ -2951,7 +2958,7 @@ def lnr_bg(x: np.ndarray, n_samples=5) -> np.ndarray:
         n_samples -= 1
     left, right = np.mean(x[:n_samples]), np.mean(x[-n_samples:])
     o = np.ones(len(x))*np.mean([left, right])
-    return o
+    return o+mbgv
 
 
 def shirley_bg(
@@ -5045,8 +5052,9 @@ def func_cki():
 
 
 def fchki(*e):
-    global mfitout, mdxdata, mdydata, mbcomp1, mbcomp2
+    global mfitout, mdxdata, mdydata, mbcomp1, mbcomp2, mbgv
     i = mfiti.get()
+    mbgv = 0
     try:
         mfitout.get_tk_widget().delete('rec')
         mdxdata.config(text='dx:')
@@ -5089,6 +5097,66 @@ def mplfi():
     mprplot(mxl)
     miout.draw()
 
+def mfbgu(event):
+    global mbgv
+    i=mfiti.get()
+    mbase[i] = int(base.get())  # 待調整
+    fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
+    fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
+    ecut = data.sel(eV=ev[i], method='nearest')
+    x = (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+    y = ecut.to_numpy().reshape(len(x))
+    tx = x[np.argwhere(x >= kmin[i])].flatten()
+    xx = tx[np.argwhere(tx <= kmax[i])].flatten()
+    ty = y[np.argwhere(x >= kmin[i])].flatten()
+    yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+    yy = np.where(yy > mbase[i], yy, mbase[i])
+    d = sorted(abs(np.diff(np.append(yy[0:5],yy[-6:-1]))))
+    t=0
+    ti=0
+    while t==0:
+        t=d[ti]
+        ti+=1
+        if ti==len(d):
+            break
+    print(t)
+    try:
+        mbgv+=t/2
+        mfit()
+        mfitplot()
+    except:
+        pass
+
+def mfbgd(event):
+    global mbgv
+    i=mfiti.get()
+    mbase[i] = int(base.get())  # 待調整
+    fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
+    fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
+    ecut = data.sel(eV=ev[i], method='nearest')
+    x = (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+    y = ecut.to_numpy().reshape(len(x))
+    tx = x[np.argwhere(x >= kmin[i])].flatten()
+    xx = tx[np.argwhere(tx <= kmax[i])].flatten()
+    ty = y[np.argwhere(x >= kmin[i])].flatten()
+    yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+    yy = np.where(yy > mbase[i], yy, mbase[i])
+    d = sorted(abs(np.diff(np.append(yy[0:5],yy[-6:-1]))))
+    t=0
+    ti=0
+    while t==0:
+        t=d[ti]
+        ti+=1
+        if ti==len(d):
+            break
+    print(t)
+    try:
+        mbgv-=t/2
+        mfit()
+        mfitplot()
+    except:
+        pass
+    
 #####################################################################stable below
 ###############################################################################
 # def mprplot(xl):
@@ -5653,7 +5721,7 @@ def mpress(event):
 
 
 def mrelease(event):
-    global x1, y1, x2, y2, mmof, mfitout, mfitax, fklmax, fklmin, klmin, klmax, kmin, kmax, fkregion, tmxl
+    global x1, y1, x2, y2, mmof, mfitout, mfitax, fklmax, fklmin, klmin, klmax, kmin, kmax, fkregion, tmxl, mbgv
     if event.button == 1 and mmof == -1 and event.inaxes:
         x2, y2 = event.xdata, event.ydata
         if kmin[mfiti.get()] > kmax[mfiti.get()]:
@@ -5682,6 +5750,7 @@ def mrelease(event):
         elif fklmin == 1 or fklmax == 1 or fkregion == 1:
             func_cki()
             x1, x2, y1, y2 = [], [], [], []
+            mbgv=0
             mfit()
             mfitplot()
         mmof = 1
@@ -5694,6 +5763,22 @@ def tmstate():
     except KeyboardInterrupt:
         pass
 
+
+def mfli(event):
+    global mfiti
+    i=mfiti.get()
+    if i>0:
+        mfiti.set(i-1)
+    else:
+        mfiti.set(len(ev)-1)
+        
+def mfri(event):
+    global mfiti
+    i=mfiti.get()
+    if i<len(ev)-1:
+        mfiti.set(i+1)
+    else:
+        mfiti.set(0)
 
 def mflind():
     global mfiti
@@ -5901,7 +5986,7 @@ def fmposcst():
 
 
 def mjob():     # MDC Fitting GUI
-    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mprf, mpr, b_pr
+    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mprf, mpr, b_pr, mbgv
     mgg = tk.Toplevel(g, bg='white')
     screen_width = g.winfo_screenwidth()
     screen_height = g.winfo_screenheight()
@@ -6153,6 +6238,12 @@ def mjob():     # MDC Fitting GUI
     bend2 = tk.Button(frexp, text='Export Comp 2', command=fmend2, width=30,
                       height=1, font=('Arial', 14, "bold"), bg='white')
     bend2 .grid(row=0, column=1)
+    
+    mbgv=0
+    mgg.bind("<Up>",mfbgu)
+    mgg.bind("<Down>",mfbgd)
+    mgg.bind("<Left>",mfli)
+    mgg.bind("<Right>",mfri)
     
     mresult = [[]for i in range(len(ev))]
     try:
@@ -8725,6 +8816,11 @@ def bareband():
     t7.start()
 
 
+def plot(event):
+    plot1()
+    plot2()
+    plot3()
+
 def plot1(*e):
     t8 = threading.Thread(target=o_plot1)
     t8.daemon = True
@@ -8767,6 +8863,9 @@ def plot3(*e):
             t10.start()
             gg.destroy()
 
+        def on_enter(event):
+            chf()
+            
         gg = tk.Toplevel(g, bg="white", padx=10, pady=10)
         gg.title('Data Point List')
         gg.iconphoto(False, tk.PhotoImage(data=b64decode(gicon)))
@@ -8813,7 +8912,8 @@ def plot3(*e):
         bflag = tk.Button(gg, text="OK", font=("Arial", 16, "bold"),
                           height=2, width=10, bg="white", command=chf)
         bflag.grid(row=4, column=0, padx=10, pady=5)
-
+        gg.bind('<Return>', on_enter)
+        gg.focus_set()
         ini()
     else:
         t10 = threading.Thread(target=o_plot3)
@@ -9484,5 +9584,8 @@ try:
     pr_load(data,path)
 except:
     pass
+###### hotkey ######
+g.bind('<Return>', plot)
+
 g.update()
 g.mainloop()
