@@ -5326,71 +5326,114 @@ def mpr3draw():
     t.daemon = True
     t.start()
 
-def _mprplot_job1(xl):
+def _mprplot_job1():
     global mfitprfig1, mfitprout1, mfpra, mfprl1, mfprl2, mfprl3, mfpr
     i = mfiti.get()
-    if mfpr == 0:
-        mfpr = 1
-        mfitprfig1.clear()
-        mfpra = mfitprfig1.subplots()
-        mprend()
-        if emf == 'KE':
-            px, py = np.meshgrid(phi, ev)
-            mfpra.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
-        else:
-            px, py = np.meshgrid(phi, vfe - ev)
-            mfpra.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
-            mfpra.invert_yaxis()
-        px = (2 * m * np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev) * 1.6 * 10 ** -19).transpose(
-        ) ** 0.5 * np.sin(px / 180 * np.pi) * 10 ** -10 / (h / 2 / np.pi)
-        pz = data.to_numpy()
-        mfpra.pcolormesh(px, py, pz, cmap=value3.get())
-        oyl = mfpra.get_ylim()
+    try:
+        xl=mprxl
+        if mfpr == 0:
+            mfpr = 1
+            mfitprfig1.clear()
+            mfpra = mfitprfig1.subplots()
+            mprend()
+            if emf == 'KE':
+                px, py = np.meshgrid(phi, ev)
+                mfpra.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+            else:
+                px, py = np.meshgrid(phi, vfe - ev)
+                mfpra.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+                mfpra.invert_yaxis()
+            px = (2 * m * np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev) * 1.6 * 10 ** -19).transpose(
+            ) ** 0.5 * np.sin(px / 180 * np.pi) * 10 ** -10 / (h / 2 / np.pi)
+            pz = data.to_numpy()
+            mfpra.pcolormesh(px, py, pz, cmap=value3.get())
+            oyl = mfpra.get_ylim()
 
-        if emf == 'KE':
-            mfprl1,=mfpra.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
-        else:
-            mfprl1,=mfpra.plot([xl[0], xl[1]], [vfe - ev[i], vfe - ev[i]], 'r-')
+            if emf == 'KE':
+                mfprl1,=mfpra.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
+            else:
+                mfprl1,=mfpra.plot([xl[0], xl[1]], [vfe - ev[i], vfe - ev[i]], 'r-')
 
-        de = (ev[1] - ev[0]) * 8
-        mfprl2,=mfpra.plot([xl[0], xl[0]], [ev[i] - de, ev[i] + de], 'r-')
-        mfprl3,=mfpra.plot([xl[1], xl[1]], [ev[i] - de, ev[i] + de], 'r-')
-        mfpra.set_ylim(oyl)
-    else:
-        mprend()
-        de = (ev[1] - ev[0]) * 8
-        if emf == 'KE':
-            mfpra.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
-            mfprl1.set_xdata([xl[0], xl[1]])
-            mfprl1.set_ydata([ev[i], ev[i]])
-            mfprl2.set_ydata([ev[i] - de, ev[i] + de])
-            mfprl3.set_ydata([ev[i] - de, ev[i] + de])
-            # mfprl1,=mfpra.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
+            de = (ev[1] - ev[0]) * 8
+            mfprl2,=mfpra.plot([xl[0], xl[0]], [ev[i] - de, ev[i] + de], 'r-')
+            mfprl3,=mfpra.plot([xl[1], xl[1]], [ev[i] - de, ev[i] + de], 'r-')
+            mfpra.set_ylim(oyl)
         else:
-            mfpra.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
-            mfprl1.set_xdata([xl[0], xl[1]])
-            mfprl1.set_ydata([vfe - ev[i], vfe - ev[i]])
-            mfprl2.set_ydata([vfe - ev[i] - de, vfe - ev[i] + de])
-            mfprl3.set_ydata([vfe - ev[i] - de, vfe - ev[i] + de])
-            # mfprl1,=mfpra.plot([xl[0], xl[1]], [vfe - ev[i], vfe - ev[i]], 'r-')
-        mfprl2.set_xdata([xl[0], xl[0]])
-        mfprl3.set_xdata([xl[1], xl[1]])
-        # mfprl2,=mfpra.plot([xl[0], xl[0]], [ev[i] - de, ev[i] + de], 'r-')
-        # mfprl3,=mfpra.plot([xl[1], xl[1]], [ev[i] - de, ev[i] + de], 'r-')
-        
-    mfitprout1.draw()
+            mprend()
+            de = (ev[1] - ev[0]) * 8
+            if emf == 'KE':
+                mfpra.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
+                mfprl1.set_xdata([xl[0], xl[1]])
+                mfprl1.set_ydata([ev[i], ev[i]])
+                mfprl2.set_ydata([ev[i] - de, ev[i] + de])
+                mfprl3.set_ydata([ev[i] - de, ev[i] + de])
+                # mfprl1,=mfpra.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
+            else:
+                mfpra.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
+                mfprl1.set_xdata([xl[0], xl[1]])
+                mfprl1.set_ydata([vfe - ev[i], vfe - ev[i]])
+                mfprl2.set_ydata([vfe - ev[i] - de, vfe - ev[i] + de])
+                mfprl3.set_ydata([vfe - ev[i] - de, vfe - ev[i] + de])
+                # mfprl1,=mfpra.plot([xl[0], xl[1]], [vfe - ev[i], vfe - ev[i]], 'r-')
+            mfprl2.set_xdata([xl[0], xl[0]])
+            mfprl3.set_xdata([xl[1], xl[1]])
+            # mfprl2,=mfpra.plot([xl[0], xl[0]], [ev[i] - de, ev[i] + de], 'r-')
+            # mfprl3,=mfpra.plot([xl[1], xl[1]], [ev[i] - de, ev[i] + de], 'r-')
+            
+        mfitprout1.draw()
+    except:
+        pass
     
     
-def mprplot_job1(xl):
-    t = threading.Thread(target=_mprplot_job1, args=(xl,))
+def mprplot_job1():
+    t = threading.Thread(target=_mprplot_job1)
     t.daemon = True
     t.start()
 
 def mprplot(xl):
+    global mprxl
     if mpr==1:
+        mprxl = xl
         mpr2draw()
         mpr3draw()
-        mprplot_job1(xl)
+        mprplot_job1()
+        
+############# try draw in thread ############
+def mprbgjob1():
+    while True:
+        if mpr==1:
+            try:
+                mfitprout1.draw()
+            except:
+                pass
+def mprbg1():
+    t = threading.Thread(target=mprbgjob1)
+    t.daemon = True
+    t.start()
+def mprbgjob2():
+    while True:
+        if mpr==1:
+            try:
+                mfitprout2.draw()
+            except:
+                pass
+def mprbg2():
+    t = threading.Thread(target=mprbgjob2)
+    t.daemon = True
+    t.start()
+def mprbgjob3():
+    while True:
+        if mpr==1:
+            try:
+                mfitprout3.draw()
+            except:
+                pass
+def mprbg3():
+    t = threading.Thread(target=mprbgjob3)
+    t.daemon = True
+    t.start()
+############################################    
+
 
 def f_pr():
     global mfpr, mpr, mfitprfig1, mfitprfig2, mfitprfig3, mfitprout1, mfitprout2, mfitprout3
@@ -6014,8 +6057,6 @@ def mjob():     # MDC Fitting GUI
     mfitprfig1 = Figure(figsize=(3, 2), layout='constrained')
     mfitprout1 = tkagg.FigureCanvasTkAgg(mfitprfig1, master=fr_pr2)
     mfitprout1.get_tk_widget().grid(row=0, column=0)
-    
-    
     mst = queue.Queue(maxsize=0)
     mstate = tk.Label(mgg, text='', font=(
         "Arial", 14, "bold"), bg="white", fg="black")
@@ -6244,6 +6285,11 @@ def mjob():     # MDC Fitting GUI
     mgg.bind("<Down>",mfbgd)
     mgg.bind("<Left>",mfli)
     mgg.bind("<Right>",mfri)
+    
+    ##### test ##### 
+    # mprbg1()
+    # mprbg2()
+    # mprbg3()
     
     mresult = [[]for i in range(len(ev))]
     try:
@@ -6801,8 +6847,8 @@ def o_plot1(*e):
                 )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
-                cb.set_ticks(cb.get_ticks())
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                
             elif value.get() == 'Second Derivative':
                 ao = fig.subplots()
                 pz = np.diff(data.to_numpy())/np.diff(phi)
@@ -6815,8 +6861,8 @@ def o_plot1(*e):
                 )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
-                cb.set_ticks(cb.get_ticks())
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                
             else:
                 ao = fig.subplots()
                 if value.get() == 'E-K Diagram':
@@ -6830,8 +6876,8 @@ def o_plot1(*e):
                     pz = data.to_numpy()
                     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                     cb = fig.colorbar(h0)
-                    cb.set_ticks(cb.get_ticks())
                     cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                    
                 if value.get() == 'MDC Normalized':
                     pbar = tqdm.tqdm(
                         total=len(ev)-1, desc='MDC Normalized', colour='red')
@@ -7322,9 +7368,9 @@ def o_plot3(*e):
             txl = bo.get_xlim()
             tyl = bo.get_ylim()
             cb = fig.colorbar(h0)
-            cb.set_ticks(cb.get_ticks())
-            cb.set_ticklabels(cb.get_ticks(), font='Arial',
-                              fontsize=14, minor=False)
+            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14, minor=False)
+            cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            
             #   MDC Norm
             # for i in range(len(ev)):
             #     b.scatter(mx[len(phi)*i:len(phi)*(i+1)],my[len(phi)*i:len(phi)*(i+1)],c=mz[len(phi)*i:len(phi)*(i+1)],marker='o',s=0.9,cmap='viridis',alpha=0.3)
@@ -7776,12 +7822,11 @@ def exp(*e):
             else:
                 yl = sorted(a.get_ylim(), reverse=True)
             cb = f.colorbar(h1)
-            cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            
             h2 = a0.pcolormesh(mx, my, mz, cmap=value3.get())
             cb1 = f0.colorbar(h2)
-            cb1.set_ticks(cb1.get_ticks())
-            cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
+            cb1.set_ticklabels(cb.get_ticks(), font='Arial')
 
             acx.set_xticks([])
             acy.set_yticks([])
@@ -7817,10 +7862,9 @@ def exp(*e):
                 yl = sorted(a.get_ylim(), reverse=True)
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
-            cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            
             cb1 = f0.colorbar(h2)
-            cb1.set_ticks(cb1.get_ticks())
             cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
@@ -7855,10 +7899,9 @@ def exp(*e):
                 yl = sorted(a.get_ylim(), reverse=True)
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
-            cb.set_ticks(cb.get_ticks())
             cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            
             cb1 = f0.colorbar(h2)
-            cb1.set_ticks(cb1.get_ticks())
             cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
@@ -7894,11 +7937,11 @@ def exp(*e):
                     yl = sorted(a.get_ylim(), reverse=True)
                 h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = f.colorbar(h1)
-                cb.set_ticks(cb.get_ticks())
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                
                 cb1 = f0.colorbar(h2)
-                cb1.set_ticks(cb1.get_ticks())
                 cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
+                
 
                 n = a1.hist(pz.flatten(), bins=np.linspace(
                     min(pz.flatten()), max(pz.flatten()), 50), color='green')
@@ -8286,9 +8329,9 @@ def exp(*e):
             else:
                 yl = sorted(a.get_ylim(), reverse=True)
             cb = f.colorbar(h1)
-            cb.set_ticks(cb.get_ticks())
-            cb.set_ticklabels(cb.get_ticks(), font='Arial',
-                              fontsize=14, minor=False)
+            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14, minor=False)
+            cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            
             a.set_title(value2.get(), font='Arial', fontsize=18)
             a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
             if emf=='KE':
