@@ -7283,28 +7283,48 @@ def o_plot3(*e):
             elif 'Real Part' in value2.get():
                 ax = fig.subplots()
                 ttbe=tbe/1000
-                ax.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
-                ax.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
-                ax.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-                ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
-                ax.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=18)
-                ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
-                ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
-                l=ax.legend(fontsize=16)
-                l.draw_frame(False)
+                if 'nd' in value2.get():
+                    ax.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
+                    ty=np.diff(smooth(ry,20,3))/np.diff(ttbe)
+                    ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                    ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    ax.set_ylabel(r'$2^{nd} der. Re \Sigma$', font='Arial', fontsize=18)
+                    ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
+                    ax.set_yticks([0])
+                    ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
+                else:
+                    ax.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
+                    ax.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                    ax.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    ax.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=18)
+                    ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
+                    ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
+                    l=ax.legend(fontsize=16)
+                    l.draw_frame(False)
                 ax.invert_xaxis()
             elif 'Imaginary Part' in value2.get():
                 ax = fig.subplots()
                 ttbe=tbe/1000
-                ax.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
-                ax.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-                ax.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
-                ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
-                ax.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=18)
-                ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
-                ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
-                l=ax.legend(fontsize=16)
-                l.draw_frame(False)
+                if 'st' in value2.get():
+                    ax.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
+                    ty=np.diff(smooth(iy,20,3))/np.diff(ttbe)
+                    ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                    ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    ax.set_ylabel(r'$1^{st} der. Im \Sigma$', font='Arial', fontsize=18)
+                    ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
+                    ax.set_yticks([0])
+                    ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
+                else:
+                    ax.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
+                    ax.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                    ax.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    ax.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=18)
+                    ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
+                    ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
+                    l=ax.legend(fontsize=16)
+                    l.draw_frame(False)
                 ax.invert_xaxis()
             ##################################################################################
             ################################################################################## Hilbert Transform
@@ -8255,28 +8275,48 @@ def exp(*e):
             elif 'Real Part' in value2.get():
                 f, a = plt.subplots(1, 1, dpi=150)
                 ttbe=tbe/1000
-                a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
-                a.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
-                a.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-                a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=18)
-                a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=18)
-                a.set_xticklabels(a.get_xticklabels(),fontsize=16)
-                a.set_yticklabels(a.get_yticklabels(),fontsize=16)
-                ll=a.legend(fontsize=16)
-                ll.draw_frame(False)
+                if 'nd' in value2.get():
+                    a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
+                    ty=np.diff(smooth(ry,20,3))/np.diff(ttbe)
+                    a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    a.set_ylabel(r'$2^{nd} der. Re \Sigma$', font='Arial', fontsize=18)
+                    a.set_xticklabels(a.get_xticklabels(),fontsize=16)
+                    a.set_yticks([0])
+                    a.set_yticklabels(a.get_yticklabels(),fontsize=16)
+                else:
+                    a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
+                    a.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                    a.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=18)
+                    a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=18)
+                    a.set_xticklabels(a.get_xticklabels(),fontsize=16)
+                    a.set_yticklabels(a.get_yticklabels(),fontsize=16)
+                    ll=a.legend(fontsize=16)
+                    ll.draw_frame(False)
                 a.invert_xaxis()
             elif 'Imaginary Part' in value2.get():
                 f, a = plt.subplots(1, 1, dpi=150)
                 ttbe=tbe/1000
-                a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
-                a.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-                a.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
-                a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=18)
-                a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=18)
-                a.set_xticklabels(a.get_xticklabels(),fontsize=16)
-                a.set_yticklabels(a.get_yticklabels(),fontsize=16)
-                ll=a.legend(fontsize=16)
-                ll.draw_frame(False)
+                if 'st' in value2.get():
+                    a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
+                    ty=np.diff(smooth(iy,20,3))/np.diff(ttbe)
+                    a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    a.set_ylabel(r'$1^{st} der. Im \Sigma$', font='Arial', fontsize=18)
+                    a.set_xticklabels(a.get_xticklabels(),fontsize=16)
+                    a.set_yticks([0])
+                    a.set_yticklabels(a.get_yticklabels(),fontsize=16)
+                else:
+                    a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
+                    a.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                    a.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=18)
+                    a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=18)
+                    a.set_xticklabels(a.get_xticklabels(),fontsize=16)
+                    a.set_yticklabels(a.get_yticklabels(),fontsize=16)
+                    ll=a.legend(fontsize=16)
+                    ll.draw_frame(False)
                 a.invert_xaxis()
             ####################################################################################### KK definition
             #######################################################################################
@@ -9647,7 +9687,7 @@ b_fit = tk.Button(frfit, text='Fit FWHM', font=(
     "Arial", 10, "bold"), bg="white", height='1', bd=5, command=fitgl)
 b_fit.grid(row=0, column=3)
 
-optionList2 = ['Real & Imaginary', 'KK Transform Real & Imaginary', 'KK Transform Real Part', 'KK Transform Imaginary Part', 'Data Plot with Pos', 'Data Plot with Pos and Bare Band']   # 選項
+optionList2 = ['Real & Imaginary', 'KK Transform Real & Imaginary', 'KK Transform Real Part', 'KK Transform Imaginary Part', 'KK Transform Real Part 2nd Derivative', 'KK Transform Imaginary Part 1st Derivative', 'Data Plot with Pos', 'Data Plot with Pos and Bare Band']   # 選項
 value2 = tk.StringVar()                                        # 取值
 value2.set('---Plot3---')
 # 第二個參數是取值，第三個開始是選項，使用星號展開
