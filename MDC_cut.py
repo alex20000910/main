@@ -6951,10 +6951,11 @@ def o_plot1(*e):
             else:
                 ylr=ao.twinx()
                 ao.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=14)
-                ao.set_yticks([])
+                ao.set_yticklabels([])
                 ylr.set_ylabel(r'$\longleftarrow$ Binding Energy', font='Arial', fontsize=14)
-                ylr.set_yticks([])
+                ylr.set_yticklabels([])
                 ao.set_xlim([min(x), max(x)])
+                ao.set_ylim([0, np.max(n*np.max(y)/d)])
                 
             xl = ao.get_xlim()
             yl = ao.get_ylim()
@@ -8080,10 +8081,11 @@ def exp(*e):
         else:
             ylr=a.twinx()
             a.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=16)
-            a.set_yticks([])
+            a.set_yticklabels([])
             ylr.set_ylabel(r'$\longleftarrow$ Binding Energy', font='Arial', fontsize=14)
-            ylr.set_yticks([])
+            ylr.set_yticklabels([])
             a.set_xlim([min(x), max(x)])
+            a.set_ylim([0, np.max(n*np.max(y)/d)])
         if value.get() == 'Raw Data':
             a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
             a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
@@ -8628,7 +8630,7 @@ def move(event):
             # out.get_tk_widget().delete('y2')
         except:
             pass
-        if mof == -1 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get():
+        if mof == -1 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
             x2, y2 = event.xdata, event.ydata
             px2, py2 = event.x, event.y
             out.get_tk_widget().create_rectangle((px1, 600-py1), (px2, 600-py2),
@@ -8696,7 +8698,7 @@ def press(event):
         x1, y1 = event.xdata, event.ydata
         px1, py1 = event.x, event.y
         mof = -1
-    elif event.button == 3 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get():
+    elif event.button == 3 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
         if value2.get() == '---Plot3---':
             ao.set_xlim(xl)
             ao.set_ylim(yl)
@@ -8772,7 +8774,7 @@ def release(event):
         out.get_tk_widget().delete('rec')
     except:
         pass
-    if event.button == 1 and mof == -1 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get():
+    if event.button == 1 and mof == -1 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
         x2, y2 = event.xdata, event.ydata
         if value2.get() == '---Plot3---':
             ao.set_xlim(sorted([x1, x2]))
