@@ -51,11 +51,13 @@ matplotlib.use('TkAgg')
 try:
     from scipy.optimize import curve_fit
     from scipy.signal import hilbert
+    from scipy.signal import savgol_filter
     from scipy.stats import mode
 except ModuleNotFoundError:
     install('scipy')
     from scipy.optimize import curve_fit
     from scipy.signal import hilbert
+    from scipy.signal import savgol_filter
     from scipy.stats import mode
 try:
     from lmfit import Parameters, Minimizer, report_fit
@@ -684,10 +686,25 @@ def desc():
     b2.grid(row=1,column=1)
     gstr.update()
 
-def smooth(x,l=3):
-    for i in range(len(x)):
-        if i>=l//2 and i+1<len(x)-l//2:
-            x[i]=np.mean(x[i-l//2:i+l//2])
+
+
+def smooth(x,l=20,p=3):
+    """
+    Using Savitzky-Golay filter to smooth the data.
+    
+    Parameters
+    ------
+    x : 1D array
+        data to be smoothed
+    l : int, default: 20
+        window length
+    p : int, default: 3
+        polynomial order
+    """
+    x=savgol_filter(x, l, p)
+    # for i in range(len(x)):
+    #     if i>=l//2 and i+1<len(x)-l//2:
+    #         x[i]=np.mean(x[i-l//2:i+l//2])
     return x
 
 def copy_to_clipboard():
@@ -6864,7 +6881,10 @@ def o_plot1(*e):
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
                 
             else:
-                ao = fig.subplots()
+                if value.get() !='MDC Curves':
+                    ao = fig.subplots()
+                else:
+                    ao = fig.add_axes([0.2, 0.1, 0.5, 0.8])
                 if value.get() == 'E-K Diagram':
                     # h1=a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
                     if emf=='KE':
@@ -6902,17 +6922,44 @@ def o_plot1(*e):
                         st.put(str(round((n+1)/(len(ev)-1)*100)) +
                                '%'+' ('+str(len(ev)-1)+')')
                     pbar.close()
+                if value.get() == 'MDC Curves':
+                    pbar = tqdm.tqdm(
+                        total=len(ev)//d, desc='MDC', colour='red')
+                    y = np.zeros([len(ev),len(phi)],dtype=float)
+                    for n in range(len(ev)):
+                        ecut = data.sel(eV=ev[n], method='nearest')
+                        x = (2*m*ev[n]*1.6*10**-19)**0.5*np.sin(
+                            (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
+                        y[n][:] = ecut.to_numpy().reshape(len(ecut))
+                    for n in range(len(ev)//d):
+                        yy=y[n*d][:]+n*np.max(y)/d
+                        yy=smooth(yy,l,p)
+                        ao.plot(x, yy, c='black')
+                        pbar.update(1)
+                        # print(str(round((n+1)/(len(ev))*100))+'%'+' ('+str(len(ev))+')')
+                        st.put(str(round((n+1)/(len(ev)//d)*100)) +
+                               '%'+' ('+str(len(ev)//d)+')')
+                    pbar.close()
             ao.set_title(value.get(), font='Arial', fontsize=16)
             ao.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
-            if emf=='KE':
-                ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=14)
+            if value.get() != 'MDC Curves':
+                if emf=='KE':
+                    ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=14)
+                else:
+                    ao.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=14)
+                    ao.invert_yaxis()
             else:
-                ao.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=14)
-                ao.invert_yaxis()
+                ylr=ao.twinx()
+                ao.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=14)
+                ao.set_yticks([])
+                ylr.set_ylabel(r'$\longleftarrow$ Binding Energy', font='Arial', fontsize=14)
+                ylr.set_yticks([])
+                ao.set_xlim([min(x), max(x)])
+                
             xl = ao.get_xlim()
             yl = ao.get_ylim()
         try:
-            if value.get() != 'MDC Normalized':
+            if value.get() != 'MDC Normalized' and value.get() != 'MDC Curves':
                 climon()
                 out.draw()
             else:
@@ -7788,22 +7835,26 @@ def exp(*e):
     f = []
     f0 = []
     if pflag == 1:
-        mz = data.to_numpy()
-        f0 = plt.figure(figsize=(8, 7), layout='constrained')
-        a0 = plt.axes([0.13, 0.45, 0.8, 0.5])
-        a1 = plt.axes([0.13, 0.08, 0.8, 0.2])
-        a0.set_title('Drag to select specific region')
-        selectors.append(RectangleSelector(
-            a0, select_callback,
-            useblit=True,
-            button=[1, 3],  # disable middle button
-            minspanx=5, minspany=5,
-            spancoords='pixels',
-            interactive=True,
-            props=props))
-        # f0.canvas.mpl_connect('key_press_event',toggle_selector)
-        if value.get() != 'Raw Data':
+        if value.get() != 'MDC Curves':
+            mz = data.to_numpy()
+            f0 = plt.figure(figsize=(8, 7), layout='constrained')
+            a0 = plt.axes([0.13, 0.45, 0.8, 0.5])
+            a1 = plt.axes([0.13, 0.08, 0.8, 0.2])
+            a0.set_title('Drag to select specific region')
+            selectors.append(RectangleSelector(
+                a0, select_callback,
+                useblit=True,
+                button=[1, 3],  # disable middle button
+                minspanx=5, minspany=5,
+                spancoords='pixels',
+                interactive=True,
+                props=props))
+            # f0.canvas.mpl_connect('key_press_event',toggle_selector)
+        if value.get() != 'Raw Data' and value.get() != 'MDC Curves':
             f, a = plt.subplots(dpi=150)
+        elif value.get() == 'MDC Curves':
+            f=plt.figure(figsize=(4,6),dpi=150)
+            a = f.subplots()
         if value.get() == 'Raw Data':
             f = plt.figure(figsize=(9, 7), layout='constrained')
             a = plt.axes([0.13, 0.08, 0.68, 0.6])
@@ -7982,18 +8033,37 @@ def exp(*e):
                         yl = sorted(a.get_ylim(), reverse=True)
                     a0.pcolormesh(px, py, np.full_like(
                         np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
+            if value.get() == 'MDC Curves':
+                y = np.zeros([len(ev),len(phi)],dtype=float)
+                for n in range(len(ev)):
+                    ecut = data.sel(eV=ev[n], method='nearest')
+                    x = (2*m*ev[n]*1.6*10**-19)**0.5*np.sin(
+                        (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
+                    y[n][:] = ecut.to_numpy().reshape(len(ecut))
+                for n in range(len(ev)//d):
+                    yy=y[n*d][:]+n*np.max(y)/d
+                    yy=smooth(yy,l,p)
+                    a.plot(x, yy, c='black')
 
         a.set_title(value.get(), font='Arial', fontsize=18)
         a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
-        a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
-        if emf=='KE':
-            a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
-            a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+        if value.get() != 'MDC Curves':
+            a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+            if emf=='KE':
+                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+            else:
+                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                a.invert_yaxis()
+                a0.invert_yaxis()
         else:
-            a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
-            a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
-            a.invert_yaxis()
-            a0.invert_yaxis()
+            ylr=a.twinx()
+            a.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=16)
+            a.set_yticks([])
+            ylr.set_ylabel(r'$\longleftarrow$ Binding Energy', font='Arial', fontsize=14)
+            ylr.set_yticks([])
+            a.set_xlim([min(x), max(x)])
         if value.get() == 'Raw Data':
             a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
             a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
@@ -8192,8 +8262,8 @@ def exp(*e):
                 a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=18)
                 a.set_xticklabels(a.get_xticklabels(),fontsize=16)
                 a.set_yticklabels(a.get_yticklabels(),fontsize=16)
-                l=a.legend(fontsize=16)
-                l.draw_frame(False)
+                ll=a.legend(fontsize=16)
+                ll.draw_frame(False)
                 a.invert_xaxis()
             elif 'Imaginary Part' in value2.get():
                 f, a = plt.subplots(1, 1, dpi=150)
@@ -8205,8 +8275,8 @@ def exp(*e):
                 a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=18)
                 a.set_xticklabels(a.get_xticklabels(),fontsize=16)
                 a.set_yticklabels(a.get_yticklabels(),fontsize=16)
-                l=a.legend(fontsize=16)
-                l.draw_frame(False)
+                ll=a.legend(fontsize=16)
+                ll.draw_frame(False)
                 a.invert_xaxis()
             ####################################################################################### KK definition
             #######################################################################################
@@ -8473,7 +8543,7 @@ def exp(*e):
                 a0.invert_yaxis()
             cursor = Cursor(a, useblit=True, color='red', linewidth=1)
     try:
-        if value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get():
+        if value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and value.get() != 'MDC Curves':
             try:
                 h1.set_clim([vcmin.get(), vcmax.get()])
                 h2.set_clim([vcmin.get(), vcmax.get()])
@@ -8865,9 +8935,94 @@ def plot(event):
     plot3()
 
 def plot1(*e):
-    t8 = threading.Thread(target=o_plot1)
-    t8.daemon = True
-    t8.start()
+    if value.get() == 'MDC Curves':
+        def select_all(event):
+            event.widget.select_range(0, tk.END)
+            return 'break'
+        
+        def ini():
+            global d, l, p
+            try:
+                d=d
+                l=l
+                p=p
+            except:
+                d=8
+                l=20
+                p=3
+            v_d.set(str(d))
+            v_l.set(str(l))
+            v_p.set(str(p))
+            cl.focus()
+        def chf():
+            global d, l, p
+            try:
+                d = int(v_d.get())
+                l = int(v_l.get())
+                p = int(v_p.get())
+                t8 = threading.Thread(target=o_plot1)
+                t8.daemon = True
+                t8.start()
+                gg.destroy()
+            except:
+                gg.destroy()
+                plot1(*e)
+
+        def on_enter(event):
+            chf()
+            
+        gg = tk.Toplevel(g, bg="white", padx=10, pady=10)
+        gg.title('Plotting Parameter')
+        gg.iconphoto(False, tk.PhotoImage(data=b64decode(gicon)))
+
+        fd = tk.Frame(gg, bg="white")
+        fd.grid(row=0, column=0, padx=10, pady=5)
+        ld = tk.Label(fd, text='Energy Axis Density (1/n), n :', font=(
+            "Arial", 18, "bold"), bg="white", height='1')
+        ld.grid(row=0, column=0, padx=10, pady=10)
+        v_d = tk.StringVar()
+        cd = tk.Entry(fd, font=(
+            "Arial", 16, "bold"), textvariable=v_d, width=10, bg="white")
+        cd.grid(row=0, column=1, padx=10, pady=5)
+
+        fl = tk.Frame(gg, bg="white")
+        fl.grid(row=1, column=0, padx=10, pady=5)
+        ll = tk.Label(fl, text='Savgol Filter Window Length :', font=(
+            "Arial", 18, "bold"), bg="white", height='1')
+        ll.grid(row=0, column=0, padx=10, pady=10)
+        v_l = tk.StringVar()
+        cl = tk.Entry(fl, font=(
+            "Arial", 16, "bold"), textvariable=v_l, width=10, bg="white")
+        cl.grid(row=0, column=1, padx=10, pady=5)
+        
+        fp = tk.Frame(gg, bg="white")
+        fp.grid(row=2, column=0, padx=10, pady=5)
+        lp = tk.Label(fp, text='Savgol Filter Polynomial Degree :', font=(
+            "Arial", 18, "bold"), bg="white", height='1')
+        lp.grid(row=0, column=0, padx=10, pady=10)
+        v_p = tk.StringVar()
+        cp = tk.Entry(fp, font=(
+            "Arial", 16, "bold"), textvariable=v_p, width=10, bg="white")
+        cp.grid(row=0, column=1, padx=10, pady=5)
+
+        l_smooth = tk.Label(gg, text='Note:\n\tPolynomial Degree 0 or 1: Moving Average\n\tPolyorder must be less than window_length', font=(
+            "Arial", 14, "bold"), bg="white", height='3',justify='left')
+        l_smooth.grid(row=3, column=0, padx=10, pady=10)
+
+        bflag = tk.Button(gg, text="OK", font=("Arial", 16, "bold"),
+                          height=2, width=10, bg="white", command=chf)
+        bflag.grid(row=4, column=0, padx=10, pady=5)
+        cd.bind('<FocusIn>', select_all)
+        cl.bind('<FocusIn>', select_all)
+        cp.bind('<FocusIn>', select_all)
+        
+        gg.bind('<Return>', on_enter)
+        gg.focus_set()
+        ini()
+    else:
+        t8 = threading.Thread(target=o_plot1)
+        t8.daemon = True
+        t8.start()
 
 
 def plot2(*e):
@@ -9456,7 +9611,7 @@ frraw = tk.Frame(plots, bg='white')
 frraw.grid(row=1, column=1)
 
 optionList = ['Raw Data', 'E-K Diagram', 'MDC Normalized',
-              'First Derivative', 'Second Derivative']   # 選項
+              'First Derivative', 'Second Derivative', 'MDC Curves']   # 選項
 value = tk.StringVar()                                        # 取值
 value.set('---Plot1---')
 # 第二個參數是取值，第三個開始是選項，使用星號展開
