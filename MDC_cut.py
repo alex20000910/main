@@ -7930,7 +7930,7 @@ def exp(*e):
             f=plt.figure(figsize=(4,6),dpi=150)
             a = f.subplots()
         elif value.get() == 'E-K with MDC Curves':
-            f = plt.figure(figsize=(9, 7),dpi=150)
+            f = plt.figure(figsize=(8, 6),dpi=150)
             at_ = plt.axes([0.25, 0.13, 0.5, 0.8])
             at_.set_xticks([])
             at_.set_yticks([])
