@@ -9614,13 +9614,28 @@ custom_colors1 = [(0, (1, 1, 1)),
                  (1, (1, 1, 0.26))]
 
 # Create a custom colormap
-custom_cmap = LinearSegmentedColormap.from_list(
-    'custom_cmap', custom_colors1, N=256)
-mpl.colormaps.register(custom_cmap)
+custom_cmap1 = LinearSegmentedColormap.from_list(
+    'custom_cmap1', custom_colors1, N=256)
+mpl.colormaps.register(custom_cmap1)
 
 # Define your custom colors (as RGB tuples)
 # (value,(color))
-custom_colors2 = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
+custom_colors2 = [(0, (0, 0.08, 0.16)),
+                 (0.2, (0.2, 0.7, 1)),
+                 (0.4, (0.28, 0.2, 0.4)),
+                 (0.62, (0.9, 0.1, 0.1)),
+                 (0.72, (0.7, 0.34, 0.1)),
+                 (0.8, (1, 0.5, 0.1)),
+                 (1, (1, 1, 0))]
+
+# Create a custom colormap
+custom_cmap2 = LinearSegmentedColormap.from_list(
+    'custom_cmap2', custom_colors2, N=256)
+mpl.colormaps.register(custom_cmap2)
+
+# Define your custom colors (as RGB tuples)
+# (value,(color))
+prevac_colors = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
                  (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
                  (0.4, (0, 0.4*0.82, 0)),
                  (0.6, (0.5*0.82, 1*0.82, 0)),
@@ -9628,11 +9643,11 @@ custom_colors2 = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
                  (1, (1*0.82, 0, 0))]
 # Create a custom colormap
 prevac_cmap = LinearSegmentedColormap.from_list(
-    'prevac_cmap', custom_colors2, N=256)
+    'prevac_cmap', prevac_colors, N=256)
 mpl.colormaps.register(prevac_cmap)
 
 # plt.register_cmap('custom_cmap', custom_cmap)
-optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap', 'viridis', 'turbo',
+optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'viridis', 'turbo',
                'inferno', 'plasma', 'copper', 'grey', 'bwr']   # 選項
 cmp = plt.colormaps()
 value3 = tk.StringVar()                                        # 取值
