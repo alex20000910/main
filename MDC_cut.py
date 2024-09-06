@@ -9731,6 +9731,21 @@ mpl.colormaps.register(custom_cmap2)
 
 # Define your custom colors (as RGB tuples)
 # (value,(color))
+custom_colors3 = [(0, (0.88, 0.84, 0.96)),
+                 (0.5, (0.32, 0, 0.64)),
+                 (0.75, (0, 0, 1)),
+                 (0.85, (0, 0.65, 1)),
+                 (0.9, (0.2, 1, 0.2)),
+                 (0.96, (0.72, 1, 0)),
+                 (1, (1, 1, 0))]
+
+# Create a custom colormap
+custom_cmap3 = LinearSegmentedColormap.from_list(
+    'custom_cmap3', custom_colors3, N=256)
+mpl.colormaps.register(custom_cmap3)
+
+# Define your custom colors (as RGB tuples)
+# (value,(color))
 prevac_colors = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
                  (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
                  (0.4, (0, 0.4*0.82, 0)),
@@ -9743,7 +9758,7 @@ prevac_cmap = LinearSegmentedColormap.from_list(
 mpl.colormaps.register(prevac_cmap)
 
 # plt.register_cmap('custom_cmap', custom_cmap)
-optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'viridis', 'turbo',
+optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'viridis', 'turbo',
                'inferno', 'plasma', 'copper', 'grey', 'bwr']   # 選項
 cmp = plt.colormaps()
 value3 = tk.StringVar()                                        # 取值
