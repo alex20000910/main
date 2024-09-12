@@ -6838,6 +6838,10 @@ def o_bareband():
 def o_plot1(*e):
     global value, value1, value2, data, ev, phi, mfpath, fig, out, pflag, k_offset, value3, limg, img, optionList, h0, ao, xl, yl, st
     if value.get() in optionList:
+        try:
+            b_sw.grid_remove()
+        except:
+            pass
         limg.config(image=img[np.random.randint(len(img))])
         print('Plotting...')
         st.put('Plotting...')
@@ -7028,6 +7032,10 @@ def o_plot1(*e):
 def o_plot2(*e):
     global fig, out, fwhm, fev, pos, value, value1, value2, k, be, rx, ry, ix, iy, pflag, limg, img, bb_offset, bbk_offset, optionList1, st
     if value1.get() in optionList1:
+        try:
+            b_sw.grid_remove()
+        except:
+            pass
         limg.config(image=img[np.random.randint(len(img))])
         print('Plotting...')
         st.put('Plotting...')
@@ -7190,7 +7198,7 @@ def o_plot2(*e):
 
 
 def o_plot3(*e):
-    global fig, out, rx, ry, ix, iy, fwhm, pos, value, value1, value2, pflag, k, be, k_offset, value3, limg, img, bb_offset, bbk_offset, optionList2, h0, bo, xl, yl, posmin, posmax, eposmin, eposmax, tb0, tb0_, tb1, tb1_, tb2, st
+    global fig, out, rx, ry, ix, iy, fwhm, pos, value, value1, value2, pflag, k, be, k_offset, value3, limg, img, bb_offset, bbk_offset, optionList2, h0, bo, xl, yl, posmin, posmax, eposmin, eposmax, tb0, tb0_, tb1, tb1_, tb2, st, dl, b_sw
     if value2.get() in optionList2:
         limg.config(image=img[np.random.randint(len(img))])
         print('Plotting...')
@@ -7209,6 +7217,16 @@ def o_plot3(*e):
         except:
             print('Please load MDC fitted file')
             st.put('Please load MDC fitted file')
+        if 'Data Plot with Pos' in value2.get():
+            try:
+                b_sw.grid_remove()
+            except:
+                pass
+        else:
+            try:
+                b_sw.grid(row=0, column=3)
+            except:
+                pass    
         if value2.get() != 'Data Plot with Pos':
             try:
                 yy = interp(y, k*np.float64(bbk_offset.get()), be -
@@ -7241,11 +7259,21 @@ def o_plot3(*e):
         if value2.get() == 'Real & Imaginary':
             a = fig.subplots(2, 1)
             a[0].set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=18)
-            a[0].plot(rx, ry, c='black', linestyle='-', marker='.')
+            if dl==0:
+                a[0].scatter(rx, ry, edgecolors='black', c='w')
+            elif dl==1:
+                a[0].plot(rx, ry, c='black')
+            elif dl==2:
+                a[0].plot(rx, ry, c='black', linestyle='-', marker='.')
             a[0].tick_params(direction='in')
             a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
-            a[1].plot(ix, iy, c='black', linestyle='-', marker='.')
+            if dl==0:
+                a[1].scatter(ix, iy, edgecolors='black', c='w')
+            elif dl==1:
+                a[1].plot(ix, iy, c='black')
+            elif dl==2:
+                a[1].plot(ix, iy, c='black', linestyle='-', marker='.')
             a[1].tick_params(direction='in')
             a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a[1].set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
@@ -7322,13 +7350,27 @@ def o_plot3(*e):
                 b = ax[1]
                 # Plot imaginary data and its Hilbert transformation
                 a.set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=18)
-                a.plot(tbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
-                a.plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                if dl==0:
+                    a.scatter(tbe, ry, edgecolors='black', c='w', label=r'Re $\Sigma$')
+                    a.scatter(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                elif dl==1:
+                    a.plot(tbe, ry, c='black', label=r'Re $\Sigma$')
+                    a.plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                elif dl==2:
+                    a.plot(tbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                    a.plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
                 a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
                 a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
                 a.legend()
-                b.plot(tbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-                b.plot(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                if dl==0:
+                    b.scatter(tbe, iy, edgecolors='black', c='w', label=r'Im $\Sigma$')
+                    b.scatter(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                elif dl==1:
+                    b.plot(tbe, iy, c='black', label=r'Im $\Sigma$')
+                    b.plot(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                elif dl==2:
+                    b.plot(tbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                    b.plot(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
                 b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
                 b.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
                 b.legend()
@@ -7340,7 +7382,12 @@ def o_plot3(*e):
                 if 'nd' in value2.get():
                     ax.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
                     ty=np.diff(smooth(ry,20,3))/np.diff(ttbe)
-                    ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                    if dl==0:
+                        ax.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Re $\Sigma$')
+                    elif dl==1:
+                        ax.plot(ttbe[0:-1], ty, c='black', label=r'Re $\Sigma$')
+                    elif dl==2:
+                        ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
                     ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
                     ax.set_ylabel(r'$2^{nd} der. Re \Sigma$', font='Arial', fontsize=18)
                     ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
@@ -7348,8 +7395,15 @@ def o_plot3(*e):
                     ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
                 else:
                     ax.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
-                    ax.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
-                    ax.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    if dl==0:
+                        ax.scatter(ttbe, ry, edgecolors='black', c='w', label=r'Re $\Sigma$')
+                        ax.scatter(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    elif dl==1:
+                        ax.plot(ttbe, ry, c='black', label=r'Re $\Sigma$')
+                        ax.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    elif dl==2:
+                        ax.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                        ax.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
                     ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
                     ax.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=18)
                     ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
@@ -7363,7 +7417,12 @@ def o_plot3(*e):
                 if 'st' in value2.get():
                     ax.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
                     ty=np.diff(smooth(iy,20,3))/np.diff(ttbe)
-                    ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                    if dl==0:
+                        ax.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Im $\Sigma$')
+                    elif dl==1:
+                        ax.plot(ttbe[0:-1], ty, c='black', label=r'Im $\Sigma$')
+                    elif dl==2:
+                        ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
                     ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
                     ax.set_ylabel(r'$1^{st} der. Im \Sigma$', font='Arial', fontsize=18)
                     ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
@@ -7371,8 +7430,15 @@ def o_plot3(*e):
                     ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
                 else:
                     ax.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
-                    ax.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-                    ax.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    if dl==0:
+                        ax.scatter(ttbe, iy, edgecolors='black', c='w', label=r'Im $\Sigma$')
+                        ax.scatter(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    elif dl==1:
+                        ax.plot(ttbe, iy, c='black', label=r'Im $\Sigma$')
+                        ax.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    elif dl==2:
+                        ax.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                        ax.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
                     ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
                     ax.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=18)
                     ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
@@ -8304,11 +8370,21 @@ def exp(*e):
         if value2.get() == 'Real & Imaginary':
             f, a = plt.subplots(2, 1, dpi=150)
             a[0].set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=18)
-            a[0].plot(rx, ry, c='black', linestyle='-', marker='.')
+            if dl==0:
+                a[0].scatter(rx, ry, edgecolors='black', c='w')
+            elif dl==1:
+                a[0].plot(rx, ry, c='black')
+            elif dl==2:
+                a[0].plot(rx, ry, c='black', linestyle='-', marker='.')
             a[0].tick_params(direction='in')
             a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
-            a[1].plot(ix, iy, c='black', linestyle='-', marker='.')
+            if dl==0:
+                a[1].scatter(ix, iy, edgecolors='black', c='w')
+            elif dl==1:
+                a[1].plot(ix, iy, c='black')
+            elif dl==2:
+                a[1].plot(ix, iy, c='black', linestyle='-', marker='.')
             a[1].tick_params(direction='in')
             a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
             a[1].set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
@@ -8358,13 +8434,27 @@ def exp(*e):
                 f, a = plt.subplots(2, 1, dpi=150)
                 # Plot imaginary data and its Hilbert transformation
                 a[0].set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=18)
-                a[0].plot(tbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
-                a[0].plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                if dl==0:
+                    a[0].scatter(tbe, ry, edgecolors='black', c='w', label=r'Re $\Sigma$')
+                    a[0].scatter(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                elif dl==1:
+                    a[0].plot(tbe, ry, c='black', label=r'Re $\Sigma$')
+                    a[0].plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                elif dl==2:
+                    a[0].plot(tbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                    a[0].plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
                 a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
                 a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
                 a[0].legend()
-                a[1].plot(tbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-                a[1].plot(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                if dl==0:
+                    a[1].scatter(tbe, iy, edgecolors='black', c='w', label=r'Im $\Sigma$')
+                    a[1].scatter(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                elif dl==1:
+                    a[1].plot(tbe, iy, c='black', label=r'Im $\Sigma$')
+                    a[1].plot(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                elif dl==2:
+                    a[1].plot(tbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                    a[1].plot(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
                 a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
                 a[1].set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
                 a[1].legend()
@@ -8376,7 +8466,12 @@ def exp(*e):
                 if 'nd' in value2.get():
                     a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
                     ty=np.diff(smooth(ry,20,3))/np.diff(ttbe)
-                    a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                    if dl==0:
+                        a.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Re $\Sigma$')
+                    elif dl==1:
+                        a.plot(ttbe[0:-1], ty, c='black', label=r'Re $\Sigma$')
+                    elif dl==2:
+                        a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
                     a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
                     a.set_ylabel(r'$2^{nd} der. Re \Sigma$', font='Arial', fontsize=18)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=16)
@@ -8384,8 +8479,15 @@ def exp(*e):
                     a.set_yticklabels(a.get_yticklabels(),fontsize=16)
                 else:
                     a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
-                    a.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
-                    a.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    if dl==0:
+                        a.scatter(ttbe, ry, edgecolors='black', c='w', label=r'Re $\Sigma$')
+                        a.scatter(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    elif dl==1:
+                        a.plot(ttbe, ry, c='black', label=r'Re $\Sigma$')
+                        a.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    elif dl==2:
+                        a.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                        a.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
                     a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=18)
                     a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=18)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=16)
@@ -8399,7 +8501,12 @@ def exp(*e):
                 if 'st' in value2.get():
                     a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
                     ty=np.diff(smooth(iy,20,3))/np.diff(ttbe)
-                    a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                    if dl==0:
+                        a.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Im $\Sigma$')
+                    elif dl==1:
+                        a.plot(ttbe[0:-1], ty, c='black', label=r'Im $\Sigma$')
+                    elif dl==2:
+                        a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
                     a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
                     a.set_ylabel(r'$1^{st} der. Im \Sigma$', font='Arial', fontsize=18)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=16)
@@ -8407,8 +8514,15 @@ def exp(*e):
                     a.set_yticklabels(a.get_yticklabels(),fontsize=16)
                 else:
                     a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
-                    a.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-                    a.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    if dl==0:
+                        a.scatter(ttbe, iy, edgecolors='black', c='w', label=r'Im $\Sigma$')
+                        a.scatter(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    elif dl==1:
+                        a.plot(ttbe, iy, c='black', label=r'Im $\Sigma$')
+                        a.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    elif dl==2:
+                        a.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                        a.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
                     a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=18)
                     a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=18)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=16)
@@ -9309,7 +9423,16 @@ def o_loadmfit():
         "Arial", 12, "bold"), fg='red', width=30, height='1', bd=10)
     b3.pack()
     lmgg.update()
-    
+
+def dl_sw():
+    global dl, b_sw
+    s=['dot','line','dot-line']
+    dl=(dl+1)%3
+    b_sw.config(text=s[dl])
+    t = threading.Thread(target=o_plot3)
+    t.daemon = True
+    t.start()
+
 if __name__ == '__main__':
     try:
         with np.load('rd.npz', 'rb') as f:
@@ -9892,6 +10015,9 @@ if __name__ == '__main__':
     ydata.grid(row=0, column=1)
     b_copyimg = tk.Button(xydata, text='Copy Image to Clipboard', font=('Arial', 12, 'bold'), command=copy_to_clipboard, bd=10)
     b_copyimg.grid(row=0, column=2)
+    
+    dl=0
+    b_sw = tk.Button(xydata, text='dot', font=('Arial', 12, 'bold'), command=dl_sw, bd=10)
 
     exf = tk.Frame(g, bg='white')
     exf.grid(row=1, column=2)
