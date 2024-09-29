@@ -716,14 +716,10 @@ def show_info():
     # 添加信息標籤
     l = tk.Label(info_window, text="Graph copied to clipboard", font=("Arial", 30, "bold"),fg='red')
     l.pack(pady=5)
-    label = tk.Label(info_window, text="window closed in 5 second", font=("Arial", 20))
+    label = tk.Label(info_window, text="window closed in 3 second", font=("Arial", 20))
     label.pack(pady=5)
     
     # 設置計時器，3 秒後自動關閉窗口
-    info_window.update()
-    info_window.after(1000, label.config(text="window closed in 4 second"))
-    info_window.update()
-    info_window.after(1000, label.config(text="window closed in 3 second"))
     info_window.update()
     info_window.after(1000, label.config(text="window closed in 2 second"))
     info_window.update()
@@ -7954,6 +7950,8 @@ def cut_move(event):
             if cf:
                 acx.clear()
                 acy.clear()
+                acx.set_xticks([])
+                acy.set_yticks([])
             xx.remove()
             yy.remove()
         except:
@@ -7997,6 +7995,7 @@ def cut_select(event):
         x.remove()
         y.remove()
     # f.canvas.draw_idle()
+    copy_to_clipboard(ff=f)
     f.show()
 
 # def cut_click(event):
@@ -8020,7 +8019,7 @@ def exp(*e):
             f0 = plt.figure(figsize=(8, 7), layout='constrained')
             a0 = plt.axes([0.13, 0.45, 0.8, 0.5])
             a1 = plt.axes([0.13, 0.08, 0.8, 0.2])
-            a0.set_title('Drag to select specific region')
+            a0.set_title('Drag to select specific region', font='Arial', fontsize=18)
             selectors.append(RectangleSelector(
                 a0, select_callback,
                 useblit=True,
@@ -8043,10 +8042,10 @@ def exp(*e):
             a = plt.axes([0.1, 0.13, 0.4, 0.8])
             a1_ = plt.axes([0.5, 0.13, 0.4, 0.8])
         if value.get() == 'Raw Data':
-            f = plt.figure(figsize=(9, 7), layout='constrained')
-            a = plt.axes([0.13, 0.08, 0.68, 0.6])
+            f = plt.figure(figsize=(10, 8), layout='constrained')
+            a = plt.axes([0.13, 0.1, 0.68, 0.6])
             acx = plt.axes([0.13, 0.75, 0.545, 0.15])
-            acy = plt.axes([0.82, 0.08, 0.15, 0.6])
+            acy = plt.axes([0.82, 0.1, 0.15, 0.6])
             plt.connect('motion_notify_event', cut_move)
             plt.connect('button_press_event', cut_select)
             if emf=='KE':
@@ -8064,7 +8063,7 @@ def exp(*e):
             
             h2 = a0.pcolormesh(mx, my, mz, cmap=value3.get())
             cb1 = f0.colorbar(h2)
-            cb1.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
+            cb1.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
 
             acx.set_xticks([])
             acy.set_yticks([])
@@ -8103,7 +8102,7 @@ def exp(*e):
             cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
             
             cb1 = f0.colorbar(h2)
-            cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=20)
+            cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=14)
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
                 min(pz.flatten()), max(pz.flatten()), 50), color='green')
@@ -8140,7 +8139,7 @@ def exp(*e):
             cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
             
             cb1 = f0.colorbar(h2)
-            cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=20)
+            cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=14)
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
                 min(pz.flatten()), max(pz.flatten()), 50), color='green')
@@ -8178,7 +8177,7 @@ def exp(*e):
                 cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
                 
                 cb1 = f0.colorbar(h2)
-                cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=20)
+                cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=14)
                 
 
                 n = a1.hist(pz.flatten(), bins=np.linspace(
@@ -8262,18 +8261,28 @@ def exp(*e):
         a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
         a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
         if 'MDC Curves' not in value.get():
-            a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
-            a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=20)
+            a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+            a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=14)
             if emf=='KE':
                 a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
                 a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
-                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
-                a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=20)
+                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+                a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
+                if value.get() == 'Raw Data':
+                    a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+                    a.set_yticklabels(labels=a.get_yticklabels(), fontsize=14)
+                    a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+                    a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
             else:
                 a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
                 a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
-                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
-                a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=20)
+                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
+                if value.get() == 'Raw Data':
+                    a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                    a.set_yticklabels(labels=a.get_yticklabels(), fontsize=14)
+                    a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                    a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
                 a.invert_yaxis()
                 a0.invert_yaxis()
         else:
@@ -8301,10 +8310,12 @@ def exp(*e):
                 a.set_xlim([min(x), max(x)])
                 a.set_ylim([0, np.max(n*np.max(y)/d)])
         if value.get() == 'Raw Data':
-            a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=22)
-            a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
-            a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=22)
-            a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=20)
+            a.set_title('Raw Data', font='Arial', fontsize=18)
+            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
+            a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
+            a.set_xticklabels(labels=a.get_xticklabels(), fontsize=14)
+            a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
+            a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=14)
         # a.set_xticklabels(labels=a.get_xticklabels(),fontsize=10)
         # a.set_yticklabels(labels=a.get_yticklabels(),fontsize=10)
         # cursor = Cursor(a, useblit=True, color='red', linewidth=1)
@@ -8704,7 +8715,7 @@ def exp(*e):
             f0 = plt.figure(figsize=(8, 7), layout='constrained')
             a0 = plt.axes([0.13, 0.45, 0.8, 0.5])
             a1 = plt.axes([0.13, 0.08, 0.8, 0.2])
-            a0.set_title('Drag to select specific region')
+            a0.set_title('Drag to select specific region', font='Arial', fontsize=18)
             selectors.append(RectangleSelector(
                 a0, select_callback,
                 useblit=True,
@@ -8787,12 +8798,12 @@ def exp(*e):
             cb1 = f0.colorbar(h2)
             cb1.set_ticks(cb1.get_ticks())
             cb1.set_ticklabels(cb1.get_ticks(), font='Arial',
-                               fontsize=20, minor=False)
-            a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
+                               fontsize=14, minor=False)
+            a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
             if emf=='KE':
-                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
+                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
             else:
-                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
+                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
                 
             try:
                 if mp == 1:
@@ -8890,7 +8901,8 @@ def exp(*e):
             #     plt.connect('motion_notify_event', cut_move)
             copy_to_clipboard(f)
             st.put('graph copied to clipboard')
-            threading.Thread(target=show_info,daemon=True).start()
+            if value.get() != 'Raw Data':
+                threading.Thread(target=show_info,daemon=True).start()
             plt.show()
             try:
                 h1.set_clim([cm.get(), cM.get()])
