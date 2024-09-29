@@ -7938,7 +7938,7 @@ def cut_move(event):
                     phi=cxdata, method='nearest').to_numpy().reshape(len(ev))
                 acx.clear()
                 acy.clear()
-                acx.set_title('     Raw Data', font='Arial', fontsize=18)
+                acx.set_title('                Raw Data', font='Arial', fontsize=18)
                 acx.plot(phi, dx, c='black')
                 if emf=='KE':
                     acy.plot(dy, ev, c='black')
@@ -7954,7 +7954,7 @@ def cut_move(event):
             if cf:
                 acx.clear()
                 acy.clear()
-                acx.set_title('     Raw Data', font='Arial', fontsize=18)
+                acx.set_title('                Raw Data', font='Arial', fontsize=18)
                 acx.set_xticks([])
                 acx.set_yticks([])
                 acy.set_xticks([])
@@ -7987,7 +7987,7 @@ def cut_select(event):
                       method='nearest').to_numpy().reshape(len(ev))
         acx.clear()
         acy.clear()
-        acx.set_title('     Raw Data', font='Arial', fontsize=18)
+        acx.set_title('                Raw Data', font='Arial', fontsize=18)
         acx.plot(phi, dx, c='black')
         if emf=='KE':
             acy.plot(dy, ev, c='black')
@@ -8322,7 +8322,7 @@ def exp(*e):
                 a.set_xlim([min(x), max(x)])
                 a.set_ylim([0, np.max(n*np.max(y)/d)])
         if value.get() == 'Raw Data':
-            acx.set_title('     Raw Data', font='Arial', fontsize=18)
+            acx.set_title('                Raw Data', font='Arial', fontsize=18)
             cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
             a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
             a.set_xticklabels(labels=a.get_xticklabels(), fontsize=14)
