@@ -437,11 +437,14 @@ def rplot(f, canvas):
     Returns:
     None
     """
-    global data, ev, phi, value3, h0, ao, xl, yl, rcx, rcy
-    ao = f.add_axes([0.13, 0.1, 0.68, 0.6])
-    rcx = f.add_axes([0.13, 0.77, 0.545, 0.16])
-    rcy = f.add_axes([0.82, 0.1, 0.12, 0.6])
+    global data, ev, phi, value3, h0, ao, xl, yl, rcx, rcy, acb
+    ao = f.add_axes([0.13, 0.1, 0.6, 0.65])
+    rcx = f.add_axes([0.13, 0.78, 0.6, 0.15])
+    rcy = f.add_axes([0.75, 0.1, 0.12, 0.65])
+    acb = f.add_axes([0.9, 0.1, 0.02, 0.65])
     rcx.set_xticks([])
+    rcx.set_yticks([])
+    rcy.set_xticks([])
     rcy.set_yticks([])
     if emf=='KE':
         tx, ty = np.meshgrid(phi, ev)
@@ -450,9 +453,9 @@ def rplot(f, canvas):
     tz = data.to_numpy()
     # h1 = a.scatter(tx,ty,c=tz,marker='o',s=0.9,cmap=value3.get());
     h0 = ao.pcolormesh(tx, ty, tz, cmap=value3.get())
-    f.colorbar(h0)
+    f.colorbar(h0, cax=acb, orientation='vertical')
     # a.set_title('Raw Data',font='Arial',fontsize=16)
-    ao.set_title('Raw Data', font='Arial', fontsize=16)
+    rcx.set_title('            Raw Data', font='Arial', fontsize=16)
     ao.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=12)
     if emf=='KE':
         ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
@@ -7935,6 +7938,7 @@ def cut_move(event):
                     phi=cxdata, method='nearest').to_numpy().reshape(len(ev))
                 acx.clear()
                 acy.clear()
+                acx.set_title('     Raw Data', font='Arial', fontsize=18)
                 acx.plot(phi, dx, c='black')
                 if emf=='KE':
                     acy.plot(dy, ev, c='black')
@@ -7950,7 +7954,10 @@ def cut_move(event):
             if cf:
                 acx.clear()
                 acy.clear()
+                acx.set_title('     Raw Data', font='Arial', fontsize=18)
                 acx.set_xticks([])
+                acx.set_yticks([])
+                acy.set_xticks([])
                 acy.set_yticks([])
             xx.remove()
             yy.remove()
@@ -7980,6 +7987,7 @@ def cut_select(event):
                       method='nearest').to_numpy().reshape(len(ev))
         acx.clear()
         acy.clear()
+        acx.set_title('     Raw Data', font='Arial', fontsize=18)
         acx.plot(phi, dx, c='black')
         if emf=='KE':
             acy.plot(dy, ev, c='black')
@@ -8043,9 +8051,10 @@ def exp(*e):
             a1_ = plt.axes([0.53, 0.15, 0.4, 0.75])
         if value.get() == 'Raw Data':
             f = plt.figure(figsize=(9, 7), layout='constrained')
-            a = plt.axes([0.13, 0.1, 0.68, 0.6])
-            acx = plt.axes([0.13, 0.75, 0.545, 0.18])
-            acy = plt.axes([0.82, 0.1, 0.15, 0.6])
+            a = plt.axes([0.13, 0.1, 0.55, 0.6])
+            acx = plt.axes([0.13, 0.73, 0.55, 0.18])
+            acy = plt.axes([0.7, 0.1, 0.15, 0.6])
+            eacb = plt.axes([0.87, 0.1, 0.02, 0.6])
             plt.connect('motion_notify_event', cut_move)
             plt.connect('button_press_event', cut_select)
             if emf=='KE':
@@ -8058,7 +8067,7 @@ def exp(*e):
                 yl = a.get_ylim()
             else:
                 yl = sorted(a.get_ylim(), reverse=True)
-            cb = f.colorbar(h1)
+            cb = f.colorbar(h1, cax=eacb, orientation='vertical')
             cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
             
             h2 = a0.pcolormesh(mx, my, mz, cmap=value3.get())
@@ -8066,6 +8075,8 @@ def exp(*e):
             cb1.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
 
             acx.set_xticks([])
+            acx.set_yticks([])
+            acy.set_xticks([])
             acy.set_yticks([])
             
             n = a1.hist(mz.flatten(), bins=np.linspace(
@@ -8255,7 +8266,8 @@ def exp(*e):
                     # cb = fig.colorbar(h1, ax=a1_)
                     # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
         if 'E-K with' not in value.get():
-            a.set_title(value.get(), font='Arial', fontsize=24)
+            if  value.get() != 'Raw Data':
+                a.set_title(value.get(), font='Arial', fontsize=24)
         else:
             at_.set_title(value.get(), font='Arial', fontsize=24)
         a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
@@ -8310,7 +8322,7 @@ def exp(*e):
                 a.set_xlim([min(x), max(x)])
                 a.set_ylim([0, np.max(n*np.max(y)/d)])
         if value.get() == 'Raw Data':
-            a.set_title('Raw Data', font='Arial', fontsize=18)
+            acx.set_title('     Raw Data', font='Arial', fontsize=18)
             cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
             a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
             a.set_xticklabels(labels=a.get_xticklabels(), fontsize=14)
@@ -8969,6 +8981,7 @@ def move(event):
                     # y=a.axhline(cydata,color='r')
                     rcx.clear()
                     rcy.clear()
+                    rcx.set_title('            Raw Data', font='Arial', fontsize=16)
                     rcx.plot(phi, dx, c='black')
                     if emf=='KE':
                         rcy.plot(dy, ev, c='black')
@@ -8978,10 +8991,19 @@ def move(event):
                     rcy.set_yticks([])
                     rcx.set_xlim(ao.get_xlim())
                     rcy.set_ylim(ao.get_ylim())
-                    out.draw_idle()
+                    out.draw()
         xdata.config(text='xdata:'+str('%.3f' % event.xdata))
         ydata.config(text='ydata:'+str('%.3f' % event.ydata))
     else:
+        if value.get() == 'Raw Data':
+            rcx.clear()
+            rcy.clear()
+            rcx.set_xticks([])
+            rcx.set_yticks([])
+            rcy.set_xticks([])
+            rcy.set_yticks([])
+            rcx.set_title('            Raw Data', font='Arial', fontsize=16)
+            out.draw()
         out.get_tk_widget().config(cursor="")
         xdata.config(text='xdata:')
         ydata.config(text='ydata:')
