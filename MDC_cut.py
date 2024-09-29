@@ -707,9 +707,40 @@ def smooth(x,l=20,p=3):
     #         x[i]=np.mean(x[i-l//2:i+l//2])
     return x
 
-def copy_to_clipboard():
+def show_info():
+    # 創建自定義窗口
+    info_window = tk.Toplevel()
+    info_window.title("Information")
+    info_window.geometry(f"600x150+{screen_width//2-300}+{screen_height//2-75}")
+    
+    # 添加信息標籤
+    l = tk.Label(info_window, text="Graph copied to clipboard", font=("Arial", 30, "bold"),fg='red')
+    l.pack(pady=5)
+    label = tk.Label(info_window, text="window closed in 5 second", font=("Arial", 20))
+    label.pack(pady=5)
+    
+    # 設置計時器，3 秒後自動關閉窗口
+    info_window.update()
+    info_window.after(1000, label.config(text="window closed in 4 second"))
+    info_window.update()
+    info_window.after(1000, label.config(text="window closed in 3 second"))
+    info_window.update()
+    info_window.after(1000, label.config(text="window closed in 2 second"))
+    info_window.update()
+    info_window.after(1000, label.config(text="window closed in 1 second"))
+    info_window.update()
+    info_window.after(1000, label.config(text="window closed in 0 second"))
+    info_window.update()
+    info_window.destroy()
+    
+def f_copy_to_clipboard():
+    copy_to_clipboard(ff=fig)
+    if value.get() != '---Plot1---' or value1.get() != '---Plot2---' or value2.get() != '---Plot3---':
+        st.put('Copied to clipboard')
+        
+def copy_to_clipboard(ff):
     buf = io.BytesIO()
-    fig.savefig(buf, format='png')
+    ff.savefig(buf, format='png')
     buf.seek(0)
     image = Image.open(buf)
     output = io.BytesIO()
@@ -852,7 +883,7 @@ class spectrogram:
         self.b_exp_casa = tk.Button(fr_info, text='Export Raw Data ( _Casa.txt )', command=self.__export_casa, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
         self.b_exp_casa.grid(row=6, column=0)
         
-        self.copy_button = tk.Button(fr_info, text="Copy Image to Clipboard", width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5, command=self.__copy_to_clipboard)
+        self.copy_button = tk.Button(fr_info, text="Copy Image to Clipboard", width=30, height=1, font=('Arial', 12, "bold"), bg='white', fg='red', bd=5, command=self.__copy_to_clipboard)
         self.copy_button.grid(row=7, column=0)
         
         self.__trans_plot_job()
@@ -3759,9 +3790,7 @@ def feaf2(*e):
 def ejob():     # MDC Fitting GUI
     global g, efiti, efitfig, efitout, egg, exdata, eydata, edxdata, edydata, eiout, eifig, efi, efi_err, efi_x, ebrmv, flermv, ebcgl2, efp, flecgl2, fpr, est, estate, ewf1, ewf2, eaf1, eaf2, elind, erind, ein_w1, ein_w2, ein_a1, ein_a2
     egg = tk.Toplevel(g, bg='white')
-    screen_width = g.winfo_screenwidth()
-    screen_height = g.winfo_screenheight()
-    egg.geometry(f"{screen_width}x{screen_height}")
+    egg.geometry(f"1900x1000+0+0")
     egg.title('EDC Lorentz Fit')
     est = queue.Queue(maxsize=0)
     estate = tk.Label(egg, text='', font=(
@@ -3802,16 +3831,16 @@ def ejob():     # MDC Fitting GUI
     xydata.grid(row=2, column=0)
 
     exdata = tk.Label(xydata, text='xdata:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=5, bg='white')
     exdata.grid(row=0, column=0)
     eydata = tk.Label(xydata, text='ydata:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=5, bg='white')
     eydata.grid(row=0, column=1)
     edxdata = tk.Label(xydata, text='dx:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=5, bg='white')
     edxdata.grid(row=0, column=2)
     edydata = tk.Label(xydata, text='dy:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=5, bg='white')
     edydata.grid(row=0, column=3)
 
     # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
@@ -3901,6 +3930,10 @@ def ejob():     # MDC Fitting GUI
     tt = threading.Thread(target=testate)
     tt.daemon = True
     tt.start()
+    egg.update_idletasks()
+    screen_width = egg.winfo_reqwidth()
+    screen_height = egg.winfo_reqheight()
+    egg.geometry(f"{screen_width}x{screen_height}+0+0")
     egg.update()
 ################################# efit above ####################################################
 
@@ -5457,7 +5490,7 @@ def f_pr():
     mfpr=0
     if mpr==1:
         mpr=0
-        b_pr.config(text='Real Time Preview OFF')
+        b_pr.config(text='Real Time Preview OFF', fg='red')
         mfitprfig1.clear()
         mfitprfig2.clear()
         mfitprfig3.clear()
@@ -5467,7 +5500,7 @@ def f_pr():
     else:
         mpr=1
         mprplot(mxl)
-        b_pr.config(text='Real Time Preview ON')
+        b_pr.config(text='Real Time Preview ON', fg='green')
         
 
 ###############################################################################
@@ -6048,19 +6081,17 @@ def fmposcst():
 def mjob():     # MDC Fitting GUI
     global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mprf, mpr, b_pr, mbgv
     mgg = tk.Toplevel(g, bg='white')
-    screen_width = g.winfo_screenwidth()
-    screen_height = g.winfo_screenheight()
-    mgg.geometry(f"{screen_width}x{screen_height}")
+    mgg.geometry(f"1900x1000+0+0")
     mgg.title('MDC Lorentz Fit')
     
-    mpr=1   #button flag 1:ON 0:OFF
+    mpr=0   #button flag 1:ON 0:OFF initial 0:OFF
     # b_pr = tk.Button(mgg, text='Real Time Preview ON', command=f_pr, width=20, height=2, font=('Arial', 12, "bold"), bg='white')
     # b_pr.grid(row=0, column=0)
     
     mfpr = 0    #preview plot pcolormesh flag 1:setdata 0:pcolormesh
     fr_pr1 = tk.Frame(master=mgg, bg='white')
     fr_pr1.grid(row=1, column=0)
-    b_pr = tk.Button(fr_pr1, text='Real Time Preview ON', command=f_pr, width=20, height=2, font=('Arial', 12, "bold"), bg='white')
+    b_pr = tk.Button(fr_pr1, text='Real Time Preview OFF', command=f_pr, width=20, height=2, font=('Arial', 12, "bold"), bg='white',fg='red')
     b_pr.grid(row=0, column=0)
     mfitprfig2 = Figure(figsize=(3, 3), layout='constrained')
     mfitprout2 = tkagg.FigureCanvasTkAgg(mfitprfig2, master=fr_pr1)
@@ -6112,19 +6143,19 @@ def mjob():     # MDC Fitting GUI
     xydata.grid(row=2, column=0)
 
     mxdata = tk.Label(xydata, text='xdata:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=5, bg='white')
     mxdata.grid(row=0, column=0)
     mydata = tk.Label(xydata, text='ydata:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=5, bg='white')
     mydata.grid(row=0, column=1)
     mdxdata = tk.Label(xydata, text='dx:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=5, bg='white')
     mdxdata.grid(row=0, column=2)
     mdydata = tk.Label(xydata, text='dy:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=5, bg='white')
     mdydata.grid(row=0, column=3)
 
-    # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
+    # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=5)
     # bstop.grid(row=1,column=0)
 
     frpara = tk.Frame(master=mgg, bd=5, bg='white')
@@ -6322,6 +6353,10 @@ def mjob():     # MDC Fitting GUI
     tt = threading.Thread(target=tmstate)
     tt.daemon = True
     tt.start()
+    mgg.update_idletasks()
+    screen_width = mgg.winfo_reqwidth()
+    screen_height = mgg.winfo_reqheight()
+    mgg.geometry(f"{screen_width}x{screen_height}+0+0")
     mgg.update()
 
 
@@ -6897,7 +6932,7 @@ def o_plot1(*e):
                     at.set_xticks([])
                     at.set_yticks([])
                     ao = fig.add_axes([0.1, 0.13, 0.4, 0.8])
-                    ao1 = fig.add_axes([0.5, 0.13, 0.45, 0.8])
+                    ao1 = fig.add_axes([0.5, 0.13, 0.4, 0.8])
                 if value.get() == 'E-K Diagram':
                     # h1=a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
                     if emf=='KE':
@@ -6979,8 +7014,11 @@ def o_plot1(*e):
                     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
-                    cb = fig.colorbar(h0, ax=ao1)
-                    cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                    ylb=ao1.twinx()
+                    ylb.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=14)
+                    ylb.set_yticklabels([])
+                    # cb = fig.colorbar(h0, ax=ao1)
+                    # cb.set_ticklabels(cb.get_ticks(), font='Arial')
             if 'E-K with' not in value.get():
                 ao.set_title(value.get(), font='Arial', fontsize=16)
             else:
@@ -7382,6 +7420,7 @@ def o_plot3(*e):
                 if 'nd' in value2.get():
                     ax.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
                     ty=np.diff(smooth(ry,20,3))/np.diff(ttbe)
+                    np.save(name+'_re_sigma.npy', np.column_stack((ttbe[0:-1], ty)))
                     if dl==0:
                         ax.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Re $\Sigma$')
                     elif dl==1:
@@ -7417,6 +7456,7 @@ def o_plot3(*e):
                 if 'st' in value2.get():
                     ax.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
                     ty=np.diff(smooth(iy,20,3))/np.diff(ttbe)
+                    np.save(name+'_im_sigma.npy', np.column_stack((ttbe[0:-1], ty)))
                     if dl==0:
                         ax.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Im $\Sigma$')
                     elif dl==1:
@@ -8001,7 +8041,7 @@ def exp(*e):
             at_.set_xticks([])
             at_.set_yticks([])
             a = plt.axes([0.1, 0.13, 0.4, 0.8])
-            a1_ = plt.axes([0.5, 0.13, 0.45, 0.8])
+            a1_ = plt.axes([0.5, 0.13, 0.4, 0.8])
         if value.get() == 'Raw Data':
             f = plt.figure(figsize=(9, 7), layout='constrained')
             a = plt.axes([0.13, 0.08, 0.68, 0.6])
@@ -8020,11 +8060,11 @@ def exp(*e):
             else:
                 yl = sorted(a.get_ylim(), reverse=True)
             cb = f.colorbar(h1)
-            cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
             
             h2 = a0.pcolormesh(mx, my, mz, cmap=value3.get())
             cb1 = f0.colorbar(h2)
-            cb1.set_ticklabels(cb.get_ticks(), font='Arial')
+            cb1.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
 
             acx.set_xticks([])
             acy.set_yticks([])
@@ -8060,10 +8100,10 @@ def exp(*e):
                 yl = sorted(a.get_ylim(), reverse=True)
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
-            cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
             
             cb1 = f0.colorbar(h2)
-            cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
+            cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=20)
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
                 min(pz.flatten()), max(pz.flatten()), 50), color='green')
@@ -8097,10 +8137,10 @@ def exp(*e):
                 yl = sorted(a.get_ylim(), reverse=True)
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
-            cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
             
             cb1 = f0.colorbar(h2)
-            cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
+            cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=20)
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
                 min(pz.flatten()), max(pz.flatten()), 50), color='green')
@@ -8135,10 +8175,10 @@ def exp(*e):
                     yl = sorted(a.get_ylim(), reverse=True)
                 h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = f.colorbar(h1)
-                cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
                 
                 cb1 = f0.colorbar(h2)
-                cb1.set_ticklabels(cb1.get_ticks(), font='Arial')
+                cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=20)
                 
 
                 n = a1.hist(pz.flatten(), bins=np.linspace(
@@ -8210,47 +8250,61 @@ def exp(*e):
                     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
-                    cb = fig.colorbar(h1, ax=a1_)
-                    cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                    ylb=a1_.twinx()
+                    ylb.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=22)
+                    ylb.set_yticklabels([])
+                    # cb = fig.colorbar(h1, ax=a1_)
+                    # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
         if 'E-K with' not in value.get():
-            a.set_title(value.get(), font='Arial', fontsize=18)
+            a.set_title(value.get(), font='Arial', fontsize=24)
         else:
-            at_.set_title(value.get(), font='Arial', fontsize=18)
-        a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+            at_.set_title(value.get(), font='Arial', fontsize=24)
+        a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
+        a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
         if 'MDC Curves' not in value.get():
-            a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+            a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
+            a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=20)
             if emf=='KE':
-                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
-                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
+                a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
+                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
+                a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=20)
             else:
-                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
-                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
+                a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
+                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
+                a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=20)
                 a.invert_yaxis()
                 a0.invert_yaxis()
         else:
             if 'E-K with' in value.get():
                 if emf=='KE':
-                    a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=14)
+                    a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
+                    a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
                     a.set_ylim([ev[0], ev[n*d]])
                 else:
-                    a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=14)
+                    a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
+                    a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
                     a.invert_yaxis()
                     a.set_ylim([vfe-ev[0], vfe-ev[n*d]])
-                a1_.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
+                a1_.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
+                a1_.set_xticklabels(labels=a1_.get_xticklabels(), fontsize=20)
                 a1_.set_yticklabels([])
                 a1_.set_xlim([min(x), max(x)])
                 a1_.set_ylim([0, np.max(n*np.max(y)/d)])
             else:
                 ylr=a.twinx()
-                a.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=16)
+                a.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=22)
                 a.set_yticklabels([])
-                ylr.set_ylabel(r'$\longleftarrow$ Binding Energy', font='Arial', fontsize=14)
+                ylr.set_ylabel(r'$\longleftarrow$ Binding Energy', font='Arial', fontsize=22)
                 ylr.set_yticklabels([])
                 a.set_xlim([min(x), max(x)])
                 a.set_ylim([0, np.max(n*np.max(y)/d)])
         if value.get() == 'Raw Data':
-            a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
-            a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
+            a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=22)
+            a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
+            a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=22)
+            a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=20)
         # a.set_xticklabels(labels=a.get_xticklabels(),fontsize=10)
         # a.set_yticklabels(labels=a.get_yticklabels(),fontsize=10)
         # cursor = Cursor(a, useblit=True, color='red', linewidth=1)
@@ -8259,16 +8313,20 @@ def exp(*e):
         if value1.get() == 'MDC fitted Data':
             x = (vfe-fev)*1000
 
-            a[0].set_title('MDC Fitting Result', font='Arial', fontsize=18)
-            a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+            a[0].set_title('MDC Fitting Result', font='Arial', fontsize=24)
+            a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            a[0].set_xticklabels(labels=a[0].get_xticklabels(), fontsize=20)
             a[0].set_ylabel(
-                r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
+                r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
+            a[0].set_yticklabels(labels=a[0].get_yticklabels(), fontsize=20)
             a[0].tick_params(direction='in')
             a[0].scatter(x, pos, c='black', s=5)
 
-            a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+            a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            a[1].set_xticklabels(labels=a[1].get_xticklabels(), fontsize=20)
             a[1].set_ylabel(
-                r'FWHM ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
+                r'FWHM ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
+            a[1].set_yticklabels(labels=a[1].get_yticklabels(), fontsize=20)
             a[1].tick_params(direction='in')
             a[1].scatter(x, fwhm, c='black', s=5)
             
@@ -8277,16 +8335,20 @@ def exp(*e):
         elif value1.get() == 'EDC fitted Data':
             x = fk
 
-            a[0].set_title('EDC Fitting Result', font='Arial', fontsize=18)
+            a[0].set_title('EDC Fitting Result', font='Arial', fontsize=24)
             a[0].set_xlabel(
-                r'Position ($\frac{2\pi}{\AA}$', font='Arial', fontsize=14)
-            a[0].set_ylabel('Binding Energy (meV))', font='Arial', fontsize=14)
+                r'Position ($\frac{2\pi}{\AA}$', font='Arial', fontsize=22)
+            a[0].set_xticklabels(labels=a[0].get_xticklabels(), fontsize=20)
+            a[0].set_ylabel('Binding Energy (meV))', font='Arial', fontsize=22)
+            a[0].set_yticklabels(labels=a[0].get_yticklabels(), fontsize=20)
             a[0].tick_params(direction='in')
             a[0].scatter(x, (epos-vfe)*1000, c='black', s=5)
 
             a[1].set_xlabel(
-                r'Position ($\frac{2\pi}{\AA}$', font='Arial', fontsize=14)
-            a[1].set_ylabel('FWHM (meV)', font='Arial', fontsize=14)
+                r'Position ($\frac{2\pi}{\AA}$', font='Arial', fontsize=22)
+            a[1].set_xticklabels(labels=a[1].get_xticklabels(), fontsize=20)
+            a[1].set_ylabel('FWHM (meV)', font='Arial', fontsize=22)
+            a[1].set_yticklabels(labels=a[1].get_yticklabels(), fontsize=20)
             a[1].tick_params(direction='in')
             a[1].scatter(x, efwhm*1000, c='black', s=5)
             
@@ -8295,22 +8357,26 @@ def exp(*e):
         elif value1.get() == 'Real Part':
             x = (vfe-fev)*1000
             y = pos
-            a[0].set_title('Real Part', font='Arial', fontsize=18)
+            a[0].set_title('Real Part', font='Arial', fontsize=24)
             a[0].plot(rx, ry, c='black', linestyle='-', marker='.')
 
             a[0].tick_params(direction='in')
-            a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
-            a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
+            a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            a[0].set_xticklabels(labels=a[0].get_xticklabels(), fontsize=20)
+            a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=22)
+            a[0].set_yticklabels(labels=a[0].get_yticklabels(), fontsize=20)
 
             h1 = a[1].scatter(y, x, c='black', s=5)
             h2 = a[1].scatter(k*np.float64(bbk_offset.get()),
                               -be+np.float64(bb_offset.get()), c='red', s=5)
 
-            a[1].legend([h1, h2], ['fitted data', 'bare band'])
+            a[1].legend([h1, h2], ['fitted data', 'bare band'],fontsize=20)
             a[1].tick_params(direction='in')
-            a[1].set_ylabel('Binding Energy (meV)', font='Arial', fontsize=14)
+            a[1].set_ylabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            a[1].set_yticklabels(labels=a[1].get_yticklabels(), fontsize=20)
             a[1].set_xlabel(
-                r'Pos ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
+                r'Pos ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
+            a[1].set_xticklabels(labels=a[1].get_xticklabels(), fontsize=20)
             
             a[0].invert_xaxis()
             a[1].invert_yaxis()
@@ -8342,22 +8408,26 @@ def exp(*e):
             ax = a
             a = ax[0]
             b = ax[1]
-            a.set_title('Imaginary Part', font='Arial', fontsize=18)
+            a.set_title('Imaginary Part', font='Arial', fontsize=24)
             a.plot(xx, yy, c='black', linestyle='-', marker='.')
 
             ix = xx
             iy = yy
             a.tick_params(direction='in')
-            a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
-            a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
+            a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
+            a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=22)
+            a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
 
             x = (vfe-fev)*1000
             y = fwhm
             b.plot(x, y, c='black', linestyle='-', marker='.')
             b.tick_params(direction='in')
-            b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+            b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            b.set_xticklabels(labels=b.get_xticklabels(), fontsize=20)
             b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
-                         font='Arial', fontsize=14)
+                         font='Arial', fontsize=22)
+            b.set_yticklabels(labels=b.get_yticklabels(), fontsize=20)
 
             x = (vfe-fev)*1000
             y = pos
@@ -8369,7 +8439,7 @@ def exp(*e):
     if pflag == 3:
         if value2.get() == 'Real & Imaginary':
             f, a = plt.subplots(2, 1, dpi=150)
-            a[0].set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=18)
+            a[0].set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=24)
             if dl==0:
                 a[0].scatter(rx, ry, edgecolors='black', c='w')
             elif dl==1:
@@ -8377,8 +8447,10 @@ def exp(*e):
             elif dl==2:
                 a[0].plot(rx, ry, c='black', linestyle='-', marker='.')
             a[0].tick_params(direction='in')
-            a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
-            a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
+            a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            a[0].set_xticklabels(labels=a[0].get_xticklabels(), fontsize=20)
+            a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=22)
+            a[0].set_yticklabels(labels=a[0].get_yticklabels(), fontsize=20)
             if dl==0:
                 a[1].scatter(ix, iy, edgecolors='black', c='w')
             elif dl==1:
@@ -8386,8 +8458,10 @@ def exp(*e):
             elif dl==2:
                 a[1].plot(ix, iy, c='black', linestyle='-', marker='.')
             a[1].tick_params(direction='in')
-            a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
-            a[1].set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
+            a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            a[1].set_xticklabels(labels=a[1].get_xticklabels(), fontsize=20)
+            a[1].set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=22)
+            a[1].set_yticklabels(labels=a[1].get_yticklabels(), fontsize=20)
             
             a[0].invert_xaxis()
             a[1].invert_xaxis()
@@ -8433,7 +8507,7 @@ def exp(*e):
             if 'Real Part' not in value2.get() and 'Imaginary Part' not in value2.get():
                 f, a = plt.subplots(2, 1, dpi=150)
                 # Plot imaginary data and its Hilbert transformation
-                a[0].set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=18)
+                a[0].set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=24)
                 if dl==0:
                     a[0].scatter(tbe, ry, edgecolors='black', c='w', label=r'Re $\Sigma$')
                     a[0].scatter(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
@@ -8443,9 +8517,11 @@ def exp(*e):
                 elif dl==2:
                     a[0].plot(tbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
                     a[0].plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-                a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
-                a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
-                a[0].legend()
+                a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+                a[0].set_xticklabels(a[0].get_xticklabels(), fontsize=20)
+                a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=22)
+                a[0].set_yticklabels(a[0].get_yticklabels(), fontsize=20)
+                a[0].legend(fontsize=20)
                 if dl==0:
                     a[1].scatter(tbe, iy, edgecolors='black', c='w', label=r'Im $\Sigma$')
                     a[1].scatter(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
@@ -8455,9 +8531,11 @@ def exp(*e):
                 elif dl==2:
                     a[1].plot(tbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
                     a[1].plot(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
-                a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
-                a[1].set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
-                a[1].legend()
+                a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+                a[1].set_xticklabels(a[1].get_xticklabels(), fontsize=20)
+                a[1].set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=22)
+                a[1].set_yticklabels(a[1].get_yticklabels(), fontsize=20)
+                a[1].legend(fontsize=20)
                 a[0].invert_xaxis()
                 a[1].invert_xaxis()
             elif 'Real Part' in value2.get():
@@ -8472,11 +8550,11 @@ def exp(*e):
                         a.plot(ttbe[0:-1], ty, c='black', label=r'Re $\Sigma$')
                     elif dl==2:
                         a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
-                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
-                    a.set_ylabel(r'$2^{nd} der. Re \Sigma$', font='Arial', fontsize=18)
-                    a.set_xticklabels(a.get_xticklabels(),fontsize=16)
+                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
+                    a.set_ylabel(r'$2^{nd} der. Re \Sigma$', font='Arial', fontsize=22)
+                    a.set_xticklabels(a.get_xticklabels(),fontsize=20)
                     a.set_yticks([0])
-                    a.set_yticklabels(a.get_yticklabels(),fontsize=16)
+                    a.set_yticklabels(a.get_yticklabels(),fontsize=20)
                 else:
                     a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
                     if dl==0:
@@ -8488,11 +8566,11 @@ def exp(*e):
                     elif dl==2:
                         a.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
                         a.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-                    a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=18)
-                    a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=18)
-                    a.set_xticklabels(a.get_xticklabels(),fontsize=16)
-                    a.set_yticklabels(a.get_yticklabels(),fontsize=16)
-                    ll=a.legend(fontsize=16)
+                    a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+                    a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=22)
+                    a.set_xticklabels(a.get_xticklabels(),fontsize=20)
+                    a.set_yticklabels(a.get_yticklabels(),fontsize=20)
+                    ll=a.legend(fontsize=20)
                     ll.draw_frame(False)
                 a.invert_xaxis()
             elif 'Imaginary Part' in value2.get():
@@ -8507,11 +8585,11 @@ def exp(*e):
                         a.plot(ttbe[0:-1], ty, c='black', label=r'Im $\Sigma$')
                     elif dl==2:
                         a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
-                    a.set_ylabel(r'$1^{st} der. Im \Sigma$', font='Arial', fontsize=18)
-                    a.set_xticklabels(a.get_xticklabels(),fontsize=16)
+                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
+                    a.set_ylabel(r'$1^{st} der. Im \Sigma$', font='Arial', fontsize=22)
+                    a.set_xticklabels(a.get_xticklabels(),fontsize=20)
                     a.set_yticks([0])
-                    a.set_yticklabels(a.get_yticklabels(),fontsize=16)
+                    a.set_yticklabels(a.get_yticklabels(),fontsize=20)
                 else:
                     a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
                     if dl==0:
@@ -8523,11 +8601,11 @@ def exp(*e):
                     elif dl==2:
                         a.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
                         a.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
-                    a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=18)
-                    a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=18)
-                    a.set_xticklabels(a.get_xticklabels(),fontsize=16)
-                    a.set_yticklabels(a.get_yticklabels(),fontsize=16)
-                    ll=a.legend(fontsize=16)
+                    a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+                    a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=22)
+                    a.set_xticklabels(a.get_xticklabels(),fontsize=20)
+                    a.set_yticklabels(a.get_yticklabels(),fontsize=20)
+                    ll=a.legend(fontsize=20)
                     ll.draw_frame(False)
                 a.invert_xaxis()
             ####################################################################################### KK definition
@@ -8535,12 +8613,12 @@ def exp(*e):
             # f, ax = plt.subplots(2, 1, dpi=150)
             # a = ax[0]
             # b = ax[1]
-            # a.set_title('Self Energy', font='Arial', fontsize=18)
+            # a.set_title('Self Energy', font='Arial', fontsize=24)
             # a.plot(rx, ry, c='black', linestyle='-',
             #        marker='.', label=r'Re $\Sigma$')
             # a.tick_params(direction='in')
-            # a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
-            # a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
+            # a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            # a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=22)
 
             # tbe = (vfe-fev)*1000
             # ix=(tbe-tbe[-1])*-1
@@ -8578,8 +8656,8 @@ def exp(*e):
             # b.plot(tbe, ciy[len(ix):2*len(ix)], c='black', linestyle='-',
             #        marker='.', label=r'Im $\Sigma$')
             # b.tick_params(direction='in')
-            # b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
-            # b.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
+            # b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            # b.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=22)
 
             
             
@@ -8651,16 +8729,17 @@ def exp(*e):
             else:
                 yl = sorted(a.get_ylim(), reverse=True)
             cb = f.colorbar(h1)
-            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14, minor=False)
-            cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20, minor=False)
+            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
             
-            a.set_title(value2.get(), font='Arial', fontsize=18)
-            a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+            a.set_title(value2.get(), font='Arial', fontsize=24)
+            a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
+            a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
             if emf=='KE':
-                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
             else:
-                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
-                
+                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
+            a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
             try:
                 if mp == 1:
                     if emf=='KE':
@@ -8708,12 +8787,12 @@ def exp(*e):
             cb1 = f0.colorbar(h2)
             cb1.set_ticks(cb1.get_ticks())
             cb1.set_ticklabels(cb1.get_ticks(), font='Arial',
-                               fontsize=14, minor=False)
-            a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+                               fontsize=20, minor=False)
+            a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
             if emf=='KE':
-                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+                a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
             else:
-                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
                 
             try:
                 if mp == 1:
@@ -8757,8 +8836,8 @@ def exp(*e):
                                 marker='_', c='grey', s=10, alpha=0.8)
             except:
                 pass
-            # b.set_xticklabels(labels=b.get_xticklabels(),font='Arial',fontsize=14)
-            # b.set_yticklabels(labels=b.get_yticklabels(),font='Arial',fontsize=14)
+            # b.set_xticklabels(labels=b.get_xticklabels(),font='Arial',fontsize=20)
+            # b.set_yticklabels(labels=b.get_yticklabels(),font='Arial',fontsize=20)
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
                 min(pz.flatten()), max(pz.flatten()), 50), color='green')
@@ -8809,6 +8888,9 @@ def exp(*e):
                 plt.tight_layout()
             # if value.get()=='Raw Data':
             #     plt.connect('motion_notify_event', cut_move)
+            copy_to_clipboard(f)
+            st.put('graph copied to clipboard')
+            threading.Thread(target=show_info,daemon=True).start()
             plt.show()
             try:
                 h1.set_clim([cm.get(), cM.get()])
@@ -8817,6 +8899,9 @@ def exp(*e):
                 pass
         else:
             plt.tight_layout()
+            copy_to_clipboard(f)
+            st.put('graph copied to clipboard')
+            threading.Thread(target=show_info,daemon=True).start()
             plt.show()
         # f.ion()
         # f0.ion()
@@ -9574,14 +9659,12 @@ if __name__ == '__main__':
     '''
 
     g = tk.Tk()
-    screen_width = g.winfo_screenwidth()
-    screen_height = g.winfo_screenheight()
-    g.geometry(f"{screen_width}x{screen_height}")
     v_fe = tk.StringVar()
     v_fe.set(str(vfe))
     windll.shcore.SetProcessDpiAwareness(1)
     ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
     g.tk.call('tk', 'scaling', ScaleFactor/75)
+    g.geometry('1900x1080+0+0')
     g.title('MDC cut')
     g.config(bg='white')
     # g.geometry('1920x980')  # format:'1400x800'
@@ -9720,10 +9803,10 @@ if __name__ == '__main__':
     cale.set('0')
     cale.trace_add('write', cal)
     calken = tk.Entry(calf, font=("Arial", 12, "bold"),
-                    width=15, textvariable=calk, bd=10)
+                    width=15, textvariable=calk, bd=9)
     calken.grid(row=1, column=1)
     caleen = tk.Entry(calf, font=("Arial", 12, "bold"),
-                    width=15, textvariable=cale, bd=10)
+                    width=15, textvariable=cale, bd=9)
     caleen.grid(row=2, column=1)
 
 
@@ -9749,23 +9832,23 @@ if __name__ == '__main__':
     fremfit = tk.Frame(master=step)
     fremfit.grid(row=0, column=1)
     lf = tk.Button(fremfit, text='Load Raw Data', font=(
-        "Arial", 12, "bold"), fg='red', width=15, height='1', command=load, bd=10)
+        "Arial", 12, "bold"), fg='red', width=15, height='1', command=load, bd=9)
     lf.grid(row=0, column=0)
     bmfit = tk.Button(fremfit, text='MDC Fit', font=(
-        "Arial", 12, "bold"), fg='red', width=8, height='1', command=cmfit, bd=10)
+        "Arial", 12, "bold"), fg='red', width=8, height='1', command=cmfit, bd=9)
     bmfit.grid(row=0, column=1)
     befit = tk.Button(fremfit, text='EDC Fit', font=(
-        "Arial", 12, "bold"), fg='red', width=8, height='1', command=cefit, bd=10)
+        "Arial", 12, "bold"), fg='red', width=8, height='1', command=cefit, bd=9)
     befit.grid(row=0, column=2)
 
 
     cut = tk.Frame(step, bg='white')
     cut.grid(row=1, column=1)
     mdccut = tk.Button(cut, text='MDC cut', font=(
-        "Arial", 12, "bold"), width=8, height='1', command=ecut, bd=10, fg='blue')
+        "Arial", 12, "bold"), width=8, height='1', command=ecut, bd=9, fg='blue')
     mdccut.grid(row=0, column=0)
     edccut = tk.Button(cut, text='EDC cut', font=(
-        "Arial", 12, "bold"), width=8, height='1', command=angcut, bd=10, fg='black')
+        "Arial", 12, "bold"), width=8, height='1', command=angcut, bd=9, fg='black')
     edccut.grid(row=0, column=1)
     l_lowlim = tk.Label(cut, text='Lower Limit', font=(
         "Arial", 10, "bold"), bg="white", fg="black", height=1)
@@ -9785,16 +9868,16 @@ if __name__ == '__main__':
         k_offset.set('0')
     k_offset.trace_add('write', reload)
     koffset = tk.Entry(step, font=("Arial", 12, "bold"),
-                    width=15, textvariable=k_offset, bd=10)
+                    width=15, textvariable=k_offset, bd=9)
     koffset.grid(row=2, column=1)
 
     lfit = tk.Frame(step, bg='white')
     lfit.grid(row=3, column=1)
     lmfit = tk.Button(lfit, text='Load MDC fitted File', font=(
-        "Arial", 12, "bold"), width=15, height='1', command=loadmfit, bd=10, fg='blue')
+        "Arial", 12, "bold"), width=15, height='1', command=loadmfit, bd=9, fg='blue')
     lmfit.grid(row=0, column=0)
     lefit = tk.Button(lfit, text='Load EDC fitted File', font=(
-        "Arial", 12, "bold"), width=15, height='1', command=loadefit, bd=10, fg='black')
+        "Arial", 12, "bold"), width=15, height='1', command=loadefit, bd=9, fg='black')
     lefit.grid(row=0, column=1)
 
     cfit = tk.Frame(step, bg='white')
@@ -9808,7 +9891,7 @@ if __name__ == '__main__':
 
 
     lbb = tk.Button(step, text='Load Bare Band File', font=(
-        "Arial", 12, "bold"), width=15, height='1', command=bareband, bd=10, fg='blue')
+        "Arial", 12, "bold"), width=15, height='1', command=bareband, bd=9, fg='blue')
     lbb.grid(row=5, column=1)
 
     plots = tk.Frame(g, bg='white')
@@ -9954,7 +10037,7 @@ if __name__ == '__main__':
         bb_offset.set('0')
     bb_offset.trace_add('write', fbb_offset)
     bboffset = tk.Entry(plots, font=("Arial", 12, "bold"),
-                        width=15, textvariable=bb_offset, bd=10)
+                        width=15, textvariable=bb_offset, bd=9)
     bboffset.grid(row=4, column=1)
     bbk_offset = tk.StringVar()
     try:
@@ -9963,7 +10046,7 @@ if __name__ == '__main__':
         bbk_offset.set('1')
     bbk_offset.trace_add('write', fbbk_offset)
     bbkoffset = tk.Entry(plots, font=("Arial", 12, "bold"),
-                        width=15, textvariable=bbk_offset, bd=10)
+                        width=15, textvariable=bbk_offset, bd=9)
     bbkoffset.grid(row=5, column=1)
 
     lcmp = tk.Frame(plots, bg='white')
@@ -9973,7 +10056,7 @@ if __name__ == '__main__':
     cmpg = tkagg.FigureCanvasTkAgg(lcmpd, master=lcmp)
     cmpg.get_tk_widget().grid(row=0, column=1)
     lsetcmap = tk.Label(lcmp, text='Colormap:', font=(
-        "Arial", 12, "bold"), bg="white", height='1', bd=10)
+        "Arial", 12, "bold"), bg="white", height='1', bd=9)
     lsetcmap.grid(row=0, column=0)
     chcmp()
 
@@ -10008,16 +10091,16 @@ if __name__ == '__main__':
     xydata.grid(row=1, column=0)
 
     xdata = tk.Label(xydata, text='xdata:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=9, bg='white')
     xdata.grid(row=0, column=0)
     ydata = tk.Label(xydata, text='ydata:', font=(
-        "Arial", 12, "bold"), width='15', height='1', bd=10, bg='white')
+        "Arial", 12, "bold"), width='15', height='1', bd=9, bg='white')
     ydata.grid(row=0, column=1)
-    b_copyimg = tk.Button(xydata, text='Copy Image to Clipboard', font=('Arial', 12, 'bold'), command=copy_to_clipboard, bd=10)
+    b_copyimg = tk.Button(xydata, fg='red', text='Copy Image to Clipboard', font=('Arial', 12, 'bold'), command=f_copy_to_clipboard, bd=9)
     b_copyimg.grid(row=0, column=2)
     
     dl=0
-    b_sw = tk.Button(xydata, text='dot', font=('Arial', 12, 'bold'), command=dl_sw, bd=10)
+    b_sw = tk.Button(xydata, text='dot', font=('Arial', 12, 'bold'), command=dl_sw, bd=9)
 
     exf = tk.Frame(g, bg='white')
     exf.grid(row=1, column=2)
@@ -10030,9 +10113,9 @@ if __name__ == '__main__':
     lcmin = tk.Label(clim, text='Minimum', font=(
         'Arial', 12), bg='white', fg='white')
     lcmin.grid(row=1, column=0)
-    cmax = tk.Frame(clim, bg='white', width=15, bd=10)
+    cmax = tk.Frame(clim, bg='white', width=15, bd=9)
     cmax.grid(row=0, column=1)
-    cmin = tk.Frame(clim, bg='white', width=15, bd=10)
+    cmin = tk.Frame(clim, bg='white', width=15, bd=9)
     cmin.grid(row=1, column=1)
 
 
@@ -10052,20 +10135,20 @@ if __name__ == '__main__':
     Cmin = tk.Scale(cmin, from_=cm.get(), to=cM.get(), orient='horizontal',
                     variable=vcmin, state='disabled', bg='white', fg='white')
     Cmin.pack()
-    # Cmax=tk.Scrollbar(cmax,orient='horizontal',bd=10,width=15)
+    # Cmax=tk.Scrollbar(cmax,orient='horizontal',bd=9,width=15)
     # Cmax.pack(fill='x')
-    # Cmin=tk.Scrollbar(cmin,orient='horizontal',bd=10,width=15)
+    # Cmin=tk.Scrollbar(cmin,orient='horizontal',bd=9,width=15)
     # Cmin.pack(fill='x')
 
 
-    ex = tk.Button(exf, text='Export Graph', font=(
-        "Arial", 12, "bold"), height='1', command=exp, bd=10)
+    ex = tk.Button(exf, fg='red', text='Export Graph', font=(
+        "Arial", 12, "bold"), height='1', command=exp, bd=9)
     ex.grid(row=1, column=0)
     extm = tk.Button(exf, text='Export MDC Fitted Data (k offset)', font=(
-        "Arial", 12, "bold"), height='1', command=exptm, bd=10)
+        "Arial", 12, "bold"), height='1', command=exptm, bd=9)
     extm.grid(row=2, column=0)
     exte = tk.Button(exf, text='Export EDC Fitted Data (k offset)', font=(
-        "Arial", 12, "bold"), height='1', command=expte, bd=10)
+        "Arial", 12, "bold"), height='1', command=expte, bd=9)
     exte.grid(row=3, column=0)
     # fig = plt.figure(layout='constrained')
     # axs = fig.subplots()
@@ -10079,6 +10162,9 @@ if __name__ == '__main__':
         pass
     ###### hotkey ######
     g.bind('<Return>', plot)
-
+    g.update_idletasks()
+    screen_width = g.winfo_reqwidth()
+    screen_height = g.winfo_reqheight()
+    g.geometry(f"{screen_width}x{screen_height}+0+0")
     g.update()
     g.mainloop()
