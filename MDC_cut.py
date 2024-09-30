@@ -85,7 +85,8 @@ fev = []
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
-def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
+def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
+#Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
     """
     Load data from a text file and convert it into an xarray DataArray.
 
@@ -166,6 +167,49 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
                                                                  })
     return data
 
+def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
+    """
+    Args:
+        path_to_file (str): _description_
+
+    Returns:
+        xr.DataArray: _description_
+    """
+    name=path_to_file.split('/')[-1].removesuffix('.txt')
+    e = np.linspace(21.2-1,21.2+0.2,659)    #fix BE 1~-0.2
+    # e = np.linspace(21.2-2,21.2+1,284)     #scan BE 2~-1
+    a = np.linspace(-10,10,494)     #A20
+    description='SKNET'
+    e_low = np.min(np.float64(e))
+    e_high = np.max(np.float64(e))
+    e_photon = 21.2
+    #   attrs
+    e_mode = 'Kinetic'
+    LensMode = 'Unknown'
+    PassEnergy = 'Unknown'
+    Dwell = 'Unknown'
+    CenterEnergy = np.average(np.float64(e))
+    Iterations = 'Unknown'
+    Step = abs(e[1]-e[0])
+    Slit = 'Unknown'
+    aq = 'SRNET'
+    data = np.loadtxt(path_to_file).transpose()*100
+    data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
+                                                                 'Acquisition': aq,
+                                                                 'EnergyMode': e_mode,
+                                                                 'ExcitationEnergy': str(e_photon)+' eV',
+                                                                 'CenterEnergy': CenterEnergy,
+                                                                 'HighEnergy': e_high,
+                                                                 'LowEnergy': e_low,
+                                                                 'Step': str(Step)+' eV',
+                                                                 'LensMode': LensMode,
+                                                                 'PassEnergy': str(PassEnergy)+' eV',
+                                                                 'Slit': Slit,
+                                                                 'Dwell': str(Dwell)+' s',
+                                                                 'Iterations': Iterations,
+                                                                 'Description': description
+                                                                 })
+    return data
 
 def load_json(path_to_file: str) -> xr.DataArray:
     """
@@ -215,20 +259,20 @@ def load_json(path_to_file: str) -> xr.DataArray:
     data = np.arange(float(len(e)*len(a))).reshape(len(e), len(a))
     data[0:, 0:] = d
     data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
-                                                                 'Acquisition': aq,
-                                                                 'EnergyMode': e_mode,
-                                                                 'ExcitationEnergy': str(e_photon)+' eV',
-                                                                 'CenterEnergy': CenterEnergy,
-                                                                 'HighEnergy': e_high,
-                                                                 'LowEnergy': e_low,
-                                                                 'Step': str(Step)+' eV',
-                                                                 'LensMode': LensMode,
-                                                                 'PassEnergy': str(PassEnergy)+' eV',
-                                                                 'Slit': Slit,
-                                                                 'Dwell': str(Dwell)+' s',
-                                                                 'Iterations': Iterations,
-                                                                 'Description': description
-                                                                 })
+                                                                'Acquisition': aq,
+                                                                'EnergyMode': e_mode,
+                                                                'ExcitationEnergy': str(e_photon)+' eV',
+                                                                'CenterEnergy': CenterEnergy,
+                                                                'HighEnergy': e_high,
+                                                                'LowEnergy': e_low,
+                                                                'Step': str(Step)+' eV',
+                                                                'LensMode': LensMode,
+                                                                'PassEnergy': str(PassEnergy)+' eV',
+                                                                'Slit': Slit,
+                                                                'Dwell': str(Dwell)+' s',
+                                                                'Iterations': Iterations,
+                                                                'Description': description
+                                                                })
     return data
 
 
@@ -315,66 +359,22 @@ def load_h5(path_to_file: str) -> xr.DataArray:
     data = np.arange(float(len(e)*len(a))).reshape(len(e), len(a))
     data[0:, 0:] = d
     data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
-                                                                 'Acquisition': aq,
-                                                                 'EnergyMode': e_mode,
-                                                                 'ExcitationEnergy': str(e_photon)+' eV',
-                                                                 'CenterEnergy': CenterEnergy,
-                                                                 'HighEnergy': e_high,
-                                                                 'LowEnergy': e_low,
-                                                                 'Step': str(Step)+' eV',
-                                                                 'LensMode': LensMode,
-                                                                 'PassEnergy': str(PassEnergy)+' eV',
-                                                                 'Slit': Slit,
-                                                                 'Dwell': str(Dwell)+' s',
-                                                                 'Iterations': Iterations,
-                                                                 'Description': description
-                                                                 })
+                                                                'Acquisition': aq,
+                                                                'EnergyMode': e_mode,
+                                                                'ExcitationEnergy': str(e_photon)+' eV',
+                                                                'CenterEnergy': CenterEnergy,
+                                                                'HighEnergy': e_high,
+                                                                'LowEnergy': e_low,
+                                                                'Step': str(Step)+' eV',
+                                                                'LensMode': LensMode,
+                                                                'PassEnergy': str(PassEnergy)+' eV',
+                                                                'Slit': Slit,
+                                                                'Dwell': str(Dwell)+' s',
+                                                                'Iterations': Iterations,
+                                                                'Description': description
+                                                                })
     return data
 
-def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
-    """
-    Args:
-        path_to_file (str): _description_
-
-    Returns:
-        xr.DataArray: _description_
-    """
-    name=path_to_file.split('/')[-1].removesuffix('.txt')
-    e = np.linspace(21.2-1,21.2+0.2,659)    #fix BE 1~-0.2
-    # e = np.linspace(21.2-2,21.2+1,284)     #scan BE 2~-1
-    a = np.linspace(-10,10,494)     #A20
-    description='SKNET'
-    e_low = np.min(np.float64(e))
-    e_high = np.max(np.float64(e))
-    e_photon = 21.2
-    #   attrs
-    e_mode = 'Kinetic'
-    LensMode = 'Unknown'
-    PassEnergy = 'Unknown'
-    Dwell = 'Unknown'
-    CenterEnergy = np.average(np.float64(e))
-    Iterations = 'Unknown'
-    Step = abs(e[1]-e[0])
-    Slit = 'Unknown'
-    aq = 'SRNET'
-    data = np.loadtxt(path_to_file).transpose()*100
-    data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
-                                                                 'Acquisition': aq,
-                                                                 'EnergyMode': e_mode,
-                                                                 'ExcitationEnergy': str(e_photon)+' eV',
-                                                                 'CenterEnergy': CenterEnergy,
-                                                                 'HighEnergy': e_high,
-                                                                 'LowEnergy': e_low,
-                                                                 'Step': str(Step)+' eV',
-                                                                 'LensMode': LensMode,
-                                                                 'PassEnergy': str(PassEnergy)+' eV',
-                                                                 'Slit': Slit,
-                                                                 'Dwell': str(Dwell)+' s',
-                                                                 'Iterations': Iterations,
-                                                                 'Description': description
-                                                                 })
-    return data
-    
 def g_emode():
     global gfe,fe_in,b_emode,emf,v_fe
     gfe=tk.Toplevel(g,bg='white')
@@ -757,17 +757,43 @@ def send_to_clipboard(clip_type, data):
 
 class spectrogram:
     
-    def __init__(self, g, data, ev, phi, e_photon, lensmode, rdd, name, cmap, tst, lst) -> None:
+    def __init__(self, g, data, rdd, cmap) -> None:
         self.g = g
         self.tp_cf = True
         self.data = data
-        self.ev = ev
-        self.phi = phi
-        self.e_photon = e_photon
-        self.lensmode = lensmode
         self.rdd = rdd
-        self.name = name
         self.cmap = cmap
+        dvalue = [data.attrs[i] for i in data.attrs.keys()]
+        self.dvalue = dvalue
+        st=''
+        lst=[]
+        for _ in data.attrs.keys():
+            if _ == 'Description':
+                ts=str(data.attrs[_])
+                ts=ts.replace('\n\n\n','\n')
+                ts=ts.replace('\n\n','\n')
+                t=ts.split('\n')
+                st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                     ')
+                # st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                         ')
+                lst.append(len(' : '+t[0]))
+                for i in range(1,len(t)):
+                    lst.append(len('              '+t[i]))
+            else:
+                st+=str(_)+' : '+str(data.attrs[_])+'\n'
+                lst.append(len(str(_)+' : '+str(data.attrs[_])))
+        tst=st
+        ev, phi = data.indexes.values()
+        self.ev = np.float64(ev)
+        self.phi = np.float64(phi)
+        self.name = dvalue[0]
+        self.e_photon = np.float64(dvalue[3].split(' ')[0])
+        self.lensmode = dvalue[8]
+        self.desc=dvalue[-1]
+        self.desc=self.desc.replace('\n\n\n\n\n','\n')
+        self.desc=self.desc.replace('\n\n\n\n','\n')
+        self.desc=self.desc.replace('\n\n\n','\n')
+        self.desc=self.desc.replace('\n\n','\n')
+        self.desc=self.desc.replace('\n','; ')
         self.tst = tst
         self.lst = lst
         self.x = ev
@@ -898,13 +924,55 @@ class spectrogram:
             f.write('%-6e' % x[i]+'\t'+'%-6e' % y[i]+'\n')
         f.close()
     
+    # def __export_casa(self):
+    #     os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+    #     x,y=self.e_photon-self.x,self.y
+    #     f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
+    #     f.write('#Wave Vector'+'\t'+'#Intensity'+'\n')
+    #     for i in range(len(x)):
+    #         f.write('%-6e' % x[i]+'\t'+'%-6e' % y[i]+'\n')
+    #     f.close()
+    
     def __export_casa(self):
         os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
-        x,y=self.e_photon-self.x,self.y
+        x,y=self.x,self.y
         f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
-        f.write('#Wave Vector'+'\t'+'#Intensity'+'\n')
+        f.write(f'[Info]\n'+
+            f'Number of Regions=1\n'+
+            f'[Region 1]\n'+
+            f'Region Name={self.name}\n'+
+            f'Dimension 1 name={self.dvalue[2]} Energy [eV]\n'+
+            f'Dimension 1 size={len(x)}\n'+
+            f'Dimension 1 scale=')
+        for i,v in enumerate(x):
+            if i!=len(x)-1:
+                f.write(f'{v} ')
+            else:
+                f.write(f'{v}\n')
+        f.write(f'[Info 1]\n')
+        key=['Region Name','Acquisition Mode','Energy Scale','Excitation Energy','Center Energy','High Energy','Low Energy','Energy Step','Lens Mode','Pass Energy','Slit','Step Time','Number of Sweeps','Description']
+        for i in range(len(self.dvalue)):
+            if i!=len(self.dvalue)-1:
+                if key[i]=='Step Time':
+                    f.write(f'{key[i]}={int(float(self.dvalue[i].replace(' s',''))*1000)}\n')
+                elif key[i]=='Pass Energy':
+                    f.write(f'{key[i]}={int(float(self.dvalue[i].replace(' eV','')))}\n')
+                else:
+                    f.write(f'{key[i]}={self.dvalue[i].replace(' eV','').replace(' (B.E.)','').replace(' (K.E.)','')}\n')
+            else:
+                f.write(f'{key[i]}={self.dvalue[i]}\n') 
+        f.write(f'Detector First X-Channel=0\n'+
+                f'Detector Last X-Channel=0\n'+
+                f'Detector First Y-Channel=0\n'+
+                f'Detector Last Y-Channel=0\n'+
+                f'Number of Slices={len(self.phi)}\n'+
+                f'spectrum Name={self.name}\n'+
+                f'Comments={self.desc}; Slit: {self.dvalue[10]};\n')
+        f.write(f'[Run Mode Information 1]\n'+
+                f'Name=Normal\n')
+        f.write(f'[Data1]\n')
         for i in range(len(x)):
-            f.write('%-6e' % x[i]+'\t'+'%-6e' % y[i]+'\n')
+            f.write('%-6e' % x[i]+' '+'%-6e' % y[i]+'\n')
         f.close()
     
     def __tp_move_(self, event):
@@ -962,6 +1030,9 @@ class spectrogram:
                     self.tr_a2.set_ylim(self.oy2)
         else:
             try:
+                self.l_cx.config(text='%9s'%'Energy : ')
+                self.l_cy.config(text='%10s'%'Cursor : ')
+                self.l_dy.config(text='%11s'%'Data : ')
                 self.xx2.remove()
                 self.yy2.remove()
                 self.cur.remove()
@@ -979,6 +1050,7 @@ class spectrogram:
         # global tp_cf, rpf, rpo ,tpf, tpo , tr_a1, tr_a2 , x1 , x2 , ox, aa1, aa2
         if event.button == 1 and self.tp_cf:
             self.tp_cf = False
+            self.out=True
             # self.x1 = self.tr_a1.axvline(event.xdata, color='g')
             # self.x1.set_data([event.xdata,event.xdata], self.oy1)
             self.x2 = self.tr_a2.axvline(event.xdata, color='g')
@@ -989,8 +1061,6 @@ class spectrogram:
             self.rpf.canvas.get_tk_widget().config(cursor="watch")
             self.tp_cf = True
             self.__re_tr_a1_plot(self.oxl[0],self.oxl[1])
-            # self.tr_a1.set_xlim(self.oxl)
-            # self.tr_a2.set_xlim(self.oxl)
             self.__tp_a2_plot(self.oxl[0],self.oxl[1])
             self.rpo.draw()
             self.rpf.canvas.get_tk_widget().config(cursor="tcross")
@@ -1012,20 +1082,10 @@ class spectrogram:
                 pass
             if self.out == False:
                 self.__re_tr_a1_plot(sorted([self.ox, self.tx])[0],sorted([self.ox, self.tx])[1])
-                # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
-                # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
                 self.__tp_a2_plot(sorted([self.ox, self.tx])[0],sorted([self.ox, self.tx])[1])
             else:
-                if self.tx >= self.ox:
-                    self.__re_tr_a1_plot(self.ox,self.tr_a2.get_xlim()[1])
-                    # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
-                    # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
-                    self.__tp_a2_plot(self.ox,self.tr_a2.get_xlim()[1])
-                elif self.tx <= self.ox:
-                    self.__re_tr_a1_plot(self.tr_a2.get_xlim()[0],self.ox)
-                    # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
-                    # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
-                    self.__tp_a2_plot(self.tr_a2.get_xlim()[0],self.ox)
+                self.__re_tr_a1_plot(self.oxl[0],self.oxl[1])
+                self.__tp_a2_plot(self.oxl[0],self.oxl[1])
             self.rpo.draw()
             self.tpo.draw()
             self.rpf.canvas.get_tk_widget().config(cursor="tcross")
@@ -1074,6 +1134,9 @@ class spectrogram:
                     self.tr_a2.set_ylim(self.oy2)
         else:
             try:
+                self.l_cx.config(text='%9s'%'Energy : ')
+                self.l_cy.config(text='%10s'%'Cursor : ')
+                self.l_dy.config(text='%11s'%'Data : ')
                 self.xx2.remove()
                 self.yy2.remove()
                 self.cur.remove()
@@ -1092,6 +1155,7 @@ class spectrogram:
         # global tp_cf, rpf, rpo ,tpf, tpo , tr_a1, tr_a2 , x1 , x2 , ox, aa1, aa2
         if event.button == 1 and self.tp_cf:
             self.tp_cf = False
+            self.out=True
             # self.x1 = self.tr_a1.axvline(event.xdata, color='g')
             self.x2 = self.tr_a2.axvline(event.xdata, color='g')
             self.tr_a2.set_ylim(self.oy2)
@@ -1101,8 +1165,6 @@ class spectrogram:
             self.tpf.canvas.get_tk_widget().config(cursor="watch")
             self.tp_cf = True
             self.__re_tr_a1_plot(self.oxl[0],self.oxl[1])
-            # self.tr_a1.set_xlim(self.oxl)
-            # self.tr_a2.set_xlim(self.oxl)
             self.__tp_a2_plot(self.oxl[0],self.oxl[1])
             self.rpo.draw()
             self.tpf.canvas.get_tk_widget().config(cursor="tcross")
@@ -1123,25 +1185,13 @@ class spectrogram:
                 pass
             if self.out == False:
                 self.__re_tr_a1_plot(sorted([self.ox, self.tx])[0],sorted([self.ox, self.tx])[1])
-                # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
-                # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
                 self.__tp_a2_plot(sorted([self.ox, self.tx])[0],sorted([self.ox, self.tx])[1])
             else:
-                if self.tx >= self.ox:
-                    self.__re_tr_a1_plot(self.ox,self.tr_a2.get_xlim()[1])
-                    # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
-                    # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
-                    self.__tp_a2_plot(self.ox,self.tr_a2.get_xlim()[1])
-                elif self.tx <= self.ox:
-                    self.__re_tr_a1_plot(self.tr_a2.get_xlim()[0],self.ox)
-                    # self.tr_a1.set_xlim(sorted([self.ox, event.xdata]))
-                    # self.tr_a2.set_xlim(sorted([self.ox, event.xdata]))
-                    self.__tp_a2_plot(self.tr_a2.get_xlim()[0],self.ox)
-                
+                self.__re_tr_a1_plot(self.oxl[0],self.oxl[1])
+                self.__tp_a2_plot(self.oxl[0],self.oxl[1])
             self.rpo.draw()
             self.tpo.draw()
             self.tpf.canvas.get_tk_widget().config(cursor="tcross")
-            
             
     def __re_tr_a1_plot(self,xx1,xx2):
         z = self.data.to_numpy().transpose()
@@ -1237,14 +1287,14 @@ def trans_plot():
 def raw_plot():
     gtp.destroy()
     cmap=value3.get()
-    s=spectrogram(g, data, ev, phi, e_photon, lensmode, rdd, name, cmap, tst, lst)
+    s=spectrogram(g, data, rdd, cmap)
     s.plot()
 
 def smooth_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(g, data, ev, phi, e_photon, lensmode, rdd, name, cmap, tst, lst)
+    s=spectrogram(g, data, rdd, cmap)
     s.setdata(ev, y, dtype='smooth', unit='Counts')
     s.plot()
 
@@ -1252,7 +1302,7 @@ def fd_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(g, data, ev, phi, e_photon, lensmode, rdd, name, cmap, tst, lst)
+    s=spectrogram(g, data, rdd, cmap)
     s.setdata(ev[0:-1]+(ev[1]-ev[0])/2, np.diff(y)/np.diff(ev), dtype='fd', unit='dN/dE')
     s.plot()
 
@@ -7655,10 +7705,10 @@ def o_plot3(*e):
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     if emf=='KE':
                         tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be -
-                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red', linestyle='--')
                     else:
                         tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
-                                np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
+                                np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red', linestyle='--')
                     bo.set_xlim(txl)
                     bo.set_ylim(tyl)
             except:
@@ -7756,10 +7806,10 @@ def select_callback(eclick, erelease):
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     if emf=='KE':
                         ta2, = a.plot(k*np.float64(bbk_offset.get()), (be -
-                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=5, c='red')
+                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=2, c='red', linestyle='--')
                     else:
                         ta2, = a.plot(k*np.float64(bbk_offset.get()), (-be +
-                                    np.float64(bb_offset.get()))/1000, linewidth=5, c='red')
+                                    np.float64(bb_offset.get()))/1000, linewidth=2, c='red', linestyle='--')
             f.show()
         else:
             try:
@@ -7803,10 +7853,10 @@ def select_callback(eclick, erelease):
                     ta2.remove()
                     if emf =='KE':
                         ta2, = a.plot(k*np.float64(bbk_offset.get()), (be -
-                                  np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                                  np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red', linestyle='--')
                     else:
                         ta2, = a.plot(k*np.float64(bbk_offset.get()), (-be +
-                                  np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
+                                  np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red', linestyle='--')
             except:
                 pass
             f.show()
@@ -7854,10 +7904,10 @@ def select_callback(eclick, erelease):
                 ta2.remove()
                 if emf=='KE':
                     ta2, = a.plot(k*np.float64(bbk_offset.get()), (be -
-                                np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                                np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red', linestyle='--')
                 else:
                     ta2, = a.plot(k*np.float64(bbk_offset.get()), (-be +
-                              np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
+                              np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red', linestyle='--')
         except:
             pass
         f.show()
@@ -8884,14 +8934,14 @@ def exp(*e):
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     if emf=='KE':
                         a.plot(k*np.float64(bbk_offset.get()), (be -
-                            np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                            np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red', linestyle='--')
                         a0.plot(k*np.float64(bbk_offset.get()), (be -
-                                np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                                np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red', linestyle='--')
                     else:
                         a.plot(k*np.float64(bbk_offset.get()), (-be +
-                            np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
+                            np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red', linestyle='--')
                         a0.plot(k*np.float64(bbk_offset.get()), (-be +
-                                np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
+                                np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red', linestyle='--')
             except:
                 pass
             if emf=='BE':
@@ -9087,11 +9137,11 @@ def press(event):
                     tb2.remove()
                     if emf=='KE':
                         tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be -
-                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=0.3, c='red', linestyle='--')
                     else:
                         print('plotting bb0')
                         tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
-                                    np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red')
+                                    np.float64(bb_offset.get()))/1000, linewidth=0.3, c='red', linestyle='--')
                         print('plotted bb0')
             except:
                 pass
@@ -9187,10 +9237,10 @@ def release(event):
                     if value2.get() == 'Data Plot with Pos and Bare Band':
                         if emf=='KE':
                             tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be -
-                                        np.float64(bb_offset.get()))/1000+vfe, linewidth=5, c='red')
+                                        np.float64(bb_offset.get()))/1000+vfe, linewidth=5, c='red', linestyle='--')
                         else:
                             tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
-                                        np.float64(bb_offset.get()))/1000, linewidth=5, c='red')
+                                        np.float64(bb_offset.get()))/1000, linewidth=5, c='red', linestyle='--')
             else:
                 try:
                     if mp == 1:
@@ -9244,10 +9294,10 @@ def release(event):
                         tb2.remove()
                         if emf=='KE':
                             tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be+np.float64(
-                                bb_offset.get()))/1000+vfe, linewidth=0.3, c='red')
+                                bb_offset.get()))/1000+vfe, linewidth=0.3, c='red', linestyle='--')
                         else:
                             tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be+np.float64(
-                                bb_offset.get()))/1000, linewidth=0.3, c='red')
+                                bb_offset.get()))/1000, linewidth=0.3, c='red', linestyle='--')
                 except:
                     pass
             out.draw()
