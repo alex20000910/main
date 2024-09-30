@@ -7216,14 +7216,14 @@ def o_plot2(*e):
             ix = xx
             iy = yy
             a.tick_params(direction='in')
-            a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+            a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=14)
             a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
 
             x = (vfe-fev)*1000
             y = fwhm
             b.plot(x, y, c='black', linestyle='-', marker='.')
             b.tick_params(direction='in')
-            b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+            b.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=14)
             b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
                          font='Arial', fontsize=14)
             
@@ -7396,7 +7396,7 @@ def o_plot3(*e):
                 elif dl==2:
                     a.plot(tbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
                     a.plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-                a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+                a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=14)
                 a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
                 a.legend()
                 if dl==0:
@@ -7499,7 +7499,7 @@ def o_plot3(*e):
             # a.plot(rx, ry, c='black', linestyle='-',
             #        marker='.', label=r'Re $\Sigma$')
             # a.tick_params(direction='in')
-            # a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=14)
+            # a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=14)
             # a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
 
             
@@ -8437,7 +8437,7 @@ def exp(*e):
             ix = xx
             iy = yy
             a.tick_params(direction='in')
-            a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
             a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
             a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=22)
             a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
@@ -8446,7 +8446,7 @@ def exp(*e):
             y = fwhm
             b.plot(x, y, c='black', linestyle='-', marker='.')
             b.tick_params(direction='in')
-            b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            b.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
             b.set_xticklabels(labels=b.get_xticklabels(), fontsize=20)
             b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
                          font='Arial', fontsize=22)
@@ -8562,10 +8562,11 @@ def exp(*e):
                 a[0].invert_xaxis()
                 a[1].invert_xaxis()
             elif 'Real Part' in value2.get():
-                f, a = plt.subplots(1, 1, dpi=150)
+                f = plt.figure(figsize=(8, 7),layout='constrained')
+                a=plt.axes([0.2,0.12,0.7,0.8])
                 ttbe=tbe/1000
                 if 'nd' in value2.get():
-                    a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
+                    a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=24)
                     ty=np.diff(smooth(ry,20,3))/np.diff(ttbe)
                     if dl==0:
                         a.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Re $\Sigma$')
@@ -8579,7 +8580,7 @@ def exp(*e):
                     a.set_yticks([0])
                     a.set_yticklabels(a.get_yticklabels(),fontsize=20)
                 else:
-                    a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=20)
+                    a.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=24)
                     if dl==0:
                         a.scatter(ttbe, ry, edgecolors='black', c='w', label=r'Re $\Sigma$')
                         a.scatter(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
@@ -8589,7 +8590,7 @@ def exp(*e):
                     elif dl==2:
                         a.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
                         a.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-                    a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
                     a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=22)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=20)
                     a.set_yticklabels(a.get_yticklabels(),fontsize=20)
@@ -8597,10 +8598,11 @@ def exp(*e):
                     ll.draw_frame(False)
                 a.invert_xaxis()
             elif 'Imaginary Part' in value2.get():
-                f, a = plt.subplots(1, 1, dpi=150)
+                f = plt.figure(figsize=(8, 7),layout='constrained')
+                a=plt.axes([0.2,0.12,0.7,0.8])
                 ttbe=tbe/1000
                 if 'st' in value2.get():
-                    a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
+                    a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=24)
                     ty=np.diff(smooth(iy,20,3))/np.diff(ttbe)
                     if dl==0:
                         a.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Im $\Sigma$')
@@ -8614,7 +8616,7 @@ def exp(*e):
                     a.set_yticks([0])
                     a.set_yticklabels(a.get_yticklabels(),fontsize=20)
                 else:
-                    a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=20)
+                    a.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=24)
                     if dl==0:
                         a.scatter(ttbe, iy, edgecolors='black', c='w', label=r'Im $\Sigma$')
                         a.scatter(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
@@ -8624,7 +8626,7 @@ def exp(*e):
                     elif dl==2:
                         a.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
                         a.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
-                    a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
                     a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=22)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=20)
                     a.set_yticklabels(a.get_yticklabels(),fontsize=20)
@@ -8640,7 +8642,7 @@ def exp(*e):
             # a.plot(rx, ry, c='black', linestyle='-',
             #        marker='.', label=r'Re $\Sigma$')
             # a.tick_params(direction='in')
-            # a.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=22)
+            # a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
             # a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=22)
 
             # tbe = (vfe-fev)*1000
@@ -9987,6 +9989,21 @@ if __name__ == '__main__':
 
     # Define your custom colors (as RGB tuples)
     # (value,(color))
+    custom_colors4 = [(0, (1, 1, 1)),
+                    (0.4, (0.3, 0, 0.3)),
+                    (0.5, (0.3, 0, 0.6)),
+                    (0.6, (0, 1, 1)),
+                    (0.7, (0, 1, 0)),
+                    (0.8, (1, 1, 0)),
+                    (1, (1, 0, 0))]
+
+    # Create a custom colormap
+    custom_cmap4 = LinearSegmentedColormap.from_list(
+        'custom_cmap4', custom_colors4, N=256)
+    mpl.colormaps.register(custom_cmap4)
+
+    # Define your custom colors (as RGB tuples)
+    # (value,(color))
     prevac_colors = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
                     (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
                     (0.4, (0, 0.4*0.82, 0)),
@@ -9999,7 +10016,7 @@ if __name__ == '__main__':
     mpl.colormaps.register(prevac_cmap)
 
     # plt.register_cmap('custom_cmap', custom_cmap)
-    optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'viridis', 'turbo',
+    optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo',
                 'inferno', 'plasma', 'copper', 'grey', 'bwr']   # 選項
     cmp = plt.colormaps()
     value3 = tk.StringVar()                                        # 取值
