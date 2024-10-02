@@ -137,12 +137,12 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
     name = name[-1].removesuffix('.txt')
     if e_mode == 'Kinetic':
         e = np.linspace(e_low, e_high, e_num)
-        CenterEnergy = str(CenterEnergy)+' eV (K.E.)'
+        CenterEnergy = str(CenterEnergy)+' eV'
         e_low = str(e_low)+' eV (K.E.)'
         e_high = str(e_high)+' eV (K.E.)'
     else:
         e = np.linspace(e_photon-e_high, e_photon-e_low, e_num)
-        CenterEnergy = str(CenterEnergy)+' eV (B.E.)'
+        CenterEnergy = str(CenterEnergy)+' eV'
         e_low = str(e_low)+' eV (B.E.)'
         e_high = str(e_high)+' eV (B.E.)'
 
@@ -243,12 +243,12 @@ def load_json(path_to_file: str) -> xr.DataArray:
     description = f['Region']['Description']
     if e_mode == 'Kinetic':
         e = np.linspace(e_low, e_high, e_num)
-        CenterEnergy = str(CenterEnergy)+' eV (K.E.)'
+        CenterEnergy = str(CenterEnergy)+' eV'
         e_low = str(e_low)+' eV (K.E.)'
         e_high = str(e_high)+' eV (K.E.)'
     else:
         e = np.linspace(e_photon-e_high, e_photon-e_low, e_num)
-        CenterEnergy = str(CenterEnergy)+' eV (B.E.)'
+        CenterEnergy = str(CenterEnergy)+' eV'
         e_low = str(e_low)+' eV (B.E.)'
         e_high = str(e_high)+' eV (B.E.)'
 
@@ -343,12 +343,12 @@ def load_h5(path_to_file: str) -> xr.DataArray:
             pass
     if e_mode == 'Kinetic':
         e = np.linspace(e_low, e_high, e_num)
-        CenterEnergy = str(CenterEnergy)+' eV (K.E.)'
+        CenterEnergy = str(CenterEnergy)+' eV'
         e_low = str(e_low)+' eV (K.E.)'
         e_high = str(e_high)+' eV (K.E.)'
     else:
         e = np.linspace(e_photon-e_high, e_photon-e_low, e_num)
-        CenterEnergy = str(CenterEnergy)+' eV (B.E.)'
+        CenterEnergy = str(CenterEnergy)+' eV'
         e_low = str(e_low)+' eV (B.E.)'
         e_high = str(e_high)+' eV (B.E.)'
 
@@ -788,6 +788,7 @@ class spectrogram:
         self.name = dvalue[0]
         self.e_photon = np.float64(dvalue[3].split(' ')[0])
         self.lensmode = dvalue[8]
+        self.e_mode = dvalue[2]
         self.desc=dvalue[-1]
         self.desc=self.desc.replace('\n\n\n\n\n','\n')
         self.desc=self.desc.replace('\n\n\n\n','\n')
@@ -925,6 +926,7 @@ class spectrogram:
         f.close()
     
     # def __export_casa(self):
+    # Casa.txt format simple version
     #     os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
     #     x,y=self.e_photon-self.x,self.y
     #     f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
@@ -934,6 +936,7 @@ class spectrogram:
     #     f.close()
     
     def __export_casa(self):
+    # Casa.txt format more complete version
         os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
         x,y=self.x,self.y
         f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
@@ -941,7 +944,7 @@ class spectrogram:
             f'Number of Regions=1\n'+
             f'[Region 1]\n'+
             f'Region Name={self.name}\n'+
-            f'Dimension 1 name={self.dvalue[2]} Energy [eV]\n'+
+            f'Dimension 1 name=Kinetic Energy [eV]\n'+
             f'Dimension 1 size={len(x)}\n'+
             f'Dimension 1 scale=')
         for i,v in enumerate(x):
@@ -957,8 +960,14 @@ class spectrogram:
                     f.write(f'{key[i]}={int(float(self.dvalue[i].replace(' s',''))*1000)}\n')
                 elif key[i]=='Pass Energy':
                     f.write(f'{key[i]}={int(float(self.dvalue[i].replace(' eV','')))}\n')
+                elif key[i]=='Energy Scale' and self.e_mode=='Binding':
+                    f.write(f'{key[i]}=Kinetic\n')
+                elif key[i]=='Low Energy' and self.e_mode=='Binding':
+                    f.write(f'{key[i]}={21.2-float(self.dvalue[5].replace(' eV','').replace(' (B.E.)',''))}\n')
+                elif key[i]=='High Energy' and self.e_mode=='Binding':
+                    f.write(f'{key[i]}={21.2-float(self.dvalue[6].replace(' eV','').replace(' (B.E.)',''))}\n')
                 else:
-                    f.write(f'{key[i]}={self.dvalue[i].replace(' eV','').replace(' (B.E.)','').replace(' (K.E.)','')}\n')
+                    f.write(f'{key[i]}={self.dvalue[i].replace(' eV','').replace(' (K.E.)','')}\n')
             else:
                 f.write(f'{key[i]}={self.dvalue[i]}\n') 
         f.write(f'Detector First X-Channel=0\n'+
@@ -972,7 +981,7 @@ class spectrogram:
                 f'Name=Normal\n')
         f.write(f'[Data1]\n')
         for i in range(len(x)):
-            f.write('%-6e' % x[i]+' '+'%-6e' % y[i]+'\n')
+            f.write('%-6e' % i+' '+'%-6e' % y[i]+'\n')
         f.close()
     
     def __tp_move_(self, event):
