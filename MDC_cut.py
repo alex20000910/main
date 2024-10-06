@@ -464,7 +464,7 @@ def pre_process(input):
         return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
 
 def gui_exp_origin():
-    global gori,v1,v2,v3,v4,v5,v6,v7,v8
+    global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10
     limg.config(image=img[np.random.randint(len(img))])
     gori=tk.Toplevel(g,bg='white')
     gori.title('Export to Origin')
@@ -473,7 +473,7 @@ def gui_exp_origin():
     fr=tk.Frame(gori,bg='white')
     fr.grid(row=1,column=0)
     pr_exp_origin()
-    v1,v2,v3,v4,v5,v6,v7,v8=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
+    v1,v2,v3,v4,v5,v6,v7,v8,v9,v10=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
     c1=tk.Checkbutton(fr,text='E-Phi (Raw Data)',variable=v1,font=('Arial', 18, "bold"),bg='white')
     c1.grid(row=0,column=0)
     c2=tk.Checkbutton(fr,text='E-K (Processed Data)',variable=v2,font=('Arial', 18, "bold"),bg='white')
@@ -490,9 +490,13 @@ def gui_exp_origin():
     c7.grid(row=6,column=0)
     c8=tk.Checkbutton(fr,text='Self Energy Imaginary Part',variable=v8,font=('Arial', 18, "bold"),bg='white')
     c8.grid(row=7,column=0)
+    c9=tk.Checkbutton(fr,text='Data plot with pos',variable=v9,font=('Arial', 18, "bold"),bg='white')
+    c9.grid(row=8,column=0)
+    c10=tk.Checkbutton(fr,text='Data plot with pos & bare band',variable=v10,font=('Arial', 18, "bold"),bg='white')
+    c10.grid(row=9,column=0)
     b2=tk.Button(fr,text='Export',command=exp_origin, width=15, height=1, font=('Arial', 18, "bold"), bg='white', bd=5)
-    b2.grid(row=8,column=0)
-    cl=[c1,c2,c3,c4,c5,c6,c7,c8]
+    b2.grid(row=10,column=0)
+    cl=[c1,c2,c3,c4,c5,c6,c7,c8,c9,c10]
     for i in range(len(cl)):
         if i in no:
             cl[i].deselect()
@@ -506,8 +510,8 @@ def gui_exp_origin():
     
 def pr_exp_origin():
     global cmdlist, no
-    ex_raw,ex_ek,ex_mp,ex_mf,ex_ep,ex_ef,ex_ser,ex_sei='','','','','','','',''
-    cmdlist=dict({0:f'{ex_raw}',1:f'{ex_ek}',2:f'{ex_mp}',3:f'{ex_mf}',4:f'{ex_ep}',5:f'{ex_ef}',6:f'{ex_ser}',7:f'{ex_sei}'})
+    ex_raw,ex_ek,ex_mp,ex_mf,ex_ep,ex_ef,ex_ser,ex_sei,ex_dpp,exdppbb='','','','','','','','','',''
+    cmdlist=dict({0:f'{ex_raw}',1:f'{ex_ek}',2:f'{ex_mp}',3:f'{ex_mf}',4:f'{ex_ep}',5:f'{ex_ef}',6:f'{ex_ser}',7:f'{ex_sei}',8:f'{ex_dpp}',9:f'{exdppbb}'})
     no=[]
     try:
         cmdlist[0]=f'''plot2d()\n'''
@@ -518,6 +522,10 @@ def pr_exp_origin():
     except:
         no.append(1)
     try:
+        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+                        10**-10*(h/2/np.pi))*180/np.pi
+        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+            np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
         cmdlist[2]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")\n'''
     except:
         no.append(2)
@@ -534,6 +542,12 @@ def pr_exp_origin():
     except:
         no.append(5)
     try:
+        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+                        10**-10*(h/2/np.pi))*180/np.pi
+        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+            np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+        x = (vfe-fev)*1000
+        y = pos
         yy = interp(pos, k*np.float64(bbk_offset.get()), be -
                     # interp x into be,k set
                     np.float64(bb_offset.get()))
@@ -590,6 +604,12 @@ def pr_exp_origin():
     except:
         no.append(6)
     try:
+        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+                        10**-10*(h/2/np.pi))*180/np.pi
+        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+            np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+        x = (vfe-fev)*1000
+        y = pos
         yy = interp(pos, k*np.float64(bbk_offset.get()), be -
                     # interp x into be,k set
                     np.float64(bb_offset.get()))
@@ -645,7 +665,14 @@ def pr_exp_origin():
         cmdlist[7]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(iy)}, y2={pre_process(reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])))}, title='Self Energy Imaginary Part', xlabel='Binding Energy', ylabel=r"Im \g(S)", ylabel1=r"Im \g(S)", ylabel2=r"Im \g(S)\-(KK)=KK(Re \g(S))", xunit='meV', yunit='meV')\n'''
     except:
         no.append(7)
-
+    try:
+        cmdlist[8]=f'''plot2d(title='Data plot with pos')\n'''
+    except:
+        no.append(8)
+    try:
+        cmdlist[9]=f'''plot2d(title='Data plot with pos & bare band')\n'''
+    except:
+        no.append(9)
 def exp_origin(*e):
     origin_temp_var = f'''from MDC_cut import *
 
@@ -655,8 +682,36 @@ ko = {k_offset.get()}
 bbo = {bb_offset.get()}
 bbk = {bbk_offset.get()}
 vfe = {vfe}
+'''
+    try:
+        origin_temp_var += f'''
 bpath = r"{bpath}"         # Bare Band Path
-
+be = np.float64({pre_process(be)})
+k = np.float64({pre_process(k)})
+'''
+    except: pass
+    try:
+        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+                        10**-10*(h/2/np.pi))*180/np.pi
+        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+            np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+        origin_temp_var += f'''
+fev = np.float64({pre_process(np.float64(fev))})
+pos = np.float64({pre_process(pos)})
+fwhm = np.float64({pre_process(fwhm)})
+'''
+    except: pass
+    try:
+        ffphi = np.float64(k_offset.get())+fphi
+        fk = (2*m*epos*1.6*10**-19)**0.5 * \
+            np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
+        origin_temp_var += f'''
+fk = np.float64({pre_process(fk)})
+epos = np.float64({pre_process(epos)})
+efwhm = np.float64({pre_process(efwhm)})
+'''
+    except: pass
+    origin_temp_var += f'''
 data = load_h5(dpath)
 dvalue = [data.attrs[i] for i in data.attrs.keys()]
 dkey = [i for i in data.attrs.keys()]
@@ -675,7 +730,7 @@ tz = data.to_numpy()
 new()
 
 '''
-    cl=[v1.get(),v2.get(),v3.get(),v4.get(),v5.get(),v6.get(),v7.get(),v8.get()]
+    cl=[v1.get(),v2.get(),v3.get(),v4.get(),v5.get(),v6.get(),v7.get(),v8.get(),v9.get(),v10.get()]
     gori.destroy()
     for i in cmdlist.keys():
         if cl[i]==1:
@@ -692,7 +747,7 @@ new()
         os.system(f'del {cdir+r"\origin_temp.py"}')
         limg.config(image=img[np.random.randint(len(img))])
         st.put('Exported to Origin')
-    threading.Thread(target=j).start()
+    threading.Thread(target=j,daemon=True).start()
 
 def new():
     global le_mode
@@ -811,12 +866,26 @@ def new():
     else:
         nt.append(f'        Bare Band Path: None\n')
 
-def plot2d(x=tx, y=ty, z=tz, title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel=f'{le_mode}', zlabel='Intensity', xunit="deg", yunit='eV', zunit='Counts'):
-    if title=='E-K (Processed Data)':
+def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel=f'{le_mode}', zlabel='Intensity', xunit="deg", yunit='eV', zunit='Counts'):
+    if title!='E-Phi (Raw Data)':
         x = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
         )**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
         xlabel='k'
         xunit=r"2\g(p)Å\+(-1)"
+    if title=='Data plot with pos':
+        x1 = pos
+        if emf=='KE':
+            y1=fev
+        else:
+            y1= vfe-fev
+    if title=='Data plot with pos & bare band':
+        x1 = pos
+        y1=vfe-fev
+        x2 = k*bbk
+        if emf=='KE':
+            y2 = (be - np.float64(bbo))/1000+vfe
+        else:
+            y2 = (-be + np.float64(bbo))/1000
     if xlabel=='k':
         xunit=r"2\g(p)Å\+(-1)"
     x,y,z = x.flatten(), y.flatten(), z.flatten()
@@ -834,6 +903,19 @@ def plot2d(x=tx, y=ty, z=tz, title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel=f
         ylm=gr[0].ylim
         gr[0].set_ylim(ylm[1],ylm[0])
         gr[0].set_ylim(step=-1*float(ylm[2]))
+    if len(x1) != 0:
+        sheet.from_list(3, x1, lname='x1', units=xunit, axis='X')
+        sheet.from_list(4, y1, lname='y1', units=yunit, axis='Y')
+        g1=gr[0].add_plot(sheet, 4, 3,type='s')
+        g1.symbol_size = 5
+        g1.symbol_kind = 2
+    if len(x2) != 0:
+        sheet.from_list(5, x2, lname='x2', units=xunit, axis='X')
+        sheet.from_list(6, y2, lname='y2', units=yunit, axis='Y')
+        g2=gr[0].add_plot(sheet, 6, 5,type='l')
+        g2.symbol_size = 5
+        g2.symbol_kind = 2
+        g2.color = 'red'
     gr[0].rescale()
     wb.show = False
 
