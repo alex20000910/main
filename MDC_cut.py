@@ -75,6 +75,11 @@ try:
 except ModuleNotFoundError:
     install('pywin32')
     import win32clipboard
+try:
+    import originpro as op
+except ModuleNotFoundError:
+    install('originpro')
+    import originpro as op
 
 h=6.62607015*10**-34
 m=9.10938356*10**-31
@@ -163,7 +168,8 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
                                                                  'PassEnergy': str(PassEnergy)+' meV',
                                                                  'Slit': Slit,
                                                                  'Dwell': str(Dwell)+' s',
-                                                                 'Iterations': Iterations
+                                                                 'Iterations': Iterations,
+                                                                 'Path': path_to_file
                                                                  })
     return data
 
@@ -207,7 +213,8 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
                                                                  'Slit': Slit,
                                                                  'Dwell': str(Dwell)+' s',
                                                                  'Iterations': Iterations,
-                                                                 'Description': description
+                                                                 'Description': description,
+                                                                 'Path': path_to_file
                                                                  })
     return data
 
@@ -271,7 +278,8 @@ def load_json(path_to_file: str) -> xr.DataArray:
                                                                 'Slit': Slit,
                                                                 'Dwell': str(Dwell)+' s',
                                                                 'Iterations': Iterations,
-                                                                'Description': description
+                                                                'Description': description,
+                                                                'Path': path_to_file
                                                                 })
     return data
 
@@ -371,7 +379,8 @@ def load_h5(path_to_file: str) -> xr.DataArray:
                                                                 'Slit': Slit,
                                                                 'Dwell': str(Dwell)+' s',
                                                                 'Iterations': Iterations,
-                                                                'Description': description
+                                                                'Description': description,
+                                                                'Path': path_to_file
                                                                 })
     return data
 
@@ -424,6 +433,451 @@ def save_fe():
 def on_enter(event):
     save_fe()
 
+def patch_origin():
+    threading.Thread(target=f_patch_origin,daemon=True).start()
+
+def f_patch_origin():
+    limg.config(image=img[np.random.randint(len(img))])
+########################### patching ############################
+    print('Patching OriginPro...')
+    st.put('Patching OriginPro...')
+    exe=rf"\Origin.exe" # OriginPro Patching file
+    cmd=f'dir "{exe}" /s'
+    result = os.popen(cmd) # 返回的結果是一個<class 'os._wrap_close'>對象，需要讀取後才能處理
+    context = result.read()
+    for line in context.splitlines():
+        if '的目錄' in line or 'Directory of' in line:
+            path = line.removeprefix('Directory of ')
+            path = line.removesuffix(' 的目錄')
+            print(line)
+            print(path)
+            path = path.removeprefix(" ")
+            path = rf"{path}"
+            path = rf"{path}{exe}"
+            os.popen(path)
+    result.close()
+    print('Patching OriginPro...Done')
+    st.put('Patching OriginPro...Done')
+########################### patching ############################
+
+def pre_process(input):
+        return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
+
+def gui_exp_origin():
+    global gori,v1,v2,v3,v4,v5,v6,v7,v8
+    limg.config(image=img[np.random.randint(len(img))])
+    gori=tk.Toplevel(g,bg='white')
+    gori.title('Export to Origin')
+    b1=tk.Button(gori,text='Patch Origin',command=patch_origin, width=15, height=1, font=('Arial', 18, "bold"), bg='white', bd=5)
+    b1.grid(row=0,column=0)
+    fr=tk.Frame(gori,bg='white')
+    fr.grid(row=1,column=0)
+    pr_exp_origin()
+    v1,v2,v3,v4,v5,v6,v7,v8=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
+    c1=tk.Checkbutton(fr,text='E-Phi (Raw Data)',variable=v1,font=('Arial', 18, "bold"),bg='white')
+    c1.grid(row=0,column=0)
+    c2=tk.Checkbutton(fr,text='E-K (Processed Data)',variable=v2,font=('Arial', 18, "bold"),bg='white')
+    c2.grid(row=1,column=0)
+    c3=tk.Checkbutton(fr,text='MDC Fit Position',variable=v3,font=('Arial', 18, "bold"),bg='white')
+    c3.grid(row=2,column=0)
+    c4=tk.Checkbutton(fr,text='MDC Fit FWHM',variable=v4,font=('Arial', 18, "bold"),bg='white')
+    c4.grid(row=3,column=0)
+    c5=tk.Checkbutton(fr,text='EDC Fit Position',variable=v5,font=('Arial', 18, "bold"),bg='white')
+    c5.grid(row=4,column=0)
+    c6=tk.Checkbutton(fr,text='EDC Fit FWHM',variable=v6,font=('Arial', 18, "bold"),bg='white')
+    c6.grid(row=5,column=0)
+    c7=tk.Checkbutton(fr,text='Self Energy Real Part',variable=v7,font=('Arial', 18, "bold"),bg='white')
+    c7.grid(row=6,column=0)
+    c8=tk.Checkbutton(fr,text='Self Energy Imaginary Part',variable=v8,font=('Arial', 18, "bold"),bg='white')
+    c8.grid(row=7,column=0)
+    b2=tk.Button(fr,text='Export',command=exp_origin, width=15, height=1, font=('Arial', 18, "bold"), bg='white', bd=5)
+    b2.grid(row=8,column=0)
+    cl=[c1,c2,c3,c4,c5,c6,c7,c8]
+    for i in range(len(cl)):
+        if i in no:
+            cl[i].deselect()
+            cl[i].config(state='disabled')
+        else:
+            cl[i].config(state='normal')
+            cl[i].select()
+    gori.bind('<Return>', exp_origin)
+    gori.focus_set()
+    gori.update()
+    
+def pr_exp_origin():
+    global cmdlist, no
+    ex_raw,ex_ek,ex_mp,ex_mf,ex_ep,ex_ef,ex_ser,ex_sei='','','','','','','',''
+    cmdlist=dict({0:f'{ex_raw}',1:f'{ex_ek}',2:f'{ex_mp}',3:f'{ex_mf}',4:f'{ex_ep}',5:f'{ex_ef}',6:f'{ex_ser}',7:f'{ex_sei}'})
+    no=[]
+    try:
+        cmdlist[0]=f'''plot2d()\n'''
+    except:
+        no.append(0)
+    try:
+        cmdlist[1]=f'''plot2d(title='E-K (Processed Data)')\n'''
+    except:
+        no.append(1)
+    try:
+        cmdlist[2]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")\n'''
+    except:
+        no.append(2)
+    try:
+        cmdlist[3]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(fwhm)}, title='MDC Fit FWHM', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")\n'''
+    except:
+        no.append(3)
+    try:
+        cmdlist[4]=f'''plot1d(x={pre_process(fk)}, y1={pre_process((vfe-epos)*1000)}, title='EDC Fit Position', xlabel='k', ylabel='Binding Energy', xunit=r"2\g(p)Å\+(-1)", yunit='meV')\n'''
+    except:
+        no.append(4)
+    try:
+        cmdlist[5]=f'''plot1d(x={pre_process(fk)}, y1={pre_process(efwhm)}, title='EDC Fit FWHM', xlabel='k', ylabel='Binding Energy', xunit=r"2\g(p)Å\+(-1)", yunit='meV')\n'''
+    except:
+        no.append(5)
+    try:
+        yy = interp(pos, k*np.float64(bbk_offset.get()), be -
+                    # interp x into be,k set
+                    np.float64(bb_offset.get()))
+        x = (vfe-fev)*1000
+        rx = x
+        ry = -(x+yy)
+        tbe = (vfe-fev)*1000
+        x = interp(tbe, -be+np.float64(bb_offset.get()),
+                    k*np.float64(bbk_offset.get()))
+        y = interp(x, k*np.float64(bbk_offset.get()),
+                    -be+np.float64(bb_offset.get()))
+        xx = np.diff(x)
+        yy = np.diff(y)
+
+        # eliminate vf in gap
+        for i in range(len(yy)):
+            if yy[i]/xx[i] > 20000:
+                yy[i] = 0
+        v = yy/xx
+        # v = np.append(v, v[-1])  # fermi velocity
+        v=interp(pos,x[0:-1]+xx/2,v)
+        yy = np.abs(v*fwhm/2)
+        xx = tbe
+
+        ix = xx
+        iy = yy
+        ix=(tbe-tbe[-1])*-1
+        cix=np.append(ix+ix[0],ix)
+        tix=cix[0:len(cix)-1]*-1
+        # kx=ix
+        kx = np.append(cix,tix[::-1])
+        ky = np.linspace(0, 1, len(kx))
+        ciy=np.append(iy*0+np.mean(iy),iy)
+        tiy=ciy[0:len(ciy)-1]
+        ciy = np.append(ciy,tiy[::-1])
+
+        #for imaginary part
+        ix=(tbe-tbe[-1])*-1
+        cix=np.append(ix+ix[0],ix)
+        tix=cix[0:len(cix)-1]*-1
+        kx = np.append(cix,tix[::-1])
+        ky = np.linspace(0, 1, len(kx))
+        cry=np.append(ry*0,ry)
+        tcry=cry[0:len(cry)-1]*-1
+        cry = np.append(cry,tcry[::-1])
+
+        # Hilbert transform
+        analytic_signal_r = hilbert(cry)
+        analytic_signal_i = hilbert(ciy)
+        # Reconstructed real and imaginary parts
+        reconstructed_real = np.imag(analytic_signal_i)
+        reconstructed_imag = -np.imag(analytic_signal_r)
+        cmdlist[6]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(-1*((vfe-fev)*1000+interp(pos, k*np.float64(bbk_offset.get()), be - np.float64(bb_offset.get()))))}, y2={pre_process(reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])))}, title='Self Energy Real Part', xlabel='Binding Energy', ylabel=r"Re \g(S)", ylabel1=r"Re \g(S)", ylabel2=r"Re \g(S)\-(KK)=KK(Im \g(S))", xunit='meV', yunit='meV')\n'''
+    except:
+        no.append(6)
+    try:
+        yy = interp(pos, k*np.float64(bbk_offset.get()), be -
+                    # interp x into be,k set
+                    np.float64(bb_offset.get()))
+        x = (vfe-fev)*1000
+        rx = x
+        ry = -(x+yy)
+        tbe = (vfe-fev)*1000
+        x = interp(tbe, -be+np.float64(bb_offset.get()),
+                    k*np.float64(bbk_offset.get()))
+        y = interp(x, k*np.float64(bbk_offset.get()),
+                    -be+np.float64(bb_offset.get()))
+        xx = np.diff(x)
+        yy = np.diff(y)
+
+        # eliminate vf in gap
+        for i in range(len(yy)):
+            if yy[i]/xx[i] > 20000:
+                yy[i] = 0
+        v = yy/xx
+        # v = np.append(v, v[-1])  # fermi velocity
+        v=interp(pos,x[0:-1]+xx/2,v)
+        yy = np.abs(v*fwhm/2)
+        xx = tbe
+
+        ix = xx
+        iy = yy
+        ix=(tbe-tbe[-1])*-1
+        cix=np.append(ix+ix[0],ix)
+        tix=cix[0:len(cix)-1]*-1
+        # kx=ix
+        kx = np.append(cix,tix[::-1])
+        ky = np.linspace(0, 1, len(kx))
+        ciy=np.append(iy*0+np.mean(iy),iy)
+        tiy=ciy[0:len(ciy)-1]
+        ciy = np.append(ciy,tiy[::-1])
+
+        #for imaginary part
+        ix=(tbe-tbe[-1])*-1
+        cix=np.append(ix+ix[0],ix)
+        tix=cix[0:len(cix)-1]*-1
+        kx = np.append(cix,tix[::-1])
+        ky = np.linspace(0, 1, len(kx))
+        cry=np.append(ry*0,ry)
+        tcry=cry[0:len(cry)-1]*-1
+        cry = np.append(cry,tcry[::-1])
+
+        # Hilbert transform
+        analytic_signal_r = hilbert(cry)
+        analytic_signal_i = hilbert(ciy)
+        # Reconstructed real and imaginary parts
+        reconstructed_real = np.imag(analytic_signal_i)
+        reconstructed_imag = -np.imag(analytic_signal_r)
+        cmdlist[7]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(iy)}, y2={pre_process(reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])))}, title='Self Energy Imaginary Part', xlabel='Binding Energy', ylabel=r"Im \g(S)", ylabel1=r"Im \g(S)", ylabel2=r"Im \g(S)\-(KK)=KK(Re \g(S))", xunit='meV', yunit='meV')\n'''
+    except:
+        no.append(7)
+
+def exp_origin(*e):
+    origin_temp_var = f'''from MDC_cut import *
+
+dpath = r"{dpath}"      # Data Path
+emf = r"{emf}"             # Energy Mode: KE or BE
+ko = {k_offset.get()}
+bbo = {bb_offset.get()}
+bbk = {bbk_offset.get()}
+vfe = {vfe}
+bpath = r"{bpath}"         # Bare Band Path
+
+data = load_h5(dpath)
+dvalue = [data.attrs[i] for i in data.attrs.keys()]
+dkey = [i for i in data.attrs.keys()]
+ev, phi = data.indexes.values()
+ev, phi = np.float64(ev), np.float64(phi)
+
+if emf=='KE':
+    le_mode='Kinetic Energy'
+    tx, ty = np.meshgrid(phi, ev)
+else:
+    le_mode='Binding Energy'
+    tx, ty = np.meshgrid(phi, vfe-ev)
+tz = data.to_numpy()
+'''
+    origin_temp_exec = r'''
+new()
+
+'''
+    cl=[v1.get(),v2.get(),v3.get(),v4.get(),v5.get(),v6.get(),v7.get(),v8.get()]
+    gori.destroy()
+    for i in cmdlist.keys():
+        if cl[i]==1:
+            origin_temp_exec+=cmdlist[i]
+        
+    with open(cdir+r'\origin_temp.py', 'w', encoding='utf-8') as f:
+        f.write(origin_temp_var+origin_temp_func+origin_temp_exec+f'save()')
+    f.close()
+    def j():
+        # os.system(f'code {cdir+r"\origin_temp.py"}')
+        limg.config(image=img[np.random.randint(len(img))])
+        st.put('Exporting to Origin...')
+        os.system(f'python {cdir+r"\origin_temp.py"}')
+        os.system(f'del {cdir+r"\origin_temp.py"}')
+        limg.config(image=img[np.random.randint(len(img))])
+        st.put('Exported to Origin')
+    threading.Thread(target=j).start()
+
+def new():
+    global le_mode
+    op.new()
+    op.set_show(True)
+    dvalue = [data.attrs[i] for i in data.attrs.keys()]
+    dkey = [i for i in data.attrs.keys()]
+
+    if emf=='KE':
+        le_mode='Kinetic Energy'
+    else:
+        le_mode='Binding Energy'
+    ko = k_offset.get()
+    bbo = bb_offset.get()
+    bbk = bbk_offset.get()
+    nt=op.new_notes('Data Info')
+    nt.syntax = 0   # Markdown; 0(Normal Text), 1(HTML), 2(Markdown), 3(Origin Rich Text)
+    nt.view = 0    # Render Mode; 0(Text Mode), 1(Render Mode)
+    nt.append(f'Region')
+    nt.append(f'        File Path: {dpath}')
+    for i in range(len(dkey)):
+        if dkey[i] != 'Description':
+            if dkey[i] == 'Path':
+                pass
+            else:
+                nt.append(f'        {dkey[i]}: {dvalue[i]}')
+        else:
+            for j,k in enumerate(dvalue[i].split('\n')):
+                if j == 0:
+                    nt.append(f'        {dkey[i]}:')
+                    nt.append(f'                {k}')
+                else:
+                    nt.append(f'                {k}')
+    nt.append(f'\nParameters\n'+\
+        f'        Energy Mode: {le_mode}\n'+\
+        f'        Fermi Energy: {vfe} eV\n'+\
+        f'        k offset: {ko} deg\n')
+    if bpath != '':
+        nt.append(f'        Bare Band Path: {bpath}\n'+\
+            f'        Bare Band Offset: {bbo} meV\n'+\
+            f'        Bare Band k Ratio: {bbk}\n')
+    else:
+        nt.append(f'        Bare Band Path: None\n')
+
+def plot2d(x=[1,2,3], y=[1,2,3], z=[1,2,3], title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel='Kinetic Energy', zlabel='Intensity', xunit="deg", yunit='eV', zunit='Counts'):
+    if xlabel=='k':
+        xunit=r"2\g(p)Å\+(-1)"
+    # create a new book
+    wb = op.new_book('w',title)
+    # access the first sheet
+    sheet = wb[0]
+    # add data to the sheet
+    sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
+    sheet.from_list(1, y, lname=ylabel, units=yunit, axis='Y')
+    sheet.from_list(2, z, lname=zlabel, units=zunit, axis='Z')
+    gr=op.new_graph(title, 'TriContgray')
+    gr[0].add_plot(sheet, 1, 0, 2)
+    gr[0].rescale()
+    wb.show = False
+
+def plot1d(x=[1,2,3], y=[1,2,3], title='title', xlabel='x', ylabel='y', xunit='arb', yunit='arb'):
+    # create a new book
+    wb = op.new_book('w',title)
+    # access the first sheet
+    sheet = wb[0]
+    # add data to the sheet
+    sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
+    sheet.from_list(1, y, lname=ylabel, units=yunit, axis='Y')
+    gr=op.new_graph(title, 'scatter')
+    gr[0].add_plot(sheet, 1, 0)
+    gr[0].rescale()
+    wb.show = False
+
+def save():
+    """
+    Save the Origin data in .opj format.
+    Can be saved in .opju format as well.
+    """
+    if 'h5' in dpath:
+        op.save(dpath.removesuffix('.h5').replace("/","\\")+'.opj')
+    elif 'json' in dpath:
+        op.save(dpath.removesuffix('.json').replace("/","\\")+'.opj')
+    elif 'txt' in dpath:
+        op.save(dpath.removesuffix('.txt').replace("/","\\")+'.opj')
+
+origin_temp_func = r'''
+def new():
+    op.new()
+    op.set_show(True)
+    nt=op.new_notes('Data Info')
+    nt.syntax = 0   # Markdown; 0(Normal Text), 1(HTML), 2(Markdown), 3(Origin Rich Text)
+    nt.view = 0    # Render Mode; 0(Text Mode), 1(Render Mode)
+    nt.append(f'Region')
+    nt.append(f'        File Path: {dpath}')
+    for i in range(len(dkey)):
+        if dkey[i] != 'Description':
+            if dkey[i] == 'Path':
+                pass
+            else:
+                nt.append(f'        {dkey[i]}: {dvalue[i]}')
+        else:
+            for j,k in enumerate(dvalue[i].split('\n')):
+                if j == 0:
+                    nt.append(f'        {dkey[i]}:')
+                    nt.append(f'                {k}')
+                else:
+                    nt.append(f'                {k}')
+    nt.append(f'\nParameters\n'+\
+        f'        Energy Mode: {le_mode}\n'+\
+        f'        Fermi Energy: {vfe} eV\n'+\
+        f'        k offset: {ko} deg\n')
+    if bpath != '':
+        nt.append(f'        Bare Band Path: {bpath}\n'+\
+            f'        Bare Band Offset: {bbo} meV\n'+\
+            f'        Bare Band k Ratio: {bbk}\n')
+    else:
+        nt.append(f'        Bare Band Path: None\n')
+
+def plot2d(x=tx, y=ty, z=tz, title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel=f'{le_mode}', zlabel='Intensity', xunit="deg", yunit='eV', zunit='Counts'):
+    if title=='E-K (Processed Data)':
+        x = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+        )**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
+        xlabel='k'
+        xunit=r"2\g(p)Å\+(-1)"
+    if xlabel=='k':
+        xunit=r"2\g(p)Å\+(-1)"
+    x,y,z = x.flatten(), y.flatten(), z.flatten()
+    # create a new book
+    wb = op.new_book('w',title)
+    # access the first sheet
+    sheet = wb[0]
+    # add data to the sheet
+    sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
+    sheet.from_list(1, y, lname=ylabel, units=yunit, axis='Y')
+    sheet.from_list(2, z, lname=zlabel, units=zunit, axis='Z')
+    gr=op.new_graph(title, 'TriContgray')
+    gr[0].add_plot(sheet, 1, 0, 2)
+    if ylabel=='Binding Energy':
+        ylm=gr[0].ylim
+        gr[0].set_ylim(ylm[1],ylm[0])
+        gr[0].set_ylim(step=-1*float(ylm[2]))
+    gr[0].rescale()
+    wb.show = False
+
+def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], title='title', xlabel='x', ylabel='y', ylabel1='y1', ylabel2='y2', xunit='arb', yunit='arb'):
+    # create a new book
+    wb = op.new_book('w',title)
+    # access the first sheet
+    sheet = wb[0]
+    # add data to the sheet
+    if ylabel1 == 'y1':
+        ylabel1 = ylabel
+    sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
+    sheet.from_list(1, y1, lname=ylabel1, units=yunit, axis='Y')
+    gr=op.new_graph(title, 'scatter')
+    g1=gr[0].add_plot(sheet, 1, 0)
+    g1.symbol_size = 5
+    g1.symbol_kind = 2
+    if len(y2) != 0:
+        sheet.from_list(2, y2, lname=ylabel2, units=yunit, axis='Y')
+        g2=gr[0].add_plot(sheet, 2, 0)
+        g2.symbol_size = 5
+        g2.symbol_kind = 2
+        g2.color = 'red'
+        gr[0].label('yl').text = f'{ylabel} ({yunit})'
+    if xlabel=='Binding Energy' or xlabel==r"E-E\-(f)":
+        xlm=gr[0].xlim
+        gr[0].set_xlim(xlm[1],xlm[0])
+        gr[0].set_xlim(step=-1*float(xlm[2]))
+    gr[0].rescale()
+    wb.show = False
+
+def save(format='opj'):
+    """
+    Save the Origin data in .opj format.
+    Can be saved in .opju format as well.
+    """
+    if 'h5' in dpath:
+        op.save(dpath.removesuffix('.h5').replace("/","\\")+'.'+format)
+    elif 'json' in dpath:
+        op.save(dpath.removesuffix('.json').replace("/","\\")+'.'+format)
+    elif 'txt' in dpath:
+        op.save(dpath.removesuffix('.txt').replace("/","\\")+'.'+format)
+'''
+
 def rplot(f, canvas):
     """
     Plot the raw data on a given canvas.
@@ -470,8 +924,8 @@ def rplot(f, canvas):
     canvas.draw()
 
 def cexcitation_h5(s:str):
-    if '.h5' in rdd:
-        with h5py.File(rdd, 'r+') as hf:
+    if '.h5' in dpath:
+        with h5py.File(dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['ExcitationEnergy']['Value'][:]
             print("Original:", data)
@@ -495,12 +949,12 @@ def cexcitation_h5(s:str):
             print("Modified:", modified_data)
 
 def cexcitation_json(s:str):
-    if '.json' in rdd:
-        with open(rdd, 'r') as f:
+    if '.json' in dpath:
+        with open(dpath, 'r') as f:
             data = json.load(f)
             print("Original:", data['Region']['ExcitationEnergy']['Value'])
         data['Region']['ExcitationEnergy']['Value'] = float(s)
-        with open(rdd, 'w') as f:
+        with open(dpath, 'w') as f:
             json.dump(data, f, indent=2)
             print("Modified:", data['Region']['ExcitationEnergy']['Value'])
 
@@ -512,14 +966,14 @@ def cexcitation_save_str():
         s = s.replace('\n\n\n', '')
         s = s.replace('\n\n', '')
         s = s.replace('\n', '')
-        if '.h5' in rdd:
+        if '.h5' in dpath:
             cexcitation_h5(s)
-            data = load_h5(rdd)  # data save as xarray.DataArray format
-            pr_load(data, rdd)
-        elif '.json' in rdd:
+            data = load_h5(dpath)  # data save as xarray.DataArray format
+            pr_load(data)
+        elif '.json' in dpath:
             cexcitation_json(s)
-            data = load_json(rdd)
-            pr_load(data, rdd)
+            data = load_json(dpath)
+            pr_load(data)
     gcestr.destroy()
 
 def cexcitation():
@@ -545,8 +999,8 @@ def cexcitation():
     gcestr.update()
 
 def cname_h5(s:str):
-    if '.h5' in rdd:
-        with h5py.File(rdd, 'r+') as hf:
+    if '.h5' in dpath:
+        with h5py.File(dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['Name'][:]
             print("Original:", data)
@@ -570,12 +1024,12 @@ def cname_h5(s:str):
             print("Modified:", modified_data)
 
 def cname_json(s:str):
-    if '.json' in rdd:
-        with open(rdd, 'r') as f:
+    if '.json' in dpath:
+        with open(dpath, 'r') as f:
             data = json.load(f)
             print("Original:", data['Region']['Name'])
         data['Region']['Name'] = s
-        with open(rdd, 'w') as f:
+        with open(dpath, 'w') as f:
             json.dump(data, f, indent=2)
             print("Modified:", data['Region']['Name'])
             
@@ -587,14 +1041,14 @@ def cname_save_str():
         s = s.replace('\n\n\n', '')
         s = s.replace('\n\n', '')
         s = s.replace('\n', '')
-        if '.h5' in rdd:
+        if '.h5' in dpath:
             cname_h5(s)
-            data = load_h5(rdd)  # data save as xarray.DataArray format
-            pr_load(data, rdd)
-        elif '.json' in rdd:
+            data = load_h5(dpath)  # data save as xarray.DataArray format
+            pr_load(data)
+        elif '.json' in dpath:
             cname_json(s)
-            data = load_json(rdd)
-            pr_load(data, rdd)
+            data = load_json(dpath)
+            pr_load(data)
     gcstr.destroy()
     
 def cname():
@@ -618,8 +1072,8 @@ def cname():
     gcstr.update()
 
 def desc_h5(s:str):
-    if '.h5' in rdd:
-        with h5py.File(rdd, 'r+') as hf:
+    if '.h5' in dpath:
+        with h5py.File(dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['Description'][:]
             print("Original:", data)
@@ -643,12 +1097,12 @@ def desc_h5(s:str):
             print("Modified:", modified_data)
 
 def desc_json(s:str):
-    if '.json' in rdd:
-        with open(rdd, 'r') as f:
+    if '.json' in dpath:
+        with open(dpath, 'r') as f:
             data = json.load(f)
             print("Original:", data['Region']['Description'])
         data['Region']['Description'] = s
-        with open(rdd, 'w') as f:
+        with open(dpath, 'w') as f:
             json.dump(data, f, indent=2)
             print("Modified:", data['Region']['Description'])
             
@@ -659,14 +1113,14 @@ def save_str():
         s = s.replace('\n\n\n\n', '\n')
         s = s.replace('\n\n\n', '\n')
         s = s.replace('\n\n', '\n')
-        if '.h5' in rdd:
+        if '.h5' in dpath:
             desc_h5(s)
-            data = load_h5(rdd)  # data save as xarray.DataArray format
-            pr_load(data, rdd)
-        elif '.json' in rdd:
+            data = load_h5(dpath)  # data save as xarray.DataArray format
+            pr_load(data)
+        elif '.json' in dpath:
             desc_json(s)
-            data = load_json(rdd)
-            pr_load(data, rdd)
+            data = load_json(dpath)
+            pr_load(data)
     gstr.destroy()
     
 def desc():
@@ -738,6 +1192,7 @@ def f_copy_to_clipboard():
         st.put('Copied to clipboard')
         
 def copy_to_clipboard(ff):
+    limg.config(image=img[np.random.randint(len(img))])
     buf = io.BytesIO()
     ff.savefig(buf, format='png')
     buf.seek(0)
@@ -757,11 +1212,10 @@ def send_to_clipboard(clip_type, data):
 
 class spectrogram:
     
-    def __init__(self, g, data, rdd, cmap) -> None:
+    def __init__(self, g, data, cmap) -> None:
         self.g = g
         self.tp_cf = True
         self.data = data
-        self.rdd = rdd
         self.cmap = cmap
         dvalue = [data.attrs[i] for i in data.attrs.keys()]
         self.dvalue = dvalue
@@ -778,6 +1232,8 @@ class spectrogram:
                 lst.append(len(' : '+t[0]))
                 for i in range(1,len(t)):
                     lst.append(len('              '+t[i]))
+            elif _ == 'Path':
+                pass
             else:
                 st+=str(_)+' : '+str(data.attrs[_])+'\n'
                 lst.append(len(str(_)+' : '+str(data.attrs[_])))
@@ -789,7 +1245,8 @@ class spectrogram:
         self.e_photon = np.float64(dvalue[3].split(' ')[0])
         self.lensmode = dvalue[8]
         self.e_mode = dvalue[2]
-        self.desc=dvalue[-1]
+        self.rdd = dvalue[14]
+        self.desc = dvalue[13]
         self.desc=self.desc.replace('\n\n\n\n\n','\n')
         self.desc=self.desc.replace('\n\n\n\n','\n')
         self.desc=self.desc.replace('\n\n\n','\n')
@@ -1296,14 +1753,14 @@ def trans_plot():
 def raw_plot():
     gtp.destroy()
     cmap=value3.get()
-    s=spectrogram(g, data, rdd, cmap)
+    s=spectrogram(g, data, cmap)
     s.plot()
 
 def smooth_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(g, data, rdd, cmap)
+    s=spectrogram(g, data, cmap)
     s.setdata(ev, y, dtype='smooth', unit='Counts')
     s.plot()
 
@@ -1311,7 +1768,7 @@ def fd_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(g, data, rdd, cmap)
+    s=spectrogram(g, data, cmap)
     s.setdata(ev[0:-1]+(ev[1]-ev[0])/2, np.diff(y)/np.diff(ev), dtype='fd', unit='dN/dE')
     s.plot()
 
@@ -1351,9 +1808,10 @@ def cal(*e):
     t.start()
 
 
-def pr_load(data, path):
-    global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst
+def pr_load(data):
+    global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
     dvalue = [data.attrs[i] for i in data.attrs.keys()]
+    dpath = dvalue[14]
     st=''
     lst=[]
     for _ in data.attrs.keys():
@@ -1368,6 +1826,8 @@ def pr_load(data, path):
             for i in range(1,len(t)):
                 lst.append(len('              '+t[i]))
             print(_,':', data.attrs[_].replace('\n','\n              '))
+        elif _ == 'Path':
+            pass
         else:
             st+=str(_)+' : '+str(data.attrs[_])+'\n'
             lst.append(len(str(_)+' : '+str(data.attrs[_])))
@@ -1377,7 +1837,7 @@ def pr_load(data, path):
     # info.config(text=st,justify='left')
     l_path.config(width=max(lst), state='normal')
     l_path.delete(1.0, tk.END)
-    l_path.insert(tk.END,path)
+    l_path.insert(tk.END,dpath)
     l_path.see(1.0)
     l_path.config(state='disabled')
     info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
@@ -1391,7 +1851,7 @@ def pr_load(data, path):
     name=dvalue[0]
     e_photon=np.float64(dvalue[3].split(' ')[0])
     lensmode=dvalue[8]
-    description=dvalue[-1]
+    description=dvalue[13]
     description=description.replace('\n\n\n\n\n','\n')
     description=description.replace('\n\n\n\n','\n')
     description=description.replace('\n\n\n','\n')
@@ -1409,7 +1869,7 @@ def pr_load(data, path):
         in_fit.config(state='normal')
         b_fit.config(state='normal')
     os.chdir(cdir)
-    np.savez('rd', path=path, name=name, ev=ev,
+    np.savez('rd', path=dpath, name=name, ev=ev,
              phi=phi, st=st, lst=lst)
 
 
@@ -1435,7 +1895,7 @@ def o_load():
     limg.config(image=img[np.random.randint(len(img))])
     if '.h5' in tpath:
         data = load_h5(tpath)  # data save as xarray.DataArray format
-        pr_load(data, tpath)
+        pr_load(data)
         tname = tpath.split('/')
         tname = tname[-1].split('#id#')[0].replace('.h5', '')
         print(tname)
@@ -1447,11 +1907,11 @@ def o_load():
         st.put('Done')
     elif '.json' in tpath:
         data = load_json(tpath)
-        pr_load(data, tpath)
+        pr_load(data)
         st.put('Done')
     elif '.txt' in tpath:
         data = load_txt(tpath)
-        pr_load(data, tpath)
+        pr_load(data)
         st.put('Done')
     else:
         st.put('')
@@ -2141,13 +2601,13 @@ def loadmfit_():
             fpr = 1
             if '.h5' in rdd:
                 data = load_h5(rdd)
-                pr_load(data, rdd)
+                pr_load(data)
             elif '.json' in rdd:
                 data = load_json(rdd)
-                pr_load(data, rdd)
+                pr_load(data)
             elif '.txt' in rdd:
                 data = load_txt(rdd)
-                pr_load(data, rdd)
+                pr_load(data)
         except:
             pass
     if ".vms" in file:
@@ -2579,13 +3039,13 @@ def o_loadefit():
             fpr = 1
             if '.h5' in rdd:
                 data = load_h5(rdd)
-                pr_load(data, rdd)
+                pr_load(data)
             elif '.json' in rdd:
                 data = load_json(rdd)
-                pr_load(data, rdd)
+                pr_load(data)
             elif '.txt' in rdd:
                 data = load_txt(rdd)
-                pr_load(data, rdd)
+                pr_load(data)
         except:
             pass
     if ".vms" in file or ".npz" in file:
@@ -3407,7 +3867,7 @@ def feedmove(event):
 
 def saveefit():
     global epos, efwhm, fphi, efwhm, epos, semin, semax, seaa1, seaa2, sefp, sefi
-    path = fd.asksaveasfilename(title="Save EDC Fitted Data", initialdir=rdd,
+    path = fd.asksaveasfilename(title="Save EDC Fitted Data", initialdir=dpath,
                                 initialfile=name+"_efit.npz", filetype=[("NPZ files", ".npz"),])
     if len(path) > 2:
         efwhm = res(sefi, efwhm)
@@ -3417,7 +3877,7 @@ def saveefit():
         sefp = res(sefi, sefp)
         fphi = res(sefi, fphi)
         sefi = res(sefi, sefi)
-        np.savez(path, path=rdd, fphi=fphi, efwhm=efwhm, epos=epos, semin=semin,
+        np.savez(path, path=dpath, fphi=fphi, efwhm=efwhm, epos=epos, semin=semin,
                  semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
 
 
@@ -4726,7 +5186,7 @@ def fmedmove(event):
 def savemfit():
     global smresult, smcst, fev, fwhm, pos, skmin, skmax, smaa1, smaa2, smfp, smfi
     smresult = pack_fitpar(mresult)
-    path = fd.asksaveasfilename(title="Save MDC Fitted Data", initialdir=rdd,
+    path = fd.asksaveasfilename(title="Save MDC Fitted Data", initialdir=dpath,
                                 initialfile=name+"_mfit.npz", filetype=[("NPZ files", ".npz"),])
     if len(path) > 2:
         fwhm = res(smfi, fwhm)
@@ -4736,7 +5196,7 @@ def savemfit():
         smfp = res(smfi, smfp)
         fev = res(smfi, fev)
         smfi = res(smfi, smfi)
-        np.savez(path, path=rdd, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
+        np.savez(path, path=dpath, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
                  skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
 
 
@@ -7183,7 +7643,7 @@ def o_plot2(*e):
                 a[0].set_ylabel('Binding Energy (meV)',
                                 font='Arial', fontsize=14)
                 a[0].tick_params(direction='in')
-                a[0].scatter(x, (epos-vfe)*1000, c='black', s=5)
+                a[0].scatter(x, (vfe-epos)*1000, c='black', s=5)
 
                 a[1].set_xlabel(
                     r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
@@ -8424,7 +8884,7 @@ def exp(*e):
             a[0].set_ylabel('Binding Energy (meV))', font='Arial', fontsize=22)
             a[0].set_yticklabels(labels=a[0].get_yticklabels(), fontsize=20)
             a[0].tick_params(direction='in')
-            a[0].scatter(x, (epos-vfe)*1000, c='black', s=5)
+            a[0].scatter(x, (vfe-epos)*1000, c='black', s=5)
 
             a[1].set_xlabel(
                 r'Position ($\frac{2\pi}{\AA}$', font='Arial', fontsize=22)
@@ -9636,7 +10096,8 @@ if __name__ == '__main__':
                     print(_,':', data.attrs[_].replace('\n','\n              '))
             dvalue = [data.attrs[i] for i in data.attrs.keys()]
             lensmode = dvalue[8]
-            rdd = path
+            rdd = path  # old version data path
+            dpath = path    # new version data path
     except:
         print('No Raw Data preloaded')
 
@@ -9650,6 +10111,7 @@ if __name__ == '__main__':
             print('Bare Band file preloaded:')
             print(bpath+'\n')
     except:
+        bpath = ''
         print('No Bare Band file preloaded')
 
     try:
@@ -10250,10 +10712,14 @@ if __name__ == '__main__':
     # Cmin=tk.Scrollbar(cmin,orient='horizontal',bd=9,width=15)
     # Cmin.pack(fill='x')
 
-
-    ex = tk.Button(exf, fg='red', text='Export Graph', font=(
+    expf = tk.Frame(exf, bg='white')
+    expf.grid(row=1,column=0)
+    ex = tk.Button(expf, fg='red', text='Export Graph', font=(
         "Arial", 12, "bold"), height='1', command=exp, bd=9)
-    ex.grid(row=1, column=0)
+    ex.grid(row=0, column=0)
+    exo = tk.Button(expf, fg='blue', text='Export to Origin', font=(
+        "Arial", 12, "bold"), height='1', command=gui_exp_origin, bd=9)
+    exo.grid(row=0, column=1)
     extm = tk.Button(exf, text='Export MDC Fitted Data (k offset)', font=(
         "Arial", 12, "bold"), height='1', command=exptm, bd=9)
     extm.grid(row=2, column=0)
@@ -10267,7 +10733,7 @@ if __name__ == '__main__':
     tt.start()
     try:
         info.config(state='normal')
-        pr_load(data,path)
+        pr_load(data)
     except:
         pass
     ###### hotkey ######
@@ -10275,6 +10741,6 @@ if __name__ == '__main__':
     g.update_idletasks()
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
-    g.geometry(f"{screen_width}x{screen_height}+0+0")
+    g.geometry(f"{screen_width+50}x{screen_height}+0+0")
     g.update()
     g.mainloop()
