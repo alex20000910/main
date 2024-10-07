@@ -468,32 +468,34 @@ def gui_exp_origin():
     limg.config(image=img[np.random.randint(len(img))])
     gori=tk.Toplevel(g,bg='white')
     gori.title('Export to Origin')
+    l1=tk.Label(gori,text=f'{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.opj',font=('Arial', 10, "bold"),bg='white',wraplength=600)
+    l1.grid(row=0,column=0)
     b1=tk.Button(gori,text='Patch Origin',command=patch_origin, width=15, height=1, font=('Arial', 18, "bold"), bg='white', bd=5)
-    b1.grid(row=0,column=0)
+    b1.grid(row=1,column=0)
     fr=tk.Frame(gori,bg='white')
-    fr.grid(row=1,column=0)
+    fr.grid(row=2,column=0)
     pr_exp_origin()
     v1,v2,v3,v4,v5,v6,v7,v8,v9,v10=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
     c1=tk.Checkbutton(fr,text='E-Phi (Raw Data)',variable=v1,font=('Arial', 18, "bold"),bg='white')
-    c1.grid(row=0,column=0)
+    c1.grid(row=0,column=0,sticky='w')
     c2=tk.Checkbutton(fr,text='E-K (Processed Data)',variable=v2,font=('Arial', 18, "bold"),bg='white')
-    c2.grid(row=1,column=0)
+    c2.grid(row=1,column=0,sticky='w')
     c3=tk.Checkbutton(fr,text='MDC Fit Position',variable=v3,font=('Arial', 18, "bold"),bg='white')
-    c3.grid(row=2,column=0)
+    c3.grid(row=2,column=0,sticky='w')
     c4=tk.Checkbutton(fr,text='MDC Fit FWHM',variable=v4,font=('Arial', 18, "bold"),bg='white')
-    c4.grid(row=3,column=0)
+    c4.grid(row=3,column=0,sticky='w')
     c5=tk.Checkbutton(fr,text='EDC Fit Position',variable=v5,font=('Arial', 18, "bold"),bg='white')
-    c5.grid(row=4,column=0)
+    c5.grid(row=4,column=0,sticky='w')
     c6=tk.Checkbutton(fr,text='EDC Fit FWHM',variable=v6,font=('Arial', 18, "bold"),bg='white')
-    c6.grid(row=5,column=0)
+    c6.grid(row=5,column=0,sticky='w')
     c7=tk.Checkbutton(fr,text='Self Energy Real Part',variable=v7,font=('Arial', 18, "bold"),bg='white')
-    c7.grid(row=6,column=0)
+    c7.grid(row=6,column=0,sticky='w')
     c8=tk.Checkbutton(fr,text='Self Energy Imaginary Part',variable=v8,font=('Arial', 18, "bold"),bg='white')
-    c8.grid(row=7,column=0)
+    c8.grid(row=7,column=0,sticky='w')
     c9=tk.Checkbutton(fr,text='Data plot with pos',variable=v9,font=('Arial', 18, "bold"),bg='white')
-    c9.grid(row=8,column=0)
+    c9.grid(row=8,column=0,sticky='w')
     c10=tk.Checkbutton(fr,text='Data plot with pos & bare band',variable=v10,font=('Arial', 18, "bold"),bg='white')
-    c10.grid(row=9,column=0)
+    c10.grid(row=9,column=0,sticky='w')
     b2=tk.Button(fr,text='Export',command=exp_origin, width=15, height=1, font=('Arial', 18, "bold"), bg='white', bd=5)
     b2.grid(row=10,column=0)
     cl=[c1,c2,c3,c4,c5,c6,c7,c8,c9,c10]
@@ -727,8 +729,13 @@ else:
 tz = data.to_numpy()
 '''
     origin_temp_exec = r'''
-new()
+op.new()
+op.set_show(True)
 
+'''
+    origin_temp_save = r'''
+note()
+save()
 '''
     cl=[v1.get(),v2.get(),v3.get(),v4.get(),v5.get(),v6.get(),v7.get(),v8.get(),v9.get(),v10.get()]
     gori.destroy()
@@ -737,7 +744,7 @@ new()
             origin_temp_exec+=cmdlist[i]
         
     with open(cdir+r'\origin_temp.py', 'w', encoding='utf-8') as f:
-        f.write(origin_temp_var+origin_temp_func+origin_temp_exec+f'save()')
+        f.write(origin_temp_var+origin_temp_func+origin_temp_exec+origin_temp_save)
     f.close()
     def j():
         # os.system(f'code {cdir+r"\origin_temp.py"}')
@@ -834,9 +841,7 @@ def save():
         op.save(dpath.removesuffix('.txt').replace("/","\\")+'.opj')
 
 origin_temp_func = r'''
-def new():
-    op.new()
-    op.set_show(True)
+def note():
     nt=op.new_notes('Data Info')
     nt.syntax = 0   # Markdown; 0(Normal Text), 1(HTML), 2(Markdown), 3(Origin Rich Text)
     nt.view = 0    # Render Mode; 0(Text Mode), 1(Render Mode)
@@ -872,15 +877,13 @@ def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)
         )**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
         xlabel='k'
         xunit=r"2\g(p)Å\+(-1)"
-    if title=='Data plot with pos':
+    if 'Data plot with pos' in title:
         x1 = pos
         if emf=='KE':
             y1=fev
         else:
             y1= vfe-fev
     if title=='Data plot with pos & bare band':
-        x1 = pos
-        y1=vfe-fev
         x2 = k*bbk
         if emf=='KE':
             y2 = (be - np.float64(bbo))/1000+vfe
