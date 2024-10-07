@@ -449,12 +449,15 @@ def f_patch_origin():
         if '的目錄' in line or 'Directory of' in line:
             path = line.removeprefix('Directory of ')
             path = line.removesuffix(' 的目錄')
-            print(line)
-            print(path)
+            # print(line)
+            # print(path)
             path = path.removeprefix(" ")
             path = rf"{path}"
             path = rf"{path}{exe}"
-            os.popen(path)
+            if path.split('\\')[-2] != 'Crack':
+                ori_temp_path = path.removesuffix('\\'+path.split('\\')[-1])
+                print('Origin Path: '+ori_temp_path)
+                os.system(f"\"{path}\"")
     result.close()
     print('Patching OriginPro...Done')
     st.put('Patching OriginPro...Done')
@@ -668,10 +671,20 @@ def pr_exp_origin():
     except:
         no.append(7)
     try:
+        x1 = pos
+        if emf=='KE':
+            y1=np.float64(fev)
+        else:
+            y1= vfe-np.float64(fev)
         cmdlist[8]=f'''plot2d(title='Data plot with pos')\n'''
     except:
         no.append(8)
     try:
+        x2 = k*float(bbk_offset.get())
+        if emf=='KE':
+            y2 = (be - float(bb_offset.get()))/1000+vfe
+        else:
+            y2 = (-be + float(bb_offset.get()))/1000
         cmdlist[9]=f'''plot2d(title='Data plot with pos & bare band')\n'''
     except:
         no.append(9)
