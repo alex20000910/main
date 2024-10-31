@@ -10683,15 +10683,15 @@ if __name__ == '__main__':
     value1.trace_add('write', plot2)
     l_fit = tk.Label(frfit, text='Base counts:', font=(
         "Arial", 10, "bold"), bg="white", height='1', bd=5)
-    l_fit.grid(row=0, column=1)
+    # l_fit.grid(row=0, column=1)
     base = tk.StringVar()
     base.set('0')
     base.trace_add('write', fbase)
     in_fit = tk.Entry(frfit, font=("Arial", 10), width=5, textvariable=base, bd=5)
-    in_fit.grid(row=0, column=2)
+    # in_fit.grid(row=0, column=2)
     b_fit = tk.Button(frfit, text='Fit FWHM', font=(
         "Arial", 10, "bold"), bg="white", height='1', bd=5, command=fitgl)
-    b_fit.grid(row=0, column=3)
+    # b_fit.grid(row=0, column=3)
 
     optionList2 = ['Real & Imaginary', 'KK Transform Real & Imaginary', 'KK Transform Real Part', 'KK Transform Imaginary Part', 'KK Transform Real Part 2nd Derivative', 'KK Transform Imaginary Part 1st Derivative', 'Data Plot with Pos', 'Data Plot with Pos and Bare Band']   # 選項
     value2 = tk.StringVar()                                        # 取值
