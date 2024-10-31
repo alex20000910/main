@@ -88,7 +88,8 @@ fk = []
 fev = []
 # cdir = os.getcwd()
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-
+if os.name == 'nt':  # only execute on Windows OS
+    cdir = cdir[0].upper() + cdir[1:]
 
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
