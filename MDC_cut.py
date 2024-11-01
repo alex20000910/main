@@ -7464,19 +7464,25 @@ def o_bareband():
         bpath = file
         print('Loading...')
         st.put('Loading...')
-        t_k = []
-        t_ke = []
-        with open(file) as f:
-            for i, line in enumerate(f):
-                if i != 0:  # ignore 1st row data (index = 0)
-                    t_k.append(line.split('\t')[0])
-                    t_ke.append(line.split('\t')[1].replace('\n', ''))
+        # t_k = []
+        # t_ke = []
+        # with open(file) as f:
+        #     for i, line in enumerate(f):
+        #         if i != 0:  # ignore 1st row data (index = 0)
+        #             t_k.append(line.split('\t')[0])
+        #             t_ke.append(line.split('\t')[1].replace('\n', ''))
+        try:
+            d=np.loadtxt(file,delimiter='\t',encoding='utf-8',dtype=float,skiprows=1,usecols=(0,1))
+        except UnicodeError:
+            d=np.loadtxt(file,delimiter='\t',encoding='utf-16',dtype=float,skiprows=1,usecols=(0,1))
+        t_k = d[:,0]
+        t_ke = d[:,1]
         # [::-1] inverse the order for np.interp (xp values should be increasing)
         be = np.float64(t_ke)*1000
         # [::-1] inverse the order for np.interp (xp values should be increasing)
         k = np.float64(t_k)
         os.chdir(cdir)
-        np.savez('bb', path=file, be=be, k=k, bbo=0, bbk=1)
+        np.savez('bb', path=bpath, be=be, k=k, bbo=float(bb_offset.get()), bbk=float(bbk_offset.get()))
         limg.config(image=img[np.random.randint(len(img))])
         print('Done')
         st.put('Done')
@@ -10637,9 +10643,9 @@ if __name__ == '__main__':
 
     # plt.register_cmap('custom_cmap', custom_cmap)
     optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo',
-                'inferno', 'plasma', 'copper', 'grey', 'bwr']   # 選項
+                'inferno', 'plasma', 'copper', 'grey', 'bwr']
     cmp = plt.colormaps()
-    value3 = tk.StringVar()                                        # 取值
+    value3 = tk.StringVar()
     value3.set('prevac_cmap')
     value3.trace_add('write', chcmp)
     setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
