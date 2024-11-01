@@ -177,10 +177,10 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
 def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
     """
     Args:
-        path_to_file (str): _description_
+        path_to_file (str): File Path
 
     Returns:
-        xr.DataArray: _description_
+        xr.DataArray: shape=(len(eV), len(phi))
     """
     name=path_to_file.split('/')[-1].removesuffix('.txt')
     e = np.linspace(21.2-1,21.2+0.2,659)    #fix BE 1~-0.2
@@ -1310,8 +1310,44 @@ def send_to_clipboard(clip_type, data):
     win32clipboard.CloseClipboard()
 
 class spectrogram:
+    """A class to plot the spectrogram data in a new Tkinter Toplevel window.
+    This class creates a new Tkinter Toplevel window and populates it with
+    various widgets to display the spectrogram data and related information.
+    It includes two matplotlib figures for plotting, text widgets for displaying
+    file paths and additional information, labels for displaying energy, cursor,
+    and data values, and buttons for exporting data and copying images to the clipboard.
+    Attributes:
+        g (Tk): The Tkinter root window.
+        data (xarray.DataArray): The spectrogram data.
+        cmap (str): The colormap for plotting.
+        tp_cf (bool): The flag to check if the top window is closed.
+        dvalue (list): The list of data attributes.
+        tst (str): The string of data attributes.
+        lst (list): The list of lengths of the data attributes.
+        x (array-like): The x-axis data.
+        y (array-like): The y-axis data.
+        s_exp (str): The name of the exported data file.
+        s_exp_casa (str): The name of the exported data file for CASA.
+        s_yl (str): The y-axis label for the exported data file.
+        type (str): The type of data.
+    """
     
     def __init__(self, g, data, cmap) -> None:
+        """Initialize the spectrogram class.
+        
+        Args
+        -----------
+        g : object
+            A graphical user interface object.
+        data : xr.DataArray
+            The spectrogram data.
+        cmap : str
+            The colormap used for plotting.
+        
+        Returns
+        -----------
+        None
+        """
         self.g = g
         self.tp_cf = True
         self.data = data
@@ -1360,7 +1396,7 @@ class spectrogram:
         self.s_yl='Intensity (Counts)'
         self.type='raw'
         
-    def select_all(self, event):
+    def _select_all(self, event):
         event.widget.tag_add(tk.SEL, "1.0", tk.END)
         event.widget.mark_set(tk.INSERT, "1.0")
         event.widget.see(tk.INSERT)
@@ -1394,6 +1430,15 @@ class spectrogram:
         # self.g.update()  # now it stays on the clipboard after the window is closed
     
     def setdata(self, x, y, dtype='raw', unit='Counts'):
+        """Set the data for plotting.
+        Args:
+            x (list or array-like): The x-axis data.
+            y (list or array-like): The y-axis data.
+            dtype (str, optional): The type of data. Defaults to 'raw'.
+            unit (str, optional): The unit of the y-axis data. Defaults to 'Counts'.
+        Raises:
+            ValueError: If the length of x and y are not the same.
+        """
         self.x=x
         self.y=y
         self.type=dtype
@@ -1410,6 +1455,40 @@ class spectrogram:
             self.s_exp_casa=self.name+'_'+dtype+'_Casa.txt'
         
     def plot(self):
+        """Plot the spectrogram data in a new Tkinter Toplevel window.
+        This method creates a new Tkinter Toplevel window and populates it with
+        various widgets to display the spectrogram data and related information.
+        It includes two matplotlib figures for plotting, text widgets for displaying
+        file paths and additional information, labels for displaying energy, cursor,
+        and data values, and buttons for exporting data and copying images to the clipboard.
+        
+        Widgets:
+            - Toplevel window with title 'Spectrogram: <name>'
+            - Two matplotlib figures for plotting spectrogram data
+            - Text widget for displaying the file path
+            - Text widget for displaying additional information
+            - Labels for displaying energy, cursor, and data values
+            - Buttons for exporting raw data and copying images to the clipboard
+        Event Bindings:
+            - Motion notify event for matplotlib figures
+            - Button press event for matplotlib figures
+            - Button release event for matplotlib figures
+            - FocusIn event for the additional information text widget
+        Methods Called:
+            - __tp_move_
+            - __tp_press_
+            - __tp_release_
+            - __tp_move
+            - __tp_press
+            - __tp_release
+            - __export
+            - __export_casa
+            - __copy_to_clipboard
+            - __trans_plot_job
+        Note:
+            The method uses the Tkinter library for GUI components and matplotlib for plotting.
+        
+        """
         # global tpf,tpo,rpf,rpo,l_cx,l_cy,l_dy
         self.tpg = tk.Toplevel(self.g, bg='white')
         self.tpg.title('Spectrogram: '+self.name)
@@ -1444,7 +1523,7 @@ class spectrogram:
         
         self.info = tk.Text(fr_info, wrap='none', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled', height=10, width=30)
         self.info.grid(row=1, column=0)
-        self.info.bind("<FocusIn>", self.select_all)
+        self.info.bind("<FocusIn>", self._select_all)
         self.info.config(height=len(self.tst.split('\n')), width=max(self.lst)+1, state='normal')
         self.info.insert(tk.END, self.tst)
         self.info.see(tk.END)
