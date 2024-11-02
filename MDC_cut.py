@@ -1,4 +1,6 @@
 # MDC cut GUI
+__version__ = "4.3"
+__release_date__ = "2024-11-02"
 import os, inspect
 import json
 import tkinter as tk
@@ -957,7 +959,7 @@ def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], title='title', xlabel='x', ylabel='y', 
         g2.symbol_kind = 2
         g2.color = 'red'
         gr[0].label('yl').text = f'{ylabel} ({yunit})'
-    if xlabel=='Binding Energy' or xlabel==r"E-E\-(f)":
+    if xlabel=='Binding Energy':
         xlm=gr[0].xlim
         gr[0].set_xlim(xlm[1],xlm[0])
         gr[0].set_xlim(step=-1*float(xlm[2]))
@@ -7919,14 +7921,14 @@ def o_plot2(*e):
             ix = xx
             iy = yy
             a.tick_params(direction='in')
-            a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=14)
+            a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=14)
             a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=14)
 
             x = (vfe-fev)*1000
             y = fwhm
             b.plot(x, y, c='black', linestyle='-', marker='.')
             b.tick_params(direction='in')
-            b.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=14)
+            b.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=14)
             b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
                          font='Arial', fontsize=14)
             
@@ -8099,7 +8101,7 @@ def o_plot3(*e):
                 elif dl==2:
                     a.plot(tbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
                     a.plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-                a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=14)
+                a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=14)
                 a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
                 a.legend()
                 if dl==0:
@@ -8129,7 +8131,7 @@ def o_plot3(*e):
                         ax.plot(ttbe[0:-1], ty, c='black', label=r'Re $\Sigma$')
                     elif dl==2:
                         ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
-                    ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    ax.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=18)
                     ax.set_ylabel(r'$2^{nd} der. Re \Sigma$', font='Arial', fontsize=18)
                     ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
                     ax.set_yticks([0])
@@ -8145,7 +8147,7 @@ def o_plot3(*e):
                     elif dl==2:
                         ax.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
                         ax.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-                    ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    ax.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=18)
                     ax.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=18)
                     ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
                     ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
@@ -8165,7 +8167,7 @@ def o_plot3(*e):
                         ax.plot(ttbe[0:-1], ty, c='black', label=r'Im $\Sigma$')
                     elif dl==2:
                         ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-                    ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    ax.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=18)
                     ax.set_ylabel(r'$1^{st} der. Im \Sigma$', font='Arial', fontsize=18)
                     ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
                     ax.set_yticks([0])
@@ -8181,7 +8183,7 @@ def o_plot3(*e):
                     elif dl==2:
                         ax.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
                         ax.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
-                    ax.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=18)
+                    ax.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=18)
                     ax.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=18)
                     ax.set_xticklabels(ax.get_xticklabels(),fontsize=16)
                     ax.set_yticklabels(ax.get_yticklabels(),fontsize=16)
@@ -8202,7 +8204,7 @@ def o_plot3(*e):
             # a.plot(rx, ry, c='black', linestyle='-',
             #        marker='.', label=r'Re $\Sigma$')
             # a.tick_params(direction='in')
-            # a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=14)
+            # a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=14)
             # a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=14)
 
             
@@ -9140,7 +9142,7 @@ def exp(*e):
             ix = xx
             iy = yy
             a.tick_params(direction='in')
-            a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
+            a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=22)
             a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
             a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=22)
             a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
@@ -9149,7 +9151,7 @@ def exp(*e):
             y = fwhm
             b.plot(x, y, c='black', linestyle='-', marker='.')
             b.tick_params(direction='in')
-            b.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
+            b.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=22)
             b.set_xticklabels(labels=b.get_xticklabels(), fontsize=20)
             b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
                          font='Arial', fontsize=22)
@@ -9277,7 +9279,7 @@ def exp(*e):
                         a.plot(ttbe[0:-1], ty, c='black', label=r'Re $\Sigma$')
                     elif dl==2:
                         a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
-                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
+                    a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=22)
                     a.set_ylabel(r'$2^{nd} der. Re \Sigma$', font='Arial', fontsize=22)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=20)
                     a.set_yticks([0])
@@ -9293,7 +9295,7 @@ def exp(*e):
                     elif dl==2:
                         a.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
                         a.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
+                    a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=22)
                     a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=22)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=20)
                     a.set_yticklabels(a.get_yticklabels(),fontsize=20)
@@ -9313,7 +9315,7 @@ def exp(*e):
                         a.plot(ttbe[0:-1], ty, c='black', label=r'Im $\Sigma$')
                     elif dl==2:
                         a.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
+                    a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=22)
                     a.set_ylabel(r'$1^{st} der. Im \Sigma$', font='Arial', fontsize=22)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=20)
                     a.set_yticks([0])
@@ -9329,7 +9331,7 @@ def exp(*e):
                     elif dl==2:
                         a.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
                         a.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
-                    a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
+                    a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=22)
                     a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=22)
                     a.set_xticklabels(a.get_xticklabels(),fontsize=20)
                     a.set_yticklabels(a.get_yticklabels(),fontsize=20)
@@ -9345,7 +9347,7 @@ def exp(*e):
             # a.plot(rx, ry, c='black', linestyle='-',
             #        marker='.', label=r'Re $\Sigma$')
             # a.tick_params(direction='in')
-            # a.set_xlabel(r'$E-E_F$ (meV)', font='Arial', fontsize=22)
+            # a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=22)
             # a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=22)
 
             # tbe = (vfe-fev)*1000
@@ -10920,6 +10922,9 @@ if __name__ == '__main__':
         pr_load(data)
     except:
         pass
+    print(f"Version: {__version__}")
+    print(f"Release Date: {__release_date__}\n")
+    st.put(f"Version: {__version__}")
     ###### hotkey ######
     g.bind('<Return>', plot)
     g.update_idletasks()
