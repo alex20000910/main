@@ -7254,7 +7254,10 @@ def fitm():
         mvv[i] = v
         maa1[i, :] = a1
         maa2[i, :] = a2
-        smresult[i, :]=smr
+        try:    
+            smresult[i, :]=smr
+        except:
+            pass
         pbar.update(1)
         # print('MDC '+str(round((i+1)/len(ev)*100))+'%'+' ('+str(len(ev))+')')
         # st.put('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
