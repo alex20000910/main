@@ -7254,7 +7254,7 @@ def fitm():
         mvv[i] = v
         maa1[i, :] = a1
         maa2[i, :] = a2
-        try:    
+        try:
             smresult[i, :]=smr
         except:
             pass
