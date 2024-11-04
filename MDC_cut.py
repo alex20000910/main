@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.3"
-__release_date__ = "2024-11-02"
+__version__ = "4.4"
+__release_date__ = "2024-11-04"
 import os, inspect
 import json
 import tkinter as tk
@@ -13,6 +13,7 @@ import warnings
 import sys
 from ctypes import windll
 import re
+import copy
 def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
@@ -3538,7 +3539,8 @@ def toa1():
     return a1
 
 
-def toa2():
+def toa2(xx):
+    global fswa1a2
     a2 = []
     a2.append(result.params['x1'].value)
     a2.append(result.params['h1'].value)
@@ -3548,7 +3550,40 @@ def toa2():
     a2.append(result.params['h2'].value)
     a2.append(result.params['w2'].value)
     a2.append(result.params['y2'].value)
+    
+    fswa1a2 = 0
+    i = mfiti.get()
+    
+    fmxx[i, :len(xx)] = xx
+    x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+    ty = gl1(x, *a2[:4])
+    s1 = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
+            # Area 1
+            * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)])))
+    ty = gl1(x, *a2[-4:])
+    s2 = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
+            # Area 2
+            * np.array(([(x[i+1]-x[i])for i in range(len(x)-1)])))
+    if s1 < s2:
+        t1, t2 = a2[:4], a2[-4:]
+        a2 = np.array([t2, t1]).flatten()
+        fswa1a2 = 1
     return a2
+
+
+def swapc1c2():
+    i = mfiti.get()
+    if mfp[i] == 2 and fswa1a2 == 1:
+        o_result = copy.deepcopy(result)
+        a1=['x1', 'h1', 'w1', 'y1']
+        a2=['x2', 'h2', 'w2', 'y2']
+        for i in range(4):
+            if o_result.params[a2[i]].expr is not None:
+                if a1[i] in o_result.params[a2[i]].expr:
+                    o_result.params[a2[i]].set(expr=o_result.params[a2[i]].expr.replace(a1[i], a2[i]))
+            result.params[a1[i]].set(value=o_result.params[a2[i]].value, min=o_result.params[a2[i]].min, max=o_result.params[a2[i]].max, expr=o_result.params[a2[i]].expr, brute_step=o_result.params[a2[i]].brute_step, vary=o_result.params[a2[i]].vary)
+            result.params[a2[i]].set(value=o_result.params[a1[i]].value, min=o_result.params[a1[i]].min, max=o_result.params[a1[i]].max, expr=o_result.params[a1[i]].expr, brute_step=o_result.params[a1[i]].brute_step, vary=o_result.params[a1[i]].vary)
+    return result
 
 
 fit_warn = 0
@@ -3643,13 +3678,25 @@ def fitpar2(result, lm1, lm2, lm3, lm4, lm5, lm6):
                 i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1+'+str(xr2))
             else:
                 i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1-'+str(-xr2))
+        if 'x2*xr1+xr2' in i:
+            if xr2>=0:
+                i = i.replace(' == \'x2*xr1+xr2\'', '='+str(xr1)+'*x2+'+str(xr2))
+            else:
+                i = i.replace(' == \'x2*xr1+xr2\'', '='+str(xr1)+'*x2-'+str(-xr2))
         if "(x2-xr2) / xr1" in i:
             if xr2>=0:
                 i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2-'+str(xr2) + ')/'+str(xr1))
             else:
                 i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2+'+str(-xr2) + ')/'+str(xr1))
+        if "(x1-xr2) / xr1" in i:
+            if xr2>=0:
+                i = i.replace(' == \'(x1-xr2) / xr1\'','=(x1-'+str(xr2) + ')/'+str(xr1))
+            else:
+                i = i.replace(' == \'(x1-xr2) / xr1\'','=(x1+'+str(-xr2) + ')/'+str(xr1))
         if 'w1/wr1*wr2' in i:
             i = i.replace(' == \'w1/wr1*wr2\'', '=w1/'+str(wr1)+'*'+str(wr2))
+        if 'w2/wr1*wr2' in i:
+            i = i.replace(' == \'w2/wr1*wr2\'', '=w2/'+str(wr1)+'*'+str(wr2))
         if 'x1:' in i:
             x1 = i
         if 'x2:' in i:
@@ -3844,13 +3891,13 @@ def efitjob():
                         fitter = Minimizer(
                             fgl2, pars, fcn_args=(xx, yy-shirley_bg(yy)))
                         result = fitter.minimize()
-                        a2 = toa2()
+                        a2 = toa2(xx)
                         checkfit()
                         if fit_warn == 1:
                             t = 5
                             while t > 0 and fit_warn == 1:
                                 result = fitter.minimize()
-                                a2 = toa2()
+                                a2 = toa2(xx)
                                 checkfit()
                                 t -= 1
                         # p0=[emin[i]+(emax[i]-emin[i])*0.3,(np.max(y)-ebase[i])+1,1,0,emax[i]-(emax[i]-emin[i])*0.3,(np.max(y)-ebase[i])+1,1,0]
@@ -3945,13 +3992,13 @@ def efit():
             pars.add('y2', value=0, vary=False)
             fitter = Minimizer(fgl2, pars, fcn_args=(xx, yy-shirley_bg(yy)))
             result = fitter.minimize()
-            a2 = toa2()
+            a2 = toa2(xx)
             checkfit()
             if fit_warn == 1:
                 t = 5
                 while t > 0 and fit_warn == 1:
                     result = fitter.minimize()
-                    a2 = toa2()
+                    a2 = toa2(xx)
                     checkfit()
                     t -= 1
             report_fit(result)
@@ -4698,14 +4745,26 @@ def pack_fitpar(mresult):
                             i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1+'+str(xr2))
                         else:
                             i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1-'+str(-xr2))
+                    if 'x2*xr1+xr2' in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'x2*xr1+xr2\'', '='+str(xr1)+'*x2+'+str(xr2))
+                        else:
+                            i = i.replace(' == \'x2*xr1+xr2\'', '='+str(xr1)+'*x2-'+str(-xr2))
                     if "(x2-xr2) / xr1" in i:
                         if xr2>=0:
                             i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2-'+str(xr2) + ')/'+str(xr1))
                         else:
                             i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2+'+str(-xr2) + ')/'+str(xr1))
+                    if "(x1-xr2) / xr1" in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'(x1-xr2) / xr1\'','=(x1-'+str(xr2) + ')/'+str(xr1))
+                        else:
+                            i = i.replace(' == \'(x1-xr2) / xr1\'','=(x1+'+str(-xr2) + ')/'+str(xr1))
                     if 'w1/wr1*wr2' in i:
                         i = i.replace(' == \'w1/wr1*wr2\'', '=w1/'+str(wr1)+'*'+str(wr2))
-                    
+                    if 'w2/wr1*wr2' in i:
+                        i = i.replace(' == \'w2/wr1*wr2\'', '=w2/'+str(wr1)+'*'+str(wr2))
+                        
                     '''assign the values to the labels'''
                     if 'x:' in i:
                         o[ii][0]=i
@@ -4750,14 +4809,26 @@ def pack_fitpar(mresult):
                             i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1+'+str(xr2))
                         else:
                             i = i.replace(' == \'x1*xr1+xr2\'', '='+str(xr1)+'*x1-'+str(-xr2))
+                    if 'x2*xr1+xr2' in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'x2*xr1+xr2\'', '='+str(xr1)+'*x2+'+str(xr2))
+                        else:
+                            i = i.replace(' == \'x2*xr1+xr2\'', '='+str(xr1)+'*x2-'+str(-xr2))
                     if "(x2-xr2) / xr1" in i:
                         if xr2>=0:
                             i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2-'+str(xr2) + ')/'+str(xr1))
                         else:
                             i = i.replace(' == \'(x2-xr2) / xr1\'','=(x2+'+str(-xr2) + ')/'+str(xr1))
+                    if "(x1-xr2) / xr1" in i:
+                        if xr2>=0:
+                            i = i.replace(' == \'(x1-xr2) / xr1\'','=(x1-'+str(xr2) + ')/'+str(xr1))
+                        else:
+                            i = i.replace(' == \'(x1-xr2) / xr1\'','=(x1+'+str(-xr2) + ')/'+str(xr1))
                     if 'w1/wr1*wr2' in i:
                         i = i.replace(' == \'w1/wr1*wr2\'', '=w1/'+str(wr1)+'*'+str(wr2))
-                    
+                    if 'w2/wr1*wr2' in i:
+                        i = i.replace(' == \'w2/wr1*wr2\'', '=w2/'+str(wr1)+'*'+str(wr2))
+                        
                     '''assign the values to the labels'''
                     if 'x:' in i:
                         o[ii].append(i)
@@ -4905,13 +4976,13 @@ def mfitjob():
                         fitter = Minimizer(
                             fgl2, pars, fcn_args=(xx, yy-lnr_bg(yy)))
                         result = fitter.minimize()
-                    a2 = toa2()
+                    a2 = toa2(xx)
                     checkfit()
                     if fit_warn == 1:
                         t = 5
                         while t > 0 and fit_warn == 1:
                             result = fitter.minimize()
-                            a2 = toa2()
+                            a2 = toa2(xx)
                             checkfit()
                             t -= 1
                     # p0=[kmin[i]+(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0,kmax[i]-(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0]
@@ -4958,19 +5029,20 @@ def mfitjob():
                             fitter = Minimizer(
                                 fgl2, pars, fcn_args=(xx, yy-lnr_bg(yy)))
                             result = fitter.minimize()
-                        a2 = toa2()
+                        a2 = toa2(xx)
                         checkfit()
                         if fit_warn == 1:
                             t = 5
                             while t > 0 and fit_warn == 1:
                                 result = fitter.minimize()
-                                a2 = toa2()
+                                a2 = toa2(xx)
                                 checkfit()
                                 t -= 1
                     else:
                         fit_warn = 0
             try:
                 '''using lmfit'''
+                result=swapc1c2()
                 mresult[i] = result
                 result = []
             except:
@@ -5081,7 +5153,7 @@ def mfit():
                 t = 5
                 while t > 0 and fit_warn == 1:
                     result = fitter.minimize()
-                    a2 = toa2()
+                    a1 = toa1()
                     checkfit()
                     t -= 1
         elif mfp[i] == 2:
@@ -5152,16 +5224,17 @@ def mfit():
             else:
                 fitter = Minimizer(fgl2, pars, fcn_args=(xx, yy-lnr_bg(yy)))
                 result = fitter.minimize()
-            a2 = toa2()
+            a2 = toa2(xx)
             checkfit()
             if fit_warn == 1:
                 t = 5
                 while t > 0 and fit_warn == 1:
                     result = fitter.minimize()
-                    a2 = toa2()
+                    a2 = toa2(xx)
                     checkfit()
                     t -= 1
         report_fit(result)
+        result=swapc1c2()
         mresult[i] = result
         # p0=[kmin[i]+(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0,kmax[i]-(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0]
         # a2,b=curve_fit(gl2,xx,yy-lnr_bg(yy),p0=p0,bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0,kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01,kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
@@ -5249,7 +5322,7 @@ def msave_state():
 
 def mundo():
     if mundo_stack:
-        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, smcst, mfi_err
+        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, smcst, mfi_err, fdo
         # 從撤銷堆疊中彈出上一個狀態並恢復，並將當前狀態推入重做堆疊
         state = mundo_stack.pop()
         smresult = pack_fitpar(mresult)
@@ -5275,6 +5348,7 @@ def mundo():
         mfi_err = state['mfi_err']
         mst.put("Undo")
         print("Undo")
+        fdo=1
         mfitplot()
     else:
         mst.put("No more actions to undo.")
@@ -5282,7 +5356,7 @@ def mundo():
 
 def mredo():
     if mredo_stack:
-        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, smcst, mfi_err
+        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, smcst, mfi_err, fdo
         # 從重做堆疊中彈出上一個狀態並恢復，並將當前狀態推入撤銷堆疊
         state = mredo_stack.pop()
         smresult = pack_fitpar(mresult)
@@ -5308,6 +5382,7 @@ def mredo():
         mfi_err = state['mfi_err']
         mst.put("Redo")
         print("Redo")
+        fdo=1
         mfitplot()
     else:
         mst.put("No more actions to redo.")
@@ -5800,19 +5875,20 @@ def func_cki():
 
 
 def fchki(*e):
-    global mfitout, mdxdata, mdydata, mbcomp1, mbcomp2, mbgv
+    global mfitout, mdxdata, mdydata, mbcomp1, mbcomp2, mbgv, flmcomp1, flmcomp2
     i = mfiti.get()
     mbgv = 0
     try:
+        flmcomp1,flmcomp2 = -1, -1
         mfitout.get_tk_widget().delete('rec')
         mdxdata.config(text='dx:')
         mdydata.config(text='dy:')
         if mfp[i] == 2:
-            mbcomp1.config(state='active')
-            mbcomp2.config(state='active')
+            mbcomp1.config(state='active', bg='white')
+            mbcomp2.config(state='active', bg='white')
         else:
-            mbcomp1.config(state='disabled')
-            mbcomp2.config(state='disabled')
+            mbcomp1.config(state='disabled', bg='white')
+            mbcomp2.config(state='disabled', bg='white')
     except:
         pass
     mfitplot()
@@ -6206,7 +6282,7 @@ def f_pr():
 
 
 def mfitplot():  # mfiti Scale
-    global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6, mxf1, mxf2, mwf1, mwf2, maf1, maf2, mt1, mt2, mt3, mt4, mt5
+    global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6, mxf1, mxf2, mwf1, mwf2, maf1, maf2, mt1, mt2, mt3, mt4, mt5, fdo, mf_prswap
     i = mfiti.get()
     mfitfig.clear()
     mfitax = mfitfig.subplots()
@@ -6365,7 +6441,16 @@ def mfitplot():  # mfiti Scale
             except:
                 pass
             try:
-                fitpar2(mresult[i], lm1, lm2, lm3, lm4, lm5, lm6)
+                if fdo==0 or i not in mf_prswap:
+                    fitpar2(mresult[i], lm1, lm2, lm3, lm4, lm5, lm6)
+                else:
+                    mresult[i]=smresult[i]
+                    fdo=0
+                    try:
+                        if mf_prswap:
+                            mf_prswap.remove(i)
+                    except:
+                        pass
             except:
                 pass
     mfitax.plot(fmxx[i, np.argwhere(fmxx[i, :] >= -20)], lbg, 'g--')
@@ -6777,11 +6862,11 @@ def fmposcst():
 
 
 def mjob():     # MDC Fitting GUI
-    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mprf, mpr, b_pr, mbgv
+    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mprf, mpr, b_pr, mbgv, fdo
     mgg = tk.Toplevel(g, bg='white')
     mgg.geometry(f"1900x1000+0+0")
     mgg.title('MDC Lorentz Fit')
-    
+    fdo=0
     mpr=0   #button flag 1:ON 0:OFF initial 0:OFF
     # b_pr = tk.Button(mgg, text='Real Time Preview ON', command=f_pr, width=20, height=2, font=('Arial', 12, "bold"), bg='white')
     # b_pr.grid(row=0, column=0)
@@ -7063,10 +7148,11 @@ mprfit = 0
 
 
 def fitm():
-    global ev, phi, data, mvv, maa1, maa2, fmxx, fmyy, fmx, fmy, kmin, kmax, cki, mbase, mprfit
+    global ev, phi, data, mvv, maa1, maa2, fmxx, fmyy, fmx, fmy, kmin, kmax, cki, mbase, mprfit, mf_prswap, smresult
     mprfit = 0
     cki = []
     mbase = [0 for i in range(len(ev))]
+    mf_prswap = []
 
     if fpr == 1:
         try:
@@ -7107,18 +7193,50 @@ def fitm():
             if i in smfi and fpr == 1:
                 a1 = smaa1[i, :]
                 a2 = smaa2[i, :]
+                smrx1 = smresult[i, 0]
+                smrx2 = smresult[i, 1]
+                smrh1 = smresult[i, 2]
+                smrh2 = smresult[i, 3]
+                smrw1 = smresult[i, 4]
+                smrw2 = smresult[i, 5]
                 if smaa1[i, 1] == 10 or smaa2[i, 1] == 10:
                     mprfit = 1
+                else:
+                    fmxx[i, :len(xx)] = xx
+                    tx = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+                    ty = gl1(tx, *a2[:4])
+                    s1 = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(tx)-1)])
+                            # Area 1
+                            * np.array(([(tx[i+1]-tx[i])for i in range(len(tx)-1)])))
+                    ty = gl1(tx, *a2[-4:])
+                    s2 = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(tx)-1)])
+                            # Area 2
+                            * np.array(([(tx[i+1]-tx[i])for i in range(len(tx)-1)])))
+                    if s1 < s2:
+                        t1, t2 = a2[:4], a2[-4:]
+                        a2 = np.array([t2, t1]).flatten()
+                        mf_prswap.append(i)
+                        smrx1 = smrx1.replace('x2', 'x1').replace('x1:', 'x2:')
+                        smrx2 = smrx2.replace('x1', 'x2').replace('x2:', 'x1:')
+                        smrh1 = smrh1.replace('h1:', 'h2:')
+                        smrh2 = smrh2.replace('h2:', 'h1:')
+                        smrw1 = smrw1.replace('w1:', 'w2:').replace('w2', 'w1')
+                        smrw2 = smrw2.replace('w2:', 'w1:').replace('w1', 'w2')
+                        smr = np.array([smrx2,smrx1,smrh2,smrh1,smrw2,smrw1]).flatten()
+                    else:
+                        smr = np.array([smrx1,smrx2,smrh1,smrh2,smrw1,smrw2]).flatten()
             else:
                 a1 = [(kmin[i]+kmax[i])/2, (np.max(y) -
                                             int(base.get())), 0.5, int(base.get())]
                 a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-int(base.get())), 0.5, int(base.get()),
                       (kmin[i]+kmax[i])/2, (np.max(y)-int(base.get())), 5, int(base.get())]
+                smr = ['' for i in range(6)]
         except:
             a1 = [(kmin[i]+kmax[i])/2, (np.max(y) -
                                         int(base.get())), 0.5, int(base.get())]
             a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-int(base.get())), 0.5, int(base.get()),
                   (kmin[i]+kmax[i])/2, (np.max(y)-int(base.get())), 0.5, int(base.get())]
+            smr = ['' for i in range(6)]
 
         # try:
         #     a,b=curve_fit(gl1,xx,yy,bounds=([kmin[i],(np.max(y)-int(base.get()))/10,0,0],[kmax[i],np.max(y)-int(base.get())+1,0.3,0.01]))
@@ -7136,6 +7254,7 @@ def fitm():
         mvv[i] = v
         maa1[i, :] = a1
         maa2[i, :] = a2
+        smresult[i, :]=smr
         pbar.update(1)
         # print('MDC '+str(round((i+1)/len(ev)*100))+'%'+' ('+str(len(ev))+')')
         # st.put('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
