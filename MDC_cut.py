@@ -77,7 +77,8 @@ try:
     import win32clipboard
 except ModuleNotFoundError:
     install('pywin32')
-    import win32clipboard
+    os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+    quit()
 try:
     import originpro as op
 except ModuleNotFoundError:
@@ -475,7 +476,7 @@ def gui_exp_origin():
     limg.config(image=img[np.random.randint(len(img))])
     gori=tk.Toplevel(g,bg='white')
     gori.title('Export to Origin')
-    l1=tk.Label(gori,text=f'{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.opj',font=('Arial', 10, "bold"),bg='white',wraplength=600)
+    l1=tk.Label(gori,text=f"{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.opj",font=('Arial', 10, "bold"),bg='white',wraplength=600)
     l1.grid(row=0,column=0)
     b1=tk.Button(gori,text='Patch Origin',command=patch_origin, width=15, height=1, font=('Arial', 18, "bold"), bg='white', bd=5)
     b1.grid(row=1,column=0)
@@ -767,8 +768,9 @@ save()
         # os.system(f'code {cdir+r"\origin_temp.py"}')
         limg.config(image=img[np.random.randint(len(img))])
         st.put('Exporting to Origin...')
-        os.system(f'python "{cdir+r"\origin_temp.py"}"')
-        os.system(f'del "{cdir+r"\origin_temp.py"}"')
+        temp=r"\origin_temp.py"
+        os.system(f'python "{cdir+temp}"')
+        os.system(f'del "{cdir+temp}"')
         limg.config(image=img[np.random.randint(len(img))])
         st.put('Exported to Origin')
     threading.Thread(target=j,daemon=True).start()
@@ -1595,19 +1597,19 @@ class spectrogram:
         for i in range(len(self.dvalue)):
             if i!=len(self.dvalue)-1:
                 if key[i]=='Step Time':
-                    f.write(f'{key[i]}={int(float(self.dvalue[i].replace(' s',''))*1000)}\n')
+                    f.write(f"{key[i]}={int(float(self.dvalue[i].replace(' s',''))*1000)}\n")
                 elif key[i]=='Pass Energy':
-                    f.write(f'{key[i]}={int(float(self.dvalue[i].replace(' eV','')))}\n')
+                    f.write(f"{key[i]}={int(float(self.dvalue[i].replace(' eV','')))}\n")
                 elif key[i]=='Energy Scale' and self.e_mode=='Binding':
-                    f.write(f'{key[i]}=Kinetic\n')
+                    f.write(f"{key[i]}=Kinetic\n")
                 elif key[i]=='Low Energy' and self.e_mode=='Binding':
-                    f.write(f'{key[i]}={21.2-float(self.dvalue[5].replace(' eV','').replace(' (B.E.)',''))}\n')
+                    f.write(f"{key[i]}={21.2-float(self.dvalue[5].replace(' eV','').replace(' (B.E.)',''))}\n")
                 elif key[i]=='High Energy' and self.e_mode=='Binding':
-                    f.write(f'{key[i]}={21.2-float(self.dvalue[6].replace(' eV','').replace(' (B.E.)',''))}\n')
+                    f.write(f"{key[i]}={21.2-float(self.dvalue[6].replace(' eV','').replace(' (B.E.)',''))}\n")
                 else:
-                    f.write(f'{key[i]}={self.dvalue[i].replace(' eV','').replace(' (K.E.)','')}\n')
+                    f.write(f"{key[i]}={self.dvalue[i].replace(' eV','').replace(' (K.E.)','')}\n")
             else:
-                f.write(f'{key[i]}={self.dvalue[i]}\n') 
+                f.write(f"{key[i]}={self.dvalue[i]}\n") 
         f.write(f'Detector First X-Channel=0\n'+
                 f'Detector Last X-Channel=0\n'+
                 f'Detector First Y-Channel=0\n'+
