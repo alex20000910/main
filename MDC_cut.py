@@ -190,15 +190,15 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
     # e = np.linspace(21.2-2,21.2+1,284)     #scan BE 2~-1
     a = np.linspace(-10,10,494)     #A20
     description='SKNET'
-    e_low = np.min(np.float64(e))
-    e_high = np.max(np.float64(e))
+    e_low = str(np.min(np.float64(e)))+ ' eV (K.E.)'
+    e_high = str(np.max(np.float64(e)))+ ' eV (K.E.)'
     e_photon = 21.2
     #   attrs
     e_mode = 'Kinetic'
     LensMode = 'Unknown'
     PassEnergy = 'Unknown'
     Dwell = 'Unknown'
-    CenterEnergy = np.average(np.float64(e))
+    CenterEnergy = str(np.average(np.float64(e)))+ ' eV (K.E.)'
     Iterations = 'Unknown'
     Step = abs(e[1]-e[0])
     Slit = 'Unknown'
@@ -215,7 +215,7 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
                                                                  'LensMode': LensMode,
                                                                  'PassEnergy': str(PassEnergy)+' eV',
                                                                  'Slit': Slit,
-                                                                 'Dwell': str(Dwell)+' s',
+                                                                 'Dwell': Dwell,
                                                                  'Iterations': Iterations,
                                                                  'Description': description,
                                                                  'Path': path_to_file
