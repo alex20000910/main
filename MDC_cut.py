@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.4"
-__release_date__ = "2024-11-04"
+__version__ = "4.4.1"
+__release_date__ = "2024-11-07"
 import os, inspect
 import json
 import tkinter as tk
