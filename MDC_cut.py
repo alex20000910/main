@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.4.1"
-__release_date__ = "2024-11-07"
+__version__ = "4.4.2"
+__release_date__ = "2024-11-19"
 import os, inspect
 import json
 import tkinter as tk
@@ -7720,9 +7720,9 @@ def o_plot1(*e):
         if value.get() == 'Raw Data':
             rplot(fig, out)
         else:
-            if value.get() == 'First Derivative':
+            if value.get() == 'First Derivative':   #axis: phi
                 ao = fig.subplots()
-                pz = np.diff(data.to_numpy())/np.diff(phi)
+                pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
                 if emf=='KE':
                     px, py = np.meshgrid(phi[0:-1], ev)
                 else:
@@ -7733,10 +7733,24 @@ def o_plot1(*e):
                 cb = fig.colorbar(h0)
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
                 
-            elif value.get() == 'Second Derivative':
+            # if value.get() == 'First Derivative':    #axis: eV
+            #     ao = fig.subplots()
+            #     pz = np.diff(smooth(data.to_numpy().transpose()))/np.diff(ev)
+            #     pz = pz.transpose()
+            #     if emf=='KE':
+            #         px, py = np.meshgrid(phi, ev[0:-1])
+            #     else:
+            #         px, py = np.meshgrid(phi, vfe-ev[0:-1])
+            #     px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-1])], dtype=float), ev[0:-1]+np.diff(ev)/2*2)*1.6*10**-19).transpose(
+            #     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+            #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
+            #     cb = fig.colorbar(h0)
+            #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
+            
+            elif value.get() == 'Second Derivative':    #axis: phi
                 ao = fig.subplots()
-                pz = np.diff(data.to_numpy())/np.diff(phi)
-                pz = np.diff(pz)/np.diff(phi[0:-1])
+                pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
+                pz = -np.diff(smooth(pz))/np.diff(phi[0:-1])
                 if emf=='KE':
                     px, py = np.meshgrid(phi[0:-2], ev)
                 else:
@@ -7746,6 +7760,21 @@ def o_plot1(*e):
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                
+            # elif value.get() == 'Second Derivative':    #axis: eV
+            #     ao = fig.subplots()
+            #     pz = np.diff(smooth(data.to_numpy().transpose()))/np.diff(ev)
+            #     pz = -np.diff(smooth(pz))/np.diff(ev[0:-1])
+            #     pz = pz.transpose()
+            #     if emf=='KE':
+            #         px, py = np.meshgrid(phi, ev[0:-2])
+            #     else:
+            #         px, py = np.meshgrid(phi, vfe-ev[0:-2])
+            #     px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.6*10**-19).transpose(
+            #     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+            #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
+            #     cb = fig.colorbar(h0)
+            #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
                 
             else:
                 if 'MDC Curves' not in value.get():
@@ -8925,7 +8954,7 @@ def exp(*e):
                 snap_values=n[1]
             ))
         elif value.get() == 'First Derivative':
-            pz = np.diff(data.to_numpy())/np.diff(phi)
+            pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
             if emf=='KE':
                 px, py = np.meshgrid(phi[0:-1], ev)
             else:
@@ -8961,8 +8990,8 @@ def exp(*e):
                 snap_values=n[1]
             ))
         elif value.get() == 'Second Derivative':
-            pz = np.diff(data.to_numpy())/np.diff(phi)
-            pz = np.diff(pz)/np.diff(phi[0:-1])
+            pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
+            pz = -np.diff(smooth(pz))/np.diff(phi[0:-1])
             if emf=='KE':
                 px, py = np.meshgrid(phi[0:-2], ev)
             else:
