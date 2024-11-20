@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.4.2"
-__release_date__ = "2024-11-19"
+__version__ = "4.5"
+__release_date__ = "2024-11-20"
 import os, inspect
 import json
 import tkinter as tk
@@ -84,6 +84,13 @@ try:
 except ModuleNotFoundError:
     install('originpro')
     import originpro as op
+try:
+    import cv2
+except ModuleNotFoundError:
+    install('opencv-python')
+    import cv2
+    os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+    quit()
 
 h=6.62607015*10**-34
 m=9.10938356*10**-31
@@ -7695,8 +7702,44 @@ def o_bareband():
         limg.config(image=img[np.random.randint(len(img))])
         print('No file selected')
         st.put('No file selected')
-    
+        
+def im_smooth(data, kernel_size=17):
+    return cv2.GaussianBlur(data, (kernel_size, kernel_size), 0)
 
+def laplacian_operation(data):
+    return -cv2.Laplacian(data, cv2.CV_64F)
+
+def laplacian_filter(data):
+    im=im_smooth(data, im_kernel)
+    laplacian=laplacian_operation(im)
+    return laplacian
+
+def sdgd_filter(data, phi, ev):
+    # not used
+    
+    # 計算數據的梯度
+    grad_phi = np.diff(smooth(data))/np.diff(phi)
+    grad_ev = np.diff(smooth(data.transpose(),l=40))/np.diff(ev)
+    grad_ev = grad_ev.transpose()
+
+    # 計算梯度方向
+    # magnitude = np.sqrt(grad_phi**2 + grad_ev**2)
+    # direction = np.arctan2(grad_ev, grad_phi)
+
+    # 計算梯度方向上的二階導數
+    grad_phi_phi = np.diff(smooth(grad_phi))/np.diff(phi[0:-1])
+    grad_ev_ev = np.diff(smooth(grad_ev.transpose(),l=40))/np.diff(ev[0:-1])
+    grad_ev_ev = grad_ev_ev.transpose()
+    grad_phi_ev = np.diff(smooth(grad_phi.transpose(),l=40))/np.diff(ev)
+    grad_phi_ev = grad_phi_ev.transpose()
+    a=grad_phi_phi[0:-2,:]*grad_phi[0:-2,0:-1]**2
+    b=2*grad_phi_ev[0:-1,0:-1]*grad_phi[0:-2,0:-1]*grad_ev[0:-1,0:-2]
+    c=grad_ev_ev[:,0:-2]*grad_ev[0:-1,0:-2]**2
+    # 計算 SDGD
+    sdgd = -(a + b + c)/(grad_phi[0:-2,0:-1]**2 + grad_ev[0:-1,0:-2]**2)
+    # sdgd = grad_phi_phi[0:-2,:]
+    # sdgd = -grad_ev_ev[:,0:-2]
+    return sdgd
 
 def o_plot1(*e):
     global value, value1, value2, data, ev, phi, mfpath, fig, out, pflag, k_offset, value3, limg, img, optionList, h0, ao, xl, yl, st
@@ -7741,37 +7784,61 @@ def o_plot1(*e):
             #         px, py = np.meshgrid(phi, ev[0:-1])
             #     else:
             #         px, py = np.meshgrid(phi, vfe-ev[0:-1])
-            #     px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-1])], dtype=float), ev[0:-1]+np.diff(ev)/2*2)*1.6*10**-19).transpose(
+            #     px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-1])], dtype=float), ev[0:-1]+np.diff(ev)/2*1)*1.6*10**-19).transpose(
             #     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
             #     cb = fig.colorbar(h0)
             #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
             
-            elif value.get() == 'Second Derivative':    #axis: phi
+            elif value.get() == 'Second Derivative':    #axis: phi, eV
                 ao = fig.subplots()
-                pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
-                pz = -np.diff(smooth(pz))/np.diff(phi[0:-1])
+                # pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
+                # pz = np.diff(smooth(pz.transpose()))/np.diff(ev)
+                # pz = sdgd_filter(data.to_numpy(), phi, ev)
+                # if emf=='KE':
+                #     px, py = np.meshgrid(phi[0:-2], ev[0:-2])
+                # else:
+                #     px, py = np.meshgrid(phi[0:-2], vfe-ev[0:-2])
+                # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.6*10**-19).transpose(
+                # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
+                
+                pz = laplacian_filter(data.to_numpy())
                 if emf=='KE':
-                    px, py = np.meshgrid(phi[0:-2], ev)
+                    px, py = np.meshgrid(phi, ev)
                 else:
-                    px, py = np.meshgrid(phi[0:-2], vfe-ev)
-                px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
-                )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
+                    px, py = np.meshgrid(phi, vfe-ev)
+                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+                )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                
+            # elif value.get() == 'Second Derivative':    #axis: phi
+            #     ao = fig.subplots()
+            #     pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
+            #     pz = -np.diff(smooth(pz))/np.diff(phi[0:-1])
+                # if emf=='KE':
+                #     px, py = np.meshgrid(phi[0:-2], ev)
+                # else:
+                #     px, py = np.meshgrid(phi[0:-2], vfe-ev)
+                # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+                # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
+            #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
+            #     cb = fig.colorbar(h0)
+            #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
                 
             # elif value.get() == 'Second Derivative':    #axis: eV
             #     ao = fig.subplots()
             #     pz = np.diff(smooth(data.to_numpy().transpose()))/np.diff(ev)
             #     pz = -np.diff(smooth(pz))/np.diff(ev[0:-1])
             #     pz = pz.transpose()
-            #     if emf=='KE':
-            #         px, py = np.meshgrid(phi, ev[0:-2])
-            #     else:
-            #         px, py = np.meshgrid(phi, vfe-ev[0:-2])
-            #     px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.6*10**-19).transpose(
-            #     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                # if emf=='KE':
+                #     px, py = np.meshgrid(phi, ev[0:-2])
+                # else:
+                #     px, py = np.meshgrid(phi, vfe-ev[0:-2])
+                # px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.6*10**-19).transpose(
+                # )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
             #     cb = fig.colorbar(h0)
             #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
@@ -10246,6 +10313,66 @@ def plot1(*e):
         cd.bind('<FocusIn>', select_all)
         cl.bind('<FocusIn>', select_all)
         cp.bind('<FocusIn>', select_all)
+        
+        gg.bind('<Return>', on_enter)
+        gg.focus_set()
+        ini()
+    elif value.get() == 'Second Derivative':
+        def select_all(event):
+            event.widget.select_range(0, tk.END)
+            return 'break'
+        
+        def ini():
+            global im_kernel
+            try:
+                im_kernel=im_kernel
+            except:
+                im_kernel=17
+            v_k.set(str(im_kernel))
+            ck.focus()
+        def chf():
+            global im_kernel
+            try:
+                if int(v_k.get())%2==1:
+                    im_kernel = int(v_k.get())
+                    t8 = threading.Thread(target=o_plot1)
+                    t8.daemon = True
+                    t8.start()
+                    gg.destroy()
+                else:
+                    tk.messagebox.showwarning("Warning","Invalid Input\n"+"Kernel size must be an odd number")
+                    gg.destroy()
+                    plot1(*e)
+            except:
+                gg.destroy()
+                plot1(*e)
+
+        def on_enter(event):
+            chf()
+            
+        gg = tk.Toplevel(g, bg="white", padx=10, pady=10)
+        gg.title('Gaussian Smoothing Kernel Size')
+        gg.iconphoto(False, tk.PhotoImage(data=b64decode(gicon)))
+
+        fd = tk.Frame(gg, bg="white")
+        fd.grid(row=0, column=0, padx=10, pady=5)
+        ld = tk.Label(fd, text='Kernel Size :', font=(
+            "Arial", 18, "bold"), bg="white", height='1')
+        ld.grid(row=0, column=0, padx=10, pady=10)
+        v_k = tk.StringVar()
+        ck = tk.Entry(fd, font=(
+            "Arial", 16, "bold"), textvariable=v_k, width=10, bg="white")
+        ck.grid(row=0, column=1, padx=10, pady=5)
+        
+        l_smooth = tk.Label(gg, text='Note:\n\tKernel size must be an odd number', font=(
+            "Arial", 14, "bold"), bg="white", height='3',justify='left')
+        l_smooth.grid(row=3, column=0, padx=10, pady=10)
+        
+        bflag = tk.Button(gg, text="OK", font=("Arial", 16, "bold"),
+                          height=2, width=10, bg="white", command=chf)
+        bflag.grid(row=4, column=0, padx=10, pady=5)
+        
+        ck.bind('<FocusIn>', select_all)
         
         gg.bind('<Return>', on_enter)
         gg.focus_set()
