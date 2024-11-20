@@ -88,7 +88,6 @@ try:
     import cv2
 except ModuleNotFoundError:
     install('opencv-python')
-    import cv2
     os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
     quit()
 
