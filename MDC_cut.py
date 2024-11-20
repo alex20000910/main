@@ -9056,14 +9056,23 @@ def exp(*e):
                 snap_values=n[1]
             ))
         elif value.get() == 'Second Derivative':
-            pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
-            pz = -np.diff(smooth(pz))/np.diff(phi[0:-1])
+            # pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
+            # pz = -np.diff(smooth(pz))/np.diff(phi[0:-1])
+            # if emf=='KE':
+            #     px, py = np.meshgrid(phi[0:-2], ev)
+            # else:
+            #     px, py = np.meshgrid(phi[0:-2], vfe-ev)
+            # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+            # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
+            
+            pz = laplacian_filter(data.to_numpy())
             if emf=='KE':
-                px, py = np.meshgrid(phi[0:-2], ev)
+                px, py = np.meshgrid(phi, ev)
             else:
-                px, py = np.meshgrid(phi[0:-2], vfe-ev)
-            px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
-            )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
+                px, py = np.meshgrid(phi, vfe-ev)
+            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+            )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+            
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
             if emf=='KE':
                 yl = a.get_ylim()
