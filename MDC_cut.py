@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.5"
-__release_date__ = "2024-11-20"
+__version__ = "4.6"
+__release_date__ = "2024-11-21"
 import os, inspect
 import json
 import tkinter as tk
@@ -478,7 +478,7 @@ def pre_process(input):
         return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
 
 def gui_exp_origin():
-    global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10
+    global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11
     limg.config(image=img[np.random.randint(len(img))])
     gori=tk.Toplevel(g,bg='white')
     gori.title('Export to Origin')
@@ -489,7 +489,7 @@ def gui_exp_origin():
     fr=tk.Frame(gori,bg='white')
     fr.grid(row=2,column=0)
     pr_exp_origin()
-    v1,v2,v3,v4,v5,v6,v7,v8,v9,v10=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
+    v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
     c1=tk.Checkbutton(fr,text='E-Phi (Raw Data)',variable=v1,font=('Arial', 18, "bold"),bg='white')
     c1.grid(row=0,column=0,sticky='w')
     c2=tk.Checkbutton(fr,text='E-K (Processed Data)',variable=v2,font=('Arial', 18, "bold"),bg='white')
@@ -510,9 +510,11 @@ def gui_exp_origin():
     c9.grid(row=8,column=0,sticky='w')
     c10=tk.Checkbutton(fr,text='Data plot with pos & bare band',variable=v10,font=('Arial', 18, "bold"),bg='white')
     c10.grid(row=9,column=0,sticky='w')
+    c11=tk.Checkbutton(fr,text='Second Derivative',variable=v11,font=('Arial', 18, "bold"),bg='white')
+    c11.grid(row=10,column=0,sticky='w')
     b2=tk.Button(fr,text='Export',command=exp_origin, width=15, height=1, font=('Arial', 18, "bold"), bg='white', bd=5)
-    b2.grid(row=10,column=0)
-    cl=[c1,c2,c3,c4,c5,c6,c7,c8,c9,c10]
+    b2.grid(row=11,column=0)
+    cl=[c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
     for i in range(len(cl)):
         if i in no:
             cl[i].deselect()
@@ -526,8 +528,8 @@ def gui_exp_origin():
     
 def pr_exp_origin():
     global cmdlist, no
-    ex_raw,ex_ek,ex_mp,ex_mf,ex_ep,ex_ef,ex_ser,ex_sei,ex_dpp,exdppbb='','','','','','','','','',''
-    cmdlist=dict({0:f'{ex_raw}',1:f'{ex_ek}',2:f'{ex_mp}',3:f'{ex_mf}',4:f'{ex_ep}',5:f'{ex_ef}',6:f'{ex_ser}',7:f'{ex_sei}',8:f'{ex_dpp}',9:f'{exdppbb}'})
+    ex_raw,ex_ek,ex_mp,ex_mf,ex_ep,ex_ef,ex_ser,ex_sei,ex_dpp,ex_dppbb,ex_sd='','','','','','','','','','',''
+    cmdlist=dict({0:f'{ex_raw}',1:f'{ex_ek}',2:f'{ex_mp}',3:f'{ex_mf}',4:f'{ex_ep}',5:f'{ex_ef}',6:f'{ex_ser}',7:f'{ex_sei}',8:f'{ex_dpp}',9:f'{ex_dppbb}',10:f'{ex_sd}'})
     no=[]
     try:
         cmdlist[0]=f'''plot2d()\n'''
@@ -699,6 +701,11 @@ def pr_exp_origin():
         cmdlist[9]=f'''plot2d(title='Data plot with pos & bare band')\n'''
     except:
         no.append(9)
+    try:
+        cmdlist[10]=f'''plot2d(title='Second Derivative (Processed Data)')\n'''
+    except:
+        no.append(10)
+        
 def exp_origin(*e):
     origin_temp_var = f'''from MDC_cut import *
 
@@ -708,6 +715,7 @@ ko = {k_offset.get()}
 bbo = {bb_offset.get()}
 bbk = {bbk_offset.get()}
 vfe = {vfe}
+im_kernel = {im_kernel}     # Gaussian Filter Kernel Size
 '''
     try:
         origin_temp_var += f'''
@@ -751,6 +759,7 @@ else:
     le_mode='Binding Energy'
     tx, ty = np.meshgrid(phi, vfe-ev)
 tz = data.to_numpy()
+sdz = laplacian_filter(data.to_numpy(), im_kernel)
 '''
     origin_temp_exec = r'''
 op.new()
@@ -761,7 +770,7 @@ op.set_show(True)
 note()
 save()
 '''
-    cl=[v1.get(),v2.get(),v3.get(),v4.get(),v5.get(),v6.get(),v7.get(),v8.get(),v9.get(),v10.get()]
+    cl=[v1.get(),v2.get(),v3.get(),v4.get(),v5.get(),v6.get(),v7.get(),v8.get(),v9.get(),v10.get(),v11.get()]
     gori.destroy()
     for i in cmdlist.keys():
         if cl[i]==1:
@@ -888,7 +897,8 @@ def note():
     nt.append(f'\nParameters\n'+\
         f'        Energy Mode: {le_mode}\n'+\
         f'        Fermi Energy: {vfe} eV\n'+\
-        f'        k offset: {ko} deg\n')
+        f'        k offset: {ko} deg\n'+\
+        f'        Gaussian Filter Kernel Size: {im_kernel}\n')
     if bpath != '':
         nt.append(f'        Bare Band Path: {bpath}\n'+\
             f'        Bare Band Offset: {bbo} meV\n'+\
@@ -902,6 +912,8 @@ def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)
         )**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
         xlabel='k'
         xunit=r"2\g(p)Å\+(-1)"
+    if 'Second Derivative' in title:
+        z=sdz
     if 'Data plot with pos' in title:
         x1 = pos
         if emf=='KE':
@@ -7708,8 +7720,8 @@ def im_smooth(data, kernel_size=17):
 def laplacian_operation(data):
     return -cv2.Laplacian(data, cv2.CV_64F)
 
-def laplacian_filter(data):
-    im=im_smooth(data, im_kernel)
+def laplacian_filter(data, kernel_size=17):
+    im=im_smooth(data, kernel_size)
     laplacian=laplacian_operation(im)
     return laplacian
 
@@ -7801,7 +7813,7 @@ def o_plot1(*e):
                 # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.6*10**-19).transpose(
                 # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
                 
-                pz = laplacian_filter(data.to_numpy())
+                pz = laplacian_filter(data.to_numpy(), im_kernel)
                 if emf=='KE':
                     px, py = np.meshgrid(phi, ev)
                 else:
@@ -9065,7 +9077,7 @@ def exp(*e):
             # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
             # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
             
-            pz = laplacian_filter(data.to_numpy())
+            pz = laplacian_filter(data.to_numpy(), im_kernel)
             if emf=='KE':
                 px, py = np.meshgrid(phi, ev)
             else:
@@ -10239,7 +10251,9 @@ def plot(event):
     plot1()
     plot2()
     plot3()
-
+    
+im_kernel = 17
+d,l,p = 8,20,3
 def plot1(*e):
     if 'MDC Curves' in value.get():
         def select_all(event):
@@ -10247,15 +10261,6 @@ def plot1(*e):
             return 'break'
         
         def ini():
-            global d, l, p
-            try:
-                d=d
-                l=l
-                p=p
-            except:
-                d=8
-                l=20
-                p=3
             v_d.set(str(d))
             v_l.set(str(l))
             v_p.set(str(p))
@@ -10266,10 +10271,15 @@ def plot1(*e):
                 d = int(v_d.get())
                 l = int(v_l.get())
                 p = int(v_p.get())
-                t8 = threading.Thread(target=o_plot1)
-                t8.daemon = True
-                t8.start()
-                gg.destroy()
+                if p < l:
+                    t8 = threading.Thread(target=o_plot1)
+                    t8.daemon = True
+                    t8.start()
+                    gg.destroy()
+                else:
+                    tk.messagebox.showwarning("Warning","Invalid Input\n"+"Polyorder must be less than window_length")
+                    gg.destroy()
+                    plot1(*e)
             except:
                 gg.destroy()
                 plot1(*e)
@@ -10331,11 +10341,6 @@ def plot1(*e):
             return 'break'
         
         def ini():
-            global im_kernel
-            try:
-                im_kernel=im_kernel
-            except:
-                im_kernel=17
             v_k.set(str(im_kernel))
             ck.focus()
         def chf():
@@ -10501,7 +10506,7 @@ def tstate():
     try:
         while True:
             state.config(text=str(st.get()))
-    except KeyboardInterrupt:
+    except:
         pass
 
 def lm2p():
@@ -10805,7 +10810,7 @@ if __name__ == '__main__':
     mid.grid(row=0, column=1)
 
     st = queue.Queue(maxsize=0)
-    state = tk.Label(mid, text='', font=(
+    state = tk.Label(mid, text=f"Version: {__version__}", font=(
         "Arial", 14, "bold"), bg="white", fg="black")
     state.grid(row=0, column=0)
 
@@ -11212,7 +11217,6 @@ if __name__ == '__main__':
         pass
     print(f"Version: {__version__}")
     print(f"Release Date: {__release_date__}\n")
-    st.put(f"Version: {__version__}")
     ###### hotkey ######
     g.bind('<Return>', plot)
     g.update_idletasks()
