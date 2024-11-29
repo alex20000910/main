@@ -56,12 +56,14 @@ try:
     from scipy.signal import hilbert
     from scipy.signal import savgol_filter
     from scipy.stats import mode
+    from scipy.interpolate import griddata
 except ModuleNotFoundError:
     install('scipy')
     from scipy.optimize import curve_fit
     from scipy.signal import hilbert
     from scipy.signal import savgol_filter
     from scipy.stats import mode
+    from scipy.interpolate import griddata
 try:
     from lmfit import Parameters, Minimizer, report_fit
 except ModuleNotFoundError:
@@ -1727,7 +1729,7 @@ class spectrogram:
         elif event.button == 3:
             self.rpf.canvas.get_tk_widget().config(cursor="watch")
             self.tp_cf = True
-            self.__re_tr_a1_plot(self.oxl[0],self.oxl[1])
+            self.__tp_a1_plot()
             self.__tp_a2_plot(self.oxl[0],self.oxl[1])
             self.rpo.draw()
             self.rpf.canvas.get_tk_widget().config(cursor="tcross")
@@ -1831,7 +1833,7 @@ class spectrogram:
         elif event.button == 3:
             self.tpf.canvas.get_tk_widget().config(cursor="watch")
             self.tp_cf = True
-            self.__re_tr_a1_plot(self.oxl[0],self.oxl[1])
+            self.__tp_a1_plot()
             self.__tp_a2_plot(self.oxl[0],self.oxl[1])
             self.rpo.draw()
             self.tpf.canvas.get_tk_widget().config(cursor="tcross")
@@ -1872,6 +1874,10 @@ class spectrogram:
         tx, ty = np.meshgrid(x, self.phi)
         tz = tx*0
         tz[0:, 0:] = z[0:, xi]
+        # ttx = np.linspace(min(x),max(x),len(x)*4)
+        # tx, ty = np.meshgrid(ttx, self.phi)
+        # x, y = np.meshgrid(x, self.phi)
+        # tz = griddata((x.flatten(), y.flatten()), tz.flatten(), (tx, ty), method='cubic')
         self.tr_a1.clear()
         self.tr_a1.pcolormesh(tx,ty,tz,cmap=self.cmap)
         if self.lensmode=='Transmission':
@@ -2042,6 +2048,8 @@ def pr_load(data):
     l_path.see(1.0)
     l_path.config(state='disabled')
     info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
+    if len(st.split('\n'))>24:
+        info.config(height=24, width=max(lst)+1, state='normal')
     info.insert(tk.END, '\n'+st+'\n')
     info.see(tk.END)
     info.config(state='disabled')
