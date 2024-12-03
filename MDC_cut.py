@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.6.1"
-__release_date__ = "2024-11-29"
+__version__ = "4.6.2"
+__release_date__ = "2024-12-03"
 import os, inspect
 import json
 import tkinter as tk
@@ -784,11 +784,13 @@ save()
     def j():
         # os.system(f'code {cdir+r"\origin_temp.py"}')
         limg.config(image=img[np.random.randint(len(img))])
+        print('Exporting to Origin...')
         st.put('Exporting to Origin...')
         temp=r"\origin_temp.py"
         os.system(f'python "{cdir+temp}"')
         os.system(f'del "{cdir+temp}"')
         limg.config(image=img[np.random.randint(len(img))])
+        print('Exported to Origin')
         st.put('Exported to Origin')
     threading.Thread(target=j,daemon=True).start()
 
@@ -1316,7 +1318,10 @@ def f_copy_to_clipboard():
         st.put('Copied to clipboard')
         
 def copy_to_clipboard(ff):
-    limg.config(image=img[np.random.randint(len(img))])
+    try:
+        limg.config(image=img[np.random.randint(len(img))])
+    except:
+        pass
     buf = io.BytesIO()
     ff.savefig(buf, format='png')
     buf.seek(0)
@@ -10561,6 +10566,8 @@ def dl_sw():
     t.start()
 
 if __name__ == '__main__':
+    os.chdir(cdir)
+    warnings.filterwarnings("ignore", category=UserWarning)
     try:
         with np.load('rd.npz', 'rb') as f:
             path = str(f['path'])
