@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "4.7"
+__version__ = "4.7.1"
 __release_date__ = "2024-12-26"
 import os, inspect
 import json
@@ -48,7 +48,6 @@ import matplotlib as mpl
 from matplotlib.widgets import Cursor
 from PIL import Image, ImageTk
 from matplotlib.figure import Figure
-import matplotlib.backends.backend_tkagg as tkagg
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
@@ -1450,6 +1449,9 @@ class spectrogram:
         self.rr2 = self.phi[-1]
         self.fr1 = False
         self.fr2 = False
+        self.fx1 = False
+        self.fx2 = False
+        self.fx3 = False
     
     def update_plot(self, *args):
         self.plot_spectrum(self.selected_fit.get())
@@ -1495,6 +1497,146 @@ class spectrogram:
             self.eminc_entry.grid()
             self.emaxc_entry.grid()
     
+    def fit_press(self, event):
+        if event.button == 1 and event.inaxes:
+            self.fx1 = False
+            self.fx2 = False
+            self.fx3 = False
+            self.fox = event.xdata
+            if self.selected_fit.get() == "ERFC Fit":
+                self.omin = self.eminc_val.get()
+                self.omax = self.emaxc_val.get()
+                if abs(self.eminc_val.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
+                    self.fx1 = True
+                    self.eminc_val.set(event.xdata)
+                elif abs(self.emaxc_val.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
+                    self.fx2 = True
+                    self.emaxc_val.set(event.xdata)
+                elif self.eminc_val.get() < event.xdata < self.emaxc_val.get():
+                    self.fx3 = True
+            elif self.selected_fit.get() == "Fermi-Dirac Fitting":
+                self.omin = self.emin_val.get()
+                self.omax = self.emax_val.get()
+                if abs(self.emin_val.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
+                    self.fx1 = True
+                    self.emin_val.set(event.xdata)
+                elif abs(self.emax_val.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
+                    self.fx2 = True
+                    self.emax_val.set(event.xdata)
+                elif self.emin_val.get() < event.xdata < self.emax_val.get():
+                    self.fx3 = True
+            self.update_fit()
+                
+    def fit_move(self, event):
+        if self.fx1 or self.fx2 or self.fx3:
+            if self.selected_fit.get() == "ERFC Fit":
+                if self.fx1:
+                    self.eminc_val.set(event.xdata)
+                elif self.fx2:
+                    self.emaxc_val.set(event.xdata)
+                elif self.fx3:
+                    self.eminc_val.set(self.omin+(event.xdata-self.fox))
+                    self.emaxc_val.set(self.omax+(event.xdata-self.fox))
+            elif self.selected_fit.get() == "Fermi-Dirac Fitting":
+                if self.fx1:
+                    self.emin_val.set(event.xdata)
+                elif self.fx2:
+                    self.emax_val.set(event.xdata)
+                elif self.fx3:
+                    self.emin_val.set(self.omin+(event.xdata-self.fox))
+                    self.emax_val.set(self.omax+(event.xdata-self.fox))
+            self.update_fit()
+        
+            
+    def fit_release(self, event):
+        self.fx1, self.fx2, self.fx3 = False, False, False
+        self.update_fit()
+    
+    def update_fit(self, *args):
+        e = self.ev
+        phi_max = max([self.rr1, self.rr2])
+        phi_min = min([self.rr1, self.rr2])
+        i = (self.phi<phi_max) & (self.phi>phi_min)
+        ss = np.sum(self.data.to_numpy()[:,i], 1)
+        fit_type = self.selected_fit.get()
+        if fit_type == "Fermi-Dirac Fitting":
+            try:
+                self.fl1.remove()
+                self.fl2.remove()
+                self.fl3.remove()
+                self.flg.remove()
+            except:
+                pass
+            emin = self.emin_val.get()
+            emax = self.emax_val.get()
+            self.fl1 = self.a1.axvline(emin, color='r', linestyle='--')
+            self.fl2 = self.a1.axvline(emax, color='r', linestyle='--')
+            mask = (e > emin) & (e < emax)
+            
+            x = e[mask]
+            y = ss[mask]
+            
+            def fermi_dirac(E, EF, T, A, B):
+                k_B = 8.617333262145e-5  # Boltzmann constant in eV/K
+                return A / (np.exp((E - EF) / (k_B * T)) + 1) + B
+            
+            try:
+                initial_guess = [self.e_photon, 300.0, np.max(y), np.min(y)]
+                popt, pcov = curve_fit(fermi_dirac, x, y, p0=initial_guess)
+                k_B = 8.617333262145e-5
+                EF = popt[0]
+                T = popt[1]
+                self.fl3, = self.a1.plot(x, fermi_dirac(x, *popt), 'r-', label=f'Fermi-Dirac Fit: EF = {EF:.2f} eV, T = {T:.2f} K, $k_bT={k_B*T:.2f}$')
+                self.flg = self.a1.legend()
+            except:
+                EF = None
+                T = None
+                pass
+        
+        elif fit_type == "ERFC Fit":
+            try:
+                self.fl1.remove()
+                self.fl2.remove()
+                self.fl3.remove()
+                self.flg.remove()
+            except:
+                pass
+            eminc = self.eminc_val.get()
+            emaxc = self.emaxc_val.get()
+            self.fl1 = self.a2.axvline(eminc, color='r', linestyle='--')
+            self.fl2 = self.a2.axvline(emaxc, color='r', linestyle='--')
+            mask = (e > eminc) & (e < emaxc)
+            
+            x = e[mask]
+            y = ss[mask]
+            
+            def erfc_fit(E, E0, sigma, A, B):
+                return A * special.erfc((E - E0) / sigma) + B
+            try:
+                initial_guess = [self.e_photon, 0.1, np.max(y), np.min(y)]
+                popt, pcov = curve_fit(erfc_fit, x, y, p0=initial_guess)
+                
+                EF = popt[0]
+                E0 = popt[0]
+                sigma = popt[1]
+                
+                self.fl3, = self.a2.plot(x, erfc_fit(x, *popt), 'r-', label=f'ERFC Fit: E0 = {E0:.2f} eV, sigma = {sigma:.2f}')
+                self.flg = self.a2.legend()
+            except:
+                EF = None
+                E0 = None
+                sigma = None
+                pass
+        try:
+            if EF is not None:
+                self.ef_label.config(text=f"Fermi Level (EF): {EF:.2f} eV")
+            else:
+                self.ef_label.config(text="Fermi Level (EF): N/A")
+        except:
+            pass
+        self.canvas.draw()
+    
+    
     def plot_spectrum(self, fit_type):
         e = self.ev
         phi_max = max([self.rr1, self.rr2])
@@ -1518,13 +1660,16 @@ class spectrogram:
             ax.set_xlabel(xlabel, fontsize=18)
             ax.set_ylabel(ylabel, fontsize=18)
             ax.set_xlim(self.tr_a2.get_xlim())
-            ax.set_ylim(self.tr_a2.get_ylim())
 
         def add_canvas(fig):
             try:
                 self.canvas = FigureCanvasTkAgg(fig, master=self.frame)
                 self.canvas.draw()
                 self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                if fit_type in ["Fermi-Dirac Fitting", "ERFC Fit"]:
+                    self.canvas.mpl_connect('button_press_event', self.fit_press)
+                    self.canvas.mpl_connect('motion_notify_event', self.fit_move)
+                    self.canvas.mpl_connect('button_release_event', self.fit_release)
                 self.toolbar = NavigationToolbar2Tk(self.canvas, self.frame)
                 self.toolbar.update()
                 self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -1547,11 +1692,13 @@ class spectrogram:
 
         elif fit_type == "Fermi-Dirac Fitting":
             fig1 = Figure(dpi=100, figsize=(12, 6))
-            a1 = fig1.add_subplot(111)
-            plot_base_spectrum(a1, e, ss, 'Raw Data with Fermi-Dirac Fitting', 'Kinetic Energy (eV)', 'Intensity (counts)')
+            self.a1 = fig1.add_subplot(111)
+            plot_base_spectrum(self.a1, e, ss, 'Raw Data with Fermi-Dirac Fitting', 'Kinetic Energy (eV)', 'Intensity (counts)')
 
             emin = self.emin_val.get()
             emax = self.emax_val.get()
+            self.fl1 = self.a1.axvline(emin, color='r', linestyle='--')
+            self.fl2 = self.a1.axvline(emax, color='r', linestyle='--')
             mask = (e > emin) & (e < emax)
             
             x = e[mask]
@@ -1567,19 +1714,23 @@ class spectrogram:
                 k_B = 8.617333262145e-5
                 EF = popt[0]
                 T = popt[1]
-                a1.plot(x, fermi_dirac(x, *popt), 'r-', label=f'Fermi-Dirac Fit: EF = {EF:.2f} eV, T = {T:.2f} K, $k_bT={k_B*T:.2f}$')
-                a1.legend()
+                self.fl3, = self.a1.plot(x, fermi_dirac(x, *popt), 'r-', label=f'Fermi-Dirac Fit: EF = {EF:.2f} eV, T = {T:.2f} K, $k_bT={k_B*T:.2f}$')
+                self.flg = self.a1.legend()
             except:
+                EF = None
+                T = None
                 pass
             add_canvas(fig1)
         
         elif fit_type == "ERFC Fit":
             fig2 = Figure(dpi=100, figsize=(12, 6))
-            a2 = fig2.add_subplot(111)
-            plot_base_spectrum(a2, e, ss, 'Raw Data with ERFC Fit', 'Kinetic Energy (eV)', 'Intensity (counts)')
+            self.a2 = fig2.add_subplot(111)
+            plot_base_spectrum(self.a2, e, ss, 'Raw Data with ERFC Fit', 'Kinetic Energy (eV)', 'Intensity (counts)')
             
             eminc = self.eminc_val.get()
             emaxc = self.emaxc_val.get()
+            self.fl1 = self.a2.axvline(eminc, color='r', linestyle='--')
+            self.fl2 = self.a2.axvline(emaxc, color='r', linestyle='--')
             mask = (e > eminc) & (e < emaxc)
             
             x = e[mask]
@@ -1595,9 +1746,12 @@ class spectrogram:
                 E0 = popt[0]
                 sigma = popt[1]
                 
-                a2.plot(x, erfc_fit(x, *popt), 'r-', label=f'ERFC Fit: E0 = {E0:.2f} eV, sigma = {sigma:.2f}')
-                a2.legend()
+                self.fl3, = self.a2.plot(x, erfc_fit(x, *popt), 'r-', label=f'ERFC Fit: E0 = {E0:.2f} eV, sigma = {sigma:.2f}')
+                self.flg = self.a2.legend()
             except:
+                EF = None
+                E0 = None
+                sigma = None
                 pass
             add_canvas(fig2)
 
@@ -1684,15 +1838,15 @@ class spectrogram:
         # OptionMenu 設定
         fit_options = ["Raw Data", "Smooth Data", "Fermi-Dirac Fitting", "Linear Fits", "ERFC Fit", "First Derivative", "Second Derivative", "Smooth Data with First Derivative", "Segmented Tangents"]
         self.selected_fit = tk.StringVar(self.root)
-        self.selected_fit.set(fit_options[0])  # 初始選項
+        self.selected_fit.set(fit_options[4])  # 初始選項
 
         option_menu = tk.OptionMenu(self.root, self.selected_fit, *fit_options, command=self.update_plot)
         option_menu.config(font=('Arial', 18, 'bold'))
         option_menu.grid(row=0, column=0)
 
         # emax 和 emin 的初始值
-        self.emin_val = tk.DoubleVar(value=self.e_photon-0.4)
-        self.emax_val = tk.DoubleVar(value=self.e_photon+0.8)
+        self.emin_val = tk.DoubleVar(value=self.e_photon-0.2)
+        self.emax_val = tk.DoubleVar(value=self.e_photon+0.3)
 
         # emaxc 和 eminc 的初始值
         self.eminc_val = tk.DoubleVar(value=self.e_photon-0.2)
@@ -1859,21 +2013,21 @@ class spectrogram:
         fr_fig.grid(row=0,column=0)
         
         self.rpf = Figure(figsize=(15, 4.5), layout='constrained')
-        self.rpo = tkagg.FigureCanvasTkAgg(self.rpf, master=fr_fig)
+        self.rpo = FigureCanvasTkAgg(self.rpf, master=fr_fig)
         self.rpo.get_tk_widget().grid(row=0, column=0)
         self.rpo.mpl_connect('motion_notify_event', self.__rp_move)
         self.rpo.mpl_connect('button_press_event', self.__rp_press)
         self.rpo.mpl_connect('button_release_event', self.__rp_release)
         
         self.tpf = Figure(figsize=(15, 4.5), layout='constrained')
-        self.tpo = tkagg.FigureCanvasTkAgg(self.tpf, master=fr_fig)
+        self.tpo = FigureCanvasTkAgg(self.tpf, master=fr_fig)
         self.tpo.get_tk_widget().grid(row=1, column=0)
         self.tpo.mpl_connect('motion_notify_event', self.__tp_move)
         self.tpo.mpl_connect('button_press_event', self.__tp_press)
         self.tpo.mpl_connect('button_release_event', self.__tp_release)
         
         self.rgf = Figure(figsize=(0.25, 4.5), layout='constrained')
-        self.rgo = tkagg.FigureCanvasTkAgg(self.rgf, master=fr_fig)
+        self.rgo = FigureCanvasTkAgg(self.rgf, master=fr_fig)
         self.rgo.get_tk_widget().grid(row=0, column=1)
         self.rgo.mpl_connect('motion_notify_event', self.__rg_move)
         self.rgo.mpl_connect('button_press_event', self.__rg_press)
@@ -3853,7 +4007,7 @@ def o_loadefit():
 #     fr=tk.Frame(master=egg,bd=5)
 #     fr.grid(row=0,column=0)
 #     efitfig = Figure(figsize=(8,6),layout='constrained')
-#     efitout = tkagg.FigureCanvasTkAgg(efitfig, master=fr)
+#     efitout = FigureCanvasTkAgg(efitfig, master=fr)
 #     efitout.get_tk_widget().grid(row=0,column=0)
 #     # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
 #     # bstop.grid(row=1,column=0)
@@ -3874,7 +4028,7 @@ def o_loadefit():
 #     fr=tk.Frame(master=mgg,bd=5)
 #     fr.grid(row=0,column=0)
 #     mfitfig = Figure(figsize=(8,6),layout='constrained')
-#     mfitout = tkagg.FigureCanvasTkAgg(mfitfig, master=fr)
+#     mfitout = FigureCanvasTkAgg(mfitfig, master=fr)
 #     mfitout.get_tk_widget().grid(row=0,column=0)
 #     # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
 #     # bstop.grid(row=1,column=0)
@@ -4708,7 +4862,7 @@ def feend():
     fr = tk.Frame(master=eendg, bd=5)
     fr.grid(row=0, column=0)
     efitfig = Figure(figsize=(8, 6), layout='constrained')
-    eedfitout = tkagg.FigureCanvasTkAgg(efitfig, master=fr)
+    eedfitout = FigureCanvasTkAgg(efitfig, master=fr)
     eedfitout.get_tk_widget().grid(row=0, column=0)
     eedfitout.mpl_connect('motion_notify_event', feedmove)
 
@@ -5121,11 +5275,11 @@ def ejob():     # MDC Fitting GUI
 
     efi, efi_err, efi_x = [], [], [i for i in range(len(phi))]
     eifig = Figure(figsize=(6, 0.2), layout='tight')
-    eiout = tkagg.FigureCanvasTkAgg(eifig, master=frind)
+    eiout = FigureCanvasTkAgg(eifig, master=frind)
     eiout.get_tk_widget().grid(row=1, column=1)
 
     efitfig = Figure(figsize=(8, 6), layout='constrained')
-    efitout = tkagg.FigureCanvasTkAgg(efitfig, master=fr)
+    efitout = FigureCanvasTkAgg(efitfig, master=fr)
     efitout.get_tk_widget().grid(row=1, column=0)
     efitout.mpl_connect('motion_notify_event', emove)
     efitout.mpl_connect('button_press_event', epress)
@@ -6266,7 +6420,7 @@ def fmend():
     fr = tk.Frame(master=mendg, bd=5)
     fr.grid(row=0, column=0)
     mfitfig = Figure(figsize=(8, 6), layout='constrained')
-    medfitout = tkagg.FigureCanvasTkAgg(mfitfig, master=fr)
+    medfitout = FigureCanvasTkAgg(mfitfig, master=fr)
     medfitout.get_tk_widget().grid(row=0, column=0)
     medfitout.mpl_connect('motion_notify_event', fmedmove)
 
@@ -6327,7 +6481,7 @@ def fmend1():
     fr = tk.Frame(master=mendg, bd=5)
     fr.grid(row=0, column=0)
     mfitfig = Figure(figsize=(8, 6), layout='constrained')
-    medfitout = tkagg.FigureCanvasTkAgg(mfitfig, master=fr)
+    medfitout = FigureCanvasTkAgg(mfitfig, master=fr)
     medfitout.get_tk_widget().grid(row=0, column=0)
     medfitout.mpl_connect('motion_notify_event', fmedmove)
 
@@ -6387,7 +6541,7 @@ def fmend2():
     fr = tk.Frame(master=mendg, bd=5)
     fr.grid(row=0, column=0)
     mfitfig = Figure(figsize=(8, 6), layout='constrained')
-    medfitout = tkagg.FigureCanvasTkAgg(mfitfig, master=fr)
+    medfitout = FigureCanvasTkAgg(mfitfig, master=fr)
     medfitout.get_tk_widget().grid(row=0, column=0)
     medfitout.mpl_connect('motion_notify_event', fmedmove)
 
@@ -7436,16 +7590,16 @@ def mjob():     # MDC Fitting GUI
     b_pr = tk.Button(fr_pr1, text='Real Time Preview OFF', command=f_pr, width=20, height=2, font=('Arial', 12, "bold"), bg='white',fg='red')
     b_pr.grid(row=0, column=0)
     mfitprfig2 = Figure(figsize=(3, 3), layout='constrained')
-    mfitprout2 = tkagg.FigureCanvasTkAgg(mfitprfig2, master=fr_pr1)
+    mfitprout2 = FigureCanvasTkAgg(mfitprfig2, master=fr_pr1)
     mfitprout2.get_tk_widget().grid(row=1, column=0)
     mfitprfig3 = Figure(figsize=(3, 3), layout='constrained')
-    mfitprout3 = tkagg.FigureCanvasTkAgg(mfitprfig3, master=fr_pr1)
+    mfitprout3 = FigureCanvasTkAgg(mfitprfig3, master=fr_pr1)
     mfitprout3.get_tk_widget().grid(row=2, column=0)
     
     fr_pr2 = tk.Frame(master=mgg, bg='white')
     fr_pr2.grid(row=2, column=0)
     mfitprfig1 = Figure(figsize=(3, 2), layout='constrained')
-    mfitprout1 = tkagg.FigureCanvasTkAgg(mfitprfig1, master=fr_pr2)
+    mfitprout1 = FigureCanvasTkAgg(mfitprfig1, master=fr_pr2)
     mfitprout1.get_tk_widget().grid(row=0, column=0)
     mst = queue.Queue(maxsize=0)
     mstate = tk.Label(mgg, text='', font=(
@@ -7471,11 +7625,11 @@ def mjob():     # MDC Fitting GUI
 
     mfi, mfi_err, mfi_x = [], [], [i for i in range(len(ev))]
     mifig = Figure(figsize=(6, 0.2), layout='tight')
-    miout = tkagg.FigureCanvasTkAgg(mifig, master=frind)
+    miout = FigureCanvasTkAgg(mifig, master=frind)
     miout.get_tk_widget().grid(row=1, column=1)
 
     mfitfig = Figure(figsize=(8, 6), layout='constrained')
-    mfitout = tkagg.FigureCanvasTkAgg(mfitfig, master=fr)
+    mfitout = FigureCanvasTkAgg(mfitfig, master=fr)
     mfitout.get_tk_widget().grid(row=1, column=0)
     mfitout.mpl_connect('motion_notify_event', mmove)
     mfitout.mpl_connect('button_press_event', mpress)
@@ -11120,6 +11274,7 @@ def dl_sw():
 if __name__ == '__main__':
     os.chdir(cdir)
     warnings.filterwarnings("ignore", category=UserWarning)
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
     try:
         with np.load('rd.npz', 'rb') as f:
             path = str(f['path'])
@@ -11671,7 +11826,7 @@ if __name__ == '__main__':
     lcmp.grid(row=0, column=0)
 
     lcmpd = Figure(figsize=(0.75, 1), layout='constrained')
-    cmpg = tkagg.FigureCanvasTkAgg(lcmpd, master=lcmp)
+    cmpg = FigureCanvasTkAgg(lcmpd, master=lcmp)
     cmpg.get_tk_widget().grid(row=0, column=1)
     lsetcmap = tk.Label(lcmp, text='Colormap:', font=(
         "Arial", 12, "bold"), bg="white", height='1', bd=9)
@@ -11699,7 +11854,7 @@ if __name__ == '__main__':
     figfr.grid(row=0, column=2, padx=10, pady=10)
 
     fig = Figure(figsize=(8, 6), layout='constrained')
-    out = tkagg.FigureCanvasTkAgg(fig, master=figfr)
+    out = FigureCanvasTkAgg(fig, master=figfr)
     out.get_tk_widget().grid(row=0, column=0)
     out.mpl_connect('motion_notify_event', move)
     out.mpl_connect('button_press_event', press)
