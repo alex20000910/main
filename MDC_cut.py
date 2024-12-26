@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "4.7.1"
+__version__ = "4.7.2"
 __release_date__ = "2024-12-26"
 import os, inspect
 import json
@@ -1449,6 +1449,7 @@ class spectrogram:
         self.rr2 = self.phi[-1]
         self.fr1 = False
         self.fr2 = False
+        self.fr3 = False
         self.fx1 = False
         self.fx2 = False
         self.fx3 = False
@@ -2224,14 +2225,12 @@ class spectrogram:
                 self.rr1, self.rr2 = tmin, tmax
                 self.grg.destroy()
                 try:
-                    self.s1.remove()
                     self.r1.remove()
-                    self.s2.remove()
                     self.r2.remove()
+                    self.s3.remove()
                 except: pass
-                self.s1=self.tr_rga.scatter(0,self.rr1,c='r',marker='<',s=200)
+                self.s3,=self.tr_rga.plot([0, 0],[self.rr1, self.rr2],c='lightgreen',marker='<',markersize=20,markerfacecolor='r',linewidth=20)
                 self.r1 = self.tr_a1.axhline(self.rr1, c='r')
-                self.s2=self.tr_rga.scatter(0,self.rr2,c='r',marker='<',s=200)
                 self.r2 = self.tr_a1.axhline(self.rr2, c='r')
                 self.__tp_a2_plot(self.tr_a1.get_xlim()[0],self.tr_a1.get_xlim()[1])
                 self.tpo.draw()
@@ -2247,44 +2246,68 @@ class spectrogram:
         if event.inaxes:
             if self.fr1==True:
                 try:
-                    self.s1.remove()
-                    self.r1.remove()
+                    # self.r1.remove()
+                    self.s3.remove()
                 except: pass
                 self.rr1 = event.ydata
-                self.s1=self.tr_rga.scatter(0,self.rr1,c='r',marker='<',s=200)
-                self.r1 = self.tr_a1.axhline(self.rr1, c='r')
+                self.s3,=self.tr_rga.plot([0, 0],[self.rr1, self.rr2],c='lightgreen',marker='<',markersize=20,markerfacecolor='r',linewidth=20)
+                # self.r1 = self.tr_a1.axhline(self.rr1, c='r')
             elif self.fr2==True:
                 try:
-                    self.s2.remove()
-                    self.r2.remove()
+                    # self.r2.remove()
+                    self.s3.remove()
                 except: pass
                 self.rr2 = event.ydata
-                self.s2=self.tr_rga.scatter(0,self.rr2,c='r',marker='<',s=200)
-                self.r2 = self.tr_a1.axhline(self.rr2, c='r')
+                self.s3,=self.tr_rga.plot([0, 0],[self.rr1, self.rr2],c='lightgreen',marker='<',markersize=20,markerfacecolor='r',linewidth=20)
+                # self.r2 = self.tr_a1.axhline(self.rr2, c='r')
+            elif self.fr3==True:
+                try:
+                    # self.r1.remove()
+                    # self.r2.remove()
+                    self.s3.remove()
+                except: pass
+                if event.ydata-self.roy+self.romin>=min(self.phi) and event.ydata-self.roy+self.romax<=max(self.phi):
+                    self.rr1 = event.ydata-self.roy+self.romin
+                    self.rr2 = event.ydata-self.roy+self.romax
+                # self.r1 = self.tr_a1.axhline(self.rr1, c='r')
+                # self.r2 = self.tr_a1.axhline(self.rr2, c='r')
+                self.s3,=self.tr_rga.plot([0, 0],[self.rr1, self.rr2],c='lightgreen',marker='<',markersize=20,markerfacecolor='r',linewidth=20)
         self.__tp_a2_plot(self.tr_a1.get_xlim()[0],self.tr_a1.get_xlim()[1])
         self.tpo.draw()
-        self.rpo.draw()
+        # self.rpo.draw()
         self.rgo.draw()
     
     def __rg_press(self, event):
         if event.button == 1 and event.inaxes:
             self.fr1 = False
             self.fr2 = False
+            self.fr3 = False
+            self.roy = event.ydata
+            self.rr1, self.rr2 = sorted([self.rr1, self.rr2])
+            self.romin = self.rr1
+            self.romax = self.rr2
             if abs(self.rr1-event.ydata) < (self.phi[1]-self.phi[0])*len(self.phi)*1/20:
                 try:
-                    self.s1.remove()
-                    self.r1.remove()
+                    # self.r1.remove()
+                    self.s3.remove()
                 except: pass
                 self.fr1 = True
                 self.rr1 = event.ydata
                 
             elif abs(self.rr2-event.ydata) < (self.phi[1]-self.phi[0])*len(self.phi)*1/20:
                 try:
-                    self.s2.remove()
-                    self.r2.remove()
+                    # self.r2.remove()
+                    self.s3.remove()
                 except: pass
                 self.fr2 = True
                 self.rr2 = event.ydata
+            elif self.rr1 < event.ydata < self.rr2:
+                try:
+                    # self.r1.remove()
+                    # self.r2.remove()
+                    self.s3.remove()
+                except: pass
+                self.fr3 = True
         elif event.button == 3 and event.inaxes:
             self.__rg_entry()
         self.rgo.draw()
@@ -2293,6 +2316,7 @@ class spectrogram:
     def __rg_release(self, event):
         self.fr1 = False
         self.fr2 = False
+        self.fr3 = False
         self.__re_tr_a1_plot(self.tr_a1.get_xlim()[0],self.tr_a1.get_xlim()[1])
         self.rpo.draw()
         
@@ -2607,8 +2631,7 @@ class spectrogram:
         self.oy2=self.tr_a2.get_ylim()
 
     def __tp_rga_plot(self):
-        self.s1=self.tr_rga.scatter(0,self.phi[0],c='r',marker='<',s=200)
-        self.s2=self.tr_rga.scatter(0,self.phi[-1],c='r',marker='<',s=200)
+        self.s3,=self.tr_rga.plot([0, 0],[self.rr1, self.rr2],c='lightgreen',marker='<',markersize=20,markerfacecolor='r',linewidth=20)
         self.tr_rga.set_ylim([self.phi[0], self.phi[-1]])
         self.tr_rga.set_xticks([])
         self.tr_rga.set_yticks([])
