@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "4.7.2"
+__version__ = "4.7.3"
 __release_date__ = "2024-12-26"
 import os, inspect
 import json
@@ -1454,6 +1454,33 @@ class spectrogram:
         self.fx2 = False
         self.fx3 = False
     
+    def sel_y(self):
+        phi_max = max([self.rr1, self.rr2])
+        phi_min = min([self.rr1, self.rr2])
+        i = (self.phi<=phi_max) & (self.phi>=phi_min)
+        x = self.x
+        if self.type=='raw':
+            y = np.sum(self.data.to_numpy()[:,i], 1)
+        elif self.type=='smooth':
+            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
+        elif self.type=='fd':
+            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
+            y=np.diff(y)/np.diff(self.ev)
+        else:
+            y = self.y
+        return x, y
+    
+    def near(self, data, value):
+        if len(data) == 1:
+            return data[0]
+        else:
+            if max(data) >= value >= min(data):
+                return data[np.argwhere(abs(data-value)<=abs(data[1]-data[0])/2)[0][0]]
+            elif value < min(data):
+                return min(data)
+            elif value > max(data):
+                return max(data)
+                
     def update_plot(self, *args):
         self.plot_spectrum(self.selected_fit.get())
         self.update_input_fields(self.selected_fit.get())
@@ -1555,10 +1582,7 @@ class spectrogram:
     
     def update_fit(self, *args):
         e = self.ev
-        phi_max = max([self.rr1, self.rr2])
-        phi_min = min([self.rr1, self.rr2])
-        i = (self.phi<phi_max) & (self.phi>phi_min)
-        ss = np.sum(self.data.to_numpy()[:,i], 1)
+        x, ss = self.sel_y()
         fit_type = self.selected_fit.get()
         if fit_type == "Fermi-Dirac Fitting":
             try:
@@ -1640,11 +1664,7 @@ class spectrogram:
     
     def plot_spectrum(self, fit_type):
         e = self.ev
-        phi_max = max([self.rr1, self.rr2])
-        phi_min = min([self.rr1, self.rr2])
-        i = (self.phi<phi_max) & (self.phi>phi_min)
-        
-        ss = np.sum(self.data.to_numpy()[:,i], 1)
+        x, ss = self.sel_y()
         # Smooth the data using Gaussian smoothing
         smoothed_ss = gaussian_filter1d(ss, sigma=2)
 
@@ -2081,19 +2101,7 @@ class spectrogram:
     
     def __export(self):
         os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
-        phi_max = max([self.rr1, self.rr2])
-        phi_min = min([self.rr1, self.rr2])
-        i = (self.phi<phi_max) & (self.phi>phi_min)
-        x = self.x
-        if self.type=='raw':
-            y = np.sum(self.data.to_numpy()[:,i], 1)
-        elif self.type=='smooth':
-            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
-        elif self.type=='fd':
-            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
-            y=np.diff(y)/np.diff(self.ev)
-        else:
-            y = self.y
+        x, y = self.sel_y()
         f = open(self.s_exp, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         f.write('Kinetic Energy'+'\t'+'Intensity'+'\n')
         for i in range(len(x)):
@@ -2113,19 +2121,7 @@ class spectrogram:
     def __export_casa(self):
     # Casa.txt format more complete version
         os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
-        phi_max = max([self.rr1, self.rr2])
-        phi_min = min([self.rr1, self.rr2])
-        i = (self.phi<phi_max) & (self.phi>phi_min)
-        x = self.x
-        if self.type=='raw':
-            y = np.sum(self.data.to_numpy()[:,i], 1)
-        elif self.type=='smooth':
-            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
-        elif self.type=='fd':
-            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
-            y=np.diff(y)/np.diff(self.ev)
-        else:
-            y = self.y
+        x, y = self.sel_y()
         f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         f.write(f'[Info]\n'+
             f'Number of Regions=1\n'+
@@ -2244,12 +2240,13 @@ class spectrogram:
     
     def __rg_move(self, event):
         if event.inaxes:
+            y = self.near(self.phi, event.ydata)
             if self.fr1==True:
                 try:
                     # self.r1.remove()
                     self.s3.remove()
                 except: pass
-                self.rr1 = event.ydata
+                self.rr1 = y
                 self.s3,=self.tr_rga.plot([0, 0],[self.rr1, self.rr2],c='lightgreen',marker='<',markersize=20,markerfacecolor='r',linewidth=20)
                 # self.r1 = self.tr_a1.axhline(self.rr1, c='r')
             elif self.fr2==True:
@@ -2257,7 +2254,7 @@ class spectrogram:
                     # self.r2.remove()
                     self.s3.remove()
                 except: pass
-                self.rr2 = event.ydata
+                self.rr2 = y
                 self.s3,=self.tr_rga.plot([0, 0],[self.rr1, self.rr2],c='lightgreen',marker='<',markersize=20,markerfacecolor='r',linewidth=20)
                 # self.r2 = self.tr_a1.axhline(self.rr2, c='r')
             elif self.fr3==True:
@@ -2266,9 +2263,16 @@ class spectrogram:
                     # self.r2.remove()
                     self.s3.remove()
                 except: pass
-                if event.ydata-self.roy+self.romin>=min(self.phi) and event.ydata-self.roy+self.romax<=max(self.phi):
-                    self.rr1 = event.ydata-self.roy+self.romin
-                    self.rr2 = event.ydata-self.roy+self.romax
+                if y-self.roy+self.romin < min(self.phi):
+                    self.rr1 = min(self.phi)
+                    self.rr2 = min(self.phi)+(self.romax-self.romin)
+                elif y-self.roy+self.romax > max(self.phi):
+                    self.rr2 = max(self.phi)
+                    self.rr1 = max(self.phi)-(self.romax-self.romin)
+                else:
+                    self.rr1 = y-self.roy+self.romin
+                    self.rr2 = y-self.roy+self.romax
+                
                 # self.r1 = self.tr_a1.axhline(self.rr1, c='r')
                 # self.r2 = self.tr_a1.axhline(self.rr2, c='r')
                 self.s3,=self.tr_rga.plot([0, 0],[self.rr1, self.rr2],c='lightgreen',marker='<',markersize=20,markerfacecolor='r',linewidth=20)
@@ -2279,29 +2283,30 @@ class spectrogram:
     
     def __rg_press(self, event):
         if event.button == 1 and event.inaxes:
+            y = self.near(self.phi, event.ydata)
             self.fr1 = False
             self.fr2 = False
             self.fr3 = False
-            self.roy = event.ydata
-            self.rr1, self.rr2 = sorted([self.rr1, self.rr2])
+            self.roy = self.near(self.phi, event.ydata)
+            self.rr1, self.rr2 = sorted([self.near(self.phi, self.rr1), self.near(self.phi, self.rr2)])
             self.romin = self.rr1
             self.romax = self.rr2
-            if abs(self.rr1-event.ydata) < (self.phi[1]-self.phi[0])*len(self.phi)*1/20:
+            if abs(self.rr1-y) < (self.phi[1]-self.phi[0])*len(self.phi)*1/40:
                 try:
                     # self.r1.remove()
                     self.s3.remove()
                 except: pass
                 self.fr1 = True
-                self.rr1 = event.ydata
+                self.rr1 = y
                 
-            elif abs(self.rr2-event.ydata) < (self.phi[1]-self.phi[0])*len(self.phi)*1/20:
+            elif abs(self.rr2-y) < (self.phi[1]-self.phi[0])*len(self.phi)*1/40:
                 try:
                     # self.r2.remove()
                     self.s3.remove()
                 except: pass
                 self.fr2 = True
-                self.rr2 = event.ydata
-            elif self.rr1 < event.ydata < self.rr2:
+                self.rr2 = y
+            elif self.rr1 < y < self.rr2:
                 try:
                     # self.r1.remove()
                     # self.r2.remove()
@@ -2352,13 +2357,20 @@ class spectrogram:
                 yy = self.phi
                 xi = 0
                 yi = 0
-                for i,v in enumerate(x):
-                    if abs(v-cxdata) <= (self.ev[1]-self.ev[0])/2:
-                        xi=i
                 
-                for i,v in enumerate(yy):
-                    if abs(v-cydata) <= (self.phi[1]-self.phi[0])/2:
-                        yi=i
+                if cxdata < x[0]:
+                    xi=0
+                elif cxdata > x[-1]:
+                    xi=len(x)-1
+                else:
+                    xi=np.argwhere(abs(x-cxdata) <= (x[1]-x[0])/2)[0][0]
+                if cydata < yy[0]:
+                    yi=0
+                elif cydata > yy[-1]:
+                    yi=len(yy)-1
+                else:
+                    yi=np.argwhere(abs(yy-cydata) <= (yy[1]-yy[0])/2)[0][0]
+                    
                 try:
                     self.l_cx.config(text='%9s%8.3f%3s'%('Energy : ',cxdata,' eV'))
                     self.l_cy.config(text='%10s%11.4g%4s'%('Cursor : ',cydata,unit))
@@ -2369,6 +2381,9 @@ class spectrogram:
                 # self.xx1=self.tr_a1.axvline(cxdata,color='g')
                 self.xx2=self.tr_a2.axvline(cxdata,color='g')
                 self.yy2=self.tr_a2.axhline(-max(y),color='grey')
+                
+                x, y = self.sel_y()
+                    
                 x,y=x[xi],y[xi]
                 self.cur=self.tr_a2.scatter(x,y,c='r',marker='o',s=30)
                 self.tr_a2.set_ylim(self.oy2)
@@ -2463,9 +2478,16 @@ class spectrogram:
                 y = self.y
                 x = self.x
                 xi = 0
-                for i,v in enumerate(x):
-                    if abs(v-cxdata) <= (self.ev[1]-self.ev[0])/2:
-                        xi=i
+                
+                if cxdata < x[0]:
+                    xi=0
+                elif cxdata > x[-1]:
+                    xi=len(x)-1
+                else:
+                    xi=np.argwhere(abs(x-cxdata) <= (x[1]-x[0])/2)[0][0]
+                
+                x, y = self.sel_y()
+                    
                 x,y=x[xi],y[xi]
                 try:
                     self.l_cx.config(text='%9s%8.3f%3s'%('Energy : ',cxdata,' eV'))
@@ -2568,7 +2590,7 @@ class spectrogram:
             self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
         self.tr_a1.set_xticks([])
         self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=14)
-        
+        self.tr_a1.set_ylim(self.oy1)
         
     def __tp_a1_plot(self):
         # global tr_a2, oy2
@@ -2588,24 +2610,13 @@ class spectrogram:
         # self.tr_a1.set_xlim(self.tr_a1.get_xlim())
         # self.x1, = self.tr_a1.plot([],[],'g-')
         # self.xx1, = self.tr_a1.plot([],[],'g-')
+        self.tr_a1.set_ylim([sorted([self.phi[0], self.phi[-1]])[0]-abs(self.phi[-1]-self.phi[0])/20, sorted([self.phi[0], self.phi[-1]])[1]+abs(self.phi[-1]-self.phi[0])/20])
         self.oxl=self.tr_a1.get_xlim()
         self.oy1=self.tr_a1.get_ylim()
     
     def __tp_a2_plot(self,xx1,xx2):
         # global tr_a2, oy2
-        phi_max = max([self.rr1, self.rr2])
-        phi_min = min([self.rr1, self.rr2])
-        i = (self.phi<phi_max) & (self.phi>phi_min)
-        x = self.x
-        if self.type=='raw':
-            y = np.sum(self.data.to_numpy()[:,i], 1)
-        elif self.type=='smooth':
-            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
-        elif self.type=='fd':
-            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
-            y=np.diff(y)/np.diff(self.ev)
-        else:
-            y = self.y
+        x, y = self.sel_y()
         xi=[]
         for i,v in enumerate(x):
             if v>=xx1 and v<=xx2:
@@ -2632,13 +2643,14 @@ class spectrogram:
 
     def __tp_rga_plot(self):
         self.s3,=self.tr_rga.plot([0, 0],[self.rr1, self.rr2],c='lightgreen',marker='<',markersize=20,markerfacecolor='r',linewidth=20)
-        self.tr_rga.set_ylim([self.phi[0], self.phi[-1]])
+        self.tr_rga.set_ylim([sorted([self.phi[0], self.phi[-1]])[0]-abs(self.phi[-1]-self.phi[0])/20, sorted([self.phi[0], self.phi[-1]])[1]+abs(self.phi[-1]-self.phi[0])/20])
         self.tr_rga.set_xticks([])
         self.tr_rga.set_yticks([])
     
     def __trans_plot_job(self):
         # global rpf,rpo,tpf,tpo,tr_a1,tr_a2,oxl,oy1
         self.tr_a1=self.rpf.add_axes([0.1, 0.05, 0.88, 0.9])
+        self.tr_a1.set_facecolor('lightblue')
         self.tr_a2=self.tpf.add_axes([0.1, 0.15, 0.88, 0.82])
         self.tr_rga=self.rgf.add_axes([0, 0.05, 1, 0.9])
         self.tr_rga.set_facecolor('lightblue')
