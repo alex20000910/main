@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.6.2"
-__release_date__ = "2024-12-03"
+__version__ = "4.7"
+__release_date__ = "2024-12-26"
 import os, inspect
 import json
 import tkinter as tk
@@ -49,21 +49,26 @@ from matplotlib.widgets import Cursor
 from PIL import Image, ImageTk
 from matplotlib.figure import Figure
 import matplotlib.backends.backend_tkagg as tkagg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 try:
     from scipy.optimize import curve_fit
+    from scipy.ndimage import gaussian_filter1d
     from scipy.signal import hilbert
     from scipy.signal import savgol_filter
     from scipy.stats import mode
     from scipy.interpolate import griddata
+    from scipy import special
 except ModuleNotFoundError:
     install('scipy')
     from scipy.optimize import curve_fit
+    from scipy.ndimage import gaussian_filter1d
     from scipy.signal import hilbert
     from scipy.signal import savgol_filter
     from scipy.stats import mode
     from scipy.interpolate import griddata
+    from scipy import special
 try:
     from lmfit import Parameters, Minimizer, report_fit
 except ModuleNotFoundError:
@@ -1085,6 +1090,7 @@ def cexcitation_json(s:str):
             print("Modified:", data['Region']['ExcitationEnergy']['Value'])
 
 def cexcitation_save_str():
+    global data
     s=t_cein.get('1.0',tk.END)
     if s:
         s = s.replace('\n\n\n\n\n', '')
@@ -1160,6 +1166,7 @@ def cname_json(s:str):
             print("Modified:", data['Region']['Name'])
             
 def cname_save_str():
+    global data
     s=t_cin.get('1.0',tk.END)
     if s:
         s = s.replace('\n\n\n\n\n', '')
@@ -1233,6 +1240,7 @@ def desc_json(s:str):
             print("Modified:", data['Region']['Description'])
             
 def save_str():
+    global data
     s=t_in.get('1.0',tk.END)
     if s:
         s = s.replace('\n\n\n\n\n', '\n')
@@ -1317,7 +1325,18 @@ def f_copy_to_clipboard():
     if value.get() != '---Plot1---' or value1.get() != '---Plot2---' or value2.get() != '---Plot3---':
         st.put('Copied to clipboard')
         
-def copy_to_clipboard(ff):
+def copy_to_clipboard(ff) -> None:
+    """
+    Copies the given figure to the clipboard as a bitmap image.
+    
+    Parameters:
+    -----------
+    ff (matplotlib.figure.Figure): The figure to be copied to the clipboard.
+    
+    Returns:
+    -----------
+    None
+    """
     try:
         limg.config(image=img[np.random.randint(len(img))])
     except:
@@ -1346,7 +1365,9 @@ class spectrogram:
     It includes two matplotlib figures for plotting, text widgets for displaying
     file paths and additional information, labels for displaying energy, cursor,
     and data values, and buttons for exporting data and copying images to the clipboard.
+    
     Attributes:
+    ------------
         g (Tk): The Tkinter root window.
         data (xarray.DataArray): The spectrogram data.
         cmap (str): The colormap for plotting.
@@ -1425,7 +1446,311 @@ class spectrogram:
         self.s_exp_casa=self.name+'_Casa.txt'
         self.s_yl='Intensity (Counts)'
         self.type='raw'
+        self.rr1 = self.phi[0]
+        self.rr2 = self.phi[-1]
+        self.fr1 = False
+        self.fr2 = False
+    
+    def update_plot(self, *args):
+        self.plot_spectrum(self.selected_fit.get())
+        self.update_input_fields(self.selected_fit.get())
+    
+    def create_input_row(self, label_text, variable, row, frame, col_start=0):
+        label = tk.Label(frame, text=label_text, font=('Arial', 18, 'bold'))
+        label.grid(row=row, column=col_start, sticky='e')
+        entry = tk.Entry(frame, textvariable=variable, font=('Arial', 18, 'bold'))
+        entry.grid(row=row, column=col_start + 1, sticky='w')
+        return label, entry
+    
+    def update_input_fields(self, fit_type):
+        # 隱藏所有輸入框
+        try:
+            for widget in self.inputs_frame.winfo_children():
+                widget.grid_remove()
+        except:
+            pass
         
+        # 根據選擇的擬合方式顯示相應的輸入框
+        if fit_type == "Fermi-Dirac Fitting":
+            self.emin_label.grid()
+            self.emax_label.grid()
+            self.emin_entry.grid()
+            self.emax_entry.grid()
+        elif fit_type == "Linear Fits":
+            self.fL_min_label.grid()
+            self.fL_max_label.grid()
+            self.fF_min_label.grid()
+            self.fF_max_label.grid()
+            self.fR_min_label.grid()
+            self.fR_max_label.grid()
+            self.fL_min_entry.grid()
+            self.fL_max_entry.grid()
+            self.fF_min_entry.grid()
+            self.fF_max_entry.grid()
+            self.fR_min_entry.grid()
+            self.fR_max_entry.grid()
+        elif fit_type == "ERFC Fit":
+            self.eminc_label.grid()
+            self.emaxc_label.grid()
+            self.eminc_entry.grid()
+            self.emaxc_entry.grid()
+    
+    def plot_spectrum(self, fit_type):
+        e = self.ev
+        phi_max = max([self.rr1, self.rr2])
+        phi_min = min([self.rr1, self.rr2])
+        i = (self.phi<phi_max) & (self.phi>phi_min)
+        
+        ss = np.sum(self.data.to_numpy()[:,i], 1)
+        # Smooth the data using Gaussian smoothing
+        smoothed_ss = gaussian_filter1d(ss, sigma=2)
+
+        # 清空先前的畫布
+        try:
+            for widget in self.frame.winfo_children():
+                widget.destroy()
+        except:
+            pass
+        
+        def plot_base_spectrum(ax, x, y, title, xlabel, ylabel):
+            ax.scatter(x, y, s=1, c='k', alpha=0.8)
+            ax.set_title(title, fontsize=20)
+            ax.set_xlabel(xlabel, fontsize=18)
+            ax.set_ylabel(ylabel, fontsize=18)
+            ax.set_xlim(self.tr_a2.get_xlim())
+            ax.set_ylim(self.tr_a2.get_ylim())
+
+        def add_canvas(fig):
+            try:
+                self.canvas = FigureCanvasTkAgg(fig, master=self.frame)
+                self.canvas.draw()
+                self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                self.toolbar = NavigationToolbar2Tk(self.canvas, self.frame)
+                self.toolbar.update()
+                self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            except:
+                pass
+
+        EF = None
+
+        if fit_type == "Raw Data":
+            fig = Figure(dpi=100, figsize=(12, 6))
+            ax = fig.add_subplot(111)
+            plot_base_spectrum(ax, e, ss, 'Raw Data', 'Kinetic Energy (eV)', 'Intensity (counts)')
+            add_canvas(fig)
+        
+        elif fit_type == "Smooth Data":
+            fig = Figure(dpi=100, figsize=(12, 6))
+            ax = fig.add_subplot(111)
+            plot_base_spectrum(ax, e, smoothed_ss, 'Smooth Data', 'Kinetic Energy (eV)', 'Intensity (counts)')
+            add_canvas(fig)
+
+        elif fit_type == "Fermi-Dirac Fitting":
+            fig1 = Figure(dpi=100, figsize=(12, 6))
+            a1 = fig1.add_subplot(111)
+            plot_base_spectrum(a1, e, ss, 'Raw Data with Fermi-Dirac Fitting', 'Kinetic Energy (eV)', 'Intensity (counts)')
+
+            emin = self.emin_val.get()
+            emax = self.emax_val.get()
+            mask = (e > emin) & (e < emax)
+            
+            x = e[mask]
+            y = ss[mask]
+            
+            def fermi_dirac(E, EF, T, A, B):
+                k_B = 8.617333262145e-5  # Boltzmann constant in eV/K
+                return A / (np.exp((E - EF) / (k_B * T)) + 1) + B
+            
+            try:
+                initial_guess = [self.e_photon, 300.0, np.max(y), np.min(y)]
+                popt, pcov = curve_fit(fermi_dirac, x, y, p0=initial_guess)
+                k_B = 8.617333262145e-5
+                EF = popt[0]
+                T = popt[1]
+                a1.plot(x, fermi_dirac(x, *popt), 'r-', label=f'Fermi-Dirac Fit: EF = {EF:.2f} eV, T = {T:.2f} K, $k_bT={k_B*T:.2f}$')
+                a1.legend()
+            except:
+                pass
+            add_canvas(fig1)
+        
+        elif fit_type == "ERFC Fit":
+            fig2 = Figure(dpi=100, figsize=(12, 6))
+            a2 = fig2.add_subplot(111)
+            plot_base_spectrum(a2, e, ss, 'Raw Data with ERFC Fit', 'Kinetic Energy (eV)', 'Intensity (counts)')
+            
+            eminc = self.eminc_val.get()
+            emaxc = self.emaxc_val.get()
+            mask = (e > eminc) & (e < emaxc)
+            
+            x = e[mask]
+            y = ss[mask]
+            
+            def erfc_fit(E, E0, sigma, A, B):
+                return A * special.erfc((E - E0) / sigma) + B
+            try:
+                initial_guess = [self.e_photon, 0.1, np.max(y), np.min(y)]
+                popt, pcov = curve_fit(erfc_fit, x, y, p0=initial_guess)
+                
+                EF = popt[0]
+                E0 = popt[0]
+                sigma = popt[1]
+                
+                a2.plot(x, erfc_fit(x, *popt), 'r-', label=f'ERFC Fit: E0 = {E0:.2f} eV, sigma = {sigma:.2f}')
+                a2.legend()
+            except:
+                pass
+            add_canvas(fig2)
+
+        elif fit_type == "Linear Fits":
+            fig3 = Figure(dpi=100, figsize=(12, 6))
+            a3 = fig3.add_subplot(111)
+            plot_base_spectrum(a3, e, ss, 'Raw Data with Linear Fits', 'Kinetic Energy (eV)', 'Intensity (counts)')
+
+            fL_min = self.fL_min_val.get()
+            fL_max = self.fL_max_val.get()
+            fF_min = self.fF_min_val.get()
+            fF_max = self.fF_max_val.get()
+            fR_min = self.fR_min_val.get()
+            fR_max = self.fR_max_val.get()
+
+            mask_L = (e > fL_min) & (e < fL_max)
+            mask_F = (e > fF_min) & (e < fF_max)
+            mask_R = (e > fR_min) & (e < fR_max)
+
+            xL, yL = e[mask_L], ss[mask_L]
+            xF, yF = e[mask_F], ss[mask_F]
+            xR, yR = e[mask_R], ss[mask_R]
+
+            # 进行线性拟合
+            def linear_fit(x, a, b):
+                return a * x + b
+            try:
+                popt_L, _ = curve_fit(linear_fit, xL, yL)
+                popt_F, _ = curve_fit(linear_fit, xF, yF)
+                popt_R, _ = curve_fit(linear_fit, xR, yR)
+
+                a3.plot(xL, linear_fit(xL, *popt_L), 'r-', label='Left Fit')
+                a3.plot(xF, linear_fit(xF, *popt_F), 'g-', label='Flat Fit')
+                a3.plot(xR, linear_fit(xR, *popt_R), 'b-', label='Right Fit')
+
+                a3.legend()
+            except:
+                pass
+            add_canvas(fig3)
+
+        elif fit_type == "First Derivative":
+            fig4 = Figure(dpi=100, figsize=(12, 6))
+            a4 = fig4.add_subplot(111)
+            plot_base_spectrum(a4, e, np.gradient(ss), 'First Derivative', 'Kinetic Energy (eV)', 'dIntensity / dE')
+            add_canvas(fig4)
+
+        elif fit_type == "Second Derivative":
+            fig5 = Figure(dpi=100, figsize=(12, 6))
+            a5 = fig5.add_subplot(111)
+            plot_base_spectrum(a5, e, np.gradient(np.gradient(ss)), 'Second Derivative', 'Kinetic Energy (eV)', 'd²Intensity / dE²')
+            add_canvas(fig5)
+            
+        elif fit_type == "Smooth Data with First Derivative":
+            fig6 = Figure(dpi=100, figsize=(12, 6))
+            a6 = fig6.add_subplot(111)
+            plot_base_spectrum(a6, e, np.gradient(smoothed_ss), 'Smoothed Data with First Derivative', 'Kinetic Energy (eV)', 'd(Smoothed Intensity) / dE')
+            add_canvas(fig6)
+            
+        elif fit_type == "Segmented Tangents":
+            fig7 = Figure(dpi=100, figsize=(12, 6))
+            a7 = fig7.add_subplot(111)
+            plot_base_spectrum(a7, e, smoothed_ss, 'Smooth Data with Segmented Tangents', 'Kinetic Energy (eV)', 'Intensity (counts)')
+
+            diff = np.gradient(smoothed_ss, e)
+            for i in range(len(e) - 1):
+                x_segment = [e[i], e[i+1]]
+                y_segment = [smoothed_ss[i], smoothed_ss[i] + diff[i] * (e[i+1] - e[i])]
+                a7.plot(x_segment, y_segment, 'r-')
+
+            add_canvas(fig7)
+        try:
+            if EF is not None:
+                self.ef_label.config(text=f"Fermi Level (EF): {EF:.2f} eV")
+            else:
+                self.ef_label.config(text="Fermi Level (EF): N/A")
+        except:
+            pass
+        
+    def __ups(self):
+        self.root = tk.Toplevel(g,bg='white')
+        self.root.title('UPS spectrum')
+        self.root.geometry('1920x1080')
+        
+        # OptionMenu 設定
+        fit_options = ["Raw Data", "Smooth Data", "Fermi-Dirac Fitting", "Linear Fits", "ERFC Fit", "First Derivative", "Second Derivative", "Smooth Data with First Derivative", "Segmented Tangents"]
+        self.selected_fit = tk.StringVar(self.root)
+        self.selected_fit.set(fit_options[0])  # 初始選項
+
+        option_menu = tk.OptionMenu(self.root, self.selected_fit, *fit_options, command=self.update_plot)
+        option_menu.config(font=('Arial', 18, 'bold'))
+        option_menu.grid(row=0, column=0)
+
+        # emax 和 emin 的初始值
+        self.emin_val = tk.DoubleVar(value=self.e_photon-0.4)
+        self.emax_val = tk.DoubleVar(value=self.e_photon+0.8)
+
+        # emaxc 和 eminc 的初始值
+        self.eminc_val = tk.DoubleVar(value=self.e_photon-0.2)
+        self.emaxc_val = tk.DoubleVar(value=self.e_photon+0.3)
+
+        # Linear Fits 的上下界初始值
+        self.fL_min_val = tk.DoubleVar(value=self.e_photon-0.4)
+        self.fL_max_val = tk.DoubleVar(value=self.e_photon-0.35)
+        self.fF_min_val = tk.DoubleVar(value=self.e_photon-0.2)
+        self.fF_max_val = tk.DoubleVar(value=self.e_photon-0.02)
+        self.fR_min_val = tk.DoubleVar(value=self.e_photon)
+        self.fR_max_val = tk.DoubleVar(value=self.e_photon+0.8)
+
+        # 創建輸入框
+        self.inputs_frame = tk.Frame(self.root)
+        self.inputs_frame.grid(row=1, column=0, columnspan=5, sticky='w')
+
+        # 創建輸入框，並預設隱藏
+        self.emin_label, self.emin_entry = self.create_input_row("emin:", self.emin_val, 0, self.inputs_frame)
+        self.emax_label, self.emax_entry = self.create_input_row("emax:", self.emax_val, 0, self.inputs_frame, col_start=2)
+
+        self.eminc_label, self.eminc_entry = self.create_input_row("eminc:", self.eminc_val, 1, self.inputs_frame)
+        self.emaxc_label, self.emaxc_entry = self.create_input_row("emaxc:", self.emaxc_val, 1, self.inputs_frame, col_start=2)
+
+        self.fL_min_label, self.fL_min_entry = self.create_input_row("fL min:", self.fL_min_val, 2, self.inputs_frame)
+        self.fL_max_label, self.fL_max_entry = self.create_input_row("fL max:", self.fL_max_val, 2, self.inputs_frame, col_start=2)
+
+        self.fF_min_label, self.fF_min_entry = self.create_input_row("fF min:", self.fF_min_val, 3, self.inputs_frame)
+        self.fF_max_label, self.fF_max_entry = self.create_input_row("fF max:", self.fF_max_val, 3, self.inputs_frame, col_start=2)
+
+        self.fR_min_label, self.fR_min_entry = self.create_input_row("fR min:", self.fR_min_val, 4, self.inputs_frame)
+        self.fR_max_label, self.fR_max_entry = self.create_input_row("fR max:", self.fR_max_val, 4, self.inputs_frame, col_start=2)
+
+        # 添加顯示EF值的區塊
+        self.ef_label = tk.Label(self.root, text="Fermi Level (EF): N/A", font=('Arial', 18, 'bold'))
+        self.ef_label.grid(row=2, column=4, rowspan=2, padx=20)
+
+        # 創建可滾動畫布
+        self.canvas_frame = tk.Frame(self.root)
+        self.canvas_frame.grid(row=8, column=0, columnspan=5, sticky='nsew')
+
+        self.canvas = tk.Canvas(self.canvas_frame)
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        self.frame = tk.Frame(self.canvas)
+        self.canvas.create_window((0, 0), window=self.frame, anchor='nw')
+
+        # 讓主窗口和 canvas_frame 自動擴展
+        self.root.grid_rowconfigure(8, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        self.canvas_frame.grid_rowconfigure(0, weight=1)
+        self.canvas_frame.grid_columnconfigure(0, weight=1)
+
+        self.update_input_fields(self.selected_fit.get())  # 初始化輸入框顯示
+        self.update_plot()
+        self.root.bind("<Return>", self.update_plot)
+        self.root.update()
+    
     def _select_all(self, event):
         event.widget.tag_add(tk.SEL, "1.0", tk.END)
         event.widget.mark_set(tk.INSERT, "1.0")
@@ -1461,12 +1786,16 @@ class spectrogram:
     
     def setdata(self, x, y, dtype='raw', unit='Counts'):
         """Set the data for plotting.
+        
         Args:
+        -----------
             x (list or array-like): The x-axis data.
             y (list or array-like): The y-axis data.
             dtype (str, optional): The type of data. Defaults to 'raw'.
             unit (str, optional): The unit of the y-axis data. Defaults to 'Counts'.
+            
         Raises:
+        -----------
             ValueError: If the length of x and y are not the same.
         """
         self.x=x
@@ -1493,29 +1822,32 @@ class spectrogram:
         and data values, and buttons for exporting data and copying images to the clipboard.
         
         Widgets:
+        --------
             - Toplevel window with title 'Spectrogram: <name>'
+            - Fitting utility button for Fermi level fitting
             - Two matplotlib figures for plotting spectrogram data
             - Text widget for displaying the file path
             - Text widget for displaying additional information
             - Labels for displaying energy, cursor, and data values
             - Buttons for exporting raw data and copying images to the clipboard
+            
         Event Bindings:
+        --------
             - Motion notify event for matplotlib figures
             - Button press event for matplotlib figures
             - Button release event for matplotlib figures
             - FocusIn event for the additional information text widget
+            
         Methods Called:
-            - __tp_move_
-            - __tp_press_
-            - __tp_release_
-            - __tp_move
-            - __tp_press
-            - __tp_release
+        --------
+            - __ups
             - __export
             - __export_casa
             - __copy_to_clipboard
             - __trans_plot_job
+            
         Note:
+        --------
             The method uses the Tkinter library for GUI components and matplotlib for plotting.
         
         """
@@ -1529,9 +1861,9 @@ class spectrogram:
         self.rpf = Figure(figsize=(15, 4.5), layout='constrained')
         self.rpo = tkagg.FigureCanvasTkAgg(self.rpf, master=fr_fig)
         self.rpo.get_tk_widget().grid(row=0, column=0)
-        self.rpo.mpl_connect('motion_notify_event', self.__tp_move_)
-        self.rpo.mpl_connect('button_press_event', self.__tp_press_)
-        self.rpo.mpl_connect('button_release_event', self.__tp_release_)
+        self.rpo.mpl_connect('motion_notify_event', self.__rp_move)
+        self.rpo.mpl_connect('button_press_event', self.__rp_press)
+        self.rpo.mpl_connect('button_release_event', self.__rp_release)
         
         self.tpf = Figure(figsize=(15, 4.5), layout='constrained')
         self.tpo = tkagg.FigureCanvasTkAgg(self.tpf, master=fr_fig)
@@ -1540,12 +1872,19 @@ class spectrogram:
         self.tpo.mpl_connect('button_press_event', self.__tp_press)
         self.tpo.mpl_connect('button_release_event', self.__tp_release)
         
+        self.rgf = Figure(figsize=(0.25, 4.5), layout='constrained')
+        self.rgo = tkagg.FigureCanvasTkAgg(self.rgf, master=fr_fig)
+        self.rgo.get_tk_widget().grid(row=0, column=1)
+        self.rgo.mpl_connect('motion_notify_event', self.__rg_move)
+        self.rgo.mpl_connect('button_press_event', self.__rg_press)
+        self.rgo.mpl_connect('button_release_event', self.__rg_release)
+        
         fr_info=tk.Frame(self.tpg,bg='white',bd=10)
         fr_info.grid(row=0,column=1)
         
         self.l_path = tk.Text(fr_info, wrap='word', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled',height=3,width=30)
         self.l_path.grid(row=0, column=0)
-        self.l_path.config(width=max(self.lst)+1, state='normal')
+        self.l_path.config(width=max(self.lst)+2, state='normal')
         self.l_path.delete(1.0, tk.END)
         self.l_path.insert(tk.END,self.rdd)
         self.l_path.see(1.0)
@@ -1554,9 +1893,9 @@ class spectrogram:
         self.info = tk.Text(fr_info, wrap='none', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled', height=10, width=30)
         self.info.grid(row=1, column=0)
         self.info.bind("<FocusIn>", self._select_all)
-        self.info.config(height=len(self.tst.split('\n')), width=max(self.lst)+1, state='normal')
+        self.info.config(height=len(self.tst.split('\n')), width=max(self.lst)+2, state='normal')
         self.info.insert(tk.END, self.tst)
-        self.info.see(tk.END)
+        self.info.see(1.0)
         self.info.config(state='disabled')
         
         self.l_cx=tk.Label(fr_info,text='%9s'%'Energy : ',fg='green',font=('Arial',18),bg='white',width=20,anchor='w')
@@ -1568,22 +1907,38 @@ class spectrogram:
         self.l_dy=tk.Label(fr_info,text='%11s'%'Data : ',fg='red',font=('Arial',18),bg='white',width=20,anchor='w')
         self.l_dy.grid(row=4,column=0)
         
-        self.b_exp = tk.Button(fr_info, text='Export Raw Data ( .txt )', command=self.__export, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
-        self.b_exp.grid(row=5, column=0)
+        self.b_ups = tk.Button(fr_info, text='Fermi Level Fitting', command=self.__ups, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
+        self.b_ups.grid(row=5, column=0)
         
-        self.b_exp_casa = tk.Button(fr_info, text='Export Raw Data ( _Casa.txt )', command=self.__export_casa, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
-        self.b_exp_casa.grid(row=6, column=0)
+        self.b_exp = tk.Button(fr_info, text='Export Data ( .txt )', command=self.__export, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
+        self.b_exp.grid(row=6, column=0)
+        
+        self.b_exp_casa = tk.Button(fr_info, text='Export Data ( _Casa.txt )', command=self.__export_casa, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
+        self.b_exp_casa.grid(row=7, column=0)
         
         self.copy_button = tk.Button(fr_info, text="Copy Image to Clipboard", width=30, height=1, font=('Arial', 12, "bold"), bg='white', fg='red', bd=5, command=self.__copy_to_clipboard)
-        self.copy_button.grid(row=7, column=0)
+        self.copy_button.grid(row=8, column=0)
         
         self.__trans_plot_job()
         # self.tpg.update()
-        self.tpg.mainloop()
+        self.tpg.bind("<Return>", self.__rg_entry)
+        self.tpg.update()
     
     def __export(self):
         os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
-        x,y=self.x,self.y
+        phi_max = max([self.rr1, self.rr2])
+        phi_min = min([self.rr1, self.rr2])
+        i = (self.phi<phi_max) & (self.phi>phi_min)
+        x = self.x
+        if self.type=='raw':
+            y = np.sum(self.data.to_numpy()[:,i], 1)
+        elif self.type=='smooth':
+            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
+        elif self.type=='fd':
+            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
+            y=np.diff(y)/np.diff(self.ev)
+        else:
+            y = self.y
         f = open(self.s_exp, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         f.write('Kinetic Energy'+'\t'+'Intensity'+'\n')
         for i in range(len(x)):
@@ -1603,7 +1958,19 @@ class spectrogram:
     def __export_casa(self):
     # Casa.txt format more complete version
         os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
-        x,y=self.x,self.y
+        phi_max = max([self.rr1, self.rr2])
+        phi_min = min([self.rr1, self.rr2])
+        i = (self.phi<phi_max) & (self.phi>phi_min)
+        x = self.x
+        if self.type=='raw':
+            y = np.sum(self.data.to_numpy()[:,i], 1)
+        elif self.type=='smooth':
+            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
+        elif self.type=='fd':
+            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
+            y=np.diff(y)/np.diff(self.ev)
+        else:
+            y = self.y
         f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         f.write(f'[Info]\n'+
             f'Number of Regions=1\n'+
@@ -1619,8 +1986,8 @@ class spectrogram:
                 f.write(f'{v}\n')
         f.write(f'[Info 1]\n')
         key=['Region Name','Acquisition Mode','Energy Scale','Excitation Energy','Center Energy','High Energy','Low Energy','Energy Step','Lens Mode','Pass Energy','Slit','Step Time','Number of Sweeps','Description']
-        for i in range(len(self.dvalue)):
-            if i!=len(self.dvalue)-1:
+        for i in range(len(key)):
+            if i<len(key)-1:
                 if key[i]=='Step Time':
                     f.write(f"{key[i]}={int(float(self.dvalue[i].replace(' s',''))*1000)}\n")
                 elif key[i]=='Pass Energy':
@@ -1649,13 +2016,141 @@ class spectrogram:
             f.write('%-6e' % i+' '+'%-6e' % y[i]+'\n')
         f.close()
     
-    def __tp_move_(self, event):
+    def __rg_entry(self, *args):
+        self.grg=tk.Toplevel(g,bg='white')
+        self.grg.title('Data Range')
+        
+        fr=tk.Frame(self.grg,bg='white')
+        fr.grid(row=0,column=0)
+        
+        self.v_r1=tk.DoubleVar(value=self.rr1)
+        l_rr1in1 = tk.Label(fr, text='From', font=('Arial', 16, "bold"), bg='white')
+        self.rr1_in = tk.Entry(fr, font=("Arial", 16, "bold"), width=10, textvariable=self.v_r1, bd=5)
+        if self.lensmode == 'Transmission':
+            l_rr1in2 = tk.Label(fr, text='mm', font=('Arial', 16, "bold"), bg='white')
+        else:
+            l_rr1in2 = tk.Label(fr, text='deg', font=('Arial', 16, "bold"), bg='white')
+        l_rr1in1.grid(row=0,column=0)
+        self.rr1_in.grid(row=0,column=1)
+        l_rr1in2.grid(row=0,column=2)
+        
+        self.v_r2=tk.DoubleVar(value=self.rr2)
+        l_rr2in1 = tk.Label(fr, text='To', font=('Arial', 16, "bold"), bg='white')
+        self.rr2_in = tk.Entry(fr, font=("Arial", 16, "bold"), width=10, textvariable=self.v_r2, bd=5)
+        if self.lensmode == 'Transmission':
+            l_rr2in2 = tk.Label(fr, text='mm', font=('Arial', 16, "bold"), bg='white')
+        else:
+            l_rr2in2 = tk.Label(fr, text='deg', font=('Arial', 16, "bold"), bg='white')
+        l_rr2in1.grid(row=1,column=0)
+        self.rr2_in.grid(row=1,column=1)
+        l_rr2in2.grid(row=1,column=2)
+        
+        fr1 = tk.Frame(self.grg,bg='white')
+        fr1.grid(row=2,column=0)
+        b1=tk.Button(fr1,text='Confirm',command=self.__save_rg, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+        b1.grid(row=2,column=0)
+        
+        self.grg.bind('<Return>', self.__save_rg)
+        self.grg.focus_set()
+        self.rr1_in.focus_set()
+        self.rr1_in.select_range(0,tk.END)
+        self.rr1_in.icursor(tk.END)
+        self.grg.update()
+
+    def __save_rg(self, *args):
+        try:
+            tmax = max([self.v_r1.get(), self.v_r2.get()])
+            tmin = min([self.v_r1.get(), self.v_r2.get()])
+            if tmin < min(self.phi) or tmax > max(self.phi):
+                tk.messagebox.showwarning("Warning","Invalid Input\nThe range must be within the data range.")
+                self.tpg.focus_set()
+                self.grg.destroy()
+                self.__rg_entry()
+            else:
+                self.rr1, self.rr2 = tmin, tmax
+                self.grg.destroy()
+                try:
+                    self.s1.remove()
+                    self.r1.remove()
+                    self.s2.remove()
+                    self.r2.remove()
+                except: pass
+                self.s1=self.tr_rga.scatter(0,self.rr1,c='r',marker='<',s=200)
+                self.r1 = self.tr_a1.axhline(self.rr1, c='r')
+                self.s2=self.tr_rga.scatter(0,self.rr2,c='r',marker='<',s=200)
+                self.r2 = self.tr_a1.axhline(self.rr2, c='r')
+                self.__tp_a2_plot(self.tr_a1.get_xlim()[0],self.tr_a1.get_xlim()[1])
+                self.tpo.draw()
+                self.rgo.draw()
+                self.rpo.draw()
+        except:
+            tk.messagebox.showwarning("Warning","Invalid Input\n"+str(sys.exc_info()[1]))
+            self.tpg.focus_set()
+            self.grg.destroy()
+            self.__rg_entry()
+    
+    def __rg_move(self, event):
+        if event.inaxes:
+            if self.fr1==True:
+                try:
+                    self.s1.remove()
+                    self.r1.remove()
+                except: pass
+                self.rr1 = event.ydata
+                self.s1=self.tr_rga.scatter(0,self.rr1,c='r',marker='<',s=200)
+                self.r1 = self.tr_a1.axhline(self.rr1, c='r')
+            elif self.fr2==True:
+                try:
+                    self.s2.remove()
+                    self.r2.remove()
+                except: pass
+                self.rr2 = event.ydata
+                self.s2=self.tr_rga.scatter(0,self.rr2,c='r',marker='<',s=200)
+                self.r2 = self.tr_a1.axhline(self.rr2, c='r')
+        self.__tp_a2_plot(self.tr_a1.get_xlim()[0],self.tr_a1.get_xlim()[1])
+        self.tpo.draw()
+        self.rpo.draw()
+        self.rgo.draw()
+    
+    def __rg_press(self, event):
+        if event.button == 1 and event.inaxes:
+            self.fr1 = False
+            self.fr2 = False
+            if abs(self.rr1-event.ydata) < (self.phi[1]-self.phi[0])*len(self.phi)*1/20:
+                try:
+                    self.s1.remove()
+                    self.r1.remove()
+                except: pass
+                self.fr1 = True
+                self.rr1 = event.ydata
+                
+            elif abs(self.rr2-event.ydata) < (self.phi[1]-self.phi[0])*len(self.phi)*1/20:
+                try:
+                    self.s2.remove()
+                    self.r2.remove()
+                except: pass
+                self.fr2 = True
+                self.rr2 = event.ydata
+        elif event.button == 3 and event.inaxes:
+            self.__rg_entry()
+        self.rgo.draw()
+        self.rpo.draw()
+        
+    def __rg_release(self, event):
+        self.fr1 = False
+        self.fr2 = False
+        self.__re_tr_a1_plot(self.tr_a1.get_xlim()[0],self.tr_a1.get_xlim()[1])
+        self.rpo.draw()
+        
+    
+    def __rp_move(self, event):
         # global rpf, rpo, tpf, tpo, tr_a1, tr_a2, xx2, yy2, aa1, aa2, cur, l_cx, l_cy, l_dy
         self.rpf.canvas.get_tk_widget().config(cursor="")
         if event.inaxes:
             self.rpf.canvas.get_tk_widget().config(cursor="tcross")
             self.out = False
             try:
+                # self.xx1.remove()
                 self.xx2.remove()
                 self.yy2.remove()
                 self.cur.remove()
@@ -1693,13 +2188,14 @@ class spectrogram:
                 except:
                     pass
                 # self.xx1.set_data([cxdata,cxdata], self.oy1)
+                # self.xx1=self.tr_a1.axvline(cxdata,color='g')
                 self.xx2=self.tr_a2.axvline(cxdata,color='g')
                 self.yy2=self.tr_a2.axhline(-max(y),color='grey')
                 x,y=x[xi],y[xi]
                 self.cur=self.tr_a2.scatter(x,y,c='r',marker='o',s=30)
                 self.tr_a2.set_ylim(self.oy2)
                 if not self.tp_cf:
-                    # aa1=self.tr_a1.fill_between([ox,cxdata],oy1[0],oy1[1],color='g',alpha=0.2)
+                    # self.aa1=self.tr_a1.fill_between([self.ox,cxdata],self.oy1[0],self.oy1[1],color='g',alpha=0.2)
                     self.aa2=self.tr_a2.fill_between([self.ox,cxdata],self.oy2[0],self.oy2[1],color='g',alpha=0.2)
                     self.tr_a2.set_ylim(self.oy2)
         else:
@@ -1707,6 +2203,7 @@ class spectrogram:
                 self.l_cx.config(text='%9s'%'Energy : ')
                 self.l_cy.config(text='%10s'%'Cursor : ')
                 self.l_dy.config(text='%11s'%'Data : ')
+                # self.xx1.remove()
                 self.xx2.remove()
                 self.yy2.remove()
                 self.cur.remove()
@@ -1720,7 +2217,7 @@ class spectrogram:
         # self.rpo.draw()
         self.tpo.draw()
 
-    def __tp_press_(self, event):
+    def __rp_press(self, event):
         # global tp_cf, rpf, rpo ,tpf, tpo , tr_a1, tr_a2 , x1 , x2 , ox, aa1, aa2
         if event.button == 1 and self.tp_cf:
             self.tp_cf = False
@@ -1741,7 +2238,7 @@ class spectrogram:
         self.tpo.draw()
         
 
-    def __tp_release_(self, event):
+    def __rp_release(self, event):
         # global tp_cf, rpf, rpo ,tpf, tpo , tr_a1, tr_a2, x1, x2 , ox, aa1, aa2
         if event.button == 1 and not self.tp_cf:
             self.rpf.canvas.get_tk_widget().config(cursor="watch")
@@ -1885,6 +2382,8 @@ class spectrogram:
         # tz = griddata((x.flatten(), y.flatten()), tz.flatten(), (tx, ty), method='cubic')
         self.tr_a1.clear()
         self.tr_a1.pcolormesh(tx,ty,tz,cmap=self.cmap)
+        self.r1=self.tr_a1.axhline(self.rr1, c='r')
+        self.r2=self.tr_a1.axhline(self.rr2, c='r')
         if self.lensmode=='Transmission':
             self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
         else:
@@ -1898,7 +2397,10 @@ class spectrogram:
         tx, ty = np.meshgrid(self.ev, self.phi)
         tz = self.data.to_numpy().transpose()
         # self.tr_a1.scatter(self.ev, np.sum(tz,axis=0), c='k', marker='o', s=0.9)
+        self.tr_a1.clear()
         self.tr_a1.pcolormesh(tx,ty,tz,cmap=self.cmap)
+        self.r1=self.tr_a1.axhline(self.rr1, c='r')
+        self.r2=self.tr_a1.axhline(self.rr2, c='r')
         if self.lensmode=='Transmission':
             self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
         else:
@@ -1913,8 +2415,19 @@ class spectrogram:
     
     def __tp_a2_plot(self,xx1,xx2):
         # global tr_a2, oy2
-        y = self.y
+        phi_max = max([self.rr1, self.rr2])
+        phi_min = min([self.rr1, self.rr2])
+        i = (self.phi<phi_max) & (self.phi>phi_min)
         x = self.x
+        if self.type=='raw':
+            y = np.sum(self.data.to_numpy()[:,i], 1)
+        elif self.type=='smooth':
+            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
+        elif self.type=='fd':
+            y=smooth(np.sum(self.data.to_numpy()[:,i].transpose(),axis=0),l=13)
+            y=np.diff(y)/np.diff(self.ev)
+        else:
+            y = self.y
         xi=[]
         for i,v in enumerate(x):
             if v>=xx1 and v<=xx2:
@@ -1939,16 +2452,27 @@ class spectrogram:
         self.tr_a2.set_yticklabels(labels=self.tr_a2.get_yticklabels(), font='Arial', fontsize=14)
         self.oy2=self.tr_a2.get_ylim()
 
+    def __tp_rga_plot(self):
+        self.s1=self.tr_rga.scatter(0,self.phi[0],c='r',marker='<',s=200)
+        self.s2=self.tr_rga.scatter(0,self.phi[-1],c='r',marker='<',s=200)
+        self.tr_rga.set_ylim([self.phi[0], self.phi[-1]])
+        self.tr_rga.set_xticks([])
+        self.tr_rga.set_yticks([])
+    
     def __trans_plot_job(self):
         # global rpf,rpo,tpf,tpo,tr_a1,tr_a2,oxl,oy1
-        self.tr_a1=self.rpf.add_axes([0.1, 0.05, 0.85, 0.9])
-        self.tr_a2=self.tpf.add_axes([0.1, 0.15, 0.85, 0.82])
+        self.tr_a1=self.rpf.add_axes([0.1, 0.05, 0.88, 0.9])
+        self.tr_a2=self.tpf.add_axes([0.1, 0.15, 0.88, 0.82])
+        self.tr_rga=self.rgf.add_axes([0, 0.05, 1, 0.9])
+        self.tr_rga.set_facecolor('lightblue')
         self.__tp_a1_plot()
         self.__tp_a2_plot(self.oxl[0],self.oxl[1])
+        self.__tp_rga_plot()
         # self.rpf.tight_layout()
         # self.tpf.tight_layout()
         self.rpo.draw()
         self.tpo.draw()
+        self.rgo.draw()
             
 def trans_plot():
     global gtp
@@ -1960,9 +2484,11 @@ def trans_plot():
     b_smooth.grid(row=0, column=1)
     b_fd = tk.Button(gtp, text='First Derivative', command=fd_plot, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b_fd.grid(row=0, column=2)
+    gtp.focus_set()
+    gtp.bind('<Return>', raw_plot)
     gtp.update()
 
-def raw_plot():
+def raw_plot(*args):
     gtp.destroy()
     cmap=value3.get()
     s=spectrogram(g, data, cmap)
@@ -7657,6 +8183,29 @@ def o_expte():
 
 
 def interp(x: float, xp: float, fp: float) -> np.ndarray:
+    """
+    Interpolates a 1-D function.
+    Given the data points (xp, fp), this function returns the interpolated values at the points x.
+    If the values in x are outside the range of xp, linear extrapolation is used.
+    A more general version of np.interp, which can handle decreasing x-coordinates.
+    
+    Args
+    ----------
+        x (float): The x-coordinates at which to evaluate the interpolated values.
+        xp (float): The x-coordinates of the data points.
+        fp (float): The y-coordinates of the data points.
+
+    Returns
+    ----------
+        np.ndarray: The interpolated values, same shape as x.
+    
+    Example
+    ----------
+        >>> interp(1.5, [1, 2], [2, 3])
+        2.5
+        >>> interp([1.5, 2.5], [1, 2], [2, 3])
+        array([2.5, 3.5])
+    """
     if xp[1] >= xp[0]:
         y=np.interp(x,xp,fp)
         try:
@@ -10261,9 +10810,12 @@ def bareband():
 
 
 def plot(event):
-    plot1()
-    plot2()
-    plot3()
+    if value.get() == '---Plot1---' and value1.get() == '---Plot2---' and value2.get() == '---Plot3---':
+        trans_plot()
+    else:
+        plot1()
+        plot2()
+        plot3()
     
 im_kernel = 17
 d,l,p = 8,20,3
