@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.7.3"
-__release_date__ = "2024-12-26"
+__version__ = "4.8"
+__release_date__ = "2024-12-30"
 import os, inspect
 import json
 import tkinter as tk
@@ -1454,7 +1454,7 @@ class spectrogram:
         self.fx2 = False
         self.fx3 = False
     
-    def sel_y(self):
+    def __sel_y(self):
         phi_max = max([self.rr1, self.rr2])
         phi_min = min([self.rr1, self.rr2])
         i = (self.phi<=phi_max) & (self.phi>=phi_min)
@@ -1582,7 +1582,7 @@ class spectrogram:
     
     def update_fit(self, *args):
         e = self.ev
-        x, ss = self.sel_y()
+        x, ss = self.__sel_y()
         fit_type = self.selected_fit.get()
         if fit_type == "Fermi-Dirac Fitting":
             try:
@@ -1664,7 +1664,7 @@ class spectrogram:
     
     def plot_spectrum(self, fit_type):
         e = self.ev
-        x, ss = self.sel_y()
+        x, ss = self.__sel_y()
         # Smooth the data using Gaussian smoothing
         smoothed_ss = gaussian_filter1d(ss, sigma=2)
 
@@ -2101,7 +2101,7 @@ class spectrogram:
     
     def __export(self):
         os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
-        x, y = self.sel_y()
+        x, y = self.__sel_y()
         f = open(self.s_exp, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         f.write('Kinetic Energy'+'\t'+'Intensity'+'\n')
         for i in range(len(x)):
@@ -2121,7 +2121,7 @@ class spectrogram:
     def __export_casa(self):
     # Casa.txt format more complete version
         os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
-        x, y = self.sel_y()
+        x, y = self.__sel_y()
         f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         f.write(f'[Info]\n'+
             f'Number of Regions=1\n'+
@@ -2168,7 +2168,7 @@ class spectrogram:
         f.close()
     
     def __rg_entry(self, *args):
-        self.grg=tk.Toplevel(g,bg='white')
+        self.grg=tk.Toplevel(self.g, bg='white')
         self.grg.title('Data Range')
         
         fr=tk.Frame(self.grg,bg='white')
@@ -2345,7 +2345,12 @@ class spectrogram:
                 unit=' mm'
             else:
                 unit=' deg'
-            cxdata = event.xdata
+            if event.xdata>self.ev[-1]:
+                cxdata = self.ev[-1]
+            elif event.xdata<self.ev[0]:
+                cxdata = self.ev[0]
+            else:
+                cxdata = event.xdata
             cydata = event.ydata
             self.tx = cxdata
             xf = (cxdata > self.oxl[0] and cxdata < self.oxl[1])
@@ -2382,7 +2387,7 @@ class spectrogram:
                 self.xx2=self.tr_a2.axvline(cxdata,color='g')
                 self.yy2=self.tr_a2.axhline(-max(y),color='grey')
                 
-                x, y = self.sel_y()
+                x, y = self.__sel_y()
                     
                 x,y=x[xi],y[xi]
                 self.cur=self.tr_a2.scatter(x,y,c='r',marker='o',s=30)
@@ -2469,7 +2474,12 @@ class spectrogram:
             except:
                 pass
             self.tpf.canvas.get_tk_widget().config(cursor="tcross")
-            cxdata = event.xdata
+            if event.xdata>self.ev[-1]:
+                cxdata = self.ev[-1]
+            elif event.xdata<self.ev[0]:
+                cxdata = self.ev[0]
+            else:
+                cxdata = event.xdata
             cydata = event.ydata
             self.tx = cxdata
             xf = (cxdata >= self.oxl[0] and cxdata <= self.oxl[1])
@@ -2486,7 +2496,7 @@ class spectrogram:
                 else:
                     xi=np.argwhere(abs(x-cxdata) <= (x[1]-x[0])/2)[0][0]
                 
-                x, y = self.sel_y()
+                x, y = self.__sel_y()
                     
                 x,y=x[xi],y[xi]
                 try:
@@ -2569,6 +2579,7 @@ class spectrogram:
         # self.tr_a1.scatter(self.ev, np.sum(tz,axis=0), c='k', marker='o', s=0.9)
         x = self.ev
         xi=[]
+        xx1, xx2 = self.near(x, xx1), self.near(x, xx2)
         for i,v in enumerate(x):
             if v>=xx1 and v<=xx2:
                 xi.append(i)
@@ -2610,13 +2621,14 @@ class spectrogram:
         # self.tr_a1.set_xlim(self.tr_a1.get_xlim())
         # self.x1, = self.tr_a1.plot([],[],'g-')
         # self.xx1, = self.tr_a1.plot([],[],'g-')
+        self.tr_a1.set_xlim([sorted([self.ev[0], self.ev[-1]])[0]-abs(self.ev[-1]-self.ev[0])/50, sorted([self.ev[0], self.ev[-1]])[1]+abs(self.ev[-1]-self.ev[0])/50])
         self.tr_a1.set_ylim([sorted([self.phi[0], self.phi[-1]])[0]-abs(self.phi[-1]-self.phi[0])/20, sorted([self.phi[0], self.phi[-1]])[1]+abs(self.phi[-1]-self.phi[0])/20])
         self.oxl=self.tr_a1.get_xlim()
         self.oy1=self.tr_a1.get_ylim()
     
     def __tp_a2_plot(self,xx1,xx2):
         # global tr_a2, oy2
-        x, y = self.sel_y()
+        x, y = self.__sel_y()
         xi=[]
         for i,v in enumerate(x):
             if v>=xx1 and v<=xx2:
@@ -2726,15 +2738,46 @@ def o_cal(*e):
                     * 1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
     caldeg.config(text='Deg = '+'%.5f' % ans)
 
-
-import threading
-
 def cal(*e):
     t = threading.Thread(target=o_cal)
     t.daemon = True
     t.start()
 
+def change_file(*args):
+    global data, rdd
+    b_name.config(state='normal')
+    b_excitation.config(state='normal')
+    b_desc.config(state='normal')
+    name = namevar.get()
+    for i, j, k in zip(lfs.name, lfs.data, lfs.path):
+        if name == i:
+            data = j
+            pr_load(j)
+            rdd = k
+    st.put(name)
+    if value.get() != '---Plot1---':
+        o_plot1()
 
+class loadfiles:
+    def __init__(self, files):
+        self.path = [f for f in files]
+        try:
+            self.r1 = [f.split('/')[-1].split('#id#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '').split('r1')[1] for f in self.path]
+        except:
+            self.r1 = [f.split('/')[-1].split('#id#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
+        self.name = [f.split('/')[-1].split('#id#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
+        self.path = res(self.r1, self.path)
+        self.name = res(self.r1, self.name)
+        self.r1 = res(self.r1, self.r1)
+        if '.h5' in self.path[0]:
+            self.data = [load_h5(f) for f in self.path]
+        elif '.json' in self.path[0]:
+            self.data = [load_json(f) for f in self.path]
+        elif '.txt' in self.path[0]:
+            self.data = [load_txt(f) for f in self.path]
+        else:
+            self.data = []
+                
 def pr_load(data):
     global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
     dvalue = [data.attrs[i] for i in data.attrs.keys()]
@@ -2798,32 +2841,53 @@ def pr_load(data):
         in_fit.config(state='normal')
         b_fit.config(state='normal')
     os.chdir(cdir)
-    np.savez('rd', path=dpath, name=name, ev=ev,
+    np.savez('rd', path=dpath, name=name, lpath=[i for i in lfs.path], lname=[i for i in lfs.name], ev=ev,
              phi=phi, st=st, lst=lst)
 
 
 fpr = 0
 
-
 def o_load():
-    global data, h, m, limg, img, rdd, path, st, fpr
-    tpath = fd.askopenfilename(title="Select Raw Data", filetypes=(
+    global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar
+    files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
+    tpath=files
+    print(tpath)
+    # tpath = fd.askopenfilename(title="Select Raw Data", filetypes=(
+    #     ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
-    if len(tpath) > 2:
+    if len(files) > 0:
+        lfs = loadfiles(files)
+        tpath = lfs.path[0]
         b_name.config(state='normal')
         b_excitation.config(state='normal')
         b_desc.config(state='normal')
         rdd = tpath
         fpr = 0
+        if len(files) > 1:
+            try:
+                l_name.pack_forget()
+            except:
+                pass
+            nlist = lfs.name
+            namevar = tk.StringVar(value=nlist[0])
+            l_name = tk.OptionMenu(fr, namevar, *nlist, command=change_file)
+            l_name.config(font=('Arial', 16, 'bold'))
+            l_name.pack(before=l_path, fill='x')
+        else:
+            try:
+                l_name.pack_forget()
+            except:
+                pass
     else:
         b_name.config(state='disable')
         b_excitation.config(state='disable')
         b_desc.config(state='disable')
         rdd = path
+        
     limg.config(image=img[np.random.randint(len(img))])
     if '.h5' in tpath:
-        data = load_h5(tpath)  # data save as xarray.DataArray format
+        data = lfs.data[0]  # data save as xarray.DataArray format
         pr_load(data)
         tname = tpath.split('/')
         tname = tname[-1].split('#id#')[0].replace('.h5', '')
@@ -2833,15 +2897,23 @@ def o_load():
             print('name need correction')
         else:
             print('name correct')
-        st.put('Done')
+        st.put(tname)
     elif '.json' in tpath:
-        data = load_json(tpath)
+        data = lfs.data[0]
         pr_load(data)
-        st.put('Done')
+        tname = tpath.split('/')
+        tname = tname[-1].split('#id#')[0].replace('.json', '')
+        print(tname)
+        if tname != name:
+            print('path: ',tname, '\njson: ', name)
+            print('name need correction')
+        else:
+            print('name correct')
+        st.put(tname)
     elif '.txt' in tpath:
-        data = load_txt(tpath)
+        data = lfs.data[0]
         pr_load(data)
-        st.put('Done')
+        st.put(tname)
     else:
         st.put('')
         pass
@@ -11311,20 +11383,18 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=UserWarning)
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     try:
-        with np.load('rd.npz', 'rb') as f:
-            path = str(f['path'])
-            name = str(f['name'])
-            ev = f['ev']
-            phi = f['phi']
-            st = str(f['st'])
-            lst = f['lst']
+        with np.load('rd.npz', 'rb') as ff:
+            path = str(ff['path'])
+            name = str(ff['name'])
+            lpath = ff['lpath']
+            lname = ff['lname']
+            ev = ff['ev']
+            phi = ff['phi']
+            st = str(ff['st'])
+            lst = ff['lst']
             print('\nRaw Data preloaded:\n\n')
-            if '.h5' in path:
-                data = load_h5(path)
-            elif '.json' in path:
-                data = load_json(path)
-            else:
-                data = load_txt(path)
+            lfs = loadfiles(lpath)
+            data = lfs.data[0]
             for _ in data.attrs.keys():
                 if _ != 'Description':
                     print(_,':', data.attrs[_])
@@ -11969,7 +12039,14 @@ if __name__ == '__main__':
     tt.start()
     try:
         info.config(state='normal')
+        print('lname:\n')
         pr_load(data)
+        if len(lfs.name) > 1:
+            nlist = lfs.name
+            namevar = tk.StringVar(value=nlist[0])
+            l_name = tk.OptionMenu(fr, namevar, *nlist, command=change_file)
+            l_name.config(font=('Arial', 16, 'bold'))
+            l_name.pack(before=l_path, fill='x')
     except:
         pass
     print(f"Version: {__version__}")
