@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.8"
-__release_date__ = "2024-12-30"
+__version__ = "4.9"
+__release_date__ = "2024-01-01"
 import os, inspect
 import json
 import tkinter as tk
@@ -14,6 +14,7 @@ import sys
 from ctypes import windll
 import re
 import copy
+from datetime import datetime
 def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
@@ -1381,8 +1382,18 @@ class spectrogram:
         s_yl (str): The y-axis label for the exported data file.
         type (str): The type of data.
     """
-    
-    def __init__(self, g, data, cmap) -> None:
+    def __init__(self, data=[], path=[]) -> None:
+        self.lfs = None
+        if len(path) > 1:
+            self.lfs = loadfiles(path)
+            self.data = self.lfs.data[0]
+        else:
+            self.data = data
+        self.__preload(self.data)
+        self.rr1 = self.phi[0]
+        self.rr2 = self.phi[-1]
+            
+    def __preload(self, data=[]) -> None:
         """Initialize the spectrogram class.
         
         Args
@@ -1398,32 +1409,30 @@ class spectrogram:
         -----------
         None
         """
-        self.g = g
-        self.tp_cf = True
         self.data = data
-        self.cmap = cmap
-        dvalue = [data.attrs[i] for i in data.attrs.keys()]
+        self.tp_cf = True
+        dvalue = [self.data.attrs[i] for i in self.data.attrs.keys()]
         self.dvalue = dvalue
         st=''
         lst=[]
-        for _ in data.attrs.keys():
+        for _ in self.data.attrs.keys():
             if _ == 'Description':
-                ts=str(data.attrs[_])
+                ts=str(self.data.attrs[_])
                 ts=ts.replace('\n\n\n','\n')
                 ts=ts.replace('\n\n','\n')
                 t=ts.split('\n')
-                st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                     ')
-                # st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                         ')
+                st+=str(_)+' : '+str(self.data.attrs[_]).replace('\n','\n                     ')
+                # st+=str(_)+' : '+str(self.data.attrs[_]).replace('\n','\n                         ')
                 lst.append(len(' : '+t[0]))
                 for i in range(1,len(t)):
                     lst.append(len('              '+t[i]))
             elif _ == 'Path':
                 pass
             else:
-                st+=str(_)+' : '+str(data.attrs[_])+'\n'
-                lst.append(len(str(_)+' : '+str(data.attrs[_])))
+                st+=str(_)+' : '+str(self.data.attrs[_])+'\n'
+                lst.append(len(str(_)+' : '+str(self.data.attrs[_])))
         tst=st
-        ev, phi = data.indexes.values()
+        ev, phi = self.data.indexes.values()
         self.ev = np.float64(ev)
         self.phi = np.float64(phi)
         self.name = dvalue[0]
@@ -1440,19 +1449,42 @@ class spectrogram:
         self.tst = tst
         self.lst = lst
         self.x = ev
-        self.y = np.sum(data.to_numpy().transpose(),axis=0)
+        self.y = np.sum(self.data.to_numpy().transpose(),axis=0)
         self.s_exp=self.name+'.txt'
-        self.s_exp_casa=self.name+'_Casa.txt'
+        self.s_exp_casa=self.name+'_Casa.vms'
         self.s_yl='Intensity (Counts)'
         self.type='raw'
-        self.rr1 = self.phi[0]
-        self.rr2 = self.phi[-1]
         self.fr1 = False
         self.fr2 = False
         self.fr3 = False
         self.fx1 = False
         self.fx2 = False
         self.fx3 = False
+    
+    def __change_file(self, *args):
+        name = self.namevar.get()
+        for i, j in zip(self.lfs.name, self.lfs.data):
+            if name == i:
+                self.data = j
+        self.__preload(self.data)
+        self.l_path.config(width=max(self.lst)+2, state='normal')
+        self.l_path.delete(1.0, tk.END)
+        self.l_path.insert(tk.END,self.rdd)
+        self.l_path.see(1.0)
+        self.l_path.config(state='disabled')
+        self.info.config(height=len(self.tst.split('\n')), width=max(self.lst)+2, state='normal')
+        self.info.delete(1.0, tk.END)
+        self.info.insert(tk.END, self.tst)
+        self.info.see(1.0)
+        self.info.config(state='disabled')
+        try:self.s3.remove()
+        except: pass
+        self.__tp_a1_plot()
+        self.__tp_a2_plot(self.oxl[0],self.oxl[1])
+        self.__tp_rga_plot()
+        self.rpo.draw()
+        self.tpo.draw()
+        self.rgo.draw()
     
     def __sel_y(self):
         phi_max = max([self.rr1, self.rr2])
@@ -1982,13 +2014,34 @@ class spectrogram:
         if dtype=='raw':
             self.s_yl='Intensity (Counts)'
             self.s_exp=self.name+'.txt'
-            self.s_exp_casa=self.name+'_Casa.txt'
+            self.s_exp_casa=self.name+'_Casa.vms'
         else:
             self.s_yl='Intensity ('+unit+')'
             self.s_exp=self.name+'_'+dtype+'.txt'
-            self.s_exp_casa=self.name+'_'+dtype+'_Casa.txt'
+            self.s_exp_casa=self.name+'_'+dtype+'_Casa.vms'
         
-    def plot(self):
+    def __cf_up(self, *args):
+        now = self.namevar.get()
+        for i, j in enumerate(self.lfs.name):
+            if now == j:
+                if i == 0:
+                    self.namevar.set(self.lfs.name[-1])
+                else:
+                    self.namevar.set(self.lfs.name[i-1])
+        self.__change_file()
+
+    def __cf_down(self, *args):
+        now = self.namevar.get()
+        for i, j in enumerate(self.lfs.name):
+            if now == j:
+                if i == len(self.lfs.name)-1:
+                    self.namevar.set(self.lfs.name[0])
+                else:
+                    self.namevar.set(self.lfs.name[i+1])
+        self.__change_file()
+    
+    
+    def plot(self, g, cmap='viridis'):
         """Plot the spectrogram data in a new Tkinter Toplevel window.
         This method creates a new Tkinter Toplevel window and populates it with
         various widgets to display the spectrogram data and related information.
@@ -2027,6 +2080,8 @@ class spectrogram:
         
         """
         # global tpf,tpo,rpf,rpo,l_cx,l_cy,l_dy
+        self.g = g
+        self.cmap = cmap
         self.tpg = tk.Toplevel(self.g, bg='white')
         self.tpg.title('Spectrogram: '+self.name)
         
@@ -2054,49 +2109,61 @@ class spectrogram:
         self.rgo.mpl_connect('button_press_event', self.__rg_press)
         self.rgo.mpl_connect('button_release_event', self.__rg_release)
         
-        fr_info=tk.Frame(self.tpg,bg='white',bd=10)
-        fr_info.grid(row=0,column=1)
-        
-        self.l_path = tk.Text(fr_info, wrap='word', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled',height=3,width=30)
-        self.l_path.grid(row=0, column=0)
+        self.fr_info=tk.Frame(self.tpg,bg='white',bd=10)
+        self.fr_info.grid(row=0,column=1)
+        if self.lfs is not None:    
+            nlist = self.lfs.name
+            self.namevar = tk.StringVar(value=nlist[0])
+            self.l_name = tk.OptionMenu(self.fr_info, self.namevar, *nlist, command=self.__change_file)
+            self.l_name.config(font=('Arial', 13, 'bold'))
+            self.l_name.grid(row=0, column=0, sticky='ew')
+        self.l_path = tk.Text(self.fr_info, wrap='word', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled',height=3,width=30)
+        self.l_path.grid(row=1, column=0)
         self.l_path.config(width=max(self.lst)+2, state='normal')
         self.l_path.delete(1.0, tk.END)
         self.l_path.insert(tk.END,self.rdd)
         self.l_path.see(1.0)
         self.l_path.config(state='disabled')
         
-        self.info = tk.Text(fr_info, wrap='none', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled', height=10, width=30)
-        self.info.grid(row=1, column=0)
+        self.info = tk.Text(self.fr_info, wrap='none', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled', height=10, width=30)
+        self.info.grid(row=2, column=0)
         self.info.bind("<FocusIn>", self._select_all)
         self.info.config(height=len(self.tst.split('\n')), width=max(self.lst)+2, state='normal')
         self.info.insert(tk.END, self.tst)
         self.info.see(1.0)
         self.info.config(state='disabled')
         
-        self.l_cx=tk.Label(fr_info,text='%9s'%'Energy : ',fg='green',font=('Arial',18),bg='white',width=20,anchor='w')
-        self.l_cx.grid(row=2,column=0)
+        self.l_cx=tk.Label(self.fr_info,text='%9s'%'Energy : ',fg='green',font=('Arial',18),bg='white',width=20,anchor='w')
+        self.l_cx.grid(row=3,column=0)
         
-        self.l_cy=tk.Label(fr_info,text='%10s'%'Cursor : ',font=('Arial',18),bg='white',width=20,anchor='w')
-        self.l_cy.grid(row=3,column=0)
+        self.l_cy=tk.Label(self.fr_info,text='%10s'%'Cursor : ',font=('Arial',18),bg='white',width=20,anchor='w')
+        self.l_cy.grid(row=4,column=0)
         
-        self.l_dy=tk.Label(fr_info,text='%11s'%'Data : ',fg='red',font=('Arial',18),bg='white',width=20,anchor='w')
-        self.l_dy.grid(row=4,column=0)
+        self.l_dy=tk.Label(self.fr_info,text='%11s'%'Data : ',fg='red',font=('Arial',18),bg='white',width=20,anchor='w')
+        self.l_dy.grid(row=5,column=0)
         
-        self.b_ups = tk.Button(fr_info, text='Fermi Level Fitting', command=self.__ups, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
-        self.b_ups.grid(row=5, column=0)
+        self.b_ups = tk.Button(self.fr_info, text='Fermi Level Fitting', command=self.__ups, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
+        self.b_ups.grid(row=6, column=0)
         
-        self.b_exp = tk.Button(fr_info, text='Export Data ( .txt )', command=self.__export, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
-        self.b_exp.grid(row=6, column=0)
+        self.b_exp = tk.Button(self.fr_info, text='Export Data ( .txt )', command=self.__export, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
+        self.b_exp.grid(row=7, column=0)
         
-        self.b_exp_casa = tk.Button(fr_info, text='Export Data ( _Casa.txt )', command=self.__export_casa, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
-        self.b_exp_casa.grid(row=7, column=0)
+        if self.lfs is not None:
+            text_casa = 'Export All Data ( _Casa.vms )'
+        else:
+            text_casa = 'Export Data ( _Casa.vms )'
+        self.b_exp_casa = tk.Button(self.fr_info, text=text_casa, command=self.__export_casa, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
+        self.b_exp_casa.grid(row=8, column=0)
         
-        self.copy_button = tk.Button(fr_info, text="Copy Image to Clipboard", width=30, height=1, font=('Arial', 12, "bold"), bg='white', fg='red', bd=5, command=self.__copy_to_clipboard)
-        self.copy_button.grid(row=8, column=0)
+        self.copy_button = tk.Button(self.fr_info, text="Copy Image to Clipboard", width=30, height=1, font=('Arial', 12, "bold"), bg='white', fg='red', bd=5, command=self.__copy_to_clipboard)
+        self.copy_button.grid(row=9, column=0)
         
         self.__trans_plot_job()
         # self.tpg.update()
         self.tpg.bind("<Return>", self.__rg_entry)
+        if self.lfs is not None:
+            self.tpg.bind('<Up>', self.__cf_up)
+            self.tpg.bind('<Down>', self.__cf_down)
         self.tpg.update()
     
     def __export(self):
@@ -2117,55 +2184,193 @@ class spectrogram:
     #     for i in range(len(x)):
     #         f.write('%-6e' % x[i]+'\t'+'%-6e' % y[i]+'\n')
     #     f.close()
-    
-    def __export_casa(self):
-    # Casa.txt format more complete version
-        os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+    def gen_casa_body(self):
         x, y = self.__sel_y()
-        f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
-        f.write(f'[Info]\n'+
-            f'Number of Regions=1\n'+
-            f'[Region 1]\n'+
-            f'Region Name={self.name}\n'+
-            f'Dimension 1 name=Kinetic Energy [eV]\n'+
-            f'Dimension 1 size={len(x)}\n'+
-            f'Dimension 1 scale=')
-        for i,v in enumerate(x):
-            if i!=len(x)-1:
-                f.write(f'{v} ')
-            else:
-                f.write(f'{v}\n')
-        f.write(f'[Info 1]\n')
-        key=['Region Name','Acquisition Mode','Energy Scale','Excitation Energy','Center Energy','High Energy','Low Energy','Energy Step','Lens Mode','Pass Energy','Slit','Step Time','Number of Sweeps','Description']
-        for i in range(len(key)):
-            if i<len(key)-1:
-                if key[i]=='Step Time':
-                    f.write(f"{key[i]}={int(float(self.dvalue[i].replace(' s',''))*1000)}\n")
-                elif key[i]=='Pass Energy':
-                    f.write(f"{key[i]}={int(float(self.dvalue[i].replace(' eV','')))}\n")
-                elif key[i]=='Energy Scale' and self.e_mode=='Binding':
-                    f.write(f"{key[i]}=Kinetic\n")
-                elif key[i]=='Low Energy' and self.e_mode=='Binding':
-                    f.write(f"{key[i]}={21.2-float(self.dvalue[5].replace(' eV','').replace(' (B.E.)',''))}\n")
-                elif key[i]=='High Energy' and self.e_mode=='Binding':
-                    f.write(f"{key[i]}={21.2-float(self.dvalue[6].replace(' eV','').replace(' (B.E.)',''))}\n")
-                else:
-                    f.write(f"{key[i]}={self.dvalue[i].replace(' eV','').replace(' (K.E.)','')}\n")
-            else:
-                f.write(f"{key[i]}={self.dvalue[i]}\n") 
-        f.write(f'Detector First X-Channel=0\n'+
-                f'Detector Last X-Channel=0\n'+
-                f'Detector First Y-Channel=0\n'+
-                f'Detector Last Y-Channel=0\n'+
-                f'Number of Slices={len(self.phi)}\n'+
-                f'spectrum Name={self.name}\n'+
-                f'Comments={self.desc}; Slit: {self.dvalue[10]};\n')
-        f.write(f'[Run Mode Information 1]\n'+
-                f'Name=Normal\n')
-        f.write(f'[Data1]\n')
+        name = f'''{self.name}
+Spectrum
+'''
+        current_date = datetime.now().strftime("%Y_%m_%d_%H_%M_%S_")
+        date = current_date.replace('_','\n')+'1\n'+str(len(self.tst.split('\n'))+5)+'\n'
+        info = rf'''Casa Info Follows
+0
+0
+0
+0
+{self.tst}'''
+        if self.e_photon == 21.2:
+            source = 'He I'
+        elif self.e_photon == 40.8:
+            source = 'He II'
+        elif self.e_photon == 1253.6:
+            source = 'Mg'
+        elif self.e_photon == 1486.6:
+            source = 'Al'
+        elif self.e_photon == 3000.0:
+            source = 'ES40'
+        else:
+            source = 'Sync'
+        if '_' in self.name:
+            n1, n2 = self.name.split('_')[0], ''
+        else:
+            n1, n2 = self.name, ''
+        params = rf'''
+XPS
+0
+{source}
+{self.e_photon}
+0
+0
+0
+54
+0
+FAT
+{self.dvalue[9].replace(' eV','')}
+1e+037
+0
+0
+1e+037
+1e+037
+1e+037
+1e+037
+{n1}
+{n2}
+-1
+Kinetic Energy
+eV
+{self.ev[0]}
+{self.dvalue[7].replace(' eV','')}
+1
+Intensity
+d
+pulse counting
+{self.dvalue[11].replace(' s','')}
+{self.dvalue[12]}
+0
+0.0
+0.0
+0.0
+0
+{len(x)}
+0
+1
+'''
+        data = ''
         for i in range(len(x)):
-            f.write('%-6e' % i+' '+'%-6e' % y[i]+'\n')
+            data += f'{int(y[i])}\n'
+        return name+date+info+params+data
+        
+    def __export_casa(self):
+    # Casa.vms format complete version
+        if self.lfs is not None:
+            path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.lfs.path[0].removesuffix(self.lfs.path[0].split('/')[-1]), initialfile=self.lfs.name[0])
+            if path.split('.')[-1] != 'vms':
+                path += '.vms'
+            os.chdir(path.removesuffix(path.split('/')[-1]))
+            f = open(path, 'w', encoding='utf-8')
+            head = rf'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
+Not Specified
+PREVAC EA15
+2D Lab
+Not Specified
+3
+Casa Info Follows CasaXPS Version 2.3.18PR1.0
+0
+Number of Regions={len(self.lfs.name)}
+NORM
+REGULAR
+0
+1
+Data Set
+d
+0
+0
+0
+0
+{len(self.lfs.name)}
+'''     
+            body = ''
+            for i in self.lfs.data:
+                s=spectrogram(i)
+                s.rr1, s.rr2 = self.rr1, self.rr2
+                body+=s.gen_casa_body()
+            f.write(head+body+'end of experiment\n')
+        else:
+            os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+            f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
+            head = r'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
+Not Specified
+PREVAC EA15
+2D Lab
+Not Specified
+3
+Casa Info Follows CasaXPS Version 2.3.18PR1.0
+0
+Number of Regions=1
+NORM
+REGULAR
+0
+1
+Data Set
+d
+0
+0
+0
+0
+1
+'''
+# 1: Number of Regions
+
+            f.write(head+self.gen_casa_body()+'end of experiment\n')
         f.close()
+    
+    # def __export_casa(self):
+    # # Casa.txt format more complete version
+    #     os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+    #     x, y = self.__sel_y()
+    #     f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
+    #     f.write(f'[Info]\n'+
+    #         f'Number of Regions=1\n'+
+    #         f'[Region 1]\n'+
+    #         f'Region Name={self.name}\n'+
+    #         f'Dimension 1 name=Kinetic Energy [eV]\n'+
+    #         f'Dimension 1 size={len(x)}\n'+
+    #         f'Dimension 1 scale=')
+    #     for i,v in enumerate(x):
+    #         if i!=len(x)-1:
+    #             f.write(f'{v} ')
+    #         else:
+    #             f.write(f'{v}\n')
+    #     f.write(f'[Info 1]\n')
+    #     key=['Region Name','Acquisition Mode','Energy Scale','Excitation Energy','Center Energy','High Energy','Low Energy','Energy Step','Lens Mode','Pass Energy','Slit','Step Time','Number of Sweeps','Description']
+    #     for i in range(len(key)):
+    #         if i<len(key)-1:
+    #             if key[i]=='Step Time':
+    #                 f.write(f"{key[i]}={int(float(self.dvalue[i].replace(' s',''))*1000)}\n")
+    #             elif key[i]=='Pass Energy':
+    #                 f.write(f"{key[i]}={int(float(self.dvalue[i].replace(' eV','')))}\n")
+    #             elif key[i]=='Energy Scale' and self.e_mode=='Binding':
+    #                 f.write(f"{key[i]}=Kinetic\n")
+    #             elif key[i]=='Low Energy' and self.e_mode=='Binding':
+    #                 f.write(f"{key[i]}={21.2-float(self.dvalue[5].replace(' eV','').replace(' (B.E.)',''))}\n")
+    #             elif key[i]=='High Energy' and self.e_mode=='Binding':
+    #                 f.write(f"{key[i]}={21.2-float(self.dvalue[6].replace(' eV','').replace(' (B.E.)',''))}\n")
+    #             else:
+    #                 f.write(f"{key[i]}={self.dvalue[i].replace(' eV','').replace(' (K.E.)','')}\n")
+    #         else:
+    #             f.write(f"{key[i]}={self.dvalue[i]}\n") 
+    #     f.write(f'Detector First X-Channel=0\n'+
+    #             f'Detector Last X-Channel=0\n'+
+    #             f'Detector First Y-Channel=0\n'+
+    #             f'Detector Last Y-Channel=0\n'+
+    #             f'Number of Slices={len(self.phi)}\n'+
+    #             f'spectrum Name={self.name}\n'+
+    #             f'Comments={self.desc}; Slit: {self.dvalue[10]};\n')
+    #     f.write(f'[Run Mode Information 1]\n'+
+    #             f'Name=Normal\n')
+    #     f.write(f'[Data1]\n')
+    #     for i in range(len(x)):
+    #         f.write('%-6e' % i+' '+'%-6e' % y[i]+'\n')
+    #     f.close()
     
     def __rg_entry(self, *args):
         self.grg=tk.Toplevel(self.g, bg='white')
@@ -2692,24 +2897,24 @@ def trans_plot():
 def raw_plot(*args):
     gtp.destroy()
     cmap=value3.get()
-    s=spectrogram(g, data, cmap)
-    s.plot()
+    s=spectrogram(data)
+    s.plot(g, cmap)
 
 def smooth_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(g, data, cmap)
+    s=spectrogram(data)
     s.setdata(ev, y, dtype='smooth', unit='Counts')
-    s.plot()
+    s.plot(g, cmap)
 
 def fd_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(g, data, cmap)
+    s=spectrogram(data)
     s.setdata(ev[0:-1]+(ev[1]-ev[0])/2, np.diff(y)/np.diff(ev), dtype='fd', unit='dN/dE')
-    s.plot()
+    s.plot(g, cmap)
 
 def o_cal(*e):
     """
@@ -2743,6 +2948,28 @@ def cal(*e):
     t.daemon = True
     t.start()
 
+def cf_up(*args):
+    global namevar
+    now = namevar.get()
+    for i, j in enumerate(lfs.name):
+        if now == j:
+            if i == 0:
+                namevar.set(lfs.name[-1])
+            else:
+                namevar.set(lfs.name[i-1])
+    change_file()
+
+def cf_down(*args): 
+    global namevar
+    now = namevar.get()
+    for i, j in enumerate(lfs.name):
+        if now == j:
+            if i == len(lfs.name)-1:
+                namevar.set(lfs.name[0])
+            else:
+                namevar.set(lfs.name[i+1])
+    change_file()
+                
 def change_file(*args):
     global data, rdd
     b_name.config(state='normal')
@@ -2758,7 +2985,7 @@ def change_file(*args):
     if value.get() != '---Plot1---':
         o_plot1()
 
-class loadfiles:
+class loadfiles():
     def __init__(self, files):
         self.path = [f for f in files]
         try:
@@ -2777,7 +3004,41 @@ class loadfiles:
             self.data = [load_txt(f) for f in self.path]
         else:
             self.data = []
-                
+            
+    def export_casa(self):
+        path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.path[0].removesuffix(self.path[0].split('/')[-1]), initialfile=self.name[0])
+        if path.split('.')[-1] != 'vms':
+            path += '.vms'
+        os.chdir(path.removesuffix(path.split('/')[-1]))
+        f = open(path, 'w', encoding='utf-8')
+        head = rf'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
+Not Specified
+PREVAC EA15
+2D Lab
+Not Specified
+3
+Casa Info Follows CasaXPS Version 2.3.18PR1.0
+0
+Number of Regions={len(self.name)}
+NORM
+REGULAR
+0
+1
+Data Set
+d
+0
+0
+0
+0
+{len(self.name)}
+'''     
+        body = ''
+        for i in self.data:
+            s=spectrogram(i)
+            body+=s.gen_casa_body()
+        f.write(head+body+'end of experiment\n')
+        f.close()
+        
 def pr_load(data):
     global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
     dvalue = [data.attrs[i] for i in data.attrs.keys()]
@@ -2848,16 +3109,18 @@ def pr_load(data):
 fpr = 0
 
 def o_load():
-    global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar
+    global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist
     files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     tpath=files
-    print(tpath)
     # tpath = fd.askopenfilename(title="Select Raw Data", filetypes=(
     #     ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     if len(files) > 0:
         lfs = loadfiles(files)
+        s = spectrogram(path=lfs.path)
+        s.plot(g, 'viridis')
+        # lfs.export_casa()
         tpath = lfs.path[0]
         b_name.config(state='normal')
         b_excitation.config(state='normal')
@@ -12053,6 +12316,8 @@ if __name__ == '__main__':
     print(f"Release Date: {__release_date__}\n")
     ###### hotkey ######
     g.bind('<Return>', plot)
+    g.bind('<Up>', cf_up)
+    g.bind('<Down>', cf_down)
     g.update_idletasks()
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
