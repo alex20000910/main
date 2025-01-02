@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.9"
-__release_date__ = "2024-01-01"
+__version__ = "4.9.1"
+__release_date__ = "2024-01-02"
 import os, inspect
 import json
 import tkinter as tk
@@ -1387,6 +1387,8 @@ class spectrogram:
         if len(path) > 1:
             self.lfs = loadfiles(path)
             self.data = self.lfs.data[0]
+        elif len(path) == 1:
+            self.data = loadfiles(path).data[0]
         else:
             self.data = data
         self.__preload(self.data)
@@ -2019,7 +2021,13 @@ class spectrogram:
             self.s_yl='Intensity ('+unit+')'
             self.s_exp=self.name+'_'+dtype+'.txt'
             self.s_exp_casa=self.name+'_'+dtype+'_Casa.vms'
-        
+    
+    def __scroll(self, event):
+        if event.delta>0:
+            self.__cf_up()
+        elif event.delta<0:
+            self.__cf_down()
+    
     def __cf_up(self, *args):
         now = self.namevar.get()
         for i, j in enumerate(self.lfs.name):
@@ -2164,6 +2172,7 @@ class spectrogram:
         if self.lfs is not None:
             self.tpg.bind('<Up>', self.__cf_up)
             self.tpg.bind('<Down>', self.__cf_down)
+            self.tpg.bind('<MouseWheel>', self.__scroll)
         self.tpg.update()
     
     def __export(self):
@@ -2265,35 +2274,36 @@ pulse counting
             path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.lfs.path[0].removesuffix(self.lfs.path[0].split('/')[-1]), initialfile=self.lfs.name[0])
             if path.split('.')[-1] != 'vms':
                 path += '.vms'
-            os.chdir(path.removesuffix(path.split('/')[-1]))
-            f = open(path, 'w', encoding='utf-8')
-            head = rf'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
-Not Specified
-PREVAC EA15
-2D Lab
-Not Specified
-3
-Casa Info Follows CasaXPS Version 2.3.18PR1.0
-0
-Number of Regions={len(self.lfs.name)}
-NORM
-REGULAR
-0
-1
-Data Set
-d
-0
-0
-0
-0
-{len(self.lfs.name)}
-'''     
-            body = ''
-            for i in self.lfs.data:
-                s=spectrogram(i)
-                s.rr1, s.rr2 = self.rr1, self.rr2
-                body+=s.gen_casa_body()
-            f.write(head+body+'end of experiment\n')
+            if path != '':
+                os.chdir(path.removesuffix(path.split('/')[-1]))
+                f = open(path, 'w', encoding='utf-8')
+                head = rf'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
+    Not Specified
+    PREVAC EA15
+    2D Lab
+    Not Specified
+    3
+    Casa Info Follows CasaXPS Version 2.3.18PR1.0
+    0
+    Number of Regions={len(self.lfs.name)}
+    NORM
+    REGULAR
+    0
+    1
+    Data Set
+    d
+    0
+    0
+    0
+    0
+    {len(self.lfs.name)}
+    '''     
+                body = ''
+                for i in self.lfs.data:
+                    s=spectrogram(i)
+                    s.rr1, s.rr2 = self.rr1, self.rr2
+                    body+=s.gen_casa_body()
+                f.write(head+body+'end of experiment\n')
         else:
             os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
             f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
@@ -2638,6 +2648,7 @@ d
             self.__tp_a2_plot(self.oxl[0],self.oxl[1])
             self.rpo.draw()
             self.rpf.canvas.get_tk_widget().config(cursor="tcross")
+        
         self.tpo.draw()
         
 
@@ -2663,7 +2674,6 @@ d
             self.rpo.draw()
             self.tpo.draw()
             self.rpf.canvas.get_tk_widget().config(cursor="tcross")
-        
         
     def __tp_move(self, event):
         # global tpf, tpo, tr_a1, tr_a2, tpf, xx2, yy2, aa1, aa2, cur, l_cx, l_cy, l_dy
@@ -2754,6 +2764,7 @@ d
             self.__tp_a2_plot(self.oxl[0],self.oxl[1])
             self.rpo.draw()
             self.tpf.canvas.get_tk_widget().config(cursor="tcross")
+        
         self.tpo.draw()
         
         
@@ -2784,6 +2795,7 @@ d
         # self.tr_a1.scatter(self.ev, np.sum(tz,axis=0), c='k', marker='o', s=0.9)
         x = self.ev
         xi=[]
+        x1, x2 = sorted([xx1, xx2])
         xx1, xx2 = self.near(x, xx1), self.near(x, xx2)
         for i,v in enumerate(x):
             if v>=xx1 and v<=xx2:
@@ -2806,6 +2818,7 @@ d
             self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
         self.tr_a1.set_xticks([])
         self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=14)
+        self.tr_a1.set_xlim([x1, x2])
         self.tr_a1.set_ylim(self.oy1)
         
     def __tp_a1_plot(self):
@@ -2948,6 +2961,12 @@ def cal(*e):
     t.daemon = True
     t.start()
 
+def scroll(event):
+    if event.delta>0:
+        cf_up()
+    elif event.delta<0:
+        cf_down()
+
 def cf_up(*args):
     global namevar
     now = namevar.get()
@@ -2985,6 +3004,35 @@ def change_file(*args):
     if value.get() != '---Plot1---':
         o_plot1()
 
+def tools(*args):
+    def spec(*args):
+        s = spectrogram(path=lfs.path)
+        s.plot(g, value3.get())
+        toolg.destroy()
+        
+    def exp_casa():
+        lfs.export_casa()
+        toolg.destroy()
+        
+    def kplane():
+        data = lfs.data
+        r1 = lfs.r1
+        toolg.destroy()
+
+    toolg = tk.Toplevel(g)
+    toolg.title('Batch Master')
+    toolg.focus_set()
+    b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b_spec.grid(row=0, column=0)
+    b_kplane = tk.Button(toolg, text='K-Plane', command=kplane, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b_kplane.grid(row=0, column=1)
+    b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+    b_exp_casa.grid(row=0, column=2)
+    toolg.bind('<Return>', spec)
+    toolg.update()
+    
+    
+
 class loadfiles():
     def __init__(self, files):
         self.path = [f for f in files]
@@ -3009,35 +3057,36 @@ class loadfiles():
         path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.path[0].removesuffix(self.path[0].split('/')[-1]), initialfile=self.name[0])
         if path.split('.')[-1] != 'vms':
             path += '.vms'
-        os.chdir(path.removesuffix(path.split('/')[-1]))
-        f = open(path, 'w', encoding='utf-8')
-        head = rf'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
-Not Specified
-PREVAC EA15
-2D Lab
-Not Specified
-3
-Casa Info Follows CasaXPS Version 2.3.18PR1.0
-0
-Number of Regions={len(self.name)}
-NORM
-REGULAR
-0
-1
-Data Set
-d
-0
-0
-0
-0
-{len(self.name)}
-'''     
-        body = ''
-        for i in self.data:
-            s=spectrogram(i)
-            body+=s.gen_casa_body()
-        f.write(head+body+'end of experiment\n')
-        f.close()
+        if path != '.vms':
+            os.chdir(path.removesuffix(path.split('/')[-1]))
+            f = open(path, 'w', encoding='utf-8')
+            head = rf'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
+    Not Specified
+    PREVAC EA15
+    2D Lab
+    Not Specified
+    3
+    Casa Info Follows CasaXPS Version 2.3.18PR1.0
+    0
+    Number of Regions={len(self.name)}
+    NORM
+    REGULAR
+    0
+    1
+    Data Set
+    d
+    0
+    0
+    0
+    0
+    {len(self.name)}
+    '''     
+            body = ''
+            for i in self.data:
+                s=spectrogram(i)
+                body+=s.gen_casa_body()
+            f.write(head+body+'end of experiment\n')
+            f.close()
         
 def pr_load(data):
     global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
@@ -3109,7 +3158,7 @@ def pr_load(data):
 fpr = 0
 
 def o_load():
-    global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist
+    global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist, b_tools
     files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     tpath=files
@@ -3118,9 +3167,6 @@ def o_load():
     st.put('Loading...')
     if len(files) > 0:
         lfs = loadfiles(files)
-        s = spectrogram(path=lfs.path)
-        s.plot(g, 'viridis')
-        # lfs.export_casa()
         tpath = lfs.path[0]
         b_name.config(state='normal')
         b_excitation.config(state='normal')
@@ -3129,17 +3175,21 @@ def o_load():
         fpr = 0
         if len(files) > 1:
             try:
-                l_name.pack_forget()
+                b_tools.grid_forget()
+                l_name.grid_forget()
             except:
                 pass
+            b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', 12, "bold"), bg='white')
+            b_tools.grid(row=0, column=0)
             nlist = lfs.name
             namevar = tk.StringVar(value=nlist[0])
-            l_name = tk.OptionMenu(fr, namevar, *nlist, command=change_file)
+            l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
             l_name.config(font=('Arial', 16, 'bold'))
-            l_name.pack(before=l_path, fill='x')
+            l_name.grid(row=0, column=1)
         else:
             try:
-                l_name.pack_forget()
+                b_tools.grid_forget()
+                l_name.grid_forget()
             except:
                 pass
     else:
@@ -11823,6 +11873,8 @@ if __name__ == '__main__':
 
     fr = tk.Frame(g,bg='white')
     fr.grid(row=0, column=0, padx=10, pady=10)
+    fr_tool = tk.Frame(fr,bg='white',width=30, padx=5, pady=5)
+    fr_tool.pack(fill='x')
     l_path = tk.Text(fr, wrap='word', font=("Arial", 12, "bold"), bg="white", fg="black", state='disabled',height=3,width=30, padx=5, pady=5)
     l_path.pack(fill='x')
     # info = tk.Label(g,text='                                   \n\n\n\n\n\n\n\n\n\n\n\n\n', font=("Arial", 14, "bold"), bg="white", fg="black",padx = 30,pady=30)
@@ -12302,14 +12354,15 @@ if __name__ == '__main__':
     tt.start()
     try:
         info.config(state='normal')
-        print('lname:\n')
         pr_load(data)
         if len(lfs.name) > 1:
+            b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', 12, "bold"), bg='white')
+            b_tools.grid(row=0, column=0)
             nlist = lfs.name
             namevar = tk.StringVar(value=nlist[0])
-            l_name = tk.OptionMenu(fr, namevar, *nlist, command=change_file)
+            l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
             l_name.config(font=('Arial', 16, 'bold'))
-            l_name.pack(before=l_path, fill='x')
+            l_name.grid(row=0, column=1)
     except:
         pass
     print(f"Version: {__version__}")
@@ -12318,6 +12371,8 @@ if __name__ == '__main__':
     g.bind('<Return>', plot)
     g.bind('<Up>', cf_up)
     g.bind('<Down>', cf_down)
+    g.bind('<MouseWheel>', scroll)
+    g.bind('<MouseWheel>', scroll)
     g.update_idletasks()
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
