@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "4.9.1"
-__release_date__ = "2024-01-02"
+__version__ = "5.0"
+__release_date__ = "2024-01-15"
 import os, inspect
 import json
 import tkinter as tk
@@ -19,7 +19,10 @@ def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
     if a == 'Y' or a == 'y':
-        os.system('pip install '+s)
+        if s == 'matplotlib':
+            os.system('pip install '+s+'==3.8.4')
+        else:
+            os.system('pip install '+s)
     else:
         quit()
 try:
@@ -38,7 +41,9 @@ except ModuleNotFoundError:
     install('h5py')
     import h5py
 try:
-    import matplotlib
+    import matplotlib   # matplotlib version: 3.8.4
+    if matplotlib.__version__ != '3.8.4':
+        os.system('pip install --upgrade matplotlib==3.8.4')
 except ModuleNotFoundError:
     install('matplotlib')
     import matplotlib
@@ -52,6 +57,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
+from matplotlib.widgets import Slider
 try:
     from scipy.optimize import curve_fit
     from scipy.ndimage import gaussian_filter1d
@@ -60,6 +66,8 @@ try:
     from scipy.stats import mode
     from scipy.interpolate import griddata
     from scipy import special
+    from scipy import interpolate
+    from scipy import ndimage
 except ModuleNotFoundError:
     install('scipy')
     from scipy.optimize import curve_fit
@@ -69,6 +77,8 @@ except ModuleNotFoundError:
     from scipy.stats import mode
     from scipy.interpolate import griddata
     from scipy import special
+    from scipy import interpolate
+    from scipy import ndimage
 try:
     from lmfit import Parameters, Minimizer, report_fit
 except ModuleNotFoundError:
@@ -547,9 +557,9 @@ def pr_exp_origin():
     except:
         no.append(1)
     try:
-        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
                         10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
         cmdlist[2]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")\n'''
     except:
@@ -567,9 +577,9 @@ def pr_exp_origin():
     except:
         no.append(5)
     try:
-        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
                         10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
         x = (vfe-fev)*1000
         y = pos
@@ -629,9 +639,9 @@ def pr_exp_origin():
     except:
         no.append(6)
     try:
-        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
                         10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
         x = (vfe-fev)*1000
         y = pos
@@ -732,9 +742,9 @@ k = np.float64({pre_process(k)})
 '''
     except: pass
     try:
-        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
                         10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
         origin_temp_var += f'''
 fev = np.float64({pre_process(np.float64(fev))})
@@ -744,7 +754,7 @@ fwhm = np.float64({pre_process(fwhm)})
     except: pass
     try:
         ffphi = np.float64(k_offset.get())+fphi
-        fk = (2*m*epos*1.6*10**-19)**0.5 * \
+        fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
             np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
         origin_temp_var += f'''
 fk = np.float64({pre_process(fk)})
@@ -917,7 +927,7 @@ def note():
 
 def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel=f'{le_mode}', zlabel='Intensity', xunit="deg", yunit='eV', zunit='Counts'):
     if title!='E-Phi (Raw Data)':
-        x = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+        x = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
         )**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
         xlabel='k'
         xunit=r"2\g(p)Å\+(-1)"
@@ -2953,7 +2963,7 @@ def o_cal(*e):
         cale.set('0')
         caleen.select_range(0, 1)
     ans = np.arcsin(np.float64(calk.get())/(2*m*np.float64(cale.get())
-                    * 1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                    * 1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
     caldeg.config(text='Deg = '+'%.5f' % ans)
 
 def cal(*e):
@@ -3003,7 +3013,7 @@ def change_file(*args):
     st.put(name)
     if value.get() != '---Plot1---':
         o_plot1()
-
+    
 def tools(*args):
     def spec(*args):
         s = spectrogram(path=lfs.path)
@@ -3015,8 +3025,7 @@ def tools(*args):
         toolg.destroy()
         
     def kplane():
-        data = lfs.data
-        r1 = lfs.r1
+        g_CEC = CEC(g, lfs.path)
         toolg.destroy()
 
     toolg = tk.Toplevel(g)
@@ -3031,27 +3040,166 @@ def tools(*args):
     toolg.bind('<Return>', spec)
     toolg.update()
     
-    
-
 class loadfiles():
     def __init__(self, files):
-        self.path = [f for f in files]
+        self.opath = [f for f in files]
+        self.oname = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.opath]
+        self.r1s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1']
+        self.r2s = ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
+        self.__set_r1_r2()
+        self.__set_data()
+        
+    def __set_data(self):
+        self.data = []
+        for i in self.path:
+            if '.h5' in i:
+                self.data.append(load_h5(i))
+            elif '.json' in i:
+                self.data.append(load_json(i))
+            elif '.txt' in i:
+                self.data.append(load_txt(i))
+            else:
+                self.data.append([])
+    
+    def __set_r1_r2(self):
+        def __sort_r1_r2():
+            self.or2 = self.gen_r2(self.oname, self.r1_splitter, self.r2_splitter)
+            self.or1 = self.gen_r1(self.oname, self.r1_splitter, self.r2_splitter)
+            self.path1 = []
+            self.r11 = []
+            tpath = []
+            tr1 = []
+            tr2 = []
+            self.r2 = []
+            r2 = sorted(set(self.or2))
+            for i in r2:
+                for j,k,l in zip(self.opath, self.or1, self.or2):
+                    if i == l:
+                        tpath.append(j)
+                        tr1.append(k)
+                        tr2.append(l)
+                self.path1.append(tpath)
+                self.r11.append(tr1)
+                self.r2.append(tr2)
+                tpath = []
+                tr1 = []
+                tr2 = []
+            self.path = []
+            self.r1 = []
+            t = 0
+            for i in self.path1:
+                opath = [f for f in i]
+                path = res(self.r11[t], opath)
+                r1 = res(self.r11[t], self.r11[t])
+                for j,v in enumerate(path):
+                    self.path.append(v)
+                    self.r1.append(r1[j])
+                t+=1
+            self.name = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
+            self.name = self.check_repeat(self.name)
+            
+        def __sort_r1():
+            self.or1 = self.gen_r1(self.oname, self.r1_splitter, self.r2_splitter)
+            self.path = res(self.or1, self.opath)
+            self.r1 = res(self.or1, self.or1)
+            self.name = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
+            self.name = self.check_repeat(self.name)
+            
+        self.r1_splitter , self.r2_splitter= [], []
+        r1s = self.r1s
+        r2s = self.r2s
+        for i in self.oname:
+            tj, tk = False, False
+            for j,k in zip(r1s, r2s):
+                if j in i and tj == False:
+                    self.r1_splitter.append(j)
+                    tj = True
+                if k in i and tk == False:
+                    self.r2_splitter.append(k)
+                    tk = True
+            if not tj:
+                self.r1_splitter.append('No_r1')
+            if not tk:
+                self.r2_splitter.append('No_r2')
+        
         try:
-            self.r1 = [f.split('/')[-1].split('#id#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '').split('r1')[1] for f in self.path]
+            f = True
+            t=0
+            for i in self.oname:
+                if len(i.split(self.r1_splitter[t]))<=1 or len(i.split(self.r2_splitter[t]))<=1:
+                    f = False
+                t+=1
+            if f:
+                __sort_r1_r2()
+                self.sort = 'r1r2'
+                print('Sort by r1 and r2\n')
+            elif len(self.oname[0].split(self.r1_splitter[0]))>1:
+                __sort_r1()
+                self.sort = 'r1'
+                print('Sort by r1\n') 
+            else:
+                if self.r1s[0] == 'X_':
+                    self.r1s, self.r2s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1'], ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
+                    self.path = self.opath
+                    self.name = self.check_repeat(self.oname)
+                    self.sort = 'no'
+                    print('No Sort\n')
+                else:
+                    self.r1s, self.r2s = ['X_', 'X ', 'X', 'x_', 'x ', 'x'], ['Y_', 'Y ', 'Y', 'y_', 'y ', 'y']
+                    self.__set_r1_r2()
+                    self.__set_data()
         except:
-            self.r1 = [f.split('/')[-1].split('#id#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
-        self.name = [f.split('/')[-1].split('#id#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
-        self.path = res(self.r1, self.path)
-        self.name = res(self.r1, self.name)
-        self.r1 = res(self.r1, self.r1)
-        if '.h5' in self.path[0]:
-            self.data = [load_h5(f) for f in self.path]
-        elif '.json' in self.path[0]:
-            self.data = [load_json(f) for f in self.path]
-        elif '.txt' in self.path[0]:
-            self.data = [load_txt(f) for f in self.path]
-        else:
-            self.data = []
+            self.r1s, self.r2s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1'], ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
+            self.path = self.opath
+            self.name = self.check_repeat(self.oname)
+            self.sort = 'no'
+            print('No Sort (Exception)\n')
+        
+    def check_repeat(self, name):
+        fl = False
+        tname = [f for f in name]
+        if len(name) != len(set(name)):
+            fl = True
+        if fl:
+            t = 0
+            while t < len(tname):
+                fj = False
+                tt = False
+                tj = t
+                for j in range(t+1, len(name)):
+                    if name[t] == name[j]:
+                        if not tt:
+                            tname[t] = tname[t]+'#id#'+str(t)
+                            tt = True
+                        tname[j] = tname[j]+'#id#'+str(j)
+                        fj = True
+                        tj = j
+                if fj:
+                    t = tj
+                t+=1
+        return tname
+        
+    def gen_r1(self, name, r1_splitter, r2_splitter):
+            try:
+                r1 = []
+                for i,v in enumerate(name):
+                    r1.append(v.split(r1_splitter[i])[1].split(r2_splitter[i])[0].split(' ')[0].split('_')[0])
+                return np.float64(r1)
+            except:
+                print('Error in loadfiles().gen_r1')
+                print(sys.exc_info())
+                return name
+    
+    def gen_r2(self, name, r1_splitter, r2_splitter):
+            try:
+                r2 = []
+                for i,v in enumerate(name):
+                    r2.append(v.split(r2_splitter[i])[1].split(r1_splitter[i])[0].split(' ')[0].split('_')[0])
+                return np.float64(r2)
+            except:
+                print('Error in loadfiles().gen_r2')
+                print(sys.exc_info())
+                return name
             
     def export_casa(self):
         path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.path[0].removesuffix(self.path[0].split('/')[-1]), initialfile=self.name[0])
@@ -3087,6 +3235,943 @@ class loadfiles():
                 body+=s.gen_casa_body()
             f.write(head+body+'end of experiment\n')
             f.close()
+
+class VolumeSlicer(tk.Frame):
+    def __init__(self, parent, volume, cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=601):
+        '''
+        volume shape: (r1, phi, ev)
+        '''
+        super().__init__(parent, bg='white')
+        self.cmap=cmap
+        # self.volume = volume    # data cube stored as a 3D numpy array
+        self.slice_index = volume.shape[2] // 2
+        self.angle = 0
+        self.density = density
+        self.ovolume = volume
+        self.density = density
+        self.phi_offset = 48 # mm / 0 degree
+        self.r1_offset = 11.5 # mm / -31 degree
+        self.e_photon = e_photon
+        self.z = None
+        # base dimensions
+        
+        # temperaly window range set
+        self.m=9.10938356e-31
+        self.hbar=1.0545718e-34
+        self.e=1.60217662e-19
+        self.type = 'real'   # directly stack  'real', 'reciprocal'
+        
+        if x is not None and y is not None:
+            self.ox = np.float64(x)
+            self.y = np.float64(y)
+            if z is not None:
+                self.z = np.float64(z)
+            self.ev = np.float64(ev)
+            self.slim = [0, 493]    # init phi slice range -10~10 degree or -2.5~2.5 mm
+            # Create a figure and axis
+            self.fig = plt.Figure(figsize=(9, 9),constrained_layout=True)
+            self.ax = self.fig.add_subplot(111)
+            # self.ax.set_xticks([])
+            # self.ax.set_yticks([])
+            self.fig.subplots_adjust(bottom=0.25)
+            
+            if self.type == 'real':
+                self.ax.set_xlabel('x (mm)', fontsize=16)
+                self.ax.set_ylabel('z (mm)', fontsize=16)
+                if z is not None:
+                    self.xmin = np.min(np.min(x)+np.min(z))
+                    self.xmax = np.max(np.max(x)+np.max(z))
+                else:
+                    self.xmin = np.min(x)
+                    self.xmax = np.max(x)
+                self.ymin = np.min(y)
+                self.ymax = np.max(y)
+                if self.xmin+self.xmax > 2*self.phi_offset:
+                    self.xmin = self.phi_offset-(self.xmax-self.phi_offset)
+                if self.xmax+self.xmin < 2*self.phi_offset:
+                    self.xmax = self.phi_offset-(self.xmin-self.phi_offset)
+                if self.ymin+self.ymax > 2*self.r1_offset:
+                    self.ymin = self.r1_offset-(self.ymax-self.r1_offset)
+                if self.ymax+self.ymin < 2*self.r1_offset:
+                    self.ymax = self.r1_offset-(self.ymin-self.r1_offset)
+            elif self.type == 'reciprocal':
+                self.ax.set_xlabel(r'kx ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_ylabel(r'ky ($2\pi/\AA$)', fontsize=16)
+                r1 = self.y - self.r1_offset
+                phi = self.x - self.phi_offset
+                r = np.sqrt(2*self.m*self.e*self.e_photon)/self.hbar*10**-10*(np.max(np.abs(np.sin(r1/180*np.pi)))**2+np.max(np.abs(np.sin(phi/180*np.pi)))**2)**0.5
+                self.xmin, self.xmax = -r, r
+                self.ymin, self.ymax = -r, r
+                
+            self.interpolate_slice(self.slice_index)
+            self.img = self.ax.imshow(self.surface, cmap=cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
+            self.hl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
+            self.vl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
+            self.hl.set_data([],[])
+            self.vl.set_data([],[])
+            self.ax.set_aspect('equal')
+            # Set custom x-ticks and y-ticks
+            # self.ax.set_xticks(np.linspace(np.min(self.x), np.max(self.x), 5))
+            # self.ax.set_yticks(np.linspace(np.min(self.y), np.max(self.y), 5))
+            
+            frame1 = tk.Frame(self, bg='white')
+            frame1.grid(row=0, column=0)
+            
+            # Create a canvas and add it to the frame
+            self.canvas = FigureCanvasTkAgg(self.fig, master=frame1)
+            self.canvas.draw()
+            self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+            # self.canvas.get_tk_widget().grid(row=0, column=1)
+            
+            # Create a toolbar and add it to the frame
+            self.toolbar = NavigationToolbar2Tk(self.canvas, frame1)
+            self.toolbar.update()
+            self.toolbar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
+            # self.toolbar.grid(row=1, column=0)
+            
+            frame2 = tk.Frame(self, bg='white')
+            frame2.grid(row=0, column=1)
+            
+            frame_mode = tk.Frame(frame2, bg='white')
+            frame_mode.pack(side=tk.TOP)
+            self.b_mode = tk.Button(frame_mode, text='Transmission Mode', command=self.change_mode, bg='white', font=('Arial', 16, "bold"))
+            self.b_mode.pack(side=tk.LEFT)
+            label_d = tk.Label(frame_mode, text='Density:', bg='white', font=('Arial', 16, "bold")) 
+            label_d.pack(side=tk.LEFT)
+            self.entry_d = tk.Entry(frame_mode, bg='white', font=('Arial', 16, "bold"))
+            self.entry_d.pack(side=tk.LEFT)
+            self.entry_d.insert(0, str(self.density))
+            self.b_d = tk.Button(frame_mode, text='Set Density', command=self.set_density, bg='white', font=('Arial', 16, "bold"))
+            self.b_d.pack(side=tk.LEFT)
+            
+            
+            frame_entry1 = tk.Frame(frame2, bg='white')
+            frame_entry1.pack(side=tk.TOP)
+            label_info = tk.Label(frame_entry1, text="Set Slit Slice Range (0-493 for initial range)", bg='white', font=('Arial', 14, "bold"))
+            label_info.pack(side=tk.TOP)
+            
+            # Create entries and button to set self.slim
+            label_min = tk.Label(frame_entry1, text="Min:", bg='white', font=('Arial', 14, "bold"))
+            label_min.pack(side=tk.LEFT)
+            self.entry_min = tk.Entry(frame_entry1, bg='white', font=('Arial', 14, "bold"))
+            self.entry_min.pack(side=tk.LEFT)
+            self.entry_min.insert(0, str(self.slim[0]))
+
+            label_max = tk.Label(frame_entry1, text="Max:", bg='white', font=('Arial', 14, "bold"))
+            label_max.pack(side=tk.LEFT)
+            self.entry_max = tk.Entry(frame_entry1, bg='white', font=('Arial', 14, "bold"))
+            self.entry_max.pack(side=tk.LEFT)
+            self.entry_max.insert(0, str(self.slim[1]))
+
+            self.set_slim_button = tk.Button(frame_entry1, text="Set Limit", command=self.set_slim, font=('Arial', 14, "bold"), bg='white')
+            self.set_slim_button.pack(side=tk.LEFT)
+            
+            frame_entry2 = tk.Frame(frame2, bg='white')
+            frame_entry2.pack(side=tk.TOP)
+            # Create labels and entries for window range
+            label_xmin = tk.Label(frame_entry2, text="X Min:", bg='white', font=('Arial', 14, "bold"))
+            label_xmin.pack(side=tk.LEFT)
+            self.entry_xmin = tk.Entry(frame_entry2, bg='white', font=('Arial', 14, "bold"))
+            self.entry_xmin.pack(side=tk.LEFT)
+            self.entry_xmin.insert(0, str(self.ymin))
+            self.entry_xmin.config(state='disabled')
+
+            label_xmax = tk.Label(frame_entry2, text="X Max:", bg='white', font=('Arial', 14, "bold"))
+            label_xmax.pack(side=tk.LEFT)
+            self.entry_xmax = tk.Entry(frame_entry2, bg='white', font=('Arial', 14, "bold"))
+            self.entry_xmax.pack(side=tk.LEFT)
+            self.entry_xmax.insert(0, str(self.ymax))
+            self.entry_xmax.config(state='disabled')
+
+            frame_entry3 = tk.Frame(frame2, bg='white')
+            frame_entry3.pack(side=tk.TOP)
+
+            label_ymin = tk.Label(frame_entry3, text="Y Min:", bg='white', font=('Arial', 14, "bold"))
+            label_ymin.pack(side=tk.LEFT)
+            self.entry_ymin = tk.Entry(frame_entry3, bg='white', font=('Arial', 14, "bold"))
+            self.entry_ymin.pack(side=tk.LEFT)
+            self.entry_ymin.insert(0, str(self.xmin))
+            self.entry_ymin.config(state='disabled')
+
+            label_ymax = tk.Label(frame_entry3, text="Y Max:", bg='white', font=('Arial', 14, "bold"))
+            label_ymax.pack(side=tk.LEFT)
+            self.entry_ymax = tk.Entry(frame_entry3, bg='white', font=('Arial', 14, "bold"))
+            self.entry_ymax.pack(side=tk.LEFT)
+            self.entry_ymax.insert(0, str(self.xmax))
+            self.entry_ymax.config(state='disabled')
+
+            self.set_window_button = tk.Button(frame2, text="Set Window Range", command=self.set_window, font=('Arial', 14, "bold"), bg='white')
+            self.set_window_button.pack(side=tk.TOP)
+
+            frame_entry4 = tk.Frame(frame2, bg='white')
+            frame_entry4.pack(side=tk.TOP)
+            self.label_phi_offset = tk.Label(frame_entry4, text="Set Z Offset (mm):", bg='white', font=('Arial', 14, "bold"))
+            self.label_phi_offset.pack(side=tk.LEFT)
+            self.entry_phi_offset = tk.Entry(frame_entry4, bg='white', font=('Arial', 14, "bold"), state='normal')
+            self.entry_phi_offset.pack(side=tk.LEFT)
+            self.entry_phi_offset.insert(0, str(self.phi_offset))
+            
+            frame_entry5 = tk.Frame(frame2, bg='white')
+            frame_entry5.pack(side=tk.TOP)
+            self.label_r1_offset = tk.Label(frame_entry5, text="Set X Offset (mm):", bg='white', font=('Arial', 14, "bold"))
+            self.label_r1_offset.pack(side=tk.LEFT)
+            self.entry_r1_offset = tk.Entry(frame_entry5, bg='white', font=('Arial', 14, "bold"), state='normal')
+            self.entry_r1_offset.pack(side=tk.LEFT)
+            self.entry_r1_offset.insert(0, str(self.r1_offset))
+            
+            self.fig1 = plt.Figure(figsize=(4, 3),constrained_layout=True)
+            # Create a slider axis and slider
+            self.ax_slider = self.fig1.add_axes([0.2, 0.65, 0.7, 0.2])
+            self.slider = Slider(self.ax_slider, 'Slice', 0, self.volume.shape[2] - 1, valinit=self.slice_index, valstep=1)
+            
+            # Attach the update function to the slider
+            self.slider.on_changed(self.update)
+
+            self.ax_angle_slider = self.fig1.add_axes([0.2, 0.15, 0.7, 0.2])
+            self.angle_slider = Slider(self.ax_angle_slider, 'Angle', 0, 360, valinit=self.angle, valstep=1)
+            self.angle_slider.on_changed(self.rotate_image)
+            
+            self.canvas1 = FigureCanvasTkAgg(self.fig1, master=frame2)
+            self.canvas1.draw()
+            self.canvas1.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
+            # self.canvas1.get_tk_widget().grid(row=0, column=1)
+    
+    def set_density(self, *args):
+        try:
+            self.density = int(self.entry_d.get())
+            self.update(self.slider.val)
+        except ValueError:
+            print("Invalid input for density value")
+            
+    def change_mode(self):
+        if self.type == 'real':
+            try:
+                self.type = 'reciprocal'
+                self.phi_offset = 0
+                self.r1_offset = -31
+                r1 = self.y - self.r1_offset
+                phi = self.x - self.phi_offset
+                r = np.sqrt(2*self.m*self.e*self.ev[self.slice_index])/self.hbar*10**-10*(np.max(np.abs(np.sin(r1/180*np.pi)))**2+np.max(np.abs(np.sin(phi/180*np.pi)))**2)**0.5
+                self.xmin, self.xmax = -r, r
+                self.ymin, self.ymax = -r, r
+                self.txlim, self.tylim = [-r, r], [-r, r]
+                self.update_window()
+                self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_ylabel(r'$k_y$ ($2\pi/\AA$)', fontsize=16)
+                self.b_mode.config(text='Reciprocal Mode')
+                self.label_phi_offset.config(text="Set Phi Offset (degree):")
+                self.label_r1_offset.config(text="Set R1 Offset (degree):")
+            except:
+                self.type = 'real'
+                if self.z is not None:
+                    self.xmin = np.min(np.min(self.x)+np.min(self.z))
+                    self.xmax = np.max(np.max(self.x)+np.max(self.z))
+                else:
+                    self.xmin = np.min(self.x)
+                    self.xmax = np.max(self.x)
+                self.ymin = np.min(self.y)
+                self.ymax = np.max(self.y)
+                self.phi_offset = 48
+                self.r1_offset = 11.5
+                if self.xmin+self.xmax > 2*self.phi_offset:
+                    self.xmin = self.phi_offset-(self.xmax-self.phi_offset)
+                if self.xmax+self.xmin < 2*self.phi_offset:
+                    self.xmax = self.phi_offset-(self.xmin-self.phi_offset)
+                if self.ymin+self.ymax > 2*self.r1_offset:
+                    self.ymin = self.r1_offset-(self.ymax-self.r1_offset)
+                if self.ymax+self.ymin < 2*self.r1_offset:
+                    self.ymax = self.r1_offset-(self.ymin-self.r1_offset)
+                self.ax.set_xlabel('x (mm)', fontsize=16)
+                self.ax.set_ylabel('z (mm)', fontsize=16)
+                self.b_mode.config(text='Transmission Mode')
+                self.label_phi_offset.config(text="Set Z Offset (mm):")
+                self.label_r1_offset.config(text="Set X Offset (mm):")
+                
+        elif self.type == 'reciprocal':
+            try:
+                self.type = 'real'
+                if self.z is not None:
+                    self.xmin = np.min(np.min(self.x)+np.min(self.z))
+                    self.xmax = np.max(np.max(self.x)+np.max(self.z))
+                else:
+                    self.xmin = np.min(self.x)
+                    self.xmax = np.max(self.x)
+                self.ymin = np.min(self.y)
+                self.ymax = np.max(self.y)
+                self.phi_offset = 48
+                self.r1_offset = 11.5
+                if self.xmin+self.xmax > 2*self.phi_offset:
+                    self.xmin = self.phi_offset-(self.xmax-self.phi_offset)
+                if self.xmax+self.xmin < 2*self.phi_offset:
+                    self.xmax = self.phi_offset-(self.xmin-self.phi_offset)
+                if self.ymin+self.ymax > 2*self.r1_offset:
+                    self.ymin = self.r1_offset-(self.ymax-self.r1_offset)
+                if self.ymax+self.ymin < 2*self.r1_offset:
+                    self.ymax = self.r1_offset-(self.ymin-self.r1_offset)
+                self.update_window()
+                self.ax.set_xlabel('x (mm)', fontsize=16)
+                self.ax.set_ylabel('z (mm)', fontsize=16)
+                self.b_mode.config(text='Transmission Mode')
+                self.label_phi_offset.config(text="Set Z Offset (mm):")
+                self.label_r1_offset.config(text="Set X Offset (mm):")
+            except:
+                self.type = 'reciprocal'
+                self.phi_offset = 0
+                self.r1_offset = -31
+                r1 = self.y - self.r1_offset
+                phi = self.x - self.phi_offset
+                r = np.sqrt(2*self.m*self.e*self.ev[self.slice_index])/self.hbar*10**-10*(np.max(np.abs(np.sin(r1/180*np.pi)))**2+np.max(np.abs(np.sin(phi/180*np.pi)))**2)**0.5
+                self.xmin, self.xmax = -r, r
+                self.ymin, self.ymax = -r, r
+                self.txlim, self.tylim = [-r, r], [-r, r]
+                self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_ylabel(r'$k_y$ ($2\pi/\AA$)', fontsize=16)
+                self.b_mode.config(text='Reciprocal Mode')
+                self.label_phi_offset.config(text="Set Phi Offset (degree):")
+                self.label_r1_offset.config(text="Set R1 Offset (degree):")
+    
+    def set_slim(self, *args):
+        try:
+            min_val = int(float(self.entry_min.get()))
+            max_val = int(float(self.entry_max.get()))
+            self.slim = sorted([min_val, max_val])
+            if self.slim[0] < 0:
+                self.slim[0] = 0
+            if self.slim[1] > 493:
+                self.slim[1] = 493
+            self.set_entry_value(self.entry_min, str(self.slim[0]))
+            self.set_entry_value(self.entry_max, str(self.slim[1]))
+            self.x, self.volume = [], []
+            self.interpolate_slice(self.slice_index)
+            rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
+            self.ax.clear()
+            self.hl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
+            self.vl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
+            self.hl.set_data([],[])
+            self.vl.set_data([],[])
+            self.img = self.ax.imshow(rotated_volume, cmap=self.cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
+            self.fig.canvas.draw_idle()
+            # setting entry
+            self.entry_xmin.config(state='normal')
+            self.entry_xmax.config(state='normal')
+            self.entry_ymin.config(state='normal')
+            self.entry_ymax.config(state='normal')
+            if self.type == 'real':
+                self.set_entry_value(self.entry_xmin, str(self.ymin))
+                self.set_entry_value(self.entry_xmax, str(self.ymax))
+                self.set_entry_value(self.entry_ymin, str(self.xmin))
+                self.set_entry_value(self.entry_ymax, str(self.xmax))
+                self.ax.set_xlabel('x (mm)', fontsize=16)
+                self.ax.set_ylabel('z (mm)', fontsize=16)
+                self.entry_xmin.config(state='disabled')
+                self.entry_xmax.config(state='disabled')
+                self.entry_ymin.config(state='disabled')
+                self.entry_ymax.config(state='disabled')
+            elif self.type == 'reciprocal':
+                self.set_entry_value(self.entry_xmin, str(self.ymin))
+                self.set_entry_value(self.entry_xmax, str(self.ymax))
+                self.set_entry_value(self.entry_ymin, str(self.xmin))
+                self.set_entry_value(self.entry_ymax, str(self.xmax))
+                self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_ylabel(r'$k_y$ ($2\pi/\AA$)', fontsize=16)
+        except ValueError:
+            print("Invalid input for slim values")
+
+    def update_window(self):
+        try:
+            self.entry_xmin.config(state='normal')
+            self.entry_xmax.config(state='normal')
+            self.entry_ymin.config(state='normal')
+            self.entry_ymax.config(state='normal')
+            if self.type == 'real':
+                self.set_entry_value(self.entry_xmin, str(self.ymin))
+                self.set_entry_value(self.entry_xmax, str(self.ymax))
+                self.set_entry_value(self.entry_ymin, str(self.xmin))
+                self.set_entry_value(self.entry_ymax, str(self.xmax))
+            elif self.type == 'reciprocal':
+                self.set_entry_value(self.entry_xmin, str(self.tylim[0]))
+                self.set_entry_value(self.entry_xmax, str(self.tylim[1]))
+                self.set_entry_value(self.entry_ymin, str(self.txlim[0]))
+                self.set_entry_value(self.entry_ymax, str(self.txlim[1]))
+            self.set_entry_value(self.entry_phi_offset, str(self.phi_offset))
+            self.set_entry_value(self.entry_r1_offset, str(self.r1_offset))
+            self.x, self.volume = [], []
+            self.interpolate_slice(self.slice_index)
+            rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
+            self.ax.clear()
+            self.img = self.ax.imshow(rotated_volume, cmap=self.cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
+            self.hl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
+            self.vl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
+            self.hl.set_data([],[])
+            self.vl.set_data([],[])
+            if self.type == 'reciprocal':
+                self.ax.set_xlim([self.tylim[0], self.tylim[1]])
+                self.ax.set_ylim([self.txlim[0], self.txlim[1]])
+                self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_ylabel(r'$k_y$ ($2\pi/\AA$)', fontsize=16)
+            elif self.type == 'real':
+                self.ax.set_xlim([self.ymin, self.ymax])
+                self.ax.set_ylim([self.xmin, self.xmax])
+                self.ax.set_xlabel('x (mm)', fontsize=16)
+                self.ax.set_ylabel('z (mm)', fontsize=16)
+            self.fig.canvas.draw_idle()
+            if self.type == 'real':
+                self.entry_xmin.config(state='disabled')
+                self.entry_xmax.config(state='disabled')
+                self.entry_ymin.config(state='disabled')
+                self.entry_ymax.config(state='disabled')
+        except ValueError:
+            print("Range is not compatible with the current mode.")
+        
+    def set_window(self):
+        try:
+            if self.type == 'reciprocal':
+                self.txlim = sorted([float(self.entry_ymin.get()), float(self.entry_ymax.get())])
+                self.tylim = sorted([float(self.entry_xmin.get()), float(self.entry_xmax.get())])
+                self.update_window()
+        except ValueError:
+            print("Invalid input for window range values")
+
+    def set_entry_value(self, entry, value):
+        entry.delete(0, tk.END)
+        entry.insert(0, value)
+    
+    def interpolate_slice(self, i):
+        try:
+            self.phi_offset = float(self.entry_phi_offset.get())
+            self.r1_offset = float(self.entry_r1_offset.get())
+        except:pass
+        self.x = self.ox[self.slim[0]:self.slim[1]+1]
+        self.volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
+        if self.type == 'real':
+            if self.z is not None:
+                self.xmin = np.min(np.min(self.x)+np.min(self.z))
+                self.xmax = np.max(np.max(self.x)+np.max(self.z))
+            else:
+                self.xmin = np.min(self.x)
+                self.xmax = np.max(self.x)
+            self.ymin = np.min(self.y)
+            self.ymax = np.max(self.y)
+            if self.xmin+self.xmax > 2*self.phi_offset:
+                self.xmin = self.phi_offset-(self.xmax-self.phi_offset)
+            elif self.xmax+self.xmin < 2*self.phi_offset:
+                self.xmax = self.phi_offset-(self.xmin-self.phi_offset)
+            if self.ymin+self.ymax > 2*self.r1_offset:
+                self.ymin = self.r1_offset-(self.ymax-self.r1_offset)
+            elif self.ymax+self.ymin < 2*self.r1_offset:
+                self.ymax = self.r1_offset-(self.ymin-self.r1_offset)
+            r = (((self.xmax-self.xmin)/2)**2+((self.ymax-self.ymin)/2)**2)**0.5
+            self.xmin, self.xmax = self.phi_offset-r, self.phi_offset+r
+            self.ymin, self.ymax = self.r1_offset-r, self.r1_offset+r
+        elif self.type == 'reciprocal':
+            r1 = self.y - self.r1_offset
+            phi = self.x - self.phi_offset
+            r = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*(np.max(np.abs(np.sin(r1/180*np.pi)))**2+np.max(np.abs(np.sin(phi/180*np.pi)))**2)**0.5
+            self.xmin, self.xmax = -r, r
+            self.ymin, self.ymax = -r, r
+            
+        if self.z is None: # for 1 cube
+            if self.type == 'real':
+                self.surface = self.combine(self.volume[:, :, i], xlim = [min(self.y), max(self.y)], ylim = [min(self.x), max(self.x)])
+            elif self.type == 'reciprocal':
+                self.surface = self.combine(self.volume[:, :, i], xlim = [min(self.y)-self.r1_offset, max(self.y)-self.r1_offset], ylim = [min(self.x)-self.phi_offset, max(self.x)-self.phi_offset], ev=self.ev[i])
+        elif self.z is not None: # for multiple cubes
+            img = self.volume[:, :, i]
+            self.tmin = np.min(img[img>0])
+            r2 = sorted(set(self.z))
+            self.surface = np.full((self.density, self.density), np.nan, dtype=np.float64)
+            if self.type == 'real':
+                for z in r2:
+                    ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
+                    self.surface = np.nanmean([self.surface, self.combine(self.volume[ind, :, i], xlim = [min(self.y[ind]), max(self.y[ind])], ylim = [min(self.x)+z, max(self.x)+z])], axis=0)
+                self.surface = np.nan_to_num(self.surface)
+            elif self.type == 'reciprocal':
+                for z in r2:
+                    ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
+                    self.surface = np.nanmean([self.surface, self.combine(self.volume[ind, :, i], xlim = [min(self.y[ind])-self.r1_offset, max(self.y[ind])-self.r1_offset], ylim = [min(self.x)-self.phi_offset, max(self.x)-self.phi_offset], r2=z, ev=self.ev[i])], axis=0)
+                self.surface = np.nan_to_num(self.surface)
+        
+    def update(self, *args):
+        self.hl.set_data([],[])
+        self.vl.set_data([],[])
+        self.slice_index = int(self.slider.val)
+        self.interpolate_slice(self.slice_index)
+        rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
+        self.img.set_data(rotated_volume)
+        self.fig.canvas.draw_idle()
+        
+    def rotate_image(self, *args):
+        if self.type == 'real':
+            self.hl.set_data([self.r1_offset, self.r1_offset], [self.xmin, self.xmax])
+            self.vl.set_data([self.ymin, self.ymax], [self.phi_offset, self.phi_offset])
+        elif self.type == 'reciprocal':
+            self.hl.set_data([0, 0], [self.xmin, self.xmax])
+            self.vl.set_data([self.ymin, self.ymax], [0, 0])
+        self.angle = int(self.angle_slider.val)
+        rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
+        self.img.set_data(rotated_volume)
+        
+        self.fig.canvas.draw_idle()
+    
+    def combine(self, data, xlim, ylim, r2=None, ev=None):  # complete
+        '''
+        Args:
+        ---
+        data: raw image (shape:(len(r1), len(phi)))
+        xlim: [min, max]  x: r1
+        ylim: [min, max]  y: phi
+        
+        return:
+        ---
+            image
+            shape: (density, density)
+        '''
+        xlim, ylim = sorted(xlim), sorted(ylim)
+        fr2 = True
+        if self.type == 'real':
+            base = np.zeros((self.density, self.density))
+            data = cv2.resize(data, (int(self.density/(self.xmax-self.xmin)*(ylim[1]-ylim[0])), int(self.density/(self.ymax-self.ymin)*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
+            base[0:data.shape[0], 0:data.shape[1]] = data
+            data = ndimage.shift(base.T, ((ylim[0]-self.xmin)/(self.xmax-self.xmin)*self.density, (xlim[0]-self.ymin)/(self.ymax-self.ymin)*self.density))
+            data = data
+        elif self.type == 'reciprocal':
+            if r2 is None:
+                fr2=False
+                r2, self.z = 0, [0, 0]
+            tmax = np.max(data)
+            base = np.zeros((self.density, self.density))
+            r1 = np.linspace(xlim[0], xlim[1], int(self.density/180*(xlim[1]-xlim[0]))*10)
+            phi = np.linspace(ylim[0], ylim[1], int(self.density/180*(ylim[1]-ylim[0]))*10)
+            r1, phi = np.meshgrid(r1, phi)
+            x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)
+            y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi/180*np.pi)
+            txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
+            x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)  # x: r1, y: phi, at r2=0
+            y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi/180*np.pi)
+            fig, ax = plt.subplots(dpi=150)
+            fig.patch.set_facecolor('black')
+            ax.set_facecolor('black')
+            data = cv2.resize(data, (int(self.density/180*(ylim[1]-ylim[0]))*10, int(self.density/180*(xlim[1]-xlim[0]))*10), interpolation=cv2.INTER_CUBIC)
+            ax.pcolormesh(x, y, data.T, cmap='gray')    # compatible with r2=0, phi: yaxis, r1: xaxis in transmission mode
+            ax.set_position([0, 0, 1, 1])
+            ax.axis('off')
+            fig.canvas.draw()
+            image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+            image_from_plot = image_from_plot.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+            plt.close(fig)
+            image_gray = cv2.cvtColor(image_from_plot, cv2.COLOR_RGB2GRAY)/255*tmax
+            image_gray = cv2.resize(image_gray[::-1,:], (data.shape[1],data.shape[0]), interpolation=cv2.INTER_CUBIC)
+            data = cv2.resize(image_gray, (int(self.density/(self.xmax-self.xmin)*(txlim[1]-txlim[0])), int(self.density/(self.ymax-self.ymin)*(tylim[1]-tylim[0]))), interpolation=cv2.INTER_CUBIC)
+            base[0:data.shape[0], 0:data.shape[1]] = data
+            data = ndimage.shift(base, ((tylim[0]-self.ymin)/(self.ymax-self.ymin)*self.density, (txlim[0]-self.xmin)/(self.xmax-self.xmin)*self.density))
+            # data = data[::-1, :]
+            data = ndimage.rotate(data, angle=r2-self.z[0], axes=(0, 1), reshape=False)
+            
+            if not fr2:
+                self.z = None
+        if self.z is not None and fr2==True:  # for multiple cubes need np.nanmean
+            msk = data<self.tmin-self.tmin/3
+            data[msk] = np.nan
+            
+        return data
+
+    # def cal_xz
+    
+    def show(self):
+        self.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+class CEC(loadfiles):
+    def __init__(self, g, files):
+        super().__init__(files)
+        if self.sort == 'r1r2':
+            r2 = []
+            for i in self.r2:
+                for j in i:
+                    r2.append(j)
+            self.r2 = r2
+            
+        self.g = g
+        self.tlg = tk.Toplevel(g, bg='white')
+        self.tlg.title('Constant Energy Cut')
+        self.tlg.focus_set()
+        self.frame1 = tk.Frame(self.tlg, bg='white')
+        self.frame1.grid(row=0, column=1)
+        self.view = VolumeSlicer(self.frame1, np.full((601,601,601), 0, dtype=np.float64))
+        self.__check_re()
+        
+        self.tlg.geometry(f"{1900}x{990}+0+0")
+        self.tlg.update()
+    
+    def __set_data(self, odata=[], density=801, *args):
+        if len(odata) > 0:
+            self.view.pack_forget()
+            if self.sort == 'r1':
+                odataframe = np.stack([i.to_numpy().transpose() for i in odata], axis=0)
+                print('Input Data Shape: '+str(odataframe.shape))   # shape: (r1, phi, ev)
+                
+                r1 = self.r1
+                ev, phi = odata[0].indexes.values()
+                self.view = VolumeSlicer(self.frame1, volume=odataframe, cmap='viridis', x=phi, y=r1, ev=ev, density=density)
+            elif self.sort == 'r1r2':
+                r1 = self.r1
+                r2 = self.r2
+                odataframe = np.stack([i.to_numpy().transpose() for i in odata], axis=0)
+                print('Input Data Shape: '+str(odataframe.shape))
+                
+                ev, phi = odata[0].indexes.values()
+                e_photon = float(odata[0].attrs['ExcitationEnergy'].removesuffix(' eV'))
+                self.view = VolumeSlicer(self.frame1, volume=odataframe, cmap='viridis', x=phi, y=r1, z=r2, ev=ev, e_photon=e_photon, density=density)
+                
+            self.tlg.bind('<Return>', self.view.set_slim)
+            self.view.show()
+
+    def __rlist(self):
+        self.l1 = tk.Text(self.tlg, wrap='none', width=30, height=9, font=('Arial', 12, 'bold'), bg='white', bd=5)
+        self.l1.grid(row=0, column=0)
+        
+        if self.sort == 'r1r2':
+            r2 = sorted(set(self.r2))
+            t = 0
+            s=''
+            ls=0
+            tt = False
+            for i,v in enumerate(self.r2):
+                if i<len(self.r2)-1:
+                    if self.r2[i+1] == r2[t]:
+                        if not tt:
+                            s+=self.r2s[2]+'='+str(r2[t])+': '
+                            tt = True
+                        s+=str(self.r1[i])+', '
+                        if i+1 == len(self.r2)-1:
+                            s+=str(self.r1[i+1])
+                            if len(s)>ls:
+                                ls=len(s)
+                            self.l1.insert(tk.END, s)
+                            s=''
+                            tt = False
+                    else:
+                        if i+1 == len(self.r2)-1:
+                            s.removesuffix(', ')
+                            s+='\n'+self.r2s[2]+'='+str(r2[t+1])+': '+str(self.r1[i])+'\n'
+                        else:
+                            s+=str(self.r1[i])+'\n'
+                        if len(s)>ls:
+                            ls=len(s)
+                        self.l1.insert(tk.END, s)
+                        s=''
+                        tt = False
+                        t+=1
+        else:
+            ls=0
+            for i,v in enumerate(self.r1):
+                if len(self.r1s[2]+'='+str(v))>ls:
+                    ls=len(self.r1s[2]+'='+str(v))
+                self.l1.insert(tk.END, self.r1s[2]+'='+str(v)+'\n')
+            self.l1.config(width=ls)
+    
+    def __check(self, *args, f=False):
+        name = self.lb.name
+        t = self.preserve
+        for i, v in enumerate(self.name):
+            if v in name:
+                t[i] = True
+        self.preserve = t
+        if self.sort == 'r1r2':
+            r1 = []
+            r2 = []
+            for i, v in enumerate(self.r2):
+                if self.preserve[i]:
+                    r1.append(self.r1[i])
+                    r2.append(v)
+            self.r1 = r1
+            self.r2 = r2                    
+        elif self.sort == 'r1':
+            r1 = []
+            for i, v in enumerate(self.r1):
+                if self.preserve[i]:
+                    r1.append(v)
+            self.r1 = r1
+        
+        if f==False:
+            path = []
+            name = []
+            data = []
+            for i, v in enumerate(self.preserve):
+                if v:
+                    path.append(self.path[i])
+                    name.append(self.name[i])
+                    data.append(self.data[i])
+            self.path = path
+            self.name = name
+            self.data = data
+        self.tlg.focus_set()
+        if f==False:
+            self.gg.destroy()
+        self.__prework()
+        
+    def __check_file(self):
+        self.gg = tk.Toplevel(self.g, bg='white')
+        self.gg.protocol("WM_DELETE_WINDOW", self.__check)
+        self.gg.title('File Check')
+        self.gg.focus_set()
+        text = 'Same File Name Exists\nSelect the file you want to preserve'
+        tk.Label(self.gg, text=text, width=len(text), height=2, font=('Arial', 14, "bold"), bg='white', bd=5).grid(row=0, column=0)
+        frame1 = tk.Frame(self.gg, bg='white')
+        frame1.grid(row=1, column=0)
+        name = [i.split('#id#')[0] for i in self.name]
+        tname = [i for i in name]
+        self.preserve = []
+        for i in self.name:
+            if '#id#' in i:
+                self.preserve.append(False)
+            else:
+                self.preserve.append(True)
+        t = 0
+        self.lb = add_lb(frame1, self.sort)
+        n = 0
+        r1 = []
+        r2 = []
+        ss = []
+        while t < len(name):
+            if self.sort == 'r1r2':
+                s = ''
+                fj = False
+                tt = False
+                ti=1
+                tj=t
+                for jj in range(t+1, len(name)):
+                    if name[t] == name[jj]:
+                        ti+=1
+                        if not tt:
+                            tname[t] = tname[t]+'#id#'+str(t)
+                            s+=tname[t]+'\n'
+                            tt = True
+                        tname[jj] = tname[jj]+'#id#'+str(jj)
+                        s+=tname[jj]+'\n'
+                        fj = True
+                        tj = jj
+                if fj:
+                    t = tj
+                t+=1
+                s.removesuffix('\n')
+                if s != '':
+                    n+=1
+                    r2.append(self.r2[t-1])
+                    ss.append(s)
+                    # self.lb.add(s, self.r2[t-1])
+            elif self.sort == 'r1':
+                s = ''
+                fj = False
+                tt = False
+                ti=1
+                tj=t
+                for jj in range(t+1, len(name)):
+                    if name[t] == name[jj]:
+                        ti+=1
+                        if not tt:
+                            tname[t] = tname[t]+'#id#'+str(t)
+                            s+=tname[t]+'\n'
+                            tt = True
+                        tname[jj] = tname[jj]+'#id#'+str(jj)
+                        s+=tname[jj]+'\n'
+                        fj = True
+                        tj = jj
+                if fj:
+                    t = tj
+                t+=1
+                s.removesuffix('\n')
+                if s != '':
+                    n+=1
+                    r1.append(self.r1[t-1])
+                    ss.append(s)
+                    # self.lb.add(s, self.r1[t-1])
+        self.lb.name = ['name' for i in range(n)]
+        for i in range(n):
+            if self.sort == 'r1r2':
+                self.lb.add(ss[i], r2[i], self.r1s[2], self.r2s[2])
+            elif self.sort == 'r1':
+                self.lb.add(ss[i], r1[i], self.r1s[2], self.r2s[2])
+                
+        tk.Button(self.gg, text='OK', command=self.__check, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5).grid(row=2, column=0)
+        self.f1 = False
+        self.gg.bind('<Return>', self.__check)
+        self.gg.update()
+        
+    def __select_file(self):
+        if self.f2:
+            self.gg = tk.Toplevel(self.g, bg='white')
+            self.gg.protocol("WM_DELETE_WINDOW", self.__check)
+            self.gg.title('File Check')
+            self.gg.focus_set()
+            if self.sort == 'r1r2':
+                text = f'Same {self.r1s[2]} and {self.r2s[2]} Exists\nSelect the file you want to preserve'
+            elif self.sort == 'r1':
+                text = f'Same {self.r1s[2]} Exists\nSelect the file you want to preserve'
+            tk.Label(self.gg, text=text, width=len(text), height=2, font=('Arial', 14, "bold"), bg='white', bd=5).grid(row=0, column=0)
+            frame1 = tk.Frame(self.gg, bg='white')
+            frame1.grid(row=1, column=0)
+            self.lb = add_lb(frame1, self.sort)
+            self.preserve = [True for i in range(len(self.name))]        
+            ti=[]
+            ss=[]
+            tt=[]
+            t=0
+            if self.sort == 'r1r2':
+                for i in range(len(self.r2)):
+                    for j in range(len(self.r2)):
+                        if self.r2[i] == self.r2[j] and self.r1[i] == self.r1[j] and i != j:
+                            ti.append(i)
+                            self.preserve[i] = False
+                ti = sorted(set(ti))
+                while t < len(ti):
+                    s=''
+                    for i in range(len(np.argwhere(self.r1 == self.r1[ti[t]]))):
+                        s+=self.name[ti[t]]+'\n'
+                        t+=1
+                    if s != '':
+                        tt.append(t-1)
+                        ss.append(s.removesuffix('\n'))
+                self.lb.name = ['name' for i in range(len(ss))]
+                for i, v in enumerate(ss):
+                    self.lb.add(v, self.r2[tt[i]], self.r1s[2], self.r2s[2])
+            elif self.sort == 'r1':
+                for i in range(len(self.r1)):
+                    for j in range(len(self.r1)):
+                        if self.r1[i] == self.r1[j] and i != j:
+                            ti.append(i)
+                            self.preserve[i] = False
+                            
+                ti = sorted(set(ti))
+                while t < len(ti):
+                    s=''
+                    for i in range(len(np.argwhere(self.r1 == self.r1[ti[t]]))):
+                        s+=self.name[ti[t]]+'\n'
+                        t+=1
+                    if s != '':
+                        tt.append(t-1)
+                        ss.append(s.removesuffix('\n'))
+                self.lb.name = ['name' for i in range(len(ss))]
+                for i, v in enumerate(ss):
+                    self.lb.add(v, self.r1[tt[i]], self.r1s[2], self.r2s[2])
+                    
+            tk.Button(self.gg, text='OK', command=self.__check, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5).grid(row=2, column=0)
+            self.f2 = False
+            self.gg.bind('<Return>', self.__check)
+            self.gg.update()
+        else:
+            self.__check(f=True)
+        
+    def __prework(self):
+        if self.f1:
+            self.__check_file()
+        elif self.f2:
+            self.f2 = False
+            if self.sort == 'r1r2':
+                for i in range(len(self.r2)):
+                    for j in range(len(self.r2)):
+                        if self.r2[i] == self.r2[j] and self.r1[i] == self.r1[j] and i != j:
+                            self.f2 = True
+            elif self.sort == 'r1':
+                for i in range(len(self.r1)):
+                    for j in range(len(self.r1)):
+                        if self.r1[i] == self.r1[j] and i != j:
+                            self.f2 = True
+            self.__select_file()
+        else:
+            self.__rlist()
+            self.__set_data(odata=self.data)
+    
+    def __gen_f1_f2(self):
+        self.f1 = False
+        self.f2 = False
+        for i in self.name:
+            if '#id#' in i:
+                self.f1 = True
+        if self.sort == 'r1r2':
+            for i in range(len(self.r2)):
+                for j in range(len(self.r2)):
+                    if self.r2[i] == self.r2[j] and self.r1[i] == self.r1[j] and i != j:
+                        self.f2 = True
+        elif self.sort == 'r1':
+            for i in range(len(self.r1)):
+                for j in range(len(self.r1)):
+                    if self.r1[i] == self.r1[j] and i != j:
+                        self.f2 = True
+    
+    def __check_re(self):
+        self.__gen_f1_f2()
+        self.__prework()
+
+class add_lb():
+    def __init__(self, fr, sort):
+        self.fr = fr
+        self.lb = []
+        self.s = []
+        self.l = []
+        self.r = []
+        self.name = []
+        self.sort = sort
+        
+    def add(self, s, r, r1s, r2s):    
+        self.s.append(s.removesuffix('\n'))
+        if self.sort == 'r1r2':
+            ltex = r2s+':'+str(r)+' '
+        elif self.sort == 'r1':
+            ltex = r1s+':'+str(r)+' '
+        else:
+            ltex = ''
+        l = tk.Label(self.fr, text=ltex, width=len(ltex), height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+        l.pack()
+        self.l.append(l)
+        self.r.append(r)
+        ls=0
+        for i in self.s[-1].split('\n'):
+            if len(i)>ls:
+                ls=len(i)+1
+        listbox = tk.Listbox(self.fr, selectmode='single', font=('Arial', 14, "bold"), bg='white', bd=5, width=ls, height=len(self.s[-1].split('\n')))
+        listbox.pack()
+        self.lb.append(listbox)
+        
+        self.l[-1].config(text=ltex+self.s[-1].split('\n')[0], width=len(ltex+self.s[-1].split('\n')[0]))
+        
+        for i in self.s[-1].split('\n'):
+            listbox.insert(tk.END, i)
+        
+        # Set focus to the Listbox
+        listbox.focus_set()
+        
+        # Bind events
+        listbox.bind('<<ListboxSelect>>', lambda event, lb=listbox, l=l, ltex=ltex: self.__on_select(event, lb, l, ltex))
+        listbox.bind('<Up>', lambda event, lb=listbox, l=l: self.__on_up(event, lb, l))
+        listbox.bind('<Down>', lambda event, lb=listbox, l=l: self.__on_down(event, lb, l))
+        
+        # Pre-select the first item
+        if listbox.size() > 0:
+            listbox.select_set(0)
+            listbox.event_generate('<<ListboxSelect>>')
+        
+    def __on_up(self, event, lb, l):
+        selected_index = lb.curselection()
+        if selected_index and selected_index[0] > 0:
+            lb.select_clear(selected_index[0])
+            lb.select_set(selected_index[0] - 1)
+            lb.event_generate('<<ListboxSelect>>')
+    
+    def __on_down(self, event, lb, l):
+        selected_index = lb.curselection()
+        if selected_index and selected_index[0] < lb.size() - 1:
+            lb.select_clear(selected_index[0])
+            lb.select_set(selected_index[0] + 1)
+            lb.event_generate('<<ListboxSelect>>')
+    
+    def __on_select(self, event, lb, l, ltex):
+        selected_index = lb.curselection()
+        if selected_index:
+            selected_item = lb.get(selected_index)
+            l.config(text=ltex+selected_item, width=len(ltex+selected_item))
+            for i,v in enumerate(self.r):
+                if str(v)+' ' in ltex:
+                    self.name[i] = selected_item.replace('\n', '')
         
 def pr_load(data):
     global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
@@ -3151,9 +4236,8 @@ def pr_load(data):
         in_fit.config(state='normal')
         b_fit.config(state='normal')
     os.chdir(cdir)
-    np.savez('rd', path=dpath, name=name, lpath=[i for i in lfs.path], lname=[i for i in lfs.name], ev=ev,
+    np.savez('rd', path=dpath, name=name, lpath=[i for i in lfs.path], ev=ev,
              phi=phi, st=st, lst=lst)
-
 
 fpr = 0
 
@@ -3203,7 +4287,7 @@ def o_load():
         data = lfs.data[0]  # data save as xarray.DataArray format
         pr_load(data)
         tname = tpath.split('/')
-        tname = tname[-1].split('#id#')[0].replace('.h5', '')
+        tname = tname[-1].split('#id#')[0].split('#d#')[0].replace('.h5', '')
         print(tname)
         if tname != name:
             print('path: ',tname, '\nh5: ', name)
@@ -3215,7 +4299,7 @@ def o_load():
         data = lfs.data[0]
         pr_load(data)
         tname = tpath.split('/')
-        tname = tname[-1].split('#id#')[0].replace('.json', '')
+        tname = tname[-1].split('#id#')[0].split('#d#')[0].replace('.json', '')
         print(tname)
         if tname != name:
             print('path: ',tname, '\njson: ', name)
@@ -3250,7 +4334,7 @@ def o_ecut():
     pbar = tqdm.tqdm(total=len(ev), desc='MDC', colour='green')
     for n in range(len(ev)):
         ecut = data.sel(eV=ev[n], method='nearest')
-        x = (2*m*ev[n]*1.6*10**-19)**0.5 * \
+        x = (2*m*ev[n]*1.602176634*10**-19)**0.5 * \
             np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
         y = ecut.to_numpy().reshape(len(x))
         y = np.where(y > int(lowlim.get()), y, int(lowlim.get()))
@@ -3701,7 +4785,7 @@ def loadmfit_():
                         ##################################################################################################
                         # area tfwhm,tpos(1486.6+...)
                         if (ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
-                            tkk = (2*m*ev[fi]*1.6*10**-19)**0.5 * \
+                            tkk = (2*m*ev[fi]*1.602176634*10**-19)**0.5 * \
                                 np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
                             if float(tpos) > 1200:
                                 tkk+=1486.6
@@ -3767,7 +4851,7 @@ def loadmfit_():
                         ##################################################################################################
                         # area tfwhm,tpos(1486.6+...)
                         if (ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
-                            tkk = (2*m*ev[fi]*1.6*10**-19)**0.5 * \
+                            tkk = (2*m*ev[fi]*1.602176634*10**-19)**0.5 * \
                                 np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
                             if float(tpos) > 1200:
                                 tkk+=1486.6
@@ -3829,19 +4913,19 @@ def loadmfit_():
             skmax = np.float64(skmax)
             skmin = np.float64(skmin)
 
-        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
                          10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+ophi) /
                    180*np.pi)*10**-10/(h/2/np.pi)
-        okmphi = np.arcsin(kmin/(2*m*fev*1.6*10**-19) **
+        okmphi = np.arcsin(kmin/(2*m*fev*1.602176634*10**-19) **
                            0.5/10**-10*(h/2/np.pi))*180/np.pi
-        kmin = (2*m*fev*1.6*10**-19)**0.5 * \
+        kmin = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+okmphi) /
                    180*np.pi)*10**-10/(h/2/np.pi)
-        okMphi = np.arcsin(kmax/(2*m*fev*1.6*10**-19) **
+        okMphi = np.arcsin(kmax/(2*m*fev*1.602176634*10**-19) **
                            0.5/10**-10*(h/2/np.pi))*180/np.pi
-        kmax = (2*m*fev*1.6*10**-19)**0.5 * \
+        kmax = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+okMphi) /
                    180*np.pi)*10**-10/(h/2/np.pi)
 
@@ -3869,9 +4953,9 @@ def loadmfit_():
                 if smfp[i] == 2:  # 2peak以上要改
                     ti += 1
             else:
-                skmin.append((2*m*v*1.6*10**-19)**0.5 *
+                skmin.append((2*m*v*1.602176634*10**-19)**0.5 *
                              np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi))
-                skmax.append((2*m*v*1.6*10**-19)**0.5 *
+                skmax.append((2*m*v*1.602176634*10**-19)**0.5 *
                              np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
             a1 = [(skmin[i]+skmax[i])/2, 10, 0.5, int(base.get())]
             a2 = [(skmin[i]+skmax[i])/2, 10, 0.5, int(base.get()),
@@ -3910,7 +4994,7 @@ def loadmfit_():
                 smresult = f['smresult']
                 smcst = f['smcst']
             rpos = np.copy(pos)
-            ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19) **
+            ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19) **
                              0.5/10**-10*(h/2/np.pi))*180/np.pi
             fpr = 1
             if '.h5' in rdd:
@@ -4290,7 +5374,7 @@ def o_loadefit():
             semax = np.float64(semax)
             semin = np.float64(semin)
         ffphi = np.float64(k_offset.get())+fphi
-        fk = (2*m*epos*1.6*10**-19)**0.5 * \
+        fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
             np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
 
         epos = res(fphi, epos)
@@ -4348,7 +5432,7 @@ def o_loadefit():
                 sefp = f['sefp']
                 sefi = f['sefi']
             ffphi = np.float64(k_offset.get())+fphi
-            fk = (2*m*epos*1.6*10**-19)**0.5 * \
+            fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
                 np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
             fpr = 1
             if '.h5' in rdd:
@@ -4475,7 +5559,7 @@ def o_loadefit():
 #         maa=np.float64(np.arange(4*len(fev)).reshape(len(fev),4))
 #         for i,v in enumerate(fev):
 #             ecut=data.sel(eV=v,method='nearest')
-#             x = (2*m*v*1.6*10**-19)**0.5*np.sin((phi+np.float64(k_offset.get()))/180*np.pi)*10**-10/(h/2/np.pi)
+#             x = (2*m*v*1.602176634*10**-19)**0.5*np.sin((phi+np.float64(k_offset.get()))/180*np.pi)*10**-10/(h/2/np.pi)
 #             y=ecut.to_numpy().reshape(len(x))
 #             tx=x[np.argwhere(x>=kmin[i])].flatten()
 #             xx=tx[np.argwhere(tx<=kmax[i])].flatten()
@@ -5273,7 +6357,7 @@ def feend():
             
     fphi, epos, efwhm = np.float64(fphi), np.float64(epos), np.float64(efwhm)
     ffphi = np.float64(k_offset.get())+fphi
-    fk = (2*m*epos*1.6*10**-19)**0.5 * \
+    fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
         np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
     scei = cei
     fpr = 1
@@ -5998,7 +7082,7 @@ def mfitjob():
         fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
         fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
         ecut = data.sel(eV=ev[i], method='nearest')
-        x = (2*m*ev[i]*1.6*10**-19)**0.5 * \
+        x = (2*m*ev[i]*1.602176634*10**-19)**0.5 * \
             np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
         y = ecut.to_numpy().reshape(len(x))
         tx = x[np.argwhere(x >= kmin[i])].flatten()
@@ -6007,7 +7091,7 @@ def mfitjob():
         yy = ty[np.argwhere(tx <= kmax[i])].flatten()
         yy = np.where(yy > mbase[i], yy, mbase[i])
         try:
-            # if (kmin[i],kmax[i])==((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi),(2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)) and i not in mfi:
+            # if (kmin[i],kmax[i])==((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi),(2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)) and i not in mfi:
             # if i not in mfi:
             #     if i not in mfi_x:
             #         mfi_x.append(i)
@@ -6017,10 +7101,10 @@ def mfitjob():
             #         mfi_err.remove(i)
             #     a1=[(kmin[i]+kmax[i])/2,(np.max(y)-mbase[i]),5,mbase[i]]
             #     a2=[(kmin[i]+kmax[i])/2,(np.max(y)-mbase[i]),5,mbase[i],(kmin[i]+kmax[i])/2,(np.max(y)-mbase[i]),5,mbase[i]]
-            # elif (kmin[i],kmax[i])!=((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi),(2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+            # elif (kmin[i],kmax[i])!=((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi),(2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
             if mfp[i] == 1:
                 smcst[i] = [0, 0, 0, 0, 0, 0]
-                if i in mfi_err and (kmin[i], kmax[i]) != ((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+                if i in mfi_err and (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
                     # a1,b=curve_fit(gl1,xx,yy-lnr_bg(yy),bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
                     # fit_warn=0
                     pars = Parameters()
@@ -6046,7 +7130,7 @@ def mfitjob():
                     if i in mfi:
                         result = mresult[i]
                     a1 = maa1[i, :]
-                    if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+                    if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
                         fit_warn = 2
                     elif i not in mfi:
                         # a1,b=curve_fit(gl1,xx,yy-lnr_bg(yy),bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
@@ -6073,7 +7157,7 @@ def mfitjob():
                     else:
                         fit_warn = 0
             elif mfp[i] == 2:
-                if i in mfi_err and (kmin[i], kmax[i]) != ((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+                if i in mfi_err and (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
                     pars = Parameters()
                     xr1, xr2 = float(mxf1.get()), float(mxf2.get())
                     wr1, wr2 = float(mwf1.get()), float(mwf2.get())
@@ -6124,7 +7208,7 @@ def mfitjob():
                     if i in mfi:
                         result = mresult[i]
                     a2 = maa2[i, :]
-                    if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+                    if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
                         fit_warn = 2
                     elif i not in mfi:
                         pars = Parameters()
@@ -6259,7 +7343,7 @@ def mfit():
     fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
     fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
     ecut = data.sel(eV=ev[i], method='nearest')
-    x = (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+    x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
     y = ecut.to_numpy().reshape(len(x))
     tx = x[np.argwhere(x >= kmin[i])].flatten()
     xx = tx[np.argwhere(tx <= kmax[i])].flatten()
@@ -6372,14 +7456,14 @@ def mfit():
         # p0=[kmin[i]+(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0,kmax[i]-(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0]
         # a2,b=curve_fit(gl2,xx,yy-lnr_bg(yy),p0=p0,bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0,kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01,kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
 
-        if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+        if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
             if i not in mfi_x:
                 mfi_x.append(i)
             if i in mfi:
                 mfi.remove(i)
             if i in mfi_err:
                 mfi_err.remove(i)
-        elif (kmin[i], kmax[i]) != ((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+        elif (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
             if fit_warn == 0:
                 if i not in mfi:
                     mfi.append(i)
@@ -6534,8 +7618,8 @@ def fmrmv():
         ti = sorted([i, mirmv])
         for i in np.linspace(ti[0], ti[1], ti[1]-ti[0]+1, dtype=int):
             mfp[i] = 1
-            kmin[i], kmax[i] = (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
-                h/2/np.pi), (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)
+            kmin[i], kmax[i] = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
+                h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)
             if i not in mfi_x:
                 mfi_x.append(i)
             if i in mfi:
@@ -6666,8 +7750,8 @@ def fmfwhm():
     fev = np.float64(fev)
     rpos = np.float64(pos)
     
-    ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-    pos = (2*m*fev*1.6*10**-19)**0.5 * np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+    ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    pos = (2*m*fev*1.602176634*10**-19)**0.5 * np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
 
     rpos = res(fev, rpos)
     ophi = res(fev, ophi)
@@ -6725,8 +7809,8 @@ def fmimse():
     fev = np.float64(fev)
     rpos = np.float64(pos)
     
-    ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-    pos = (2*m*fev*1.6*10**-19)**0.5 * np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+    ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    pos = (2*m*fev*1.602176634*10**-19)**0.5 * np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
     
     rpos = res(fev, rpos)
     ophi = res(fev, ophi)
@@ -7061,7 +8145,7 @@ def mfbgu(event):
     fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
     fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
     ecut = data.sel(eV=ev[i], method='nearest')
-    x = (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+    x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
     y = ecut.to_numpy().reshape(len(x))
     tx = x[np.argwhere(x >= kmin[i])].flatten()
     xx = tx[np.argwhere(tx <= kmax[i])].flatten()
@@ -7091,7 +8175,7 @@ def mfbgd(event):
     fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
     fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
     ecut = data.sel(eV=ev[i], method='nearest')
-    x = (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+    x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
     y = ecut.to_numpy().reshape(len(x))
     tx = x[np.argwhere(x >= kmin[i])].flatten()
     xx = tx[np.argwhere(tx <= kmax[i])].flatten()
@@ -7161,9 +8245,9 @@ def mfbgd(event):
 #         b.scatter(pos-fwhm/2, vfe-fev, c='r', s=0.5)
 #         b.scatter(pos, vfe-fev, c='k', s=0.5)
 #     b.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
-#     # px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+#     # px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
 #     # )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
-#     px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+#     px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
 #     )**0.5*np.sin(px/180*np.pi)*10**-10/(h/2/np.pi)
 #     pz = data.to_numpy()
 #     a.pcolormesh(px, py, pz, cmap=value3.get())
@@ -7593,7 +8677,7 @@ def mfitplot():  # mfiti Scale
     #     mfitax.plot(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],lbg,'g--')
 
     mfitax.scatter(fmxx[i, np.argwhere(fmxx[i, :] >= -20)], y, c='g', s=4)
-    if (kmin[i], kmax[i]) != ((2*m*ev[i]*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+    if (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
         klmin = mfitax.axvline(kmin[i], c='r')
         klmax = mfitax.axvline(kmax[i], c='r')
     else:
@@ -8291,13 +9375,13 @@ def fitm():
         try:
             kmin, kmax = skmin, skmax
         except NameError:
-            kmin, kmax = np.float64((2*m*ev*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
-                h/2/np.pi)), np.float64((2*m*ev*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
+            kmin, kmax = np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
+                h/2/np.pi)), np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
         if len(scki) >= 2:
             cki = scki
     else:
-        kmin, kmax = np.float64((2*m*ev*1.6*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
-            h/2/np.pi)), np.float64((2*m*ev*1.6*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
+        kmin, kmax = np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
+            h/2/np.pi)), np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
     # fmxx=np.float64((np.arange(len(phi)*len(ev))+1).reshape(len(ev),len(phi)))
     # fmyy=np.float64((np.arange(len(phi)*len(ev))+1).reshape(len(ev),len(phi)))
     # fmxx=fmxx/fmxx*-50
@@ -8314,7 +9398,7 @@ def fitm():
     pbar = tqdm.tqdm(total=len(ev), desc='MDC', colour='green')
     for i, v in enumerate(ev):
         ecut = data.sel(eV=v, method='nearest')
-        x = np.float64((2*m*v*1.6*10**-19)**0.5 *
+        x = np.float64((2*m*v*1.602176634*10**-19)**0.5 *
                        np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi))
         y = ecut.to_numpy().reshape(len(x))
         tx = x[np.argwhere(x >= kmin[i])].flatten()
@@ -8623,28 +9707,28 @@ def o_reload(*e):
     if '' == k_offset.get():
         k_offset.set('0')
         koffset.select_range(0, 1)
-    ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+    ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
                      10**-10*(h/2/np.pi))*180/np.pi
-    pos = (2*m*fev*1.6*10**-19)**0.5 * \
+    pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
         np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
     ophimin = np.arcsin(
-        (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+        (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
     ophimax = np.arcsin(
-        (rpos+fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-    kmin = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+        (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    kmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-    kmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+    kmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
     print('kmin: ',len(kmin))
     print('fev: ',len(fev))
-    # okmphi = np.arcsin(kmin/(2*m*fev*1.6*10**-19)**0.5 /
+    # okmphi = np.arcsin(kmin/(2*m*fev*1.602176634*10**-19)**0.5 /
     #                    10**-10*(h/2/np.pi))*180/np.pi
-    # kmin = (2*m*fev*1.6*10**-19)**0.5 * \
+    # kmin = (2*m*fev*1.602176634*10**-19)**0.5 * \
     #     np.sin((np.float64(k_offset.get())+okmphi) /
     #            180*np.pi)*10**-10/(h/2/np.pi)
-    # okMphi = np.arcsin(kmax/(2*m*fev*1.6*10**-19)**0.5 /
+    # okMphi = np.arcsin(kmax/(2*m*fev*1.602176634*10**-19)**0.5 /
     #                    10**-10*(h/2/np.pi))*180/np.pi
-    # kmax = (2*m*fev*1.6*10**-19)**0.5 * \
+    # kmax = (2*m*fev*1.602176634*10**-19)**0.5 * \
     #     np.sin((np.float64(k_offset.get())+okMphi) /
     #            180*np.pi)*10**-10/(h/2/np.pi)
     os.chdir(cdir)
@@ -8656,7 +9740,7 @@ def o_reload(*e):
     except:
         try:
             ffphi = np.float64(k_offset.get())+fphi
-            fk = (2*m*epos*1.6*10**-19)**0.5 * \
+            fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
                 np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
             np.savez('efit', ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
                  emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
@@ -8917,7 +10001,7 @@ def o_plot1(*e):
                     px, py = np.meshgrid(phi[0:-1], ev)
                 else:
                     px, py = np.meshgrid(phi[0:-1], vfe-ev)
-                px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+                px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                 )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
@@ -8931,7 +10015,7 @@ def o_plot1(*e):
             #         px, py = np.meshgrid(phi, ev[0:-1])
             #     else:
             #         px, py = np.meshgrid(phi, vfe-ev[0:-1])
-            #     px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-1])], dtype=float), ev[0:-1]+np.diff(ev)/2*1)*1.6*10**-19).transpose(
+            #     px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-1])], dtype=float), ev[0:-1]+np.diff(ev)/2*1)*1.602176634*10**-19).transpose(
             #     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
             #     cb = fig.colorbar(h0)
@@ -8946,7 +10030,7 @@ def o_plot1(*e):
                 #     px, py = np.meshgrid(phi[0:-2], ev[0:-2])
                 # else:
                 #     px, py = np.meshgrid(phi[0:-2], vfe-ev[0:-2])
-                # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.6*10**-19).transpose(
+                # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.602176634*10**-19).transpose(
                 # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
                 
                 pz = laplacian_filter(data.to_numpy(), im_kernel)
@@ -8954,7 +10038,7 @@ def o_plot1(*e):
                     px, py = np.meshgrid(phi, ev)
                 else:
                     px, py = np.meshgrid(phi, vfe-ev)
-                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                 )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                 
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
@@ -8969,7 +10053,7 @@ def o_plot1(*e):
                 #     px, py = np.meshgrid(phi[0:-2], ev)
                 # else:
                 #     px, py = np.meshgrid(phi[0:-2], vfe-ev)
-                # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+                # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                 # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
             #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
             #     cb = fig.colorbar(h0)
@@ -8984,7 +10068,7 @@ def o_plot1(*e):
                 #     px, py = np.meshgrid(phi, ev[0:-2])
                 # else:
                 #     px, py = np.meshgrid(phi, vfe-ev[0:-2])
-                # px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.6*10**-19).transpose(
+                # px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.602176634*10**-19).transpose(
                 # )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
             #     cb = fig.colorbar(h0)
@@ -9010,7 +10094,7 @@ def o_plot1(*e):
                         px, py = np.meshgrid(phi, ev)
                     else:
                         px, py = np.meshgrid(phi, vfe-ev)
-                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
@@ -9022,7 +10106,7 @@ def o_plot1(*e):
                         total=len(ev)-1, desc='MDC Normalized', colour='red')
                     for n in range(len(ev)-1):
                         ecut = data.sel(eV=ev[n], method='nearest')
-                        x = (2*m*ev[n]*1.6*10**-19)**0.5*np.sin(
+                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                         y = ecut.to_numpy().reshape(len(ecut))
                         # mz[len(phi)*n:len(phi)*(n+1)]=np.array(y,dtype=float)
@@ -9047,7 +10131,7 @@ def o_plot1(*e):
                     y = np.zeros([len(ev),len(phi)],dtype=float)
                     for n in range(len(ev)):
                         ecut = data.sel(eV=ev[n], method='nearest')
-                        x = (2*m*ev[n]*1.6*10**-19)**0.5*np.sin(
+                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                         y[n][:] = ecut.to_numpy().reshape(len(ecut))
                     for n in range(len(ev)//d):
@@ -9065,7 +10149,7 @@ def o_plot1(*e):
                     y = np.zeros([len(ev),len(phi)],dtype=float)
                     for n in range(len(ev)):
                         ecut = data.sel(eV=ev[n], method='nearest')
-                        x = (2*m*ev[n]*1.6*10**-19)**0.5*np.sin(
+                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                         y[n][:] = ecut.to_numpy().reshape(len(ecut))
                     for n in range(len(ev)//d):
@@ -9081,7 +10165,7 @@ def o_plot1(*e):
                         px, py = np.meshgrid(phi, ev)
                     else:
                         px, py = np.meshgrid(phi, vfe-ev)
-                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
@@ -9156,7 +10240,7 @@ def o_plot2(*e):
         if value1.get() == 'MDC fitted Data':
             try:
                 x = (vfe-fev)*1000
-                # y = (fwhm*6.626*10**-34/2/3.1415926/(10**-10))**2/2/(9.11*10**-31)/(1.6*10**-19)*1000
+                # y = (fwhm*6.626*10**-34/2/3.1415926/(10**-10))**2/2/(9.11*10**-31)/(1.602176634*10**-19)*1000
             except:
                 print(r'Please Load MDC fitted file')
                 st.put(r'Please Load MDC fitted file')
@@ -9316,9 +10400,9 @@ def o_plot3(*e):
         value.set('---Plot1---')
         value1.set('---Plot2---')
         fig.clear()
-        ophi = np.arcsin(rpos/(2*m*fev*1.6*10**-19)**0.5 /
+        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
                         10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.6*10**-19)**0.5 * \
+        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
         try:
             x = (vfe-fev)*1000
@@ -9659,7 +10743,7 @@ def o_plot3(*e):
                 px, py = np.meshgrid(phi, ev)
             else:
                 px, py =np.meshgrid(phi, vfe-ev)
-            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             pz = data.to_numpy()
             h0 = bo.pcolormesh(px, py, pz, cmap=value3.get())
@@ -9691,12 +10775,12 @@ def o_plot3(*e):
                         tb0 = bo.scatter(pos, vfe-fev, marker='.', s=0.3, c='black')
                 if mf == 1:
                     ophimin = np.arcsin(
-                        (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                        (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
                     ophimax = np.arcsin(
-                        (rpos+fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                    posmin = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                        (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                    posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                    posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                    posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                     if emf=='KE':
                         tb0_ = bo.scatter([posmin, posmax], [
@@ -10173,7 +11257,7 @@ def exp(*e):
                 px, py = np.meshgrid(phi[0:-1], ev)
             else:
                 px, py = np.meshgrid(phi[0:-1], vfe-ev)
-            px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+            px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
             if emf=='KE':
@@ -10210,7 +11294,7 @@ def exp(*e):
             #     px, py = np.meshgrid(phi[0:-2], ev)
             # else:
             #     px, py = np.meshgrid(phi[0:-2], vfe-ev)
-            # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+            # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
             # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
             
             pz = laplacian_filter(data.to_numpy(), im_kernel)
@@ -10218,7 +11302,7 @@ def exp(*e):
                 px, py = np.meshgrid(phi, ev)
             else:
                 px, py = np.meshgrid(phi, vfe-ev)
-            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
@@ -10256,7 +11340,7 @@ def exp(*e):
                     px, py = np.meshgrid(phi, ev)
                 else:
                     px, py = np.meshgrid(phi, vfe-ev)
-                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                 )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                 pz = data.to_numpy()
                 h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
@@ -10291,7 +11375,7 @@ def exp(*e):
             elif value.get() == 'MDC Normalized':
                 for n in range(len(ev)-1):
                     ecut = data.sel(eV=ev[n], method='nearest')
-                    x = (2*m*ev[n]*1.6*10**-19)**0.5*np.sin(
+                    x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                     y = ecut.to_numpy().reshape(len(ecut))
                     # mz[len(phi)*n:len(phi)*(n+1)]=np.array(y,dtype=float)
@@ -10315,7 +11399,7 @@ def exp(*e):
                 y = np.zeros([len(ev),len(phi)],dtype=float)
                 for n in range(len(ev)):
                     ecut = data.sel(eV=ev[n], method='nearest')
-                    x = (2*m*ev[n]*1.6*10**-19)**0.5*np.sin(
+                    x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                     y[n][:] = ecut.to_numpy().reshape(len(ecut))
                 for n in range(len(ev)//d):
@@ -10326,7 +11410,7 @@ def exp(*e):
                     y = np.zeros([len(ev),len(phi)],dtype=float)
                     for n in range(len(ev)):
                         ecut = data.sel(eV=ev[n], method='nearest')
-                        x = (2*m*ev[n]*1.6*10**-19)**0.5*np.sin(
+                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                         y[n][:] = ecut.to_numpy().reshape(len(ecut))
                     for n in range(len(ev)//d):
@@ -10337,7 +11421,7 @@ def exp(*e):
                         px, py = np.meshgrid(phi, ev)
                     else:
                         px, py = np.meshgrid(phi, vfe-ev)
-                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
@@ -10826,7 +11910,7 @@ def exp(*e):
             else:
                 px, py = np.meshgrid(phi, vfe-ev)
                 
-            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.6*10**-19).transpose(
+            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             pz = data.to_numpy()
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
@@ -10855,12 +11939,12 @@ def exp(*e):
                         
                 if mf == 1:
                     ophimin = np.arcsin(
-                        (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                        (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
                     ophimax = np.arcsin(
-                        (rpos+fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                    posmin = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                        (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                    posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                    posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                    posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                     if emf=='KE':
                         a.scatter([posmin, posmax], [fev, fev],
@@ -10909,12 +11993,12 @@ def exp(*e):
                         
                 if mf == 1:
                     ophimin = np.arcsin(
-                        (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                        (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
                     ophimax = np.arcsin(
-                        (rpos+fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                    posmin = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                        (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                    posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                    posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                    posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                     if emf=='KE':
                         a0.scatter([posmin, posmax], [fev, fev],
@@ -11129,12 +12213,12 @@ def press(event):
                 if mf == 1:
                     tb0_.remove()
                     ophimin = np.arcsin(
-                        (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                        (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
                     ophimax = np.arcsin(
-                        (rpos+fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                    posmin = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                        (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                    posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                    posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                    posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                     if emf=='KE':
                         tb0_ = bo.scatter([posmin, posmax], [
@@ -11231,12 +12315,12 @@ def release(event):
                                     pos, vfe-fev, marker='.', s=30, c='black')
                         if mf == 1:
                             ophimin = np.arcsin(
-                                (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                                (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
                             ophimax = np.arcsin(
-                                (rpos+fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                            posmin = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                                (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                            posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                                 (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                            posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                            posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                                 (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                             if emf=='KE':
                                 tb0_ = bo.scatter([posmin, posmax], [
@@ -11285,12 +12369,12 @@ def release(event):
                     if mf == 1:
                         tb0_.remove()
                         ophimin = np.arcsin(
-                            (rpos-fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                            (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
                         ophimax = np.arcsin(
-                            (rpos+fwhm/2)/(2*m*fev*1.6*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                        posmin = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                            (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                        posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                        posmax = (2*m*fev*1.6*10**-19)**0.5*np.sin(
+                        posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                         if emf=='KE':
                             tb0_ = bo.scatter([posmin, posmax], [
@@ -11695,12 +12779,13 @@ if __name__ == '__main__':
     os.chdir(cdir)
     warnings.filterwarnings("ignore", category=UserWarning)
     warnings.filterwarnings("ignore", category=RuntimeWarning)
+    warnings.filterwarnings("ignore", category=matplotlib.MatplotlibDeprecationWarning)
+    warnings.filterwarnings("ignore", category=SyntaxWarning)
     try:
         with np.load('rd.npz', 'rb') as ff:
             path = str(ff['path'])
             name = str(ff['name'])
             lpath = ff['lpath']
-            lname = ff['lname']
             ev = ff['ev']
             phi = ff['phi']
             st = str(ff['st'])
