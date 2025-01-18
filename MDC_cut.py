@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "5.0"
-__release_date__ = "2024-01-15"
+__version__ = "5.1"
+__release_date__ = "2024-01-18"
 import os, inspect
 import json
 import tkinter as tk
@@ -15,6 +15,9 @@ from ctypes import windll
 import re
 import copy
 from datetime import datetime
+import gc
+from tkinter import ttk
+from multiprocessing import Manager, Pool
 def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
@@ -58,6 +61,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import matplotlib.pyplot as plt
 matplotlib.use('TkAgg')
 from matplotlib.widgets import Slider
+from matplotlib.widgets import TextBox
 try:
     from scipy.optimize import curve_fit
     from scipy.ndimage import gaussian_filter1d
@@ -107,7 +111,10 @@ except ModuleNotFoundError:
     install('opencv-python')
     os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
     quit()
-
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", category=matplotlib.MatplotlibDeprecationWarning)
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 h=6.62607015*10**-34
 m=9.10938356*10**-31
 mp, ep, mf, ef = 1, 1, 1, 1
@@ -3043,7 +3050,7 @@ def tools(*args):
 class loadfiles():
     def __init__(self, files):
         self.opath = [f for f in files]
-        self.oname = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.opath]
+        self.oname = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.opath]
         self.r1s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1']
         self.r2s = ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
         self.__set_r1_r2()
@@ -3095,14 +3102,14 @@ class loadfiles():
                     self.path.append(v)
                     self.r1.append(r1[j])
                 t+=1
-            self.name = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
+            self.name = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
             self.name = self.check_repeat(self.name)
             
         def __sort_r1():
             self.or1 = self.gen_r1(self.oname, self.r1_splitter, self.r2_splitter)
             self.path = res(self.or1, self.opath)
             self.r1 = res(self.or1, self.or1)
-            self.name = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
+            self.name = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
             self.name = self.check_repeat(self.name)
             
         self.r1_splitter , self.r2_splitter= [], []
@@ -3145,7 +3152,7 @@ class loadfiles():
                     self.sort = 'no'
                     print('No Sort\n')
                 else:
-                    self.r1s, self.r2s = ['X_', 'X ', 'X', 'x_', 'x ', 'x'], ['Y_', 'Y ', 'Y', 'y_', 'y ', 'y']
+                    self.r1s, self.r2s = ['X_', 'X ', 'X', 'x_', 'x ', 'x'], ['Z_', 'Z ', 'Z', 'z_', 'z ', 'z']
                     self.__set_r1_r2()
                     self.__set_data()
         except:
@@ -3235,13 +3242,72 @@ class loadfiles():
                 body+=s.gen_casa_body()
             f.write(head+body+'end of experiment\n')
             f.close()
+            
+def cut_job_y(args):
+    i, angle, phi_offset, r1_offset, self_x, self_volume, cdensity, xmax, xmin, ymax, ymin, n, z, x, self_z, self_y, ev, e_photon = args
+    # print(i)
+    g=VolumeSlicer(volume=np.full((601,601,601), 0, dtype=np.float64))
+    g.ev = ev
+    g.y = self_y
+    g.z = self_z
+    g.cdensity = cdensity
+    g.type = 'reciprocal'
+    g.xmin = xmin
+    g.xmax = xmax
+    g.ymin = ymin
+    g.ymax = ymax
+    g.ox = self_x
+    g.phi_offset = phi_offset
+    g.r1_offset = r1_offset
+    g.e_photon = e_photon
+    g.cdensity = cdensity
+    g.angle = angle
+    g.slice_index = i
+    surface = g.slice_data(i, angle, phi_offset, r1_offset, self_x, self_volume)
+    td = surface[int(cdensity/(xmax-xmin)*(min(z)-xmin)):int(cdensity/(xmax-xmin)*(max(z)-xmin)), int(cdensity/(ymax-ymin)*(min(x)-ymin)):int(cdensity/(ymax-ymin)*(max(x)-ymin))]
+    del surface
+    td = cv2.resize(td, (n, td.shape[1]), interpolation=cv2.INTER_CUBIC)
+    result = td.mean(axis=0)
+    del td
+    gc.collect()
+    return i, result
+
+def cut_job_x(args):
+    i, angle, phi_offset, r1_offset, self_x, self_volume, cdensity, xmax, xmin, ymax, ymin, n, z, x, self_z, self_y, ev, e_photon = args
+    # print(i)
+    g=VolumeSlicer(volume=np.full((601,601,601), 0, dtype=np.float64))
+    g.ev = ev
+    g.y = self_y
+    g.z = self_z
+    g.cdensity = cdensity
+    g.type = 'reciprocal'
+    g.xmin = xmin
+    g.xmax = xmax
+    g.ymin = ymin
+    g.ymax = ymax
+    g.ox = self_x
+    g.phi_offset = phi_offset
+    g.r1_offset = r1_offset
+    g.e_photon = e_photon
+    g.cdensity = cdensity
+    g.angle = angle
+    g.slice_index = i
+    surface = g.slice_data(i, angle, phi_offset, r1_offset, self_x, self_volume)
+    td = surface[int(cdensity/(xmax-xmin)*(min(z)-xmin)):int(cdensity/(xmax-xmin)*(max(z)-xmin)), int(cdensity/(ymax-ymin)*(min(x)-ymin)):int(cdensity/(ymax-ymin)*(max(x)-ymin))]
+    del surface
+    td = cv2.resize(td, (td.shape[0], n), interpolation=cv2.INTER_CUBIC)
+    result = td.mean(axis=1)
+    del td
+    gc.collect()
+    return i, result
 
 class VolumeSlicer(tk.Frame):
-    def __init__(self, parent, volume, cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=601):
+    def __init__(self, parent=None, volume=[1,1], cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=601):
         '''
         volume shape: (r1, phi, ev)
         '''
-        super().__init__(parent, bg='white')
+        if parent is not None:
+            super().__init__(parent, bg='white')
         self.cmap=cmap
         # self.volume = volume    # data cube stored as a 3D numpy array
         self.slice_index = volume.shape[2] // 2
@@ -3305,137 +3371,392 @@ class VolumeSlicer(tk.Frame):
                 
             self.interpolate_slice(self.slice_index)
             self.img = self.ax.imshow(self.surface, cmap=cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
-            self.hl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
-            self.vl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
+            self.hl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
+            self.vl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
+            self.cut_l, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='-')
             self.hl.set_data([],[])
             self.vl.set_data([],[])
+            self.cut_l.set_data([], [])
             self.ax.set_aspect('equal')
             # Set custom x-ticks and y-ticks
             # self.ax.set_xticks(np.linspace(np.min(self.x), np.max(self.x), 5))
             # self.ax.set_yticks(np.linspace(np.min(self.y), np.max(self.y), 5))
             
-            frame1 = tk.Frame(self, bg='white')
-            frame1.grid(row=0, column=0)
-            
-            # Create a canvas and add it to the frame
-            self.canvas = FigureCanvasTkAgg(self.fig, master=frame1)
-            self.canvas.draw()
-            self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-            # self.canvas.get_tk_widget().grid(row=0, column=1)
-            
-            # Create a toolbar and add it to the frame
-            self.toolbar = NavigationToolbar2Tk(self.canvas, frame1)
-            self.toolbar.update()
-            self.toolbar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
-            # self.toolbar.grid(row=1, column=0)
-            
-            frame2 = tk.Frame(self, bg='white')
-            frame2.grid(row=0, column=1)
-            
-            frame_mode = tk.Frame(frame2, bg='white')
-            frame_mode.pack(side=tk.TOP)
-            self.b_mode = tk.Button(frame_mode, text='Transmission Mode', command=self.change_mode, bg='white', font=('Arial', 16, "bold"))
-            self.b_mode.pack(side=tk.LEFT)
-            label_d = tk.Label(frame_mode, text='Density:', bg='white', font=('Arial', 16, "bold")) 
-            label_d.pack(side=tk.LEFT)
-            self.entry_d = tk.Entry(frame_mode, bg='white', font=('Arial', 16, "bold"))
-            self.entry_d.pack(side=tk.LEFT)
-            self.entry_d.insert(0, str(self.density))
-            self.b_d = tk.Button(frame_mode, text='Set Density', command=self.set_density, bg='white', font=('Arial', 16, "bold"))
-            self.b_d.pack(side=tk.LEFT)
-            
-            
-            frame_entry1 = tk.Frame(frame2, bg='white')
-            frame_entry1.pack(side=tk.TOP)
-            label_info = tk.Label(frame_entry1, text="Set Slit Slice Range (0-493 for initial range)", bg='white', font=('Arial', 14, "bold"))
-            label_info.pack(side=tk.TOP)
-            
-            # Create entries and button to set self.slim
-            label_min = tk.Label(frame_entry1, text="Min:", bg='white', font=('Arial', 14, "bold"))
-            label_min.pack(side=tk.LEFT)
-            self.entry_min = tk.Entry(frame_entry1, bg='white', font=('Arial', 14, "bold"))
-            self.entry_min.pack(side=tk.LEFT)
-            self.entry_min.insert(0, str(self.slim[0]))
+            if parent is not None:
+                frame1 = tk.Frame(self, bg='white')
+                frame1.grid(row=0, column=0)
+                
+                # Create a canvas and add it to the frame
+                self.canvas = FigureCanvasTkAgg(self.fig, master=frame1)
+                self.canvas.draw()
+                self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+                # self.canvas.get_tk_widget().grid(row=0, column=1)
+                
+                # Create a toolbar and add it to the frame
+                self.toolbar = NavigationToolbar2Tk(self.canvas, frame1)
+                self.toolbar.update()
+                self.toolbar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
+                # self.toolbar.grid(row=1, column=0)
+                
+                frame2 = tk.Frame(self, bg='white')
+                frame2.grid(row=0, column=1)
+                
+                frame_mode = tk.Frame(frame2, bg='white')
+                frame_mode.pack(side=tk.TOP)
+                self.b_mode = tk.Button(frame_mode, text='Transmission Mode', command=self.change_mode, bg='white', font=('Arial', 16, "bold"))
+                self.b_mode.pack(side=tk.LEFT)
+                label_d = tk.Label(frame_mode, text='Density:', bg='white', font=('Arial', 16, "bold")) 
+                label_d.pack(side=tk.LEFT)
+                self.entry_d = tk.Entry(frame_mode, bg='white', font=('Arial', 16, "bold"))
+                self.entry_d.pack(side=tk.LEFT)
+                self.entry_d.insert(0, str(self.density))
+                self.b_d = tk.Button(frame_mode, text='Set Density', command=self.set_density, bg='white', font=('Arial', 16, "bold"))
+                self.b_d.pack(side=tk.LEFT)
+                
+                
+                frame_entry1 = tk.Frame(frame2, bg='white')
+                frame_entry1.pack(side=tk.TOP)
+                label_info = tk.Label(frame_entry1, text="Set Slit Slice Range (0-493 for initial range)", bg='white', font=('Arial', 14, "bold"))
+                label_info.pack(side=tk.TOP)
+                
+                # Create entries and button to set self.slim
+                label_min = tk.Label(frame_entry1, text="Min:", bg='white', font=('Arial', 14, "bold"))
+                label_min.pack(side=tk.LEFT)
+                self.entry_min = tk.Entry(frame_entry1, bg='white', font=('Arial', 14, "bold"))
+                self.entry_min.pack(side=tk.LEFT)
+                self.entry_min.insert(0, str(self.slim[0]))
 
-            label_max = tk.Label(frame_entry1, text="Max:", bg='white', font=('Arial', 14, "bold"))
-            label_max.pack(side=tk.LEFT)
-            self.entry_max = tk.Entry(frame_entry1, bg='white', font=('Arial', 14, "bold"))
-            self.entry_max.pack(side=tk.LEFT)
-            self.entry_max.insert(0, str(self.slim[1]))
+                label_max = tk.Label(frame_entry1, text="Max:", bg='white', font=('Arial', 14, "bold"))
+                label_max.pack(side=tk.LEFT)
+                self.entry_max = tk.Entry(frame_entry1, bg='white', font=('Arial', 14, "bold"))
+                self.entry_max.pack(side=tk.LEFT)
+                self.entry_max.insert(0, str(self.slim[1]))
 
-            self.set_slim_button = tk.Button(frame_entry1, text="Set Limit", command=self.set_slim, font=('Arial', 14, "bold"), bg='white')
-            self.set_slim_button.pack(side=tk.LEFT)
+                self.set_slim_button = tk.Button(frame_entry1, text="Set Limit", command=self.set_slim, font=('Arial', 14, "bold"), bg='white')
+                self.set_slim_button.pack(side=tk.LEFT)
+                
+                frame_entry2 = tk.Frame(frame2, bg='white')
+                frame_entry2.pack(side=tk.TOP)
+                # Create labels and entries for window range
+                label_xmin = tk.Label(frame_entry2, text="X Min:", bg='white', font=('Arial', 14, "bold"))
+                label_xmin.pack(side=tk.LEFT)
+                self.entry_xmin = tk.Entry(frame_entry2, bg='white', font=('Arial', 14, "bold"))
+                self.entry_xmin.pack(side=tk.LEFT)
+                self.entry_xmin.insert(0, str(self.ymin))
+                self.entry_xmin.config(state='disabled')
+
+                label_xmax = tk.Label(frame_entry2, text="X Max:", bg='white', font=('Arial', 14, "bold"))
+                label_xmax.pack(side=tk.LEFT)
+                self.entry_xmax = tk.Entry(frame_entry2, bg='white', font=('Arial', 14, "bold"))
+                self.entry_xmax.pack(side=tk.LEFT)
+                self.entry_xmax.insert(0, str(self.ymax))
+                self.entry_xmax.config(state='disabled')
+
+                frame_entry3 = tk.Frame(frame2, bg='white')
+                frame_entry3.pack(side=tk.TOP)
+
+                label_ymin = tk.Label(frame_entry3, text="Y Min:", bg='white', font=('Arial', 14, "bold"))
+                label_ymin.pack(side=tk.LEFT)
+                self.entry_ymin = tk.Entry(frame_entry3, bg='white', font=('Arial', 14, "bold"))
+                self.entry_ymin.pack(side=tk.LEFT)
+                self.entry_ymin.insert(0, str(self.xmin))
+                self.entry_ymin.config(state='disabled')
+
+                label_ymax = tk.Label(frame_entry3, text="Y Max:", bg='white', font=('Arial', 14, "bold"))
+                label_ymax.pack(side=tk.LEFT)
+                self.entry_ymax = tk.Entry(frame_entry3, bg='white', font=('Arial', 14, "bold"))
+                self.entry_ymax.pack(side=tk.LEFT)
+                self.entry_ymax.insert(0, str(self.xmax))
+                self.entry_ymax.config(state='disabled')
+
+                self.set_window_button = tk.Button(frame2, text="Set Window Range", command=self.set_window, font=('Arial', 14, "bold"), bg='white')
+                self.set_window_button.pack(side=tk.TOP)
+
+                frame_entry4 = tk.Frame(frame2, bg='white')
+                frame_entry4.pack(side=tk.TOP)
+                self.label_phi_offset = tk.Label(frame_entry4, text="Set Z Offset (mm):", bg='white', font=('Arial', 14, "bold"))
+                self.label_phi_offset.pack(side=tk.LEFT)
+                self.entry_phi_offset = tk.Entry(frame_entry4, bg='white', font=('Arial', 14, "bold"), state='normal')
+                self.entry_phi_offset.pack(side=tk.LEFT)
+                self.entry_phi_offset.insert(0, str(self.phi_offset))
+                
+                frame_entry5 = tk.Frame(frame2, bg='white')
+                frame_entry5.pack(side=tk.TOP)
+                self.label_r1_offset = tk.Label(frame_entry5, text="Set X Offset (mm):", bg='white', font=('Arial', 14, "bold"))
+                self.label_r1_offset.pack(side=tk.LEFT)
+                self.entry_r1_offset = tk.Entry(frame_entry5, bg='white', font=('Arial', 14, "bold"), state='normal')
+                self.entry_r1_offset.pack(side=tk.LEFT)
+                self.entry_r1_offset.insert(0, str(self.r1_offset))
+                
+                self.fig1 = plt.Figure(figsize=(5, 0.5),constrained_layout=True)
+                # Create a slider axis and slider
+                self.ax_slider = self.fig1.add_axes([0.2, 0.6, 0.6, 0.3])
+                self.slider = Slider(self.ax_slider, 'Energy', self.ev[0], self.ev[-1], valinit=self.ev[self.slice_index], valstep=self.ev[1]-self.ev[0])
+                
+                # Attach the update function to the slider
+                self.slider.on_changed(self.update)
+
+                self.ax_angle_slider = self.fig1.add_axes([0.2, 0.1, 0.6, 0.3])
+                self.angle_slider = Slider(self.ax_angle_slider, 'Angle', 0, 360, valinit=self.angle, valstep=0.001)
+                self.angle_slider.on_changed(self.set_angle_sl)
+                
+                self.ax_ang_text = self.fig1.add_axes([0.8, 0.1, 0.1, 0.3])
+                self.text_ang = TextBox(self.ax_ang_text, '', initial=str(self.angle), color='white', hovercolor='white')
+                self.text_ang.on_text_change(self.set_angle_tx)
+                
+                
+                self.canvas1 = FigureCanvasTkAgg(self.fig1, master=frame2)
+                self.canvas1.draw()
+                self.canvas1.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+                # self.canvas1.get_tk_widget().grid(row=0, column=1)
+                
+                self.frame_cut_xy = tk.Frame(frame2, bg='white')
+                # self.frame_cut_xy.pack(side=tk.TOP)
+                frame_xy = tk.Frame(self.frame_cut_xy, bg='white')
+                frame_xy.pack(side=tk.TOP)
+                self.cut_xy_x_label = tk.Label(frame_xy, text="kx:", bg='white', font=('Arial', 14, "bold"))
+                self.cut_xy_x_label.pack(side=tk.LEFT)
+                self.cut_xy_x_entry = tk.Entry(frame_xy, bg='white', font=('Arial', 14, "bold"))
+                self.cut_xy_x_entry.pack(side=tk.LEFT)
+                self.cut_xy_x_entry.insert(0, '0')
+                self.cut_xy_y_label = tk.Label(frame_xy, text="ky:", bg='white', font=('Arial', 14, "bold"))
+                self.cut_xy_y_label.pack(side=tk.LEFT)
+                self.cut_xy_y_entry = tk.Entry(frame_xy, bg='white', font=('Arial', 14, "bold"))
+                self.cut_xy_y_entry.pack(side=tk.LEFT)
+                self.cut_xy_y_entry.insert(0, '0')
+                
+                frame_dxy = tk.Frame(self.frame_cut_xy, bg='white')
+                frame_dxy.pack(side=tk.TOP)
+                self.cut_xy_dx_label = tk.Label(frame_dxy, text="kx bin:", bg='white', font=('Arial', 14, "bold"))
+                self.cut_xy_dx_label.pack(side=tk.LEFT)
+                self.cut_xy_dx_entry = tk.Entry(frame_dxy, bg='white', font=('Arial', 14, "bold"))
+                self.cut_xy_dx_entry.pack(side=tk.LEFT)
+                self.cut_xy_dx_entry.insert(0, '0.05')
+                self.cut_xy_dy_label = tk.Label(frame_dxy, text="ky bin:", bg='white', font=('Arial', 14, "bold"))
+                self.cut_xy_dy_label.pack(side=tk.LEFT)
+                self.cut_xy_dy_entry = tk.Entry(frame_dxy, bg='white', font=('Arial', 14, "bold"))
+                self.cut_xy_dy_entry.pack(side=tk.LEFT)
+                self.cut_xy_dy_entry.insert(0, '0.4')
+                
+                frame_cut_button = tk.Frame(self.frame_cut_xy, bg='white')
+                frame_cut_button.pack(side=tk.TOP,anchor='center')
+                b_cut = tk.Button(frame_cut_button, text='Cut', command=self.cut_xy, bg='white', font=('Arial', 14, "bold"))
+                b_cut.pack(side=tk.LEFT)
+                b_cut_plot = tk.Button(frame_cut_button, text='Plot', command=self.cut_plot, bg='white', font=('Arial', 14, "bold"))
+                b_cut_plot.pack(side=tk.RIGHT)
             
-            frame_entry2 = tk.Frame(frame2, bg='white')
-            frame_entry2.pack(side=tk.TOP)
-            # Create labels and entries for window range
-            label_xmin = tk.Label(frame_entry2, text="X Min:", bg='white', font=('Arial', 14, "bold"))
-            label_xmin.pack(side=tk.LEFT)
-            self.entry_xmin = tk.Entry(frame_entry2, bg='white', font=('Arial', 14, "bold"))
-            self.entry_xmin.pack(side=tk.LEFT)
-            self.entry_xmin.insert(0, str(self.ymin))
-            self.entry_xmin.config(state='disabled')
-
-            label_xmax = tk.Label(frame_entry2, text="X Max:", bg='white', font=('Arial', 14, "bold"))
-            label_xmax.pack(side=tk.LEFT)
-            self.entry_xmax = tk.Entry(frame_entry2, bg='white', font=('Arial', 14, "bold"))
-            self.entry_xmax.pack(side=tk.LEFT)
-            self.entry_xmax.insert(0, str(self.ymax))
-            self.entry_xmax.config(state='disabled')
-
-            frame_entry3 = tk.Frame(frame2, bg='white')
-            frame_entry3.pack(side=tk.TOP)
-
-            label_ymin = tk.Label(frame_entry3, text="Y Min:", bg='white', font=('Arial', 14, "bold"))
-            label_ymin.pack(side=tk.LEFT)
-            self.entry_ymin = tk.Entry(frame_entry3, bg='white', font=('Arial', 14, "bold"))
-            self.entry_ymin.pack(side=tk.LEFT)
-            self.entry_ymin.insert(0, str(self.xmin))
-            self.entry_ymin.config(state='disabled')
-
-            label_ymax = tk.Label(frame_entry3, text="Y Max:", bg='white', font=('Arial', 14, "bold"))
-            label_ymax.pack(side=tk.LEFT)
-            self.entry_ymax = tk.Entry(frame_entry3, bg='white', font=('Arial', 14, "bold"))
-            self.entry_ymax.pack(side=tk.LEFT)
-            self.entry_ymax.insert(0, str(self.xmax))
-            self.entry_ymax.config(state='disabled')
-
-            self.set_window_button = tk.Button(frame2, text="Set Window Range", command=self.set_window, font=('Arial', 14, "bold"), bg='white')
-            self.set_window_button.pack(side=tk.TOP)
-
-            frame_entry4 = tk.Frame(frame2, bg='white')
-            frame_entry4.pack(side=tk.TOP)
-            self.label_phi_offset = tk.Label(frame_entry4, text="Set Z Offset (mm):", bg='white', font=('Arial', 14, "bold"))
-            self.label_phi_offset.pack(side=tk.LEFT)
-            self.entry_phi_offset = tk.Entry(frame_entry4, bg='white', font=('Arial', 14, "bold"), state='normal')
-            self.entry_phi_offset.pack(side=tk.LEFT)
-            self.entry_phi_offset.insert(0, str(self.phi_offset))
             
-            frame_entry5 = tk.Frame(frame2, bg='white')
-            frame_entry5.pack(side=tk.TOP)
-            self.label_r1_offset = tk.Label(frame_entry5, text="Set X Offset (mm):", bg='white', font=('Arial', 14, "bold"))
-            self.label_r1_offset.pack(side=tk.LEFT)
-            self.entry_r1_offset = tk.Entry(frame_entry5, bg='white', font=('Arial', 14, "bold"), state='normal')
-            self.entry_r1_offset.pack(side=tk.LEFT)
-            self.entry_r1_offset.insert(0, str(self.r1_offset))
-            
-            self.fig1 = plt.Figure(figsize=(4, 3),constrained_layout=True)
-            # Create a slider axis and slider
-            self.ax_slider = self.fig1.add_axes([0.2, 0.65, 0.7, 0.2])
-            self.slider = Slider(self.ax_slider, 'Slice', 0, self.volume.shape[2] - 1, valinit=self.slice_index, valstep=1)
-            
-            # Attach the update function to the slider
-            self.slider.on_changed(self.update)
-
-            self.ax_angle_slider = self.fig1.add_axes([0.2, 0.15, 0.7, 0.2])
-            self.angle_slider = Slider(self.ax_angle_slider, 'Angle', 0, 360, valinit=self.angle, valstep=1)
-            self.angle_slider.on_changed(self.rotate_image)
-            
-            self.canvas1 = FigureCanvasTkAgg(self.fig1, master=frame2)
-            self.canvas1.draw()
-            self.canvas1.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
-            # self.canvas1.get_tk_widget().grid(row=0, column=1)
+    def cut_xy(self):
+        cx = np.float64(self.cut_xy_x_entry.get())
+        cy = np.float64(self.cut_xy_y_entry.get())
+        cdx = np.float64(self.cut_xy_dx_entry.get())
+        cdy = np.float64(self.cut_xy_dy_entry.get())
+        if cx-cdx/2 < self.ymin or cx+cdx/2 > self.ymax or cy-cdy/2 < self.xmin or cy+cdy/2 > self.xmax:
+            if cx-cdx/2 < self.ymin:
+                cdx = (cx-self.ymin)*2
+            elif cx+cdx/2 > self.ymax:
+                cdx = (self.ymax-cx)*2
+            if cy-cdy/2 < self.xmin:
+                cdy = (cy-self.xmin)*2
+            elif cy+cdy/2 > self.xmax:
+                cdy = (self.xmax-cy)*2
+        self.cut_xy_dx_entry.delete(0, tk.END)
+        self.cut_xy_dx_entry.insert(0, str(cdx))
+        self.cut_xy_dy_entry.delete(0, tk.END)
+        self.cut_xy_dy_entry.insert(0, str(cdy))
+        self.cx = cx
+        self.cy = cy
+        self.cdx = cdx
+        self.cdy = cdy
+        self.cut_l.set_data([self.cx-self.cdx/2, self.cx+self.cdx/2, self.cx+self.cdx/2, self.cx-self.cdx/2, self.cx-self.cdx/2], [self.cy-self.cdy/2, self.cy-self.cdy/2, self.cy+self.cdy/2, self.cy+self.cdy/2, self.cy-self.cdy/2])
+        self.canvas.draw()
     
+    def combine_slice(self, data, xlim, ylim, r2=None, ev=None, step=0.25):  # complete
+        '''
+        Args:
+        ---
+        data: raw image (shape:(len(r1), len(phi)))
+        xlim: [min, max]  x: r1
+        ylim: [min, max]  y: phi
+        step: width for only one r1 cube (default: 0.25 degree/mm)
+        
+        return:
+        ---
+            image
+            shape: (density, density)
+        '''
+        xlim, ylim = sorted(xlim), sorted(ylim)
+        fr2 = True
+        if self.type == 'real':
+            if int(self.cdensity/(self.ymax-self.ymin)*(xlim[1]-xlim[0])) ==0:
+                xlim[1] += step
+                xlim[0] -= step
+            base = np.zeros((self.cdensity, self.cdensity))
+            data = cv2.resize(data, (int(self.cdensity/(self.xmax-self.xmin)*(ylim[1]-ylim[0])), int(self.cdensity/(self.ymax-self.ymin)*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
+            base[0:data.shape[0], 0:data.shape[1]] = data
+            data = ndimage.shift(base.T, ((ylim[0]-self.xmin)/(self.xmax-self.xmin)*self.cdensity, (xlim[0]-self.ymin)/(self.ymax-self.ymin)*self.cdensity))
+            data = data
+        elif self.type == 'reciprocal':
+            if r2 is None:
+                fr2=False
+                r2, self.z = 0, [0, 0]
+            if int(self.cdensity/180*(xlim[1]-xlim[0])) ==0: # at least 1 pixel
+                d = 1/self.cdensity*180/2
+                c = (xlim[0]+xlim[1])/2
+                xlim = [float(c-d), float(c+d)]
+                print(f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
+            tmax = np.max(data)
+            base = np.zeros((self.cdensity, self.cdensity))
+            r1 = np.linspace(xlim[0], xlim[1], int(self.cdensity/180*(xlim[1]-xlim[0])))
+            phi = np.linspace(ylim[0], ylim[1], int(self.cdensity/180*(ylim[1]-ylim[0])))
+            r1, phi = np.meshgrid(r1, phi)
+            x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)
+            y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi/180*np.pi)
+            txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
+            x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)  # x: r1, y: phi, at r2=0
+            y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi/180*np.pi)
+            fig, ax = plt.subplots(dpi=150)
+            fig.patch.set_facecolor('black')
+            ax.set_facecolor('black')
+            data = cv2.resize(data, (int(self.cdensity/180*(ylim[1]-ylim[0])), int(self.cdensity/180*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
+            ax.pcolormesh(x, y, data.T, cmap='gray')    # compatible with r2=0, phi: yaxis, r1: xaxis in transmission mode
+            ax.set_position([0, 0, 1, 1])
+            ax.axis('off')
+            fig.canvas.draw()
+            image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+            image_from_plot = image_from_plot.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+            plt.close()
+            del fig, ax
+            image_gray = cv2.cvtColor(image_from_plot, cv2.COLOR_RGB2GRAY)/255*tmax
+            image_gray = cv2.resize(image_gray[::-1,:], (data.shape[1],data.shape[0]), interpolation=cv2.INTER_CUBIC)
+            data = cv2.resize(image_gray, (int(self.cdensity/(self.xmax-self.xmin)*(txlim[1]-txlim[0])), int(self.cdensity/(self.ymax-self.ymin)*(tylim[1]-tylim[0]))), interpolation=cv2.INTER_CUBIC)
+            base[0:data.shape[0], 0:data.shape[1]] = data
+            del image_from_plot, image_gray, data
+            data = ndimage.shift(base, ((tylim[0]-self.ymin)/(self.ymax-self.ymin)*self.cdensity, (txlim[0]-self.xmin)/(self.xmax-self.xmin)*self.cdensity))
+            # data = data[::-1, :]
+            del base
+            gc.collect()
+            data = ndimage.rotate(data, angle=r2-self.z[0], axes=(0, 1), reshape=False)
+            
+            if not fr2:
+                self.z = None
+        if self.z is not None and fr2==True:  # for multiple cubes need np.nanmean
+            msk = data<self.tmin-self.tmin/3
+            data[msk] = np.nan
+            
+        return data
+    
+    def slice_data(self, i, angle=0, phi_offset=0, r1_offset=-31, self_x=None, self_volume=None):
+        if self.z is None: # for 1 cube
+            surface = self.combine_slice(self_volume[:, :, i], xlim = [min(self.y)-r1_offset, max(self.y)-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], ev=self.ev[i])
+        elif self.z is not None: # for multiple cubes
+            img = self_volume[:, :, i]
+            try:
+                self.tmin = np.min(img[img>0])
+                r2 = sorted(set(self.z))
+                surface = np.full((self.cdensity, self.cdensity), np.nan, dtype=np.float64)
+                for z in r2:
+                    ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
+                    surface = np.nanmean([surface, self.combine_slice(self_volume[ind, :, i], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], r2=z, ev=self.ev[i])], axis=0)
+                surface = np.nan_to_num(surface)
+            except:
+                surface = np.zeros((self.cdensity, self.cdensity))
+        surface = ndimage.rotate(surface, angle, axes=(0, 1), reshape=False)
+        return surface
+    
+    def on_closing(self):
+            print('Closing...') #testing
+            self.pool.terminate()
+            print('Terminated')
+            self.pool.join()
+            print('Joined')
+            self.fg.destroy()
+    
+    def save_cut(self):
+        return self.data_cut, self.angle_cut, self.cx_cut, self.cy_cut, self.cdx_cut, self.cdy_cut, self.n_cut, self.phi_offset_cut, self.r1_offset_cut
+    
+    def cut_plot(self):
+        print('Please wait...')
+        n = int((self.xmax-self.xmin)//1e-3)
+        self.cdensity = n
+        print('Density:', n)
+        angle = self.angle
+        self.cx_cut = self.cx
+        self.cy_cut = self.cy
+        self.cdx_cut = self.cdx
+        self.cdy_cut = self.cdy
+        x = [self.cx-self.cdx/2, self.cx+self.cdx/2]
+        z = [self.cy-self.cdy/2, self.cy+self.cdy/2]
+        y = self.ev
+        data = np.zeros((len(y), n), dtype=np.float64)
+        phi_offset = self.phi_offset
+        r1_offset = self.r1_offset
+        self_x = self.ox[self.slim[0]:self.slim[1]+1]
+        self_volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
+        self.fg = tk.Toplevel(self)
+        self.fg.title('Cut Plot')
+        self.fg.focus_set()
+        self.fg.protocol("WM_DELETE_WINDOW", self.on_closing)
+        if self.cdx<=self.cdy:  # cut along ky
+            
+            # -----stable version-----
+            # for i in range(len(y)):
+            #     surface = self.slice_data(i, angle, phi_offset, r1_offset, self_x, self_volume)
+            #     td = surface[int(self.cdensity/(self.xmax-self.xmin)*(min(z)-self.xmin)):int(self.cdensity/(self.xmax-self.xmin)*(max(z)-self.xmin)), int(self.cdensity/(self.ymax-self.ymin)*(min(x)-self.ymin)):int(self.cdensity/(self.ymax-self.ymin)*(max(x)-self.ymin))]
+            #     del surface
+            #     td = cv2.resize(td, (td.shape[0], n), interpolation=cv2.INTER_CUBIC)
+            #     data[i,:] = td.mean(axis=1)
+            #     del td
+            #     gc.collect()
+            #     progress['value'] = i+1
+            #     root.update()
+            # -----stable version-----
+            
+            with Manager() as manager:
+                with Pool() as self.pool:
+                    args = [(i, angle, phi_offset, r1_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, n, z, x, self.z, self.y, self.ev, self.e_photon) for i in range(len(y))]
+                    results = list(tqdm.tqdm(self.pool.imap(cut_job_x, args), total=len(y), desc="Processing", colour='blue'))
+
+                    for i, result in results:
+                        data[i, :] = result
+
+        else:   # cut along kx
+            with Manager() as manager:
+                with Pool() as self.pool:
+                    args = [(i, angle, phi_offset, r1_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, n, z, x, self.z, self.y, self.ev, self.e_photon) for i in range(len(y))]
+                    results = list(tqdm.tqdm(self.pool.imap(cut_job_y, args), total=len(y), desc="Processing", colour='blue'))
+
+                    for i, result in results:
+                        data[i, :] = result
+        print('done')     
+        fig = plt.Figure(figsize=(9, 9),constrained_layout=True)
+        ax = fig.add_subplot(111)
+        ax.set_xlabel(r'k ($2\pi/\AA$)', fontsize=16)
+        ax.set_ylabel('Kinetic Energy (eV)', fontsize=16)
+        if self.cdx<=self.cdy:
+            x = np.linspace(min(z), max(z), n)
+        else:
+            x = np.linspace(min(x), max(x), n)
+        x, y = np.meshgrid(x, y)
+        ax.pcolormesh(x,y,data, cmap='gray')
+        canvas = FigureCanvasTkAgg(fig, master=self.fg)
+        canvas.draw()
+        self.data_cut = data
+        self.angle_cut = angle
+        self.n_cut = n
+        self.phi_offset_cut = phi_offset
+        self.r1_offset_cut = r1_offset
+        del data, fig, ax
+        gc.collect()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        toolbar = NavigationToolbar2Tk(canvas, self.fg)
+        toolbar.update()
+        toolbar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
+        
+        save_button = tk.Button(self.fg, text='Save', command=self.save_cut, bg='white', font=('Arial', 16, "bold"))
+        save_button.pack(side=tk.BOTTOM)
+        self.fg.update()
+        
     def set_density(self, *args):
         try:
             self.density = int(self.entry_d.get())
@@ -3461,6 +3782,7 @@ class VolumeSlicer(tk.Frame):
                 self.b_mode.config(text='Reciprocal Mode')
                 self.label_phi_offset.config(text="Set Phi Offset (degree):")
                 self.label_r1_offset.config(text="Set R1 Offset (degree):")
+                self.frame_cut_xy.pack(side=tk.TOP)
             except:
                 self.type = 'real'
                 if self.z is not None:
@@ -3514,6 +3836,7 @@ class VolumeSlicer(tk.Frame):
                 self.b_mode.config(text='Transmission Mode')
                 self.label_phi_offset.config(text="Set Z Offset (mm):")
                 self.label_r1_offset.config(text="Set X Offset (mm):")
+                self.frame_cut_xy.pack_forget()
             except:
                 self.type = 'reciprocal'
                 self.phi_offset = 0
@@ -3545,8 +3868,8 @@ class VolumeSlicer(tk.Frame):
             self.interpolate_slice(self.slice_index)
             rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
             self.ax.clear()
-            self.hl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
-            self.vl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
+            self.hl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
+            self.vl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
             self.hl.set_data([],[])
             self.vl.set_data([],[])
             self.img = self.ax.imshow(rotated_volume, cmap=self.cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
@@ -3568,6 +3891,8 @@ class VolumeSlicer(tk.Frame):
                 self.entry_ymin.config(state='disabled')
                 self.entry_ymax.config(state='disabled')
             elif self.type == 'reciprocal':
+                self.cut_l, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='-')
+                self.cut_l.set_data([], [])
                 self.set_entry_value(self.entry_xmin, str(self.ymin))
                 self.set_entry_value(self.entry_xmax, str(self.ymax))
                 self.set_entry_value(self.entry_ymin, str(self.xmin))
@@ -3600,11 +3925,13 @@ class VolumeSlicer(tk.Frame):
             rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
             self.ax.clear()
             self.img = self.ax.imshow(rotated_volume, cmap=self.cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
-            self.hl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
-            self.vl, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='--')
+            self.hl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
+            self.vl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
             self.hl.set_data([],[])
             self.vl.set_data([],[])
             if self.type == 'reciprocal':
+                self.cut_l, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='-')
+                self.cut_l.set_data([], [])
                 self.ax.set_xlim([self.tylim[0], self.tylim[1]])
                 self.ax.set_ylim([self.txlim[0], self.txlim[1]])
                 self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
@@ -3614,7 +3941,7 @@ class VolumeSlicer(tk.Frame):
                 self.ax.set_ylim([self.xmin, self.xmax])
                 self.ax.set_xlabel('x (mm)', fontsize=16)
                 self.ax.set_ylabel('z (mm)', fontsize=16)
-            self.fig.canvas.draw_idle()
+            self.canvas.draw()
             if self.type == 'real':
                 self.entry_xmin.config(state='disabled')
                 self.entry_xmax.config(state='disabled')
@@ -3637,6 +3964,7 @@ class VolumeSlicer(tk.Frame):
         entry.insert(0, value)
     
     def interpolate_slice(self, i):
+        # self.xmin, self.xmax range should be larger than txlim, tylim in combine, and so as y
         try:
             self.phi_offset = float(self.entry_phi_offset.get())
             self.r1_offset = float(self.entry_r1_offset.get())
@@ -3677,49 +4005,70 @@ class VolumeSlicer(tk.Frame):
                 self.surface = self.combine(self.volume[:, :, i], xlim = [min(self.y)-self.r1_offset, max(self.y)-self.r1_offset], ylim = [min(self.x)-self.phi_offset, max(self.x)-self.phi_offset], ev=self.ev[i])
         elif self.z is not None: # for multiple cubes
             img = self.volume[:, :, i]
-            self.tmin = np.min(img[img>0])
-            r2 = sorted(set(self.z))
-            self.surface = np.full((self.density, self.density), np.nan, dtype=np.float64)
-            if self.type == 'real':
-                for z in r2:
-                    ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
-                    self.surface = np.nanmean([self.surface, self.combine(self.volume[ind, :, i], xlim = [min(self.y[ind]), max(self.y[ind])], ylim = [min(self.x)+z, max(self.x)+z])], axis=0)
-                self.surface = np.nan_to_num(self.surface)
-            elif self.type == 'reciprocal':
-                for z in r2:
-                    ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
-                    self.surface = np.nanmean([self.surface, self.combine(self.volume[ind, :, i], xlim = [min(self.y[ind])-self.r1_offset, max(self.y[ind])-self.r1_offset], ylim = [min(self.x)-self.phi_offset, max(self.x)-self.phi_offset], r2=z, ev=self.ev[i])], axis=0)
-                self.surface = np.nan_to_num(self.surface)
+            try:
+                self.tmin = np.min(img[img>0])
+                r2 = sorted(set(self.z))
+                self.surface = np.full((self.density, self.density), np.nan, dtype=np.float64)
+                if self.type == 'real':
+                    for z in r2:
+                        ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
+                        self.surface = np.nanmean([self.surface, self.combine(data = self.volume[ind, :, i], xlim = [min(self.y[ind]), max(self.y[ind])], ylim = [min(self.x)+z, max(self.x)+z])], axis=0)
+                    self.surface = np.nan_to_num(self.surface)
+                elif self.type == 'reciprocal':
+                    for z in r2:
+                        ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
+                        self.surface = np.nanmean([self.surface, self.combine(self.volume[ind, :, i], xlim = [min(self.y[ind])-self.r1_offset, max(self.y[ind])-self.r1_offset], ylim = [min(self.x)-self.phi_offset, max(self.x)-self.phi_offset], r2=z, ev=self.ev[i])], axis=0)
+                    self.surface = np.nan_to_num(self.surface)
+            except:
+                self.surface = np.zeros((self.density, self.density))
+        return self.surface
         
     def update(self, *args):
         self.hl.set_data([],[])
         self.vl.set_data([],[])
-        self.slice_index = int(self.slider.val)
+        self.slice_index = np.argwhere(np.abs(self.ev-self.slider.val)<(self.ev[1]-self.ev[0])/4)[0][0]
         self.interpolate_slice(self.slice_index)
         rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
         self.img.set_data(rotated_volume)
-        self.fig.canvas.draw_idle()
+        self.canvas.draw()
+
         
-    def rotate_image(self, *args):
+    def set_angle_sl(self, *args):
+        try:
+            self.angle = np.float64(self.angle_slider.val)
+            self.text_ang.set_val(f'%.3f'%self.angle)
+            self.rotate_image()
+        except ValueError:
+            print("Invalid input for angle value")
+    
+    def set_angle_tx(self, *args):
+        try:
+            self.angle = np.float64(self.text_ang.text)
+            self.angle_slider.set_val(self.angle)
+            self.rotate_image()
+        except ValueError:
+            print("Invalid input for angle value")
+        
+    def rotate_image(self):
         if self.type == 'real':
             self.hl.set_data([self.r1_offset, self.r1_offset], [self.xmin, self.xmax])
             self.vl.set_data([self.ymin, self.ymax], [self.phi_offset, self.phi_offset])
         elif self.type == 'reciprocal':
             self.hl.set_data([0, 0], [self.xmin, self.xmax])
             self.vl.set_data([self.ymin, self.ymax], [0, 0])
-        self.angle = int(self.angle_slider.val)
         rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
         self.img.set_data(rotated_volume)
-        
-        self.fig.canvas.draw_idle()
+        self.canvas.draw()
+
     
-    def combine(self, data, xlim, ylim, r2=None, ev=None):  # complete
+    def combine(self, data, xlim, ylim, r2=None, ev=None, step=0.25):  # complete
         '''
         Args:
         ---
         data: raw image (shape:(len(r1), len(phi)))
         xlim: [min, max]  x: r1
         ylim: [min, max]  y: phi
+        step: width for only one r1 cube (default: 0.25 degree/mm)
         
         return:
         ---
@@ -3729,6 +4078,9 @@ class VolumeSlicer(tk.Frame):
         xlim, ylim = sorted(xlim), sorted(ylim)
         fr2 = True
         if self.type == 'real':
+            if int(self.density/(self.ymax-self.ymin)*(xlim[1]-xlim[0])) ==0:
+                xlim[1] += step
+                xlim[0] -= step
             base = np.zeros((self.density, self.density))
             data = cv2.resize(data, (int(self.density/(self.xmax-self.xmin)*(ylim[1]-ylim[0])), int(self.density/(self.ymax-self.ymin)*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
             base[0:data.shape[0], 0:data.shape[1]] = data
@@ -3738,10 +4090,15 @@ class VolumeSlicer(tk.Frame):
             if r2 is None:
                 fr2=False
                 r2, self.z = 0, [0, 0]
+            if int(self.density/180*(xlim[1]-xlim[0])) ==0: # at least 1 pixel
+                d = 1/self.density*180/2
+                c = (xlim[0]+xlim[1])/2
+                xlim = [float(c-d), float(c+d)]
+                print(f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
             tmax = np.max(data)
             base = np.zeros((self.density, self.density))
-            r1 = np.linspace(xlim[0], xlim[1], int(self.density/180*(xlim[1]-xlim[0]))*10)
-            phi = np.linspace(ylim[0], ylim[1], int(self.density/180*(ylim[1]-ylim[0]))*10)
+            r1 = np.linspace(xlim[0], xlim[1], int(self.density/180*(xlim[1]-xlim[0]))*4)
+            phi = np.linspace(ylim[0], ylim[1], int(self.density/180*(ylim[1]-ylim[0]))*4)
             r1, phi = np.meshgrid(r1, phi)
             x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)
             y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi/180*np.pi)
@@ -3751,20 +4108,24 @@ class VolumeSlicer(tk.Frame):
             fig, ax = plt.subplots(dpi=150)
             fig.patch.set_facecolor('black')
             ax.set_facecolor('black')
-            data = cv2.resize(data, (int(self.density/180*(ylim[1]-ylim[0]))*10, int(self.density/180*(xlim[1]-xlim[0]))*10), interpolation=cv2.INTER_CUBIC)
+            data = cv2.resize(data, (int(self.density/180*(ylim[1]-ylim[0]))*4, int(self.density/180*(xlim[1]-xlim[0]))*4), interpolation=cv2.INTER_CUBIC)
             ax.pcolormesh(x, y, data.T, cmap='gray')    # compatible with r2=0, phi: yaxis, r1: xaxis in transmission mode
             ax.set_position([0, 0, 1, 1])
             ax.axis('off')
             fig.canvas.draw()
             image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
             image_from_plot = image_from_plot.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-            plt.close(fig)
+            # plt.close(fig)
+            del fig, ax
             image_gray = cv2.cvtColor(image_from_plot, cv2.COLOR_RGB2GRAY)/255*tmax
             image_gray = cv2.resize(image_gray[::-1,:], (data.shape[1],data.shape[0]), interpolation=cv2.INTER_CUBIC)
             data = cv2.resize(image_gray, (int(self.density/(self.xmax-self.xmin)*(txlim[1]-txlim[0])), int(self.density/(self.ymax-self.ymin)*(tylim[1]-tylim[0]))), interpolation=cv2.INTER_CUBIC)
             base[0:data.shape[0], 0:data.shape[1]] = data
+            del data, image_gray, image_from_plot
             data = ndimage.shift(base, ((tylim[0]-self.ymin)/(self.ymax-self.ymin)*self.density, (txlim[0]-self.xmin)/(self.xmax-self.xmin)*self.density))
             # data = data[::-1, :]
+            del base
+            gc.collect()
             data = ndimage.rotate(data, angle=r2-self.z[0], axes=(0, 1), reshape=False)
             
             if not fr2:
@@ -3796,7 +4157,6 @@ class CEC(loadfiles):
         self.tlg.focus_set()
         self.frame1 = tk.Frame(self.tlg, bg='white')
         self.frame1.grid(row=0, column=1)
-        self.view = VolumeSlicer(self.frame1, np.full((601,601,601), 0, dtype=np.float64))
         self.__check_re()
         
         self.tlg.geometry(f"{1900}x{990}+0+0")
@@ -3804,7 +4164,7 @@ class CEC(loadfiles):
     
     def __set_data(self, odata=[], density=801, *args):
         if len(odata) > 0:
-            self.view.pack_forget()
+            # self.view.pack_forget()
             if self.sort == 'r1':
                 odataframe = np.stack([i.to_numpy().transpose() for i in odata], axis=0)
                 print('Input Data Shape: '+str(odataframe.shape))   # shape: (r1, phi, ev)
@@ -3823,6 +4183,8 @@ class CEC(loadfiles):
                 self.view = VolumeSlicer(self.frame1, volume=odataframe, cmap='viridis', x=phi, y=r1, z=r2, ev=ev, e_photon=e_photon, density=density)
                 
             self.tlg.bind('<Return>', self.view.set_slim)
+            self.view.ax.clear()
+            self.view.set_slim()
             self.view.show()
 
     def __rlist(self):
@@ -3837,23 +4199,26 @@ class CEC(loadfiles):
             tt = False
             for i,v in enumerate(self.r2):
                 if i<len(self.r2)-1:
-                    if self.r2[i+1] == r2[t]:
+                    if self.r2[i+1] == r2[t]:   # current r2 is same as next r2
                         if not tt:
                             s+=self.r2s[2]+'='+str(r2[t])+': '
                             tt = True
                         s+=str(self.r1[i])+', '
-                        if i+1 == len(self.r2)-1:
+                        if i+1 == len(self.r2)-1:   # next r2 is the last r2
                             s+=str(self.r1[i+1])
                             if len(s)>ls:
                                 ls=len(s)
                             self.l1.insert(tk.END, s)
                             s=''
                             tt = False
-                    else:
-                        if i+1 == len(self.r2)-1:
+                    else:   # current r2 is different from next r2
+                        if i+1 == len(self.r2)-1:   # next r2 is the last r2
                             s.removesuffix(', ')
-                            s+='\n'+self.r2s[2]+'='+str(r2[t+1])+': '+str(self.r1[i])+'\n'
-                        else:
+                            s+=self.r2s[2]+'='+str(r2[t])+': '+str(self.r1[i])+'\n'
+                            s+=self.r2s[2]+'='+str(r2[t+1])+': '+str(self.r1[i+1])
+                        else:   # not last r2
+                            if not tt:
+                                s+=self.r2s[2]+'='+str(r2[t])+': '
                             s+=str(self.r1[i])+'\n'
                         if len(s)>ls:
                             ls=len(s)
@@ -3884,7 +4249,7 @@ class CEC(loadfiles):
                     r1.append(self.r1[i])
                     r2.append(v)
             self.r1 = r1
-            self.r2 = r2                    
+            self.r2 = r2
         elif self.sort == 'r1':
             r1 = []
             for i, v in enumerate(self.r1):
@@ -4287,7 +4652,7 @@ def o_load():
         data = lfs.data[0]  # data save as xarray.DataArray format
         pr_load(data)
         tname = tpath.split('/')
-        tname = tname[-1].split('#id#')[0].split('#d#')[0].replace('.h5', '')
+        tname = tname[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '')
         print(tname)
         if tname != name:
             print('path: ',tname, '\nh5: ', name)
@@ -4299,7 +4664,7 @@ def o_load():
         data = lfs.data[0]
         pr_load(data)
         tname = tpath.split('/')
-        tname = tname[-1].split('#id#')[0].split('#d#')[0].replace('.json', '')
+        tname = tname[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.json', '')
         print(tname)
         if tname != name:
             print('path: ',tname, '\njson: ', name)
@@ -12777,10 +13142,6 @@ def dl_sw():
 
 if __name__ == '__main__':
     os.chdir(cdir)
-    warnings.filterwarnings("ignore", category=UserWarning)
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
-    warnings.filterwarnings("ignore", category=matplotlib.MatplotlibDeprecationWarning)
-    warnings.filterwarnings("ignore", category=SyntaxWarning)
     try:
         with np.load('rd.npz', 'rb') as ff:
             path = str(ff['path'])
@@ -13462,5 +13823,6 @@ if __name__ == '__main__':
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
     g.geometry(f"{screen_width+50}x{screen_height}+0+0")
+    g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
     g.mainloop()
