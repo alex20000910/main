@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "5.1"
-__release_date__ = "2024-01-18"
+__version__ = "5.2"
+__release_date__ = "2024-01-20"
 import os, inspect
 import json
 import tkinter as tk
@@ -16,8 +16,9 @@ import re
 import copy
 from datetime import datetime
 import gc
-from tkinter import ttk
-from multiprocessing import Manager, Pool
+from tkinter import messagebox, ttk
+from multiprocessing import Pool
+import psutil, time
 def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
@@ -111,6 +112,12 @@ except ModuleNotFoundError:
     install('opencv-python')
     os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
     quit()
+try:
+    import cpuinfo
+except ModuleNotFoundError:
+    install('py-cpuinfo')
+    import cpuinfo
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 warnings.filterwarnings("ignore", category=matplotlib.MatplotlibDeprecationWarning)
@@ -124,7 +131,6 @@ fev = []
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':  # only execute on Windows OS
     cdir = cdir[0].upper() + cdir[1:]
-
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
     """
@@ -415,6 +421,97 @@ def load_h5(path_to_file: str) -> xr.DataArray:
                                                                 'Dwell': str(Dwell)+' s',
                                                                 'Iterations': Iterations,
                                                                 'Description': description,
+                                                                'Path': path_to_file
+                                                                })
+    return data
+cec = None
+def load_npz(path_to_file: str) -> xr.DataArray:
+    """
+    Load data from a NumPy NPZ file and convert it into an xarray DataArray.
+    
+    Parameters:
+        path_to_file (str): The path to the NPZ file.
+        
+    Returns:
+        xr.DataArray: The data loaded from the NPZ file as an xarray DataArray.
+    """
+    f = np.load(path_to_file)
+    lf_path = f['path']
+    try:
+        try:    #load path that saved in npz
+            tbasename = os.path.basename(lf_path[0])
+            if '.h5' in tbasename:
+                td=load_h5(lf_path[0])
+            elif '.json' in tbasename:
+                td=load_json(lf_path[0])
+            elif '.txt' in tbasename:
+                td=load_txt(lf_path[0])
+        except: #try load file in the same folder as npz
+            td = None
+            for i in lf_path:
+                tbasename = os.path.basename(i)
+                tpath = os.path.normpath(os.path.join(os.path.dirname(path_to_file), tbasename))
+                try:
+                    if '.h5' in tbasename:
+                        td=load_h5(tpath)
+                    elif '.json' in tbasename:
+                        td=load_json(tpath)
+                    elif '.txt' in tbasename:
+                        td=load_txt(tpath)
+                except:
+                    td = None
+                if td is not None:  #if file loaded
+                    break
+        PassEnergy = td.attrs['PassEnergy']
+        Dwell = td.attrs['Dwell']
+        Iterations = td.attrs['Iterations']
+        Slit = td.attrs['Slit']
+        if __name__ == '__main__':
+            angle = f['angle']
+            cx = f['cx']
+            cy = f['cy']
+            cdx = f['cdx']
+            cdy = f['cdy']
+            phi_offset = f['phi_offset']
+            r1_offset = f['r1_offset']
+            slim = f['slim']
+            global cec
+            cec=CEC(g, lf_path)
+            cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim)
+    except Exception as e:
+        if __name__ == '__main__':
+            hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+            if hwnd:
+                windll.user32.SetForegroundWindow(hwnd)
+            print(f"An error occurred: {e}")
+            print('\033[31mPath not found:\033[34m')
+            print(lf_path)
+            print('\033[31mPlace all the raw data files listed above in the same folder as the NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
+            message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
+            messagebox.showwarning("Warning", message)
+        PassEnergy = 'Unknown'
+        Dwell = 'Unknown'
+        Iterations = 'Unknown'
+        Slit = 'Unknown'
+    data = f['data']
+    phi = f['x']
+    ev = f['y']
+    ExcitationEnergy = f['e_photon']
+    Name = os.path.basename(path_to_file).split('.npz')[0]
+    data = xr.DataArray(data, coords={'eV': ev, 'phi': phi}, attrs={'Name': Name,
+                                                                'Acquisition': 'VolumeSlicer',
+                                                                'EnergyMode': 'Kinetic',
+                                                                'ExcitationEnergy': str(ExcitationEnergy)+' eV',
+                                                                'CenterEnergy': '%.3f'%((ev[0]+ev[-1])/2)+' eV',
+                                                                'HighEnergy': str(ev[-1])+' eV (K.E.)',
+                                                                'LowEnergy': str(ev[0])+' eV (K.E.)',
+                                                                'Step': str(ev[1]-ev[0])+' eV',
+                                                                'LensMode': 'Angular',
+                                                                'PassEnergy': PassEnergy,
+                                                                'Slit': Slit,
+                                                                'Dwell': Dwell,
+                                                                'Iterations': Iterations,
+                                                                'Description': 'Sliced Data',
                                                                 'Path': path_to_file
                                                                 })
     return data
@@ -893,11 +990,12 @@ def save():
     Save the Origin data in .opj format.
     Can be saved in .opju format as well.
     """
-    if 'h5' in dpath:
+    tbasename = os.path.basename(dpath)
+    if '.h5' in tbasename:
         op.save(dpath.removesuffix('.h5').replace("/","\\")+'.opj')
-    elif 'json' in dpath:
+    elif '.json' in tbasename:
         op.save(dpath.removesuffix('.json').replace("/","\\")+'.opj')
-    elif 'txt' in dpath:
+    elif '.txt' in tbasename:
         op.save(dpath.removesuffix('.txt').replace("/","\\")+'.opj')
 
 origin_temp_func = r'''
@@ -1018,11 +1116,12 @@ def save(format='opj'):
     Save the Origin data in .opj format.
     Can be saved in .opju format as well.
     """
-    if 'h5' in dpath:
+    tbasename = os.path.basename(dpath)
+    if '.h5' in tbasename:
         op.save(dpath.removesuffix('.h5').replace("/","\\")+'.'+format)
-    elif 'json' in dpath:
+    elif '.json' in tbasename:
         op.save(dpath.removesuffix('.json').replace("/","\\")+'.'+format)
-    elif 'txt' in dpath:
+    elif '.txt' in tbasename:
         op.save(dpath.removesuffix('.txt').replace("/","\\")+'.'+format)
 '''
 
@@ -1072,7 +1171,8 @@ def rplot(f, canvas):
     canvas.draw()
 
 def cexcitation_h5(s:str):
-    if '.h5' in dpath:
+    tbasename = os.path.basename(dpath)
+    if '.h5' in tbasename:
         with h5py.File(dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['ExcitationEnergy']['Value'][:]
@@ -1097,7 +1197,8 @@ def cexcitation_h5(s:str):
             print("Modified:", modified_data)
 
 def cexcitation_json(s:str):
-    if '.json' in dpath:
+    tbasename = os.path.basename(dpath)
+    if '.json' in tbasename:
         with open(dpath, 'r') as f:
             data = json.load(f)
             print("Original:", data['Region']['ExcitationEnergy']['Value'])
@@ -1115,11 +1216,12 @@ def cexcitation_save_str():
         s = s.replace('\n\n\n', '')
         s = s.replace('\n\n', '')
         s = s.replace('\n', '')
-        if '.h5' in dpath:
+        tbasename = os.path.basename(dpath)
+        if '.h5' in tbasename:
             cexcitation_h5(s)
             data = load_h5(dpath)  # data save as xarray.DataArray format
             pr_load(data)
-        elif '.json' in dpath:
+        elif '.json' in tbasename:
             cexcitation_json(s)
             data = load_json(dpath)
             pr_load(data)
@@ -1148,7 +1250,8 @@ def cexcitation():
     gcestr.update()
 
 def cname_h5(s:str):
-    if '.h5' in dpath:
+    tbasename = os.path.basename(dpath)
+    if '.h5' in tbasename:
         with h5py.File(dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['Name'][:]
@@ -1173,7 +1276,8 @@ def cname_h5(s:str):
             print("Modified:", modified_data)
 
 def cname_json(s:str):
-    if '.json' in dpath:
+    tbasename = os.path.basename(dpath)
+    if '.json' in tbasename:
         with open(dpath, 'r') as f:
             data = json.load(f)
             print("Original:", data['Region']['Name'])
@@ -1191,11 +1295,12 @@ def cname_save_str():
         s = s.replace('\n\n\n', '')
         s = s.replace('\n\n', '')
         s = s.replace('\n', '')
-        if '.h5' in dpath:
+        tbasename = os.path.basename(dpath)
+        if '.h5' in tbasename:
             cname_h5(s)
             data = load_h5(dpath)  # data save as xarray.DataArray format
             pr_load(data)
-        elif '.json' in dpath:
+        elif '.json' in tbasename:
             cname_json(s)
             data = load_json(dpath)
             pr_load(data)
@@ -1222,7 +1327,8 @@ def cname():
     gcstr.update()
 
 def desc_h5(s:str):
-    if '.h5' in dpath:
+    tbasename = os.path.basename(dpath)
+    if '.h5' in tbasename:
         with h5py.File(dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['Description'][:]
@@ -1247,7 +1353,8 @@ def desc_h5(s:str):
             print("Modified:", modified_data)
 
 def desc_json(s:str):
-    if '.json' in dpath:
+    tbasename = os.path.basename(dpath)
+    if '.json' in tbasename:
         with open(dpath, 'r') as f:
             data = json.load(f)
             print("Original:", data['Region']['Description'])
@@ -1264,11 +1371,12 @@ def save_str():
         s = s.replace('\n\n\n\n', '\n')
         s = s.replace('\n\n\n', '\n')
         s = s.replace('\n\n', '\n')
-        if '.h5' in dpath:
+        tbasename = os.path.basename(dpath)
+        if '.h5' in tbasename:
             desc_h5(s)
             data = load_h5(dpath)  # data save as xarray.DataArray format
             pr_load(data)
-        elif '.json' in dpath:
+        elif '.json' in tbasename:
             desc_json(s)
             data = load_json(dpath)
             pr_load(data)
@@ -3040,8 +3148,9 @@ def tools(*args):
     toolg.focus_set()
     b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b_spec.grid(row=0, column=0)
-    b_kplane = tk.Button(toolg, text='K-Plane', command=kplane, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
-    b_kplane.grid(row=0, column=1)
+    if lfs.sort != 'no':
+        b_kplane = tk.Button(toolg, text='K-Plane', command=kplane, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+        b_kplane.grid(row=0, column=1)
     b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b_exp_casa.grid(row=0, column=2)
     toolg.bind('<Return>', spec)
@@ -3050,7 +3159,7 @@ def tools(*args):
 class loadfiles():
     def __init__(self, files):
         self.opath = [f for f in files]
-        self.oname = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.opath]
+        self.oname = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '').replace('.npz', '') for f in self.opath]
         self.r1s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1']
         self.r2s = ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
         self.__set_r1_r2()
@@ -3059,12 +3168,16 @@ class loadfiles():
     def __set_data(self):
         self.data = []
         for i in self.path:
-            if '.h5' in i:
+            tbasename = os.path.basename(i)
+            if '.h5' in tbasename:
                 self.data.append(load_h5(i))
-            elif '.json' in i:
+            elif '.json' in tbasename:
                 self.data.append(load_json(i))
-            elif '.txt' in i:
+            elif '.txt' in tbasename:
                 self.data.append(load_txt(i))
+            elif '.npz' in tbasename:
+                print('loadfiels npz')
+                self.data.append(load_npz(i))
             else:
                 self.data.append([])
     
@@ -3136,15 +3249,15 @@ class loadfiles():
                 if len(i.split(self.r1_splitter[t]))<=1 or len(i.split(self.r2_splitter[t]))<=1:
                     f = False
                 t+=1
-            if f:
+            if f:   # r1 and r2 exist
                 __sort_r1_r2()
                 self.sort = 'r1r2'
                 print('Sort by r1 and r2\n')
-            elif len(self.oname[0].split(self.r1_splitter[0]))>1:
+            elif len(self.oname[0].split(self.r1_splitter[0]))>1:   # only r1 exist
                 __sort_r1()
                 self.sort = 'r1'
                 print('Sort by r1\n') 
-            else:
+            else:   # no r1 and r2
                 if self.r1s[0] == 'X_':
                     self.r1s, self.r2s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1'], ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
                     self.path = self.opath
@@ -3154,7 +3267,6 @@ class loadfiles():
                 else:
                     self.r1s, self.r2s = ['X_', 'X ', 'X', 'x_', 'x ', 'x'], ['Z_', 'Z ', 'Z', 'z_', 'z ', 'z']
                     self.__set_r1_r2()
-                    self.__set_data()
         except:
             self.r1s, self.r2s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1'], ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
             self.path = self.opath
@@ -3244,9 +3356,9 @@ class loadfiles():
             f.close()
             
 def cut_job_y(args):
-    i, angle, phi_offset, r1_offset, self_x, self_volume, cdensity, xmax, xmin, ymax, ymin, n, z, x, self_z, self_y, ev, e_photon = args
+    i, angle, phi_offset, r1_offset, self_x, self_volume, cdensity, xmax, xmin, ymax, ymin, z, x, self_z, self_y, ev, e_photon = args
     # print(i)
-    g=VolumeSlicer(volume=np.full((601,601,601), 0, dtype=np.float64))
+    g=VolumeSlicer()
     g.ev = ev
     g.y = self_y
     g.z = self_z
@@ -3260,22 +3372,21 @@ def cut_job_y(args):
     g.phi_offset = phi_offset
     g.r1_offset = r1_offset
     g.e_photon = e_photon
-    g.cdensity = cdensity
     g.angle = angle
     g.slice_index = i
     surface = g.slice_data(i, angle, phi_offset, r1_offset, self_x, self_volume)
     td = surface[int(cdensity/(xmax-xmin)*(min(z)-xmin)):int(cdensity/(xmax-xmin)*(max(z)-xmin)), int(cdensity/(ymax-ymin)*(min(x)-ymin)):int(cdensity/(ymax-ymin)*(max(x)-ymin))]
     del surface
-    td = cv2.resize(td, (n, td.shape[1]), interpolation=cv2.INTER_CUBIC)
+    td = cv2.resize(td, (cdensity, td.shape[1]), interpolation=cv2.INTER_CUBIC)
     result = td.mean(axis=0)
     del td
     gc.collect()
     return i, result
 
 def cut_job_x(args):
-    i, angle, phi_offset, r1_offset, self_x, self_volume, cdensity, xmax, xmin, ymax, ymin, n, z, x, self_z, self_y, ev, e_photon = args
+    i, angle, phi_offset, r1_offset, self_x, self_volume, cdensity, xmax, xmin, ymax, ymin, z, x, self_z, self_y, ev, e_photon = args
     # print(i)
-    g=VolumeSlicer(volume=np.full((601,601,601), 0, dtype=np.float64))
+    g=VolumeSlicer()
     g.ev = ev
     g.y = self_y
     g.z = self_z
@@ -3289,25 +3400,34 @@ def cut_job_x(args):
     g.phi_offset = phi_offset
     g.r1_offset = r1_offset
     g.e_photon = e_photon
-    g.cdensity = cdensity
     g.angle = angle
     g.slice_index = i
     surface = g.slice_data(i, angle, phi_offset, r1_offset, self_x, self_volume)
     td = surface[int(cdensity/(xmax-xmin)*(min(z)-xmin)):int(cdensity/(xmax-xmin)*(max(z)-xmin)), int(cdensity/(ymax-ymin)*(min(x)-ymin)):int(cdensity/(ymax-ymin)*(max(x)-ymin))]
     del surface
-    td = cv2.resize(td, (td.shape[0], n), interpolation=cv2.INTER_CUBIC)
+    td = cv2.resize(td, (td.shape[0], cdensity), interpolation=cv2.INTER_CUBIC)
     result = td.mean(axis=1)
     del td
     gc.collect()
     return i, result
 
 class VolumeSlicer(tk.Frame):
-    def __init__(self, parent=None, volume=[1,1], cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=601):
+    def __init__(self, parent=None, path=None, volume=np.zeros((5,5,5), dtype=np.float64), cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=601):
         '''
-        volume shape: (r1, phi, ev)
+        Args:
+        ------
+        parent: tk.Tk
+        path: loadfiles.path
+        volume: shape: (r1, phi, ev)
+        
+        Returns:
+        ------
+        None
         '''
         if parent is not None:
             super().__init__(parent, bg='white')
+        if path is not None:
+            self.path = path
         self.cmap=cmap
         # self.volume = volume    # data cube stored as a 3D numpy array
         self.slice_index = volume.shape[2] // 2
@@ -3545,7 +3665,6 @@ class VolumeSlicer(tk.Frame):
                 b_cut_plot = tk.Button(frame_cut_button, text='Plot', command=self.cut_plot, bg='white', font=('Arial', 14, "bold"))
                 b_cut_plot.pack(side=tk.RIGHT)
             
-            
     def cut_xy(self):
         cx = np.float64(self.cut_xy_x_entry.get())
         cy = np.float64(self.cut_xy_y_entry.get())
@@ -3582,8 +3701,8 @@ class VolumeSlicer(tk.Frame):
         
         return:
         ---
-            image
-            shape: (density, density)
+        image
+        shape: (density, density)
         '''
         xlim, ylim = sorted(xlim), sorted(ylim)
         fr2 = True
@@ -3665,21 +3784,98 @@ class VolumeSlicer(tk.Frame):
         return surface
     
     def on_closing(self):
-            print('Closing...') #testing
+        self.stop_event.clear()
+        if self.pool:
             self.pool.terminate()
             print('Terminated')
             self.pool.join()
             print('Joined')
-            self.fg.destroy()
+        self.fg.destroy()
+    
+    def listen_for_stop_command(self):
+        command = input()
+        if command.strip().lower() == '':
+            self.stop_event.set()
+            if self.pool:
+                self.pool.terminate()
+                self.pool.join()
+                self.pool = None
     
     def save_cut(self):
-        return self.data_cut, self.angle_cut, self.cx_cut, self.cy_cut, self.cdx_cut, self.cdy_cut, self.n_cut, self.phi_offset_cut, self.r1_offset_cut
+        try:
+            path = fd.asksaveasfilename(title="Save as", filetypes=(("NPZ files", "*.npz"),), initialdir=os.path.dirname(self.path[0]), initialfile='data_cut.npz')
+            if not path:
+                print('Save operation cancelled')
+                return
+            np.savez(path, path=self.path, data=self.data_cut, x=self.x_cut, y=self.y_cut, angle=self.angle_cut, cx=self.cx_cut, cy=self.cy_cut, cdx=self.cdx_cut, cdy=self.cdy_cut, phi_offset=self.phi_offset_cut, r1_offset=self.r1_offset_cut, e_photon=self.e_photon, slim=self.slim_cut)
+            print('Data saved to %s'%path)
+        except Exception as e:
+            print(f"An error occurred: {e}")
     
+    def t_cut_job_y(self):
+        angle = self.angle
+        x = [self.cx-self.cdx/2, self.cx+self.cdx/2]
+        z = [self.cy-self.cdy/2, self.cy+self.cdy/2]
+        phi_offset = self.phi_offset
+        r1_offset = self.r1_offset
+        self_x = self.ox[self.slim[0]:self.slim[1]+1]
+        self_volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
+        try:
+            with Pool(self.pool_size) as self.pool:
+                args = [(i, angle, phi_offset, r1_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon) for i in range(len(self.ev))]
+                for i, result in enumerate(tqdm.tqdm(self.pool.imap(cut_job_y, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
+                    self.data_cut[i, :] = result[1]
+                    if self.stop_event.is_set():
+                        break
+                if not self.stop_event.is_set():
+                    print("\n\033[32mPress \033[31m'Enter' \033[32mto coninue...\033[0m")
+        except Exception as e:
+                print(f"An error occurred: {e}")
+        finally:
+            if self.pool:
+                self.pool.close()
+                self.pool.join()
+                    
+    def t_cut_job_x(self):
+        angle = self.angle
+        x = [self.cx-self.cdx/2, self.cx+self.cdx/2]
+        z = [self.cy-self.cdy/2, self.cy+self.cdy/2]
+        phi_offset = self.phi_offset
+        r1_offset = self.r1_offset
+        self_x = self.ox[self.slim[0]:self.slim[1]+1]
+        self_volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
+        try:
+            with Pool(self.pool_size) as self.pool:
+                args = [(i, angle, phi_offset, r1_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon) for i in range(len(self.ev))]
+                for i, result in enumerate(tqdm.tqdm(self.pool.imap(cut_job_x, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
+                    self.data_cut[i, :] = result[1]
+                    if self.stop_event.is_set():
+                        break
+                if not self.stop_event.is_set():
+                    print("\n\033[32mPress \033[31m'Enter' \033[32mto coninue...\033[0m")
+        except Exception as e:
+                print(f"An error occurred: {e}")
+        finally:
+            if self.pool:
+                self.pool.close()
+                self.pool.join()
     def cut_plot(self):
-        print('Please wait...')
-        n = int((self.xmax-self.xmin)//1e-3)
-        self.cdensity = n
-        print('Density:', n)
+        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        if hwnd:
+            windll.user32.SetForegroundWindow(hwnd)
+        self.stop_event = threading.Event()
+        t1 = threading.Thread(target=self.listen_for_stop_command, daemon=True)
+        t1.start()
+        self.cdensity = int((self.xmax-self.xmin)//1e-3)
+        print('\nSampling Density: \033[31m1000 per 2pi/Angstrom')
+        print('\033[0mProcessing \033[32m%d x %d x %d \033[0msize data cube'%(self.cdensity, self.cdensity, len(self.ev)))
+        print('\n\033[33mProcessor:\033[36m',cpuinfo.get_cpu_info()['brand_raw'])
+        self.pool_size = max(1, int(psutil.cpu_count(logical=False)/4*3))
+        print('\033[33mPhysical CPU cores:\033[36m', psutil.cpu_count(logical=False))
+        print('\033[33mUsing \033[36m%d \033[33mcores\033[0m'%self.pool_size)
+        print('\033[0mPlease wait...\n')
+        print('\033[32mIf you want to stop the process, wait for 20 seconds and try.\nBut sometimes it may not work.\033[0m')
+        print('\nThe following shows the progress bar and the estimation of the processing time')
         angle = self.angle
         self.cx_cut = self.cx
         self.cy_cut = self.cy
@@ -3687,66 +3883,58 @@ class VolumeSlicer(tk.Frame):
         self.cdy_cut = self.cdy
         x = [self.cx-self.cdx/2, self.cx+self.cdx/2]
         z = [self.cy-self.cdy/2, self.cy+self.cdy/2]
-        y = self.ev
-        data = np.zeros((len(y), n), dtype=np.float64)
+        ty = self.ev
+        self.data_cut = np.zeros((len(ty), self.cdensity), dtype=np.float64)
         phi_offset = self.phi_offset
         r1_offset = self.r1_offset
-        self_x = self.ox[self.slim[0]:self.slim[1]+1]
-        self_volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
-        self.fg = tk.Toplevel(self)
-        self.fg.title('Cut Plot')
-        self.fg.focus_set()
-        self.fg.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.slim_cut = self.slim
+        self_x = self.ox[self.slim[0]:self.slim[1]+1]   # -----stable version no multiprocessing-----
+        self_volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]   # -----stable version no multiprocessing-----
         if self.cdx<=self.cdy:  # cut along ky
             
-            # -----stable version-----
+            # -----stable version no multiprocessing-----
             # for i in range(len(y)):
             #     surface = self.slice_data(i, angle, phi_offset, r1_offset, self_x, self_volume)
             #     td = surface[int(self.cdensity/(self.xmax-self.xmin)*(min(z)-self.xmin)):int(self.cdensity/(self.xmax-self.xmin)*(max(z)-self.xmin)), int(self.cdensity/(self.ymax-self.ymin)*(min(x)-self.ymin)):int(self.cdensity/(self.ymax-self.ymin)*(max(x)-self.ymin))]
             #     del surface
-            #     td = cv2.resize(td, (td.shape[0], n), interpolation=cv2.INTER_CUBIC)
+            #     td = cv2.resize(td, (td.shape[0], self.cdensity), interpolation=cv2.INTER_CUBIC)
             #     data[i,:] = td.mean(axis=1)
             #     del td
             #     gc.collect()
-            #     progress['value'] = i+1
-            #     root.update()
-            # -----stable version-----
+            # -----stable version no multiprocessing-----
             
-            with Manager() as manager:
-                with Pool() as self.pool:
-                    args = [(i, angle, phi_offset, r1_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, n, z, x, self.z, self.y, self.ev, self.e_photon) for i in range(len(y))]
-                    results = list(tqdm.tqdm(self.pool.imap(cut_job_x, args), total=len(y), desc="Processing", colour='blue'))
-
-                    for i, result in results:
-                        data[i, :] = result
-
+            self.t = threading.Thread(target=self.t_cut_job_x, daemon=True)
+            self.t.start()
         else:   # cut along kx
-            with Manager() as manager:
-                with Pool() as self.pool:
-                    args = [(i, angle, phi_offset, r1_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, n, z, x, self.z, self.y, self.ev, self.e_photon) for i in range(len(y))]
-                    results = list(tqdm.tqdm(self.pool.imap(cut_job_y, args), total=len(y), desc="Processing", colour='blue'))
-
-                    for i, result in results:
-                        data[i, :] = result
-        print('done')     
+            self.t = threading.Thread(target=self.t_cut_job_y, daemon=True)
+            self.t.start()
+        time.sleep(20)
+        print("\n\033[32m-----Press \033[31m'Enter' \033[32mto terminate the pool-----\033[0m\n")
+        t1.join()
+        self.t.join()
+        print('done') 
+        self.fg = tk.Toplevel(self)
+        self.fg.title('Cut Plot')
+        self.fg.focus_set()
+        self.fg.protocol("WM_DELETE_WINDOW", self.on_closing)    
         fig = plt.Figure(figsize=(9, 9),constrained_layout=True)
         ax = fig.add_subplot(111)
         ax.set_xlabel(r'k ($2\pi/\AA$)', fontsize=16)
         ax.set_ylabel('Kinetic Energy (eV)', fontsize=16)
         if self.cdx<=self.cdy:
-            x = np.linspace(min(z), max(z), n)
+            tx = np.linspace(min(z), max(z), self.cdensity)
         else:
-            x = np.linspace(min(x), max(x), n)
-        x, y = np.meshgrid(x, y)
-        ax.pcolormesh(x,y,data, cmap='gray')
+            tx = np.linspace(min(x), max(x), self.cdensity)
+        x, y = np.meshgrid(tx, ty)
+        ax.pcolormesh(x, y, self.data_cut, cmap='gray')
         canvas = FigureCanvasTkAgg(fig, master=self.fg)
         canvas.draw()
-        self.data_cut = data
+        self.x_cut = tx
+        self.y_cut = ty
         self.angle_cut = angle
-        self.n_cut = n
         self.phi_offset_cut = phi_offset
         self.r1_offset_cut = r1_offset
-        del data, fig, ax
+        del fig, ax
         gc.collect()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         toolbar = NavigationToolbar2Tk(canvas, self.fg)
@@ -4162,6 +4350,24 @@ class CEC(loadfiles):
         self.tlg.geometry(f"{1900}x{990}+0+0")
         self.tlg.update()
     
+    def load(self, angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim):
+        vs = self.view
+        vs.change_mode() # change from 'real' to 'reciprocal'
+        vs.set_entry_value(vs.entry_min, str(slim[0]))
+        vs.set_entry_value(vs.entry_max, str(slim[1]))
+        vs.set_entry_value(vs.entry_phi_offset, str(phi_offset))
+        vs.set_entry_value(vs.entry_r1_offset, str(r1_offset))
+        vs.set_entry_value(vs.cut_xy_x_entry, str(cx))
+        vs.set_entry_value(vs.cut_xy_y_entry, str(cy))
+        vs.set_entry_value(vs.cut_xy_dx_entry, str(cdx))
+        vs.set_entry_value(vs.cut_xy_dy_entry, str(cdy))
+        vs.text_ang.set_val(angle)
+        vs.angle_slider.set_val(angle)
+        vs.angle = angle
+        vs.set_slim()
+        vs.cut_xy()
+        
+    
     def __set_data(self, odata=[], density=801, *args):
         if len(odata) > 0:
             # self.view.pack_forget()
@@ -4171,7 +4377,8 @@ class CEC(loadfiles):
                 
                 r1 = self.r1
                 ev, phi = odata[0].indexes.values()
-                self.view = VolumeSlicer(self.frame1, volume=odataframe, cmap='viridis', x=phi, y=r1, ev=ev, density=density)
+                e_photon = float(odata[0].attrs['ExcitationEnergy'].removesuffix(' eV'))
+                self.view = VolumeSlicer(parent=self.frame1, path=self.path, volume=odataframe, cmap='viridis', x=phi, y=r1, ev=ev, e_photon=e_photon, density=density)
             elif self.sort == 'r1r2':
                 r1 = self.r1
                 r2 = self.r2
@@ -4180,7 +4387,7 @@ class CEC(loadfiles):
                 
                 ev, phi = odata[0].indexes.values()
                 e_photon = float(odata[0].attrs['ExcitationEnergy'].removesuffix(' eV'))
-                self.view = VolumeSlicer(self.frame1, volume=odataframe, cmap='viridis', x=phi, y=r1, z=r2, ev=ev, e_photon=e_photon, density=density)
+                self.view = VolumeSlicer(parent=self.frame1, path=self.path, volume=odataframe, cmap='viridis', x=phi, y=r1, z=r2, ev=ev, e_photon=e_photon, density=density)
                 
             self.tlg.bind('<Return>', self.view.set_slim)
             self.view.ax.clear()
@@ -4609,8 +4816,9 @@ fpr = 0
 def o_load():
     global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist, b_tools
     files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
-        ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
-    tpath=files
+        ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
+    # files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
+    #     ("NPZ files", "*.npz"), ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     # tpath = fd.askopenfilename(title="Select Raw Data", filetypes=(
     #     ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
@@ -4648,11 +4856,11 @@ def o_load():
         rdd = path
         
     limg.config(image=img[np.random.randint(len(img))])
-    if '.h5' in tpath:
+    tbasename = os.path.basename(tpath)
+    if '.h5' in tbasename:
         data = lfs.data[0]  # data save as xarray.DataArray format
         pr_load(data)
-        tname = tpath.split('/')
-        tname = tname[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '')
+        tname = lfs.name[0]
         print(tname)
         if tname != name:
             print('path: ',tname, '\nh5: ', name)
@@ -4660,11 +4868,10 @@ def o_load():
         else:
             print('name correct')
         st.put(tname)
-    elif '.json' in tpath:
+    elif '.json' in tbasename:
         data = lfs.data[0]
         pr_load(data)
-        tname = tpath.split('/')
-        tname = tname[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.json', '')
+        tname = lfs.name[0]
         print(tname)
         if tname != name:
             print('path: ',tname, '\njson: ', name)
@@ -4672,10 +4879,18 @@ def o_load():
         else:
             print('name correct')
         st.put(tname)
-    elif '.txt' in tpath:
+    elif '.txt' in tbasename:
         data = lfs.data[0]
         pr_load(data)
         st.put(tname)
+    elif '.npz' in tbasename:
+        data = lfs.data[0]
+        pr_load(data)
+        tname = lfs.name[0]
+        st.put(tname)
+        b_name.config(state='disable')
+        b_excitation.config(state='disable')
+        b_desc.config(state='disable')
     else:
         st.put('')
         pass
@@ -5362,13 +5577,14 @@ def loadmfit_():
             ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19) **
                              0.5/10**-10*(h/2/np.pi))*180/np.pi
             fpr = 1
-            if '.h5' in rdd:
+            tbasename = os.path.basename(rdd)
+            if '.h5' in tbasename:
                 data = load_h5(rdd)
                 pr_load(data)
-            elif '.json' in rdd:
+            elif '.json' in tbasename:
                 data = load_json(rdd)
                 pr_load(data)
-            elif '.txt' in rdd:
+            elif '.txt' in tbasename:
                 data = load_txt(rdd)
                 pr_load(data)
         except:
@@ -5800,13 +6016,14 @@ def o_loadefit():
             fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
                 np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
             fpr = 1
-            if '.h5' in rdd:
+            tbasename = os.path.basename(rdd)
+            if '.h5' in tbasename:
                 data = load_h5(rdd)
                 pr_load(data)
-            elif '.json' in rdd:
+            elif '.json' in tbasename:
                 data = load_json(rdd)
                 pr_load(data)
-            elif '.txt' in rdd:
+            elif '.txt' in tbasename:
                 data = load_txt(rdd)
                 pr_load(data)
         except:
@@ -13141,7 +13358,16 @@ def dl_sw():
     t.start()
 
 if __name__ == '__main__':
+    g = tk.Tk()
     os.chdir(cdir)
+    if os.path.exists('open_check_MDC_cut.txt')==0:
+        with open ('open_check_MDC_cut.txt', 'w', encoding = 'utf-8') as f:
+            f.write('1')
+            f.close()
+        os.system('start cmd /C "chcp 65001 & python -W ignore::SyntaxWarning -W ignore::UserWarning "MDC_cut.py""')
+        quit()
+    else:
+        os.remove('open_check_MDC_cut.txt')
     try:
         with np.load('rd.npz', 'rb') as ff:
             path = str(ff['path'])
@@ -13279,8 +13505,6 @@ if __name__ == '__main__':
     except:
         print('No MDC fitted data preloaded')
     '''
-
-    g = tk.Tk()
     v_fe = tk.StringVar()
     v_fe.set(str(vfe))
     windll.shcore.SetProcessDpiAwareness(1)
@@ -13825,4 +14049,6 @@ if __name__ == '__main__':
     g.geometry(f"{screen_width+50}x{screen_height}+0+0")
     g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
+    if cec is not None: # CEC loaded old data to show the cutting rectangle
+        cec.tlg.focus_set()
     g.mainloop()
