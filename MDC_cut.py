@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "5.2.1"
+__version__ = "5.2.2"
 __release_date__ = "2025-01-21"
 import os, inspect
 import json
@@ -424,6 +424,7 @@ def load_h5(path_to_file: str) -> xr.DataArray:
                                                                 'Path': path_to_file
                                                                 })
     return data
+
 cec = None
 f_npz = 0
 def load_npz(path_to_file: str) -> xr.DataArray:
@@ -503,6 +504,7 @@ def load_npz(path_to_file: str) -> xr.DataArray:
     phi = f['x']
     ev = f['y']
     ExcitationEnergy = f['e_photon']
+    desc = f['desc'][0]
     Name = os.path.basename(path_to_file).split('.npz')[0]
     data = xr.DataArray(data, coords={'eV': ev, 'phi': phi}, attrs={'Name': Name,
                                                                 'Acquisition': 'VolumeSlicer',
@@ -517,7 +519,7 @@ def load_npz(path_to_file: str) -> xr.DataArray:
                                                                 'Slit': Slit,
                                                                 'Dwell': Dwell,
                                                                 'Iterations': Iterations,
-                                                                'Description': 'Sliced Data',
+                                                                'Description': desc,
                                                                 'Path': path_to_file
                                                                 })
     return data
@@ -580,7 +582,7 @@ def f_patch_origin():
     print('Patching OriginPro...')
     st.put('Patching OriginPro...')
     exe=rf"\Origin.exe" # OriginPro Patching file
-    cmd=f'dir "{exe}" /s'
+    cmd=f'start cmd /C "dir "{exe}" /s"'
     result = os.popen(cmd) # 返回的結果是一個<class 'os._wrap_close'>對象，需要讀取後才能處理
     context = result.read()
     for line in context.splitlines():
@@ -618,6 +620,7 @@ def gui_exp_origin():
     pr_exp_origin()
     v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
     c1=tk.Checkbutton(fr,text='E-Phi (Raw Data)',variable=v1,font=('Arial', 18, "bold"),bg='white')
+    if npzf:c1.config(text='E-K (Sliced Data)')
     c1.grid(row=0,column=0,sticky='w')
     c2=tk.Checkbutton(fr,text='E-K (Processed Data)',variable=v2,font=('Arial', 18, "bold"),bg='white')
     c2.grid(row=1,column=0,sticky='w')
@@ -649,6 +652,9 @@ def gui_exp_origin():
         else:
             cl[i].config(state='normal')
             cl[i].select()
+    if npzf:
+        c2.deselect()
+        c2.config(state='disabled')
     gori.bind('<Return>', exp_origin)
     gori.focus_set()
     gori.update()
@@ -836,6 +842,7 @@ def pr_exp_origin():
 def exp_origin(*e):
     origin_temp_var = f'''from MDC_cut import *
 
+npzf = {npzf}
 dpath = r"{dpath}"      # Data Path
 emf = r"{emf}"             # Energy Mode: KE or BE
 ko = {k_offset.get()}
@@ -872,8 +879,24 @@ epos = np.float64({pre_process(epos)})
 efwhm = np.float64({pre_process(efwhm)})
 '''
     except: pass
+    if '.h5' in os.path.basename(dpath):
+        tload = f'''
+data = load_h5(dpath)        
+'''
+    elif '.json' in os.path.basename(dpath):
+        tload = f'''
+data = load_json(dpath)
+'''
+    elif '.txt' in os.path.basename(dpath):
+        tload = f'''
+data = load_txt(dpath)
+'''
+    elif '.npz' in os.path.basename(dpath):
+        tload = f'''
+data = load_npz(dpath)
+'''
+    origin_temp_var += tload
     origin_temp_var += f'''
-data = load_h5(dpath)
 dvalue = [data.attrs[i] for i in data.attrs.keys()]
 dkey = [i for i in data.attrs.keys()]
 ev, phi = data.indexes.values()
@@ -1003,6 +1026,8 @@ def save():
         op.save(dpath.removesuffix('.json').replace("/","\\")+'.opj')
     elif '.txt' in tbasename:
         op.save(dpath.removesuffix('.txt').replace("/","\\")+'.opj')
+    elif '.npz' in tbasename:
+        op.save(dpath.removesuffix('.npz').replace("/","\\")+'.opj')
 
 origin_temp_func = r'''
 def note():
@@ -1038,10 +1063,13 @@ def note():
 
 def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel=f'{le_mode}', zlabel='Intensity', xunit="deg", yunit='eV', zunit='Counts'):
     if title!='E-Phi (Raw Data)':
-        x = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-        )**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
+        if not npzf:
+            x = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose()**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
         xlabel='k'
-        xunit=r"2\g(p)Å\+(-1)"
+    else:   # title == E-Phi (Raw Data)
+        if npzf:
+            title = 'E-K (Sliced Data)'
+            xlabel='k'
     if 'Second Derivative' in title:
         z=sdz
     if 'Data plot with pos' in title:
@@ -1129,6 +1157,8 @@ def save(format='opj'):
         op.save(dpath.removesuffix('.json').replace("/","\\")+'.'+format)
     elif '.txt' in tbasename:
         op.save(dpath.removesuffix('.txt').replace("/","\\")+'.'+format)
+    elif '.npz' in tbasename:
+        op.save(dpath.removesuffix('.npz').replace("/","\\")+'.'+format)
 '''
 
 def rplot(f, canvas):
@@ -1163,7 +1193,7 @@ def rplot(f, canvas):
     f.colorbar(h0, cax=acb, orientation='vertical')
     # a.set_title('Raw Data',font='Arial',fontsize=16)
     rcx.set_title('            Raw Data', font='Arial', fontsize=16)
-    if npzf:ao.set_xlabel(r'k $(2\pi/\AA)$', font='Arial', fontsize=12)
+    if npzf:ao.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
     else:ao.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=12)
     if emf=='KE':
         ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
@@ -1178,41 +1208,44 @@ def rplot(f, canvas):
     canvas.draw()
 
 def cexcitation_h5(s:str):
-    tbasename = os.path.basename(dpath)
-    if '.h5' in tbasename:
-        with h5py.File(dpath, 'r+') as hf:
-            # Read the dataset
-            data = hf['Region']['ExcitationEnergy']['Value'][:]
-            print("Original:", data)
-            
-            # Prepare the new data
-            # s1 = b'BUF : 1.68E-6 mbar'
-            # s2 = b'0.50kV 100mA'
-            # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-            
-            # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
-            new_data = np.array([float(s)], dtype=float)  # Use vlen=str for variable-length strings
-            
-            # Delete the old dataset
-            del hf['Region']['ExcitationEnergy']['Value']
-            
-            # Create a new dataset with the same name but with the new data
-            hf.create_dataset('Region/ExcitationEnergy/Value', data=new_data, dtype=float)
-            
-            # Verify changes
-            modified_data = hf['Region']['ExcitationEnergy']['Value'][:]
-            print("Modified:", modified_data)
+    with h5py.File(dpath, 'r+') as hf:
+        # Read the dataset
+        data = hf['Region']['ExcitationEnergy']['Value'][:]
+        print("Original:", data)
+        
+        # Prepare the new data
+        # s1 = b'BUF : 1.68E-6 mbar'
+        # s2 = b'0.50kV 100mA'
+        # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+        
+        # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
+        new_data = np.array([float(s)], dtype=float)  # Use vlen=str for variable-length strings
+        
+        # Delete the old dataset
+        del hf['Region']['ExcitationEnergy']['Value']
+        
+        # Create a new dataset with the same name but with the new data
+        hf.create_dataset('Region/ExcitationEnergy/Value', data=new_data, dtype=float)
+        
+        # Verify changes
+        modified_data = hf['Region']['ExcitationEnergy']['Value'][:]
+        print("Modified:", modified_data)
 
 def cexcitation_json(s:str):
-    tbasename = os.path.basename(dpath)
-    if '.json' in tbasename:
-        with open(dpath, 'r') as f:
-            data = json.load(f)
-            print("Original:", data['Region']['ExcitationEnergy']['Value'])
-        data['Region']['ExcitationEnergy']['Value'] = float(s)
-        with open(dpath, 'w') as f:
-            json.dump(data, f, indent=2)
-            print("Modified:", data['Region']['ExcitationEnergy']['Value'])
+    with open(dpath, 'r') as f:
+        data = json.load(f)
+        print("Original:", data['Region']['ExcitationEnergy']['Value'])
+    data['Region']['ExcitationEnergy']['Value'] = float(s)
+    with open(dpath, 'w') as f:
+        json.dump(data, f, indent=2)
+        print("Modified:", data['Region']['ExcitationEnergy']['Value'])
+
+def cexcitation_npz(s:str):
+    with np.load(dpath, allow_pickle=True) as data:
+        data_dict = {key: data[key] for key in data}
+    data_dict['e_photon'] = float(s)
+    np.savez(dpath, **data_dict)
+    print(f"Modified .npz file saved to {dpath}")
 
 def cexcitation_save_str():
     global data
@@ -1231,6 +1264,10 @@ def cexcitation_save_str():
         elif '.json' in tbasename:
             cexcitation_json(s)
             data = load_json(dpath)
+            pr_load(data)
+        elif '.npz' in tbasename:
+            cexcitation_npz(s)
+            data = load_npz(dpath)
             pr_load(data)
     gcestr.destroy()
 
@@ -1257,42 +1294,54 @@ def cexcitation():
     gcestr.update()
 
 def cname_h5(s:str):
-    tbasename = os.path.basename(dpath)
-    if '.h5' in tbasename:
-        with h5py.File(dpath, 'r+') as hf:
-            # Read the dataset
-            data = hf['Region']['Name'][:]
-            print("Original:", data)
-            
-            # Prepare the new data
-            # s1 = b'BUF : 1.68E-6 mbar'
-            # s2 = b'0.50kV 100mA'
-            # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-            
-            # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
-            new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-            
-            # Delete the old dataset
-            del hf['Region']['Name']
-            
-            # Create a new dataset with the same name but with the new data
-            hf.create_dataset('Region/Name', data=new_data, dtype=h5py.special_dtype(vlen=str))
-            
-            # Verify changes
-            modified_data = hf['Region']['Name'][:]
-            print("Modified:", modified_data)
+    with h5py.File(dpath, 'r+') as hf:
+        # Read the dataset
+        data = hf['Region']['Name'][:]
+        print("Original:", data)
+        
+        # Prepare the new data
+        # s1 = b'BUF : 1.68E-6 mbar'
+        # s2 = b'0.50kV 100mA'
+        # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+        
+        # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
+        new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+        
+        # Delete the old dataset
+        del hf['Region']['Name']
+        
+        # Create a new dataset with the same name but with the new data
+        hf.create_dataset('Region/Name', data=new_data, dtype=h5py.special_dtype(vlen=str))
+        
+        # Verify changes
+        modified_data = hf['Region']['Name'][:]
+        print("Modified:", modified_data)
 
 def cname_json(s:str):
-    tbasename = os.path.basename(dpath)
-    if '.json' in tbasename:
-        with open(dpath, 'r') as f:
-            data = json.load(f)
-            print("Original:", data['Region']['Name'])
-        data['Region']['Name'] = s
-        with open(dpath, 'w') as f:
-            json.dump(data, f, indent=2)
-            print("Modified:", data['Region']['Name'])
-            
+    with open(dpath, 'r') as f:
+        data = json.load(f)
+        print("Original:", data['Region']['Name'])
+    data['Region']['Name'] = s
+    with open(dpath, 'w') as f:
+        json.dump(data, f, indent=2)
+        print("Modified:", data['Region']['Name'])
+
+def cname_npz(s:str):
+    global dpath
+    os.chdir(os.path.dirname(dpath))
+    old_name = os.path.basename(dpath)
+    new_name = s+'.npz'
+    try:
+        os.rename(old_name, new_name)
+        print(f"File renamed from {old_name} to {new_name}")
+        dpath = os.path.normpath(os.path.dirname(dpath)+'/'+s+'.npz')
+    except FileNotFoundError:
+        print(f"File {old_name} not found.")
+    except PermissionError:
+        print(f"Permission denied to rename {old_name}.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 def cname_save_str():
     global data
     s=t_cin.get('1.0',tk.END)
@@ -1310,6 +1359,10 @@ def cname_save_str():
         elif '.json' in tbasename:
             cname_json(s)
             data = load_json(dpath)
+            pr_load(data)
+        elif '.npz' in tbasename:
+            cname_npz(s)
+            data = load_npz(dpath)
             pr_load(data)
     gcstr.destroy()
     
@@ -1334,42 +1387,45 @@ def cname():
     gcstr.update()
 
 def desc_h5(s:str):
-    tbasename = os.path.basename(dpath)
-    if '.h5' in tbasename:
-        with h5py.File(dpath, 'r+') as hf:
-            # Read the dataset
-            data = hf['Region']['Description'][:]
-            print("Original:", data)
-            
-            # Prepare the new data
-            # s1 = b'BUF : 1.68E-6 mbar'
-            # s2 = b'0.50kV 100mA'
-            # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-            
-            # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
-            new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-            
-            # Delete the old dataset
-            del hf['Region']['Description']
-            
-            # Create a new dataset with the same name but with the new data
-            hf.create_dataset('Region/Description', data=new_data, dtype=h5py.special_dtype(vlen=str))
-            
-            # Verify changes
-            modified_data = hf['Region']['Description'][:]
-            print("Modified:", modified_data)
+    with h5py.File(dpath, 'r+') as hf:
+        # Read the dataset
+        data = hf['Region']['Description'][:]
+        print("Original:", data)
+        
+        # Prepare the new data
+        # s1 = b'BUF : 1.68E-6 mbar'
+        # s2 = b'0.50kV 100mA'
+        # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+        
+        # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
+        new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
+        
+        # Delete the old dataset
+        del hf['Region']['Description']
+        
+        # Create a new dataset with the same name but with the new data
+        hf.create_dataset('Region/Description', data=new_data, dtype=h5py.special_dtype(vlen=str))
+        
+        # Verify changes
+        modified_data = hf['Region']['Description'][:]
+        print("Modified:", modified_data)
 
 def desc_json(s:str):
-    tbasename = os.path.basename(dpath)
-    if '.json' in tbasename:
-        with open(dpath, 'r') as f:
-            data = json.load(f)
-            print("Original:", data['Region']['Description'])
-        data['Region']['Description'] = s
-        with open(dpath, 'w') as f:
-            json.dump(data, f, indent=2)
-            print("Modified:", data['Region']['Description'])
-            
+    with open(dpath, 'r') as f:
+        data = json.load(f)
+        print("Original:", data['Region']['Description'])
+    data['Region']['Description'] = s
+    with open(dpath, 'w') as f:
+        json.dump(data, f, indent=2)
+        print("Modified:", data['Region']['Description'])
+
+def desc_npz(s:str):
+    with np.load(dpath, allow_pickle=True) as data:
+        data_dict = {key: data[key] for key in data}
+    data_dict['desc'] = [s]
+    np.savez(dpath, **data_dict)
+    print(f"Modified .npz file saved to {dpath}")
+    
 def save_str():
     global data
     s=t_in.get('1.0',tk.END)
@@ -1386,6 +1442,10 @@ def save_str():
         elif '.json' in tbasename:
             desc_json(s)
             data = load_json(dpath)
+            pr_load(data)
+        elif '.npz' in tbasename:
+            desc_npz(s)
+            data = load_npz(dpath)
             pr_load(data)
     gstr.destroy()
     
@@ -1516,13 +1576,12 @@ class spectrogram:
     """
     def __init__(self, data=[], path=[]) -> None:   # should input path in main function
         self.lfs = None
+        self.npzf = False
         if len(path) > 0:
             self.lfs = loadfiles(path)
             self.data = self.lfs.data[0]
-            if len(self.lfs.n) > 0:self.npzf = True
-            else:self.npzf = False
+            if self.lfs.f_npz[0]:self.npzf = True
         else:
-            self.npzf = False
             self.data = data
         self.__preload(self.data)
         self.rr1 = self.phi[0]
@@ -2951,7 +3010,7 @@ d
         if self.lensmode=='Transmission':
             self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
         else:
-            if self.npzf:self.tr_a1.set_ylabel(r'k $(2\pi/\AA)$', font='Arial', fontsize=16)
+            if self.npzf:self.tr_a1.set_ylabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
             else:self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
                 
         self.tr_a1.set_xticks([])
@@ -2971,7 +3030,7 @@ d
         if self.lensmode=='Transmission':
             self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
         else:
-            if self.npzf:self.tr_a1.set_ylabel(r'k $(2\pi/\AA)$', font='Arial', fontsize=16)
+            if self.npzf:self.tr_a1.set_ylabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
             else:self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
         self.tr_a1.set_xticks([])
         self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=14)
@@ -3139,17 +3198,11 @@ def change_file(*args):
             rdd = k
             if l:
                 npzf = True
-                b_name.config(state='disabled')
-                b_excitation.config(state='disabled')
-                b_desc.config(state='disabled')
                 koffset.config(state='normal')
                 k_offset.set('0')
                 koffset.config(state='disabled')
             else:
                 npzf = False
-                b_name.config(state='normal')
-                b_excitation.config(state='normal')
-                b_desc.config(state='normal')
                 koffset.config(state='normal')
                 try:
                     k_offset.set(ko)
@@ -3520,8 +3573,8 @@ class VolumeSlicer(tk.Frame):
                 if self.ymax+self.ymin < 2*self.r1_offset:
                     self.ymax = self.r1_offset-(self.ymin-self.r1_offset)
             elif self.type == 'reciprocal':
-                self.ax.set_xlabel(r'kx ($2\pi/\AA$)', fontsize=16)
-                self.ax.set_ylabel(r'ky ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_xlabel(r'kx ($\frac{2\pi}{\AA}$)', fontsize=16)
+                self.ax.set_ylabel(r'ky ($\frac{2\pi}{\AA}$)', fontsize=16)
                 r1 = self.y - self.r1_offset
                 phi = self.x - self.phi_offset
                 r = np.sqrt(2*self.m*self.e*self.e_photon)/self.hbar*10**-10*(np.max(np.abs(np.sin(r1/180*np.pi)))**2+np.max(np.abs(np.sin(phi/180*np.pi)))**2)**0.5
@@ -3846,7 +3899,7 @@ class VolumeSlicer(tk.Frame):
             if not path:
                 print('Save operation cancelled')
                 return
-            np.savez(path, path=self.path, data=self.data_cut, x=self.x_cut, y=self.y_cut, angle=self.angle_cut, cx=self.cx_cut, cy=self.cy_cut, cdx=self.cdx_cut, cdy=self.cdy_cut, phi_offset=self.phi_offset_cut, r1_offset=self.r1_offset_cut, e_photon=self.e_photon, slim=self.slim_cut)
+            np.savez(path, path=self.path, data=self.data_cut, x=self.x_cut, y=self.y_cut, angle=self.angle_cut, cx=self.cx_cut, cy=self.cy_cut, cdx=self.cdx_cut, cdy=self.cdy_cut, phi_offset=self.phi_offset_cut, r1_offset=self.r1_offset_cut, e_photon=self.e_photon, slim=self.slim_cut, desc=["Sliced data"])
             print('Data saved to %s'%path)
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -3958,7 +4011,7 @@ class VolumeSlicer(tk.Frame):
         self.fg.protocol("WM_DELETE_WINDOW", self.on_closing)    
         fig = plt.Figure(figsize=(9, 9),constrained_layout=True)
         ax = fig.add_subplot(111)
-        ax.set_xlabel(r'k ($2\pi/\AA$)', fontsize=16)
+        ax.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', fontsize=16)
         ax.set_ylabel('Kinetic Energy (eV)', fontsize=16)
         if self.cdx<=self.cdy:
             tx = np.linspace(min(z), max(z), self.cdensity)
@@ -4004,8 +4057,8 @@ class VolumeSlicer(tk.Frame):
                 self.ymin, self.ymax = -r, r
                 self.txlim, self.tylim = [-r, r], [-r, r]
                 self.update_window()
-                self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
-                self.ax.set_ylabel(r'$k_y$ ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=16)
+                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=16)
                 self.b_mode.config(text='Reciprocal Mode')
                 self.label_phi_offset.config(text="Set Phi Offset (degree):")
                 self.label_r1_offset.config(text="Set R1 Offset (degree):")
@@ -4074,8 +4127,8 @@ class VolumeSlicer(tk.Frame):
                 self.xmin, self.xmax = -r, r
                 self.ymin, self.ymax = -r, r
                 self.txlim, self.tylim = [-r, r], [-r, r]
-                self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
-                self.ax.set_ylabel(r'$k_y$ ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=16)
+                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=16)
                 self.b_mode.config(text='Reciprocal Mode')
                 self.label_phi_offset.config(text="Set Phi Offset (degree):")
                 self.label_r1_offset.config(text="Set R1 Offset (degree):")
@@ -4124,8 +4177,8 @@ class VolumeSlicer(tk.Frame):
                 set_entry_value(self.entry_xmax, str(self.ymax))
                 set_entry_value(self.entry_ymin, str(self.xmin))
                 set_entry_value(self.entry_ymax, str(self.xmax))
-                self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
-                self.ax.set_ylabel(r'$k_y$ ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=16)
+                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=16)
         except ValueError:
             print("Invalid input for slim values")
 
@@ -4161,8 +4214,8 @@ class VolumeSlicer(tk.Frame):
                 self.cut_l.set_data([], [])
                 self.ax.set_xlim([self.tylim[0], self.tylim[1]])
                 self.ax.set_ylim([self.txlim[0], self.txlim[1]])
-                self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
-                self.ax.set_ylabel(r'$k_y$ ($2\pi/\AA$)', fontsize=16)
+                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=16)
+                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=16)
             elif self.type == 'real':
                 self.ax.set_xlim([self.ymin, self.ymax])
                 self.ax.set_ylim([self.xmin, self.xmax])
@@ -4894,16 +4947,10 @@ def o_load():
         if lfs.f_npz[0]:npzf = True
         else:npzf = False
         if npzf:
-            b_name.config(state='disable')
-            b_excitation.config(state='disable')
-            b_desc.config(state='disable')
             koffset.config(state='normal')
             k_offset.set('0')
             koffset.config(state='disable')
         else:
-            b_name.config(state='normal')
-            b_excitation.config(state='normal')
-            b_desc.config(state='normal')
             koffset.config(state='normal')
             try:
                 k_offset.set(ko)
@@ -4948,9 +4995,6 @@ def o_load():
         pr_load(data)
         tname = lfs.name[0]
         st.put(tname)
-        b_name.config(state='disable')
-        b_excitation.config(state='disable')
-        b_desc.config(state='disable')
     else:
         st.put('')
         pass
@@ -7017,7 +7061,7 @@ def feend():
     a.scatter(fphi, epos+efwhm/2, c='r', s=10)
     a.scatter(fphi, epos-efwhm/2, c='r', s=10)
     a.scatter(fphi, epos, c='k', s=10)
-    if npzf:a.set_xlabel(r'k $(2\pi/\AA$)')
+    if npzf:a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)')
     else:a.set_xlabel(r'$\phi$'+' (deg)')
     a.set_ylabel('Kinetic Energy (eV)', fontsize=14)
     eedfitout.draw()
@@ -7101,8 +7145,10 @@ def efitplot():  # efiti Scale
     efitfig.clear()
     efitax = efitfig.subplots()
     # 'Pos:'+str(round(eaa1[i,0],3))+' (eV)'+', FWHM:'+str(round(eaa1[i,2],3))+' (eV)'
-    efitax.set_title(
-        'Deg:'+str(round(evv[i], 3))+r' $^{\circ}$'+', '+str(efp[i])+' Peak')
+    if npzf:
+        efitax.set_title('k:'+str(round(evv[i], 3))+r' ($\frac{2\pi}{\AA}$)'+', '+str(efp[i])+' Peak')
+    else:
+        efitax.set_title('Deg:'+str(round(evv[i], 3))+r' $^{\circ}$'+', '+str(efp[i])+' Peak')
     efitax.scatter(fex[i, :], fey[i, :], c='k', s=4)
     sbg = shirley_bg(feyy[i, np.argwhere(feyy[i, :] >= -20)])
     if efp[i] == 1:
@@ -14151,11 +14197,8 @@ if __name__ == '__main__':
             l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
             l_name.config(font=('Arial', 16, 'bold'))
             l_name.grid(row=0, column=1)
-        if lfs.f_npz[0]:npzf = True
-        if npzf:
-            b_name.config(state='disabled')
-            b_excitation.config(state='disabled')
-            b_desc.config(state='disabled')
+        if lfs.f_npz[0]:
+            npzf = True
             koffset.config(state='normal')
             k_offset.set('0')
             koffset.config(state='disabled')
