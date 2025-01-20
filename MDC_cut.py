@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "5.2.2"
+__version__ = "5.3"
 __release_date__ = "2025-01-21"
 import os, inspect
 import json
@@ -10403,18 +10403,12 @@ def o_reload(*e):
     if '' == k_offset.get():
         k_offset.set('0')
         koffset.select_range(0, 1)
-    ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
-                     10**-10*(h/2/np.pi))*180/np.pi
-    pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
-        np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-    ophimin = np.arcsin(
-        (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-    ophimax = np.arcsin(
-        (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-    kmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
-        (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-    kmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
-        (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
+    ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    pos = (2*m*fev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+    ophimin = np.arcsin((rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    ophimax = np.arcsin((rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    kmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
+    kmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
     # okmphi = np.arcsin(kmin/(2*m*fev*1.602176634*10**-19)**0.5 /
     #                    10**-10*(h/2/np.pi))*180/np.pi
     # kmin = (2*m*fev*1.602176634*10**-19)**0.5 * \
