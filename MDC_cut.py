@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "5.3"
+__version__ = "5.3.1"
 __release_date__ = "2025-01-21"
 import os, inspect
 import json
@@ -18,7 +18,7 @@ from datetime import datetime
 import gc
 from tkinter import messagebox, ttk
 from multiprocessing import Pool
-import psutil, time
+import time
 def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
@@ -117,6 +117,11 @@ try:
 except ModuleNotFoundError:
     install('py-cpuinfo')
     import cpuinfo
+try:
+    import psutil
+except ModuleNotFoundError:
+    install('psutil')
+    import psutil
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
