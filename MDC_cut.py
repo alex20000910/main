@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "5.2"
-__release_date__ = "2025-01-20"
+__version__ = "5.2.1"
+__release_date__ = "2025-01-21"
 import os, inspect
 import json
 import tkinter as tk
@@ -425,6 +425,7 @@ def load_h5(path_to_file: str) -> xr.DataArray:
                                                                 })
     return data
 cec = None
+f_npz = 0
 def load_npz(path_to_file: str) -> xr.DataArray:
     """
     Load data from a NumPy NPZ file and convert it into an xarray DataArray.
@@ -435,6 +436,7 @@ def load_npz(path_to_file: str) -> xr.DataArray:
     Returns:
         xr.DataArray: The data loaded from the NPZ file as an xarray DataArray.
     """
+    global f_npz
     f = np.load(path_to_file)
     lf_path = f['path']
     try:
@@ -467,28 +469,32 @@ def load_npz(path_to_file: str) -> xr.DataArray:
         Iterations = td.attrs['Iterations']
         Slit = td.attrs['Slit']
         if __name__ == '__main__':
-            angle = f['angle']
-            cx = f['cx']
-            cy = f['cy']
-            cdx = f['cdx']
-            cdy = f['cdy']
-            phi_offset = f['phi_offset']
-            r1_offset = f['r1_offset']
-            slim = f['slim']
-            global cec
-            cec=CEC(g, lf_path)
-            cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim)
+            if f_npz==0:
+                f_npz+=1
+                angle = f['angle']
+                cx = f['cx']
+                cy = f['cy']
+                cdx = f['cdx']
+                cdy = f['cdy']
+                phi_offset = f['phi_offset']
+                r1_offset = f['r1_offset']
+                slim = f['slim']
+                global cec
+                cec=CEC(g, lf_path)
+                cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim)
     except Exception as e:
         if __name__ == '__main__':
-            hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
-            if hwnd:
-                windll.user32.SetForegroundWindow(hwnd)
-            print(f"An error occurred: {e}")
-            print('\033[31mPath not found:\033[34m')
-            print(lf_path)
-            print('\033[31mPlace all the raw data files listed above in the same folder as the NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
-            message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
-            messagebox.showwarning("Warning", message)
+            if f_npz==0:
+                f_npz+=1
+                hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+                if hwnd:
+                    windll.user32.SetForegroundWindow(hwnd)
+                print(f"An error occurred: {e}")
+                print('\033[31mPath not found:\033[34m')
+                print(lf_path)
+                print('\033[31mPlace all the raw data files listed above in the same folder as the NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
+                message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
+                messagebox.showwarning("Warning", message)
         PassEnergy = 'Unknown'
         Dwell = 'Unknown'
         Iterations = 'Unknown'
@@ -1157,7 +1163,8 @@ def rplot(f, canvas):
     f.colorbar(h0, cax=acb, orientation='vertical')
     # a.set_title('Raw Data',font='Arial',fontsize=16)
     rcx.set_title('            Raw Data', font='Arial', fontsize=16)
-    ao.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=12)
+    if npzf:ao.set_xlabel(r'k $(2\pi/\AA)$', font='Arial', fontsize=12)
+    else:ao.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=12)
     if emf=='KE':
         ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
     else:
@@ -1507,14 +1514,15 @@ class spectrogram:
         s_yl (str): The y-axis label for the exported data file.
         type (str): The type of data.
     """
-    def __init__(self, data=[], path=[]) -> None:
+    def __init__(self, data=[], path=[]) -> None:   # should input path in main function
         self.lfs = None
-        if len(path) > 1:
+        if len(path) > 0:
             self.lfs = loadfiles(path)
             self.data = self.lfs.data[0]
-        elif len(path) == 1:
-            self.data = loadfiles(path).data[0]
+            if len(self.lfs.n) > 0:self.npzf = True
+            else:self.npzf = False
         else:
+            self.npzf = False
             self.data = data
         self.__preload(self.data)
         self.rr1 = self.phi[0]
@@ -1590,9 +1598,11 @@ class spectrogram:
     
     def __change_file(self, *args):
         name = self.namevar.get()
-        for i, j in zip(self.lfs.name, self.lfs.data):
+        for i, j, k in zip(self.lfs.name, self.lfs.data, self.lfs.f_npz):
             if name == i:
                 self.data = j
+                if k:self.npzf = True
+                else:self.npzf = False
         self.__preload(self.data)
         self.l_path.config(width=max(self.lst)+2, state='normal')
         self.l_path.delete(1.0, tk.END)
@@ -2244,7 +2254,7 @@ class spectrogram:
         
         self.fr_info=tk.Frame(self.tpg,bg='white',bd=10)
         self.fr_info.grid(row=0,column=1)
-        if self.lfs is not None:    
+        if len(self.lfs.name)>1:    
             nlist = self.lfs.name
             self.namevar = tk.StringVar(value=nlist[0])
             self.l_name = tk.OptionMenu(self.fr_info, self.namevar, *nlist, command=self.__change_file)
@@ -2684,7 +2694,8 @@ d
             if self.lensmode == 'Transmission':
                 unit=' mm'
             else:
-                unit=' deg'
+                if self.npzf:unit=' 2pi/A'
+                else:unit = ' deg'
             if event.xdata>self.ev[-1]:
                 cxdata = self.ev[-1]
             elif event.xdata<self.ev[0]:
@@ -2940,7 +2951,9 @@ d
         if self.lensmode=='Transmission':
             self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
         else:
-            self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
+            if self.npzf:self.tr_a1.set_ylabel(r'k $(2\pi/\AA)$', font='Arial', fontsize=16)
+            else:self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
+                
         self.tr_a1.set_xticks([])
         self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=14)
         self.tr_a1.set_xlim([x1, x2])
@@ -2958,7 +2971,8 @@ d
         if self.lensmode=='Transmission':
             self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=16)
         else:
-            self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
+            if self.npzf:self.tr_a1.set_ylabel(r'k $(2\pi/\AA)$', font='Arial', fontsize=16)
+            else:self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=16)
         self.tr_a1.set_xticks([])
         self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=14)
         # self.tr_a1.set_xlim(self.tr_a1.get_xlim())
@@ -3035,14 +3049,14 @@ def trans_plot():
 def raw_plot(*args):
     gtp.destroy()
     cmap=value3.get()
-    s=spectrogram(data)
+    s=spectrogram(path=[rdd])
     s.plot(g, cmap)
 
 def smooth_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(data)
+    s=spectrogram(path=[rdd])
     s.setdata(ev, y, dtype='smooth', unit='Counts')
     s.plot(g, cmap)
 
@@ -3050,7 +3064,7 @@ def fd_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(data)
+    s=spectrogram(path=[rdd])
     s.setdata(ev[0:-1]+(ev[1]-ev[0])/2, np.diff(y)/np.diff(ev), dtype='fd', unit='dN/dE')
     s.plot(g, cmap)
 
@@ -3113,18 +3127,34 @@ def cf_down(*args):
             else:
                 namevar.set(lfs.name[i+1])
     change_file()
-                
+
+npzf = False
 def change_file(*args):
-    global data, rdd
-    b_name.config(state='normal')
-    b_excitation.config(state='normal')
-    b_desc.config(state='normal')
+    global data, rdd, npzf
     name = namevar.get()
-    for i, j, k in zip(lfs.name, lfs.data, lfs.path):
+    for i, j, k, l in zip(lfs.name, lfs.data, lfs.path, lfs.f_npz):
         if name == i:
             data = j
             pr_load(j)
             rdd = k
+            if l:
+                npzf = True
+                b_name.config(state='disabled')
+                b_excitation.config(state='disabled')
+                b_desc.config(state='disabled')
+                koffset.config(state='normal')
+                k_offset.set('0')
+                koffset.config(state='disabled')
+            else:
+                npzf = False
+                b_name.config(state='normal')
+                b_excitation.config(state='normal')
+                b_desc.config(state='normal')
+                koffset.config(state='normal')
+                try:
+                    k_offset.set(ko)
+                except:
+                    k_offset.set('0')
     st.put(name)
     if value.get() != '---Plot1---':
         o_plot1()
@@ -3158,6 +3188,12 @@ def tools(*args):
     
 class loadfiles():
     def __init__(self, files):
+        self.f_npz = [False for i in files]
+        self.n = []
+        for i,v  in enumerate(files):
+            if '.npz' in os.path.basename(v):
+                self.f_npz[i] = True
+                self.n.append(i)
         self.opath = [f for f in files]
         self.oname = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '').replace('.npz', '') for f in self.opath]
         self.r1s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1']
@@ -3176,7 +3212,6 @@ class loadfiles():
             elif '.txt' in tbasename:
                 self.data.append(load_txt(i))
             elif '.npz' in tbasename:
-                print('loadfiels npz')
                 self.data.append(load_npz(i))
             else:
                 self.data.append([])
@@ -3410,6 +3445,10 @@ def cut_job_x(args):
     del td
     gc.collect()
     return i, result
+
+def set_entry_value(entry, value):
+    entry.delete(0, tk.END)
+    entry.insert(0, value)
 
 class VolumeSlicer(tk.Frame):
     def __init__(self, parent=None, path=None, volume=np.zeros((5,5,5), dtype=np.float64), cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=601):
@@ -4050,8 +4089,8 @@ class VolumeSlicer(tk.Frame):
                 self.slim[0] = 0
             if self.slim[1] > 493:
                 self.slim[1] = 493
-            self.set_entry_value(self.entry_min, str(self.slim[0]))
-            self.set_entry_value(self.entry_max, str(self.slim[1]))
+            set_entry_value(self.entry_min, str(self.slim[0]))
+            set_entry_value(self.entry_max, str(self.slim[1]))
             self.x, self.volume = [], []
             self.interpolate_slice(self.slice_index)
             rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
@@ -4068,10 +4107,10 @@ class VolumeSlicer(tk.Frame):
             self.entry_ymin.config(state='normal')
             self.entry_ymax.config(state='normal')
             if self.type == 'real':
-                self.set_entry_value(self.entry_xmin, str(self.ymin))
-                self.set_entry_value(self.entry_xmax, str(self.ymax))
-                self.set_entry_value(self.entry_ymin, str(self.xmin))
-                self.set_entry_value(self.entry_ymax, str(self.xmax))
+                set_entry_value(self.entry_xmin, str(self.ymin))
+                set_entry_value(self.entry_xmax, str(self.ymax))
+                set_entry_value(self.entry_ymin, str(self.xmin))
+                set_entry_value(self.entry_ymax, str(self.xmax))
                 self.ax.set_xlabel('x (mm)', fontsize=16)
                 self.ax.set_ylabel('z (mm)', fontsize=16)
                 self.entry_xmin.config(state='disabled')
@@ -4081,10 +4120,10 @@ class VolumeSlicer(tk.Frame):
             elif self.type == 'reciprocal':
                 self.cut_l, = self.ax.plot([0, 0], [0, 0], color='red', linestyle='-')
                 self.cut_l.set_data([], [])
-                self.set_entry_value(self.entry_xmin, str(self.ymin))
-                self.set_entry_value(self.entry_xmax, str(self.ymax))
-                self.set_entry_value(self.entry_ymin, str(self.xmin))
-                self.set_entry_value(self.entry_ymax, str(self.xmax))
+                set_entry_value(self.entry_xmin, str(self.ymin))
+                set_entry_value(self.entry_xmax, str(self.ymax))
+                set_entry_value(self.entry_ymin, str(self.xmin))
+                set_entry_value(self.entry_ymax, str(self.xmax))
                 self.ax.set_xlabel(r'$k_x$ ($2\pi/\AA$)', fontsize=16)
                 self.ax.set_ylabel(r'$k_y$ ($2\pi/\AA$)', fontsize=16)
         except ValueError:
@@ -4097,17 +4136,17 @@ class VolumeSlicer(tk.Frame):
             self.entry_ymin.config(state='normal')
             self.entry_ymax.config(state='normal')
             if self.type == 'real':
-                self.set_entry_value(self.entry_xmin, str(self.ymin))
-                self.set_entry_value(self.entry_xmax, str(self.ymax))
-                self.set_entry_value(self.entry_ymin, str(self.xmin))
-                self.set_entry_value(self.entry_ymax, str(self.xmax))
+                set_entry_value(self.entry_xmin, str(self.ymin))
+                set_entry_value(self.entry_xmax, str(self.ymax))
+                set_entry_value(self.entry_ymin, str(self.xmin))
+                set_entry_value(self.entry_ymax, str(self.xmax))
             elif self.type == 'reciprocal':
-                self.set_entry_value(self.entry_xmin, str(self.tylim[0]))
-                self.set_entry_value(self.entry_xmax, str(self.tylim[1]))
-                self.set_entry_value(self.entry_ymin, str(self.txlim[0]))
-                self.set_entry_value(self.entry_ymax, str(self.txlim[1]))
-            self.set_entry_value(self.entry_phi_offset, str(self.phi_offset))
-            self.set_entry_value(self.entry_r1_offset, str(self.r1_offset))
+                set_entry_value(self.entry_xmin, str(self.tylim[0]))
+                set_entry_value(self.entry_xmax, str(self.tylim[1]))
+                set_entry_value(self.entry_ymin, str(self.txlim[0]))
+                set_entry_value(self.entry_ymax, str(self.txlim[1]))
+            set_entry_value(self.entry_phi_offset, str(self.phi_offset))
+            set_entry_value(self.entry_r1_offset, str(self.r1_offset))
             self.x, self.volume = [], []
             self.interpolate_slice(self.slice_index)
             rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
@@ -4146,10 +4185,6 @@ class VolumeSlicer(tk.Frame):
                 self.update_window()
         except ValueError:
             print("Invalid input for window range values")
-
-    def set_entry_value(self, entry, value):
-        entry.delete(0, tk.END)
-        entry.insert(0, value)
     
     def interpolate_slice(self, i):
         # self.xmin, self.xmax range should be larger than txlim, tylim in combine, and so as y
@@ -4303,7 +4338,7 @@ class VolumeSlicer(tk.Frame):
             fig.canvas.draw()
             image_from_plot = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
             image_from_plot = image_from_plot.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-            # plt.close(fig)
+            plt.close()
             del fig, ax
             image_gray = cv2.cvtColor(image_from_plot, cv2.COLOR_RGB2GRAY)/255*tmax
             image_gray = cv2.resize(image_gray[::-1,:], (data.shape[1],data.shape[0]), interpolation=cv2.INTER_CUBIC)
@@ -4348,19 +4383,27 @@ class CEC(loadfiles):
         self.__check_re()
         
         self.tlg.geometry(f"{1900}x{990}+0+0")
+        self.tlg.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.tlg.update()
+    
+    def on_closing(self):
+        try:
+            plt.close()
+        except:
+            pass
+        self.tlg.destroy()
     
     def load(self, angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim):
         vs = self.view
         vs.change_mode() # change from 'real' to 'reciprocal'
-        vs.set_entry_value(vs.entry_min, str(slim[0]))
-        vs.set_entry_value(vs.entry_max, str(slim[1]))
-        vs.set_entry_value(vs.entry_phi_offset, str(phi_offset))
-        vs.set_entry_value(vs.entry_r1_offset, str(r1_offset))
-        vs.set_entry_value(vs.cut_xy_x_entry, str(cx))
-        vs.set_entry_value(vs.cut_xy_y_entry, str(cy))
-        vs.set_entry_value(vs.cut_xy_dx_entry, str(cdx))
-        vs.set_entry_value(vs.cut_xy_dy_entry, str(cdy))
+        set_entry_value(vs.entry_min, str(slim[0]))
+        set_entry_value(vs.entry_max, str(slim[1]))
+        set_entry_value(vs.entry_phi_offset, str(phi_offset))
+        set_entry_value(vs.entry_r1_offset, str(r1_offset))
+        set_entry_value(vs.cut_xy_x_entry, str(cx))
+        set_entry_value(vs.cut_xy_y_entry, str(cy))
+        set_entry_value(vs.cut_xy_dx_entry, str(cdx))
+        set_entry_value(vs.cut_xy_dy_entry, str(cdy))
         vs.text_ang.set_val(angle)
         vs.angle_slider.set_val(angle)
         vs.angle = angle
@@ -4814,7 +4857,7 @@ def pr_load(data):
 fpr = 0
 
 def o_load():
-    global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist, b_tools
+    global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist, b_tools, f_npz, npzf
     files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     # files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
@@ -4823,14 +4866,13 @@ def o_load():
     #     ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     if len(files) > 0:
+        f_npz = 0   # initial value to determine if CEC when loaded npz
         lfs = loadfiles(files)
         tpath = lfs.path[0]
-        b_name.config(state='normal')
-        b_excitation.config(state='normal')
-        b_desc.config(state='normal')
         rdd = tpath
         fpr = 0
-        if len(files) > 1:
+        if len(files) > 1:  #mulitple files
+            if len(lfs.n)==0:lfs.sort='no'
             try:
                 b_tools.grid_forget()
                 l_name.grid_forget()
@@ -4843,12 +4885,30 @@ def o_load():
             l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
             l_name.config(font=('Arial', 16, 'bold'))
             l_name.grid(row=0, column=1)
-        else:
+        else:   #single file
             try:
                 b_tools.grid_forget()
                 l_name.grid_forget()
             except:
                 pass
+        if lfs.f_npz[0]:npzf = True
+        else:npzf = False
+        if npzf:
+            b_name.config(state='disable')
+            b_excitation.config(state='disable')
+            b_desc.config(state='disable')
+            koffset.config(state='normal')
+            k_offset.set('0')
+            koffset.config(state='disable')
+        else:
+            b_name.config(state='normal')
+            b_excitation.config(state='normal')
+            b_desc.config(state='normal')
+            koffset.config(state='normal')
+            try:
+                k_offset.set(ko)
+            except:
+                k_offset.set('0')
     else:
         b_name.config(state='disable')
         b_excitation.config(state='disable')
@@ -4914,8 +4974,8 @@ def o_ecut():
     pbar = tqdm.tqdm(total=len(ev), desc='MDC', colour='green')
     for n in range(len(ev)):
         ecut = data.sel(eV=ev[n], method='nearest')
-        x = (2*m*ev[n]*1.602176634*10**-19)**0.5 * \
-            np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+        if npzf:x = phi
+        else:x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
         y = ecut.to_numpy().reshape(len(x))
         y = np.where(y > int(lowlim.get()), y, int(lowlim.get()))
         path = 'ecut_%.3f.txt' % ev[n]
@@ -5365,8 +5425,8 @@ def loadmfit_():
                         ##################################################################################################
                         # area tfwhm,tpos(1486.6+...)
                         if (ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
-                            tkk = (2*m*ev[fi]*1.602176634*10**-19)**0.5 * \
-                                np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+                            if npzf:tkk = phi
+                            else:tkk = (2*m*ev[fi]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
                             if float(tpos) > 1200:
                                 tkk+=1486.6
                             d = tkk[1]-tkk[0]
@@ -5431,8 +5491,8 @@ def loadmfit_():
                         ##################################################################################################
                         # area tfwhm,tpos(1486.6+...)
                         if (ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
-                            tkk = (2*m*ev[fi]*1.602176634*10**-19)**0.5 * \
-                                np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+                            if npzf:tkk = phi
+                            else:tkk = (2*m*ev[fi]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
                             if float(tpos) > 1200:
                                 tkk+=1486.6
                             d = tkk[1]-tkk[0]
@@ -5890,7 +5950,8 @@ def o_loadefit():
         os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
         ff = open(name+'_edc_fitted_raw_data.txt', 'w',
                   encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
-        ff.write('Angle (deg)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
+        if npzf:ff.write('k (2pi/A)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
+        else:ff.write('Angle (deg)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
         with open(file) as f:
             for i, line in enumerate(f):
                 if line[0:16] in efpath:
@@ -6956,7 +7017,8 @@ def feend():
     a.scatter(fphi, epos+efwhm/2, c='r', s=10)
     a.scatter(fphi, epos-efwhm/2, c='r', s=10)
     a.scatter(fphi, epos, c='k', s=10)
-    a.set_xlabel(r'$\phi$'+' (deg)')
+    if npzf:a.set_xlabel(r'k $(2\pi/\AA$)')
+    else:a.set_xlabel(r'$\phi$'+' (deg)')
     a.set_ylabel('Kinetic Energy (eV)', fontsize=14)
     eedfitout.draw()
 
@@ -7664,8 +7726,8 @@ def mfitjob():
         fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
         fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
         ecut = data.sel(eV=ev[i], method='nearest')
-        x = (2*m*ev[i]*1.602176634*10**-19)**0.5 * \
-            np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+        if npzf:x = phi
+        else:x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
         y = ecut.to_numpy().reshape(len(x))
         tx = x[np.argwhere(x >= kmin[i])].flatten()
         xx = tx[np.argwhere(tx <= kmax[i])].flatten()
@@ -7925,7 +7987,8 @@ def mfit():
     fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
     fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
     ecut = data.sel(eV=ev[i], method='nearest')
-    x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+    if npzf:x = phi
+    else:x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
     y = ecut.to_numpy().reshape(len(x))
     tx = x[np.argwhere(x >= kmin[i])].flatten()
     xx = tx[np.argwhere(tx <= kmax[i])].flatten()
@@ -8727,7 +8790,8 @@ def mfbgu(event):
     fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
     fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
     ecut = data.sel(eV=ev[i], method='nearest')
-    x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+    if npzf:x = phi
+    else:x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
     y = ecut.to_numpy().reshape(len(x))
     tx = x[np.argwhere(x >= kmin[i])].flatten()
     xx = tx[np.argwhere(tx <= kmax[i])].flatten()
@@ -8757,7 +8821,8 @@ def mfbgd(event):
     fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
     fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
     ecut = data.sel(eV=ev[i], method='nearest')
-    x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
+    if npzf:x = phi
+    else:x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
     y = ecut.to_numpy().reshape(len(x))
     tx = x[np.argwhere(x >= kmin[i])].flatten()
     xx = tx[np.argwhere(tx <= kmax[i])].flatten()
@@ -8966,7 +9031,10 @@ def _mprplot_job1():
                 px, py = np.meshgrid(phi, vfe - ev)
                 mfpra.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
                 mfpra.invert_yaxis()
-            px = (2 * m * np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev) * 1.6 * 10 ** -19).transpose(
+            if npzf:
+                px = phi
+            else:
+                px = (2 * m * np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev) * 1.6 * 10 ** -19).transpose(
             ) ** 0.5 * np.sin(px / 180 * np.pi) * 10 ** -10 / (h / 2 / np.pi)
             pz = data.to_numpy()
             mfpra.pcolormesh(px, py, pz, cmap=value3.get())
@@ -9980,8 +10048,8 @@ def fitm():
     pbar = tqdm.tqdm(total=len(ev), desc='MDC', colour='green')
     for i, v in enumerate(ev):
         ecut = data.sel(eV=v, method='nearest')
-        x = np.float64((2*m*v*1.602176634*10**-19)**0.5 *
-                       np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi))
+        if npzf:x = phi
+        else:x = np.float64((2*m*v*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi))
         y = ecut.to_numpy().reshape(len(x))
         tx = x[np.argwhere(x >= kmin[i])].flatten()
         xx = tx[np.argwhere(tx <= kmax[i])].flatten()
@@ -10301,8 +10369,6 @@ def o_reload(*e):
         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
     kmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-    print('kmin: ',len(kmin))
-    print('fev: ',len(fev))
     # okmphi = np.arcsin(kmin/(2*m*fev*1.602176634*10**-19)**0.5 /
     #                    10**-10*(h/2/np.pi))*180/np.pi
     # kmin = (2*m*fev*1.602176634*10**-19)**0.5 * \
@@ -10414,7 +10480,8 @@ def o_expte():
     os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
     ff = open(name+'_edc_fitted_data.txt', 'w',
               encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
-    ff.write('Angle (deg)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
+    if npzf:ff.write('k (2pi/A)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
+    else:ff.write('Angle (deg)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
     for i in range(len(ffphi)):
         ff.write(str(ffphi[i])+'\t'+str(efwhm[i])+'\t'+str(epos[i])+'\n')
     ff.close()
@@ -10583,7 +10650,10 @@ def o_plot1(*e):
                     px, py = np.meshgrid(phi[0:-1], ev)
                 else:
                     px, py = np.meshgrid(phi[0:-1], vfe-ev)
-                px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+                if npzf:
+                    px = phi[0:-1]+np.diff(phi)/2
+                else:
+                    px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                 )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
@@ -10620,7 +10690,10 @@ def o_plot1(*e):
                     px, py = np.meshgrid(phi, ev)
                 else:
                     px, py = np.meshgrid(phi, vfe-ev)
-                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+                if npzf:
+                    px = phi
+                else:
+                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                 )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                 
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
@@ -10676,7 +10749,10 @@ def o_plot1(*e):
                         px, py = np.meshgrid(phi, ev)
                     else:
                         px, py = np.meshgrid(phi, vfe-ev)
-                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+                    if npzf:
+                        px = phi
+                    else:
+                        px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
@@ -10688,7 +10764,10 @@ def o_plot1(*e):
                         total=len(ev)-1, desc='MDC Normalized', colour='red')
                     for n in range(len(ev)-1):
                         ecut = data.sel(eV=ev[n], method='nearest')
-                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
+                        if npzf:
+                            x = phi
+                        else:
+                            x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                         y = ecut.to_numpy().reshape(len(ecut))
                         # mz[len(phi)*n:len(phi)*(n+1)]=np.array(y,dtype=float)
@@ -10713,7 +10792,10 @@ def o_plot1(*e):
                     y = np.zeros([len(ev),len(phi)],dtype=float)
                     for n in range(len(ev)):
                         ecut = data.sel(eV=ev[n], method='nearest')
-                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
+                        if npzf:
+                            x = phi
+                        else:
+                            x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                         y[n][:] = ecut.to_numpy().reshape(len(ecut))
                     for n in range(len(ev)//d):
@@ -10731,7 +10813,10 @@ def o_plot1(*e):
                     y = np.zeros([len(ev),len(phi)],dtype=float)
                     for n in range(len(ev)):
                         ecut = data.sel(eV=ev[n], method='nearest')
-                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
+                        if npzf:
+                            x = phi
+                        else:
+                            x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                         y[n][:] = ecut.to_numpy().reshape(len(ecut))
                     for n in range(len(ev)//d):
@@ -10747,7 +10832,10 @@ def o_plot1(*e):
                         px, py = np.meshgrid(phi, ev)
                     else:
                         px, py = np.meshgrid(phi, vfe-ev)
-                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+                    if npzf:
+                        px = phi
+                    else:
+                        px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
@@ -11325,7 +11413,10 @@ def o_plot3(*e):
                 px, py = np.meshgrid(phi, ev)
             else:
                 px, py =np.meshgrid(phi, vfe-ev)
-            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+            if npzf:
+                px = phi
+            else:
+                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             pz = data.to_numpy()
             h0 = bo.pcolormesh(px, py, pz, cmap=value3.get())
@@ -11839,7 +11930,10 @@ def exp(*e):
                 px, py = np.meshgrid(phi[0:-1], ev)
             else:
                 px, py = np.meshgrid(phi[0:-1], vfe-ev)
-            px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+            if npzf:
+                px = phi[0:-1]+np.diff(phi)/2
+            else:
+                px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
             if emf=='KE':
@@ -11884,7 +11978,10 @@ def exp(*e):
                 px, py = np.meshgrid(phi, ev)
             else:
                 px, py = np.meshgrid(phi, vfe-ev)
-            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+            if npzf:
+                px = phi
+            else:
+                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
@@ -11922,7 +12019,10 @@ def exp(*e):
                     px, py = np.meshgrid(phi, ev)
                 else:
                     px, py = np.meshgrid(phi, vfe-ev)
-                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+                if npzf:
+                    px = phi
+                else:
+                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                 )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                 pz = data.to_numpy()
                 h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
@@ -11957,7 +12057,10 @@ def exp(*e):
             elif value.get() == 'MDC Normalized':
                 for n in range(len(ev)-1):
                     ecut = data.sel(eV=ev[n], method='nearest')
-                    x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
+                    if npzf:
+                        x = phi
+                    else:
+                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                     y = ecut.to_numpy().reshape(len(ecut))
                     # mz[len(phi)*n:len(phi)*(n+1)]=np.array(y,dtype=float)
@@ -11981,7 +12084,10 @@ def exp(*e):
                 y = np.zeros([len(ev),len(phi)],dtype=float)
                 for n in range(len(ev)):
                     ecut = data.sel(eV=ev[n], method='nearest')
-                    x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
+                    if npzf:
+                        x = phi
+                    else:
+                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                         (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                     y[n][:] = ecut.to_numpy().reshape(len(ecut))
                 for n in range(len(ev)//d):
@@ -11992,7 +12098,10 @@ def exp(*e):
                     y = np.zeros([len(ev),len(phi)],dtype=float)
                     for n in range(len(ev)):
                         ecut = data.sel(eV=ev[n], method='nearest')
-                        x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
+                        if npzf:
+                            x = phi
+                        else:
+                            x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
                             (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
                         y[n][:] = ecut.to_numpy().reshape(len(ecut))
                     for n in range(len(ev)//d):
@@ -12003,7 +12112,10 @@ def exp(*e):
                         px, py = np.meshgrid(phi, ev)
                     else:
                         px, py = np.meshgrid(phi, vfe-ev)
-                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+                    if npzf:
+                        px = phi
+                    else:
+                        px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
                     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
@@ -12071,9 +12183,13 @@ def exp(*e):
         if value.get() == 'Raw Data':
             acx.set_title('                Raw Data', font='Arial', fontsize=18)
             cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
-            a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
+            if npzf:
+                a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+                a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+            else:
+                a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
+                a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
             a.set_xticklabels(labels=a.get_xticklabels(), fontsize=14)
-            a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
             a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=14)
         # a.set_xticklabels(labels=a.get_xticklabels(),fontsize=10)
         # a.set_yticklabels(labels=a.get_yticklabels(),fontsize=10)
@@ -12491,8 +12607,10 @@ def exp(*e):
                 px, py = np.meshgrid(phi, ev)
             else:
                 px, py = np.meshgrid(phi, vfe-ev)
-                
-            px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
+            if npzf:
+                px = phi
+            else:
+                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
             )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             pz = data.to_numpy()
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
@@ -13718,7 +13836,6 @@ if __name__ == '__main__':
     koffset = tk.Entry(step, font=("Arial", 12, "bold"),
                     width=15, textvariable=k_offset, bd=9)
     koffset.grid(row=2, column=1)
-
     lfit = tk.Frame(step, bg='white')
     lfit.grid(row=3, column=1)
     lmfit = tk.Button(lfit, text='Load MDC fitted File', font=(
@@ -14026,6 +14143,7 @@ if __name__ == '__main__':
         info.config(state='normal')
         pr_load(data)
         if len(lfs.name) > 1:
+            if len(lfs.n)>0:lfs.sort='no'
             b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', 12, "bold"), bg='white')
             b_tools.grid(row=0, column=0)
             nlist = lfs.name
@@ -14033,6 +14151,14 @@ if __name__ == '__main__':
             l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
             l_name.config(font=('Arial', 16, 'bold'))
             l_name.grid(row=0, column=1)
+        if lfs.f_npz[0]:npzf = True
+        if npzf:
+            b_name.config(state='disabled')
+            b_excitation.config(state='disabled')
+            b_desc.config(state='disabled')
+            koffset.config(state='normal')
+            k_offset.set('0')
+            koffset.config(state='disabled')
     except:
         pass
     print(f"Version: {__version__}")
