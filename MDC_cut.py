@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "5.3.1"
+__version__ = "5.3.2"
 __release_date__ = "2025-01-21"
 import os, inspect
 import json
@@ -456,9 +456,11 @@ def load_npz(path_to_file: str) -> xr.DataArray:
                 td=load_txt(lf_path[0])
         except: #try load file in the same folder as npz
             td = None
+            tlfpath = []
             for i in lf_path:
                 tbasename = os.path.basename(i)
                 tpath = os.path.normpath(os.path.join(os.path.dirname(path_to_file), tbasename))
+                tlfpath.append(tpath)
                 try:
                     if '.h5' in tbasename:
                         td=load_h5(tpath)
@@ -467,9 +469,7 @@ def load_npz(path_to_file: str) -> xr.DataArray:
                     elif '.txt' in tbasename:
                         td=load_txt(tpath)
                 except:
-                    td = None
-                if td is not None:  #if file loaded
-                    break
+                    pass
         PassEnergy = td.attrs['PassEnergy']
         Dwell = td.attrs['Dwell']
         Iterations = td.attrs['Iterations']
@@ -486,8 +486,12 @@ def load_npz(path_to_file: str) -> xr.DataArray:
                 r1_offset = f['r1_offset']
                 slim = f['slim']
                 global cec
-                cec=CEC(g, lf_path)
-                cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim)
+                try:
+                    cec=CEC(g, lf_path)
+                    cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim)
+                except:
+                    cec=CEC(g, tlfpath)
+                    cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim)
     except Exception as e:
         if __name__ == '__main__':
             if f_npz==0:
