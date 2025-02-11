@@ -19,22 +19,40 @@ import gc
 from tkinter import messagebox, ttk
 from multiprocessing import Pool
 import time, subprocess
+# cdir = os.getcwd()
+cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+if os.name == 'nt':  # only execute on Windows OS
+    cdir = cdir[0].upper() + cdir[1:]
 try:
-    subprocess.check_call([sys.executable, "-m", "pip", "--version"])
-except subprocess.CalledProcessError:
-    if os.name == 'nt':
-        print('pip not found\nOS: Windows\nInstalling pip...')
-        os.system('python -m ensurepip')    #install pip
-        os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')  #restart the script to ensure pip works without potential errors
-    elif os.name == 'posix':
-        print('pip not found\nOS: Linux or MacOS\nInstalling pip...')
-        try:    #python3 if installed
-            os.system('python3 -m ensurepip')   #install pip
-            os.system('python3 "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')   #restart the script to ensure pip works without potential errors
-        except: #python2.7(default in MacOS)
-            os.system('python -m ensurepip')
-            os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
-    quit()  #end the current script
+    os.chdir(cdir)
+    if os.path.exists('pip_check.txt')==0:
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "--version"])
+            with open ('pip_check.txt', 'w', encoding = 'utf-8') as f:
+                f.write('pip found')
+                f.close()
+        except subprocess.CalledProcessError:
+            try:
+                if os.name == 'nt':
+                    print('pip not found\nOS: Windows\nInstalling pip...')
+                    os.system('python -m ensurepip')    #install pip
+                    os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')  #restart the script to ensure pip works without potential errors
+                elif os.name == 'posix':
+                    print('pip not found\nOS: Linux or MacOS\nInstalling pip...')
+                    try:    #python3 if installed
+                        os.system('python3 -m ensurepip')   #install pip
+                        os.system('python3 "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')   #restart the script to ensure pip works without potential errors
+                    except: #python2.7(default in MacOS)
+                        os.system('python -m ensurepip')
+                        os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+                with open ('pip_check.txt', 'w', encoding = 'utf-8') as f:
+                    f.write('pip found')
+                    f.close()
+            except Exception as e:
+                print(f"An error occurred: {e}")
+            quit()  #end the current script
+except:
+    pass
 def restart():
     if os.name == 'nt':
         os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
@@ -167,10 +185,6 @@ m=9.10938356*10**-31
 mp, ep, mf, ef = 1, 1, 1, 1
 fk = []
 fev = []
-# cdir = os.getcwd()
-cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-if os.name == 'nt':  # only execute on Windows OS
-    cdir = cdir[0].upper() + cdir[1:]
     
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
