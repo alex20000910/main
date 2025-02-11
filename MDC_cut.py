@@ -5219,6 +5219,9 @@ def o_load():
         f_npz = 0   # initial value to determine if CEC when loaded npz
         lfs = loadfiles(files)
         tpath = lfs.path[0]
+        b_name.config(state='normal')
+        b_excitation.config(state='normal')
+        b_desc.config(state='normal')
         rdd = tpath
         fpr = 0
         if len(files) > 1:  #mulitple files
