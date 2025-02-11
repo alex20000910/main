@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "5.3.2"
-__release_date__ = "2025-01-21"
+__version__ = "5.4"
+__release_date__ = "2025-02-11"
 import os, inspect
 import json
 import tkinter as tk
@@ -18,15 +18,45 @@ from datetime import datetime
 import gc
 from tkinter import messagebox, ttk
 from multiprocessing import Pool
-import time
+import time, subprocess
+try:
+    subprocess.check_call([sys.executable, "-m", "pip", "--version"])
+except subprocess.CalledProcessError:
+    if os.name == 'nt':
+        print('pip not found\nOS: Windows\nInstalling pip...')
+        os.system('python -m ensurepip')    #install pip
+        os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')  #restart the script to ensure pip works without potential errors
+    elif os.name == 'posix':
+        print('pip not found\nOS: Linux or MacOS\nInstalling pip...')
+        try:    #python3 if installed
+            os.system('python3 -m ensurepip')   #install pip
+            os.system('python3 "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')   #restart the script to ensure pip works without potential errors
+        except: #python2.7(default in MacOS)
+            os.system('python -m ensurepip')
+            os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+    quit()  #end the current script
+def restart():
+    if os.name == 'nt':
+        os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+    elif os.name == 'posix':
+        try:
+            os.system('python3 "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+        except:
+            os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
 def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
-    if a == 'Y' or a == 'y':
+    if a.lower() == 'y':
         if s == 'matplotlib':
-            os.system('pip install '+s+'==3.8.4')
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", s+'==3.8.4'])
+            except subprocess.CalledProcessError:
+                subprocess.check_call([sys.executable, "-m", "pip3", "install", s+'==3.8.4'])
         else:
-            os.system('pip install '+s)
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", s])
+            except subprocess.CalledProcessError:
+                subprocess.check_call([sys.executable, "-m", "pip3", "install", s])
     else:
         quit()
 try:
@@ -45,22 +75,27 @@ except ModuleNotFoundError:
     install('h5py')
     import h5py
 try:
+    from PIL import Image, ImageTk
+except ModuleNotFoundError:
+    install('Pillow')
+    restart()
+    quit()
+try:
     import matplotlib   # matplotlib version: 3.8.4
     if matplotlib.__version__ != '3.8.4':
         os.system('pip install --upgrade matplotlib==3.8.4')
 except ModuleNotFoundError:
     install('matplotlib')
     import matplotlib
+matplotlib.use('TkAgg')
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.widgets import SpanSelector
 from matplotlib.widgets import RectangleSelector
 import matplotlib as mpl
 from matplotlib.widgets import Cursor
-from PIL import Image, ImageTk
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
-matplotlib.use('TkAgg')
 from matplotlib.widgets import Slider
 from matplotlib.widgets import TextBox
 try:
@@ -99,7 +134,7 @@ try:
     import win32clipboard
 except ModuleNotFoundError:
     install('pywin32')
-    os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+    restart()
     quit()
 try:
     import originpro as op
@@ -110,7 +145,7 @@ try:
     import cv2
 except ModuleNotFoundError:
     install('opencv-python')
-    os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+    restart()
     quit()
 try:
     import cpuinfo
@@ -136,6 +171,7 @@ fev = []
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':  # only execute on Windows OS
     cdir = cdir[0].upper() + cdir[1:]
+    
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
     """
@@ -329,7 +365,8 @@ def load_json(path_to_file: str) -> xr.DataArray:
                                                                 })
     return data
 
-
+cec = None
+f_npz = 0
 def load_h5(path_to_file: str) -> xr.DataArray:
     """
     Load data from an HDF5 file and return it as a DataArray.
@@ -364,28 +401,51 @@ def load_h5(path_to_file: str) -> xr.DataArray:
     t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
     t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
     try:
-        flag = f.get('Region').get('Name')[1]
+        flag = np.array(f.get('Region').get('Name'), dtype=str)[1]
         t_name = np.array(f.get('Region').get('Name'), dtype=str)
     except:        
         t_name = np.array(f.get('Region').get('Name'), dtype='S')  # Read as bytes
         t_name = t_name.tobytes().decode('utf-8')   # Convert to string
     try:
-        flag = f.get('Region').get('Description')[1]
+        flag = np.array(f.get('Region').get('Description'), dtype=str)[1]
         t_description = np.array(f.get('Region').get('Description'), dtype=str)
     except:
         t_description = np.array(f.get('Region').get('Description'), dtype='S')  # Read as bytes
         t_description = t_description.tobytes().decode('utf-8')   # Convert to string
+    try:
+        flag = np.array(f.get('Region').get('EnergyMode'), dtype=str)[1]
+        t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype=str)
+        t_LensMode = np.array(f.get('Region').get('LensMode'), dtype=str)
+        t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
+        t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
+    except:
+        flag = 'pass_byte'
+        t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype='S')  # Read as bytes
+        t_e_mode = t_e_mode.tobytes().decode('utf-8')   # Convert to string
+        t_LensMode = np.array(f.get('Region').get('LensMode'), dtype='S')  # Read as bytes
+        t_LensMode = t_LensMode.tobytes().decode('utf-8')   # Convert to string
+        t_Slit = np.array(f.get('Region').get('Slit'), dtype='S')  # Read as bytes
+        t_Slit = t_Slit.tobytes().decode('utf-8')   # Convert to string
+        t_aq = np.array(f.get('Region').get('Acquisition'), dtype='S')  # Read as bytes
+        t_aq = t_aq.tobytes().decode('utf-8')   # Convert to string        
+        
     e_mode = ''
     LensMode = ''
     Slit = ''
     aq = ''
     name = ''
     description = ''
-    for i in range(60):  # proper length long enough
-        e_mode += t_e_mode[i]
-        LensMode += t_LensMode[i]
-        Slit += t_Slit[i]
-        aq += t_aq[i]
+    if flag != 'pass_byte':
+        for i in range(60):  # proper length long enough
+            e_mode += t_e_mode[i]
+            LensMode += t_LensMode[i]
+            Slit += t_Slit[i]
+            aq += t_aq[i]
+    else:
+        e_mode = t_e_mode
+        LensMode = t_LensMode
+        Slit = t_Slit
+        aq = t_aq
     for i in range(600):
         try:
             name += t_name[i]
@@ -405,13 +465,82 @@ def load_h5(path_to_file: str) -> xr.DataArray:
         CenterEnergy = str(CenterEnergy)+' eV'
         e_low = str(e_low)+' eV (B.E.)'
         e_high = str(e_high)+' eV (B.E.)'
-
+    if aq == 'VolumeSlicer':
+        global f_npz
+        tlf_path = np.array(f.get('VolumeSlicer').get('path'), dtype='S')
+        lf_path = [i.tobytes().decode('utf-8') for i in tlf_path]
+        try:
+            try:    #load path that saved in npz
+                tbasename = os.path.basename(lf_path[0])
+                if '.h5' in tbasename:
+                    td=load_h5(lf_path[0])
+                elif '.json' in tbasename:
+                    td=load_json(lf_path[0])
+                elif '.txt' in tbasename:
+                    td=load_txt(lf_path[0])
+            except: #try load file in the same folder as npz
+                td = None
+                tlfpath = []
+                for i in lf_path:
+                    tbasename = os.path.basename(i)
+                    tpath = os.path.normpath(os.path.join(os.path.dirname(path_to_file), tbasename))
+                    tlfpath.append(tpath)
+                    try:
+                        if '.h5' in tbasename:
+                            td=load_h5(tpath)
+                        elif '.json' in tbasename:
+                            td=load_json(tpath)
+                        elif '.txt' in tbasename:
+                            td=load_txt(tpath)
+                    except:
+                        pass
+            PassEnergy = td.attrs['PassEnergy']
+            Dwell = td.attrs['Dwell']
+            Iterations = td.attrs['Iterations']
+            Slit = td.attrs['Slit']
+            if __name__ == '__main__':
+                if f_npz==0:
+                    f_npz+=1
+                    angle = np.array(f.get('VolumeSlicer').get('angle'))[0]
+                    cx = np.array(f.get('VolumeSlicer').get('cx'))[0]
+                    cy = np.array(f.get('VolumeSlicer').get('cy'))[0]
+                    cdx = np.array(f.get('VolumeSlicer').get('cdx'))[0]
+                    cdy = np.array(f.get('VolumeSlicer').get('cdy'))[0]
+                    phi_offset = np.array(f.get('VolumeSlicer').get('phi_offset'))[0]
+                    r1_offset = np.array(f.get('VolumeSlicer').get('r1_offset'))[0]
+                    slim = np.array(f.get('VolumeSlicer').get('slim'))[0]
+                    global cec
+                    try:
+                        cec=CEC(g, lf_path)
+                        cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim)
+                    except:
+                        cec=CEC(g, tlfpath)
+                        cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, slim)
+        except Exception as ecp:
+            if __name__ == '__main__':
+                if f_npz==0:
+                    f_npz+=1
+                    hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+                    if hwnd:
+                        windll.user32.SetForegroundWindow(hwnd)
+                    print(f"An error occurred: {ecp}")
+                    print('\033[31mPath not found:\033[34m')
+                    print(lf_path)
+                    print('\033[31mPlace all the raw data files listed above in the same folder as the NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
+                    message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
+                    messagebox.showwarning("Warning", message)
+    
     a = np.linspace(a_low, a_high, a_num)
     d = np.array(f.get('Spectrum')).transpose()
     # data=np.arange(float(len(e)*len(a))).reshape(len(e),len(a),1)
     # data[0:,0:,0]=d
     data = np.arange(float(len(e)*len(a))).reshape(len(e), len(a))
-    data[0:, 0:] = d
+    if flag != 'pass_byte':
+        data[0:, 0:] = d
+    else:
+        Dwell = Dwell.removesuffix(' s')
+        PassEnergy = PassEnergy.removesuffix(' eV')
+        data[0:, 0:] = d.T
     data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
                                                                 'Acquisition': aq,
                                                                 'EnergyMode': e_mode,
@@ -430,8 +559,6 @@ def load_h5(path_to_file: str) -> xr.DataArray:
                                                                 })
     return data
 
-cec = None
-f_npz = 0
 def load_npz(path_to_file: str) -> xr.DataArray:
     """
     Load data from a NumPy NPZ file and convert it into an xarray DataArray.
@@ -2474,7 +2601,7 @@ pulse counting
     def __export_casa(self):
     # Casa.vms format complete version
         if self.lfs is not None:
-            path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.lfs.path[0].removesuffix(self.lfs.path[0].split('/')[-1]), initialfile=self.lfs.name[0])
+            path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.lfs.path[0], initialfile=self.lfs.name[0], defaultextension='.vms')
             if path.split('.')[-1] != 'vms':
                 path += '.vms'
             if path != '':
@@ -3253,13 +3380,17 @@ class loadfiles():
         self.f_npz = [False for i in files]
         self.n = []
         for i,v  in enumerate(files):
-            if '.npz' in os.path.basename(v):
+            if '.npz' in os.path.basename(v) or load_h5(v).attrs['Acquisition']=='VolumeSlicer':
                 self.f_npz[i] = True
                 self.n.append(i)
         self.opath = [f for f in files]
         self.oname = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '').replace('.npz', '') for f in self.opath]
         self.r1s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1']
         self.r2s = ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
+        self.sep = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+                    'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+                    ',','!','@','#','$','%','^','&','*','(',')','_','-','+','=','[',']','{','}','|','\\',';',':','\'','"',
+                    ' ','.txt','.TXT']
         self.__set_r1_r2()
         self.__set_data()
         
@@ -3399,7 +3530,17 @@ class loadfiles():
             try:
                 r1 = []
                 for i,v in enumerate(name):
-                    r1.append(v.split(r1_splitter[i])[1].split(r2_splitter[i])[0].split(' ')[0].split('_')[0])
+                    tf=True
+                    t=v.split(r1_splitter[i])[1].split(r2_splitter[i])[0].split(' ')[0].split('_')[0]
+                    while tf:
+                        try:
+                            a=float(t)
+                            tf=False
+                        except:
+                            for j in self.sep:
+                                if j in t:
+                                    t=t.replace(j, '')
+                    r1.append(a)
                 return np.float64(r1)
             except:
                 print('Error in loadfiles().gen_r1')
@@ -3410,7 +3551,17 @@ class loadfiles():
             try:
                 r2 = []
                 for i,v in enumerate(name):
-                    r2.append(v.split(r2_splitter[i])[1].split(r1_splitter[i])[0].split(' ')[0].split('_')[0])
+                    tf=True
+                    t=v.split(r2_splitter[i])[1].split(r1_splitter[i])[0].split(' ')[0].split('_')[0]
+                    while tf:
+                        try:
+                            a=float(t)
+                            tf=False
+                        except:
+                            for j in self.sep:
+                                if j in t:
+                                    t=t.replace(j, '')
+                    r2.append(a)
                 return np.float64(r2)
             except:
                 print('Error in loadfiles().gen_r2')
@@ -3418,7 +3569,7 @@ class loadfiles():
                 return name
             
     def export_casa(self):
-        path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.path[0].removesuffix(self.path[0].split('/')[-1]), initialfile=self.name[0])
+        path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.path[0], initialfile=self.name[0], defaultextension='.vms')
         if path.split('.')[-1] != 'vms':
             path += '.vms'
         if path != '.vms':
@@ -3902,13 +4053,149 @@ class VolumeSlicer(tk.Frame):
                 self.pool.join()
                 self.pool = None
     
-    def save_cut(self):
+    def saveh5(self, tpath, path, data, x, y, angle, cx, cy, cdx, cdy, phi_offset, r1_offset, e_photon, slim, desc):
+        with h5py.File(tpath, 'w') as f:
+            xsize = np.array([len(y)], dtype=int)
+            f.create_dataset('Data/XSize/Value', data=xsize, dtype=int)
+            ysize = np.array([len(x)], dtype=int)
+            f.create_dataset('Data/YSize/Value', data=ysize, dtype=int)
+            
+            acquisition = [bytes('VolumeSlicer', 'utf-8')]
+            acquisition = np.array(acquisition, dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('Region/Acquisition', data=acquisition, dtype=h5py.special_dtype(vlen=str))
+            center_energy = np.array([(y[-1]-y[0])/2], dtype=float)
+            f.create_dataset('Region/CenterEnergy/Value', data=center_energy, dtype=float)
+            description = np.array([bytes(desc[0], 'utf-8')], dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('Region/Description', data=description, dtype=h5py.special_dtype(vlen=str))
+            dwell = np.array([bytes('Unknown', 'utf-8')], dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('Region/Dwell/Value', data=dwell, dtype=h5py.special_dtype(vlen=str))
+            
+            energy_mode = [bytes('Kinetic', 'utf-8')]
+            energy_mode = np.array(energy_mode, dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('Region/EnergyMode', data=energy_mode, dtype=h5py.special_dtype(vlen=str))
+            excitation_energy = np.array([e_photon], dtype=float)
+            f.create_dataset('Region/ExcitationEnergy/Value', data=excitation_energy, dtype=float)
+            high_energy = np.array([y[-1]], dtype=float)
+            f.create_dataset('Region/HighEnergy/Value', data=high_energy, dtype=float)
+            iterations = np.array([bytes('Unknown', 'utf-8')], dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('Region/Iterations/Value', data=iterations, dtype=h5py.special_dtype(vlen=str))
+            
+            lens_mode = [bytes('Angular', 'utf-8')]
+            lens_mode = np.array(lens_mode, dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('Region/LensMode', data=lens_mode, dtype=h5py.special_dtype(vlen=str))
+            low_energy = np.array([y[0]], dtype=float)
+            f.create_dataset('Region/LowEnergy/Value', data=low_energy, dtype=float)
+            name = np.array([bytes(os.path.basename(tpath).removesuffix('.h5'), 'utf-8')], dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('Region/Name', data=name, dtype=h5py.special_dtype(vlen=str))
+            y_scale_max = np.array([x[-1]], dtype=float)
+            f.create_dataset('Region/YScaleMax/Value', data=y_scale_max, dtype=float)
+            y_scale_min = np.array([x[0]], dtype=float)
+            f.create_dataset('Region/YScaleMin/Value', data=y_scale_min, dtype=float)
+            pass_energy = np.array([bytes('Unknown', 'utf-8')], dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('Region/PassEnergy/Value', data=pass_energy, dtype=h5py.special_dtype(vlen=str))
+            step = np.array([y[1]-y[0]], dtype=float)
+            f.create_dataset('Region/Step/Value', data=step, dtype=float)
+            
+            slit = [bytes('Unknown', 'utf-8')]
+            slit = np.array(slit, dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('Region/Slit', data=slit, dtype=h5py.special_dtype(vlen=str))
+            
+            # # original h5 data
+            # Data = f.create_group('Data')
+            
+            # XSize = Data.create_group('XSize')
+            # XSize.create_dataset('Value', data=[len(y)])
+            
+            # YSize = Data.create_group('YSize')
+            # YSize.create_dataset('Value', data=[len(x)])
+            
+            # Region = f.create_group('Region')
+            
+            # Region.create_dataset('Acquisition', data=np.string_('VolumeSlicer'))
+            
+            # CenterEnergy = Region.create_group('CenterEnergy')
+            # CenterEnergy.create_dataset('Value', data=[(y[-1]-y[0])/2])
+            
+            # Region.create_dataset('Description', data=np.string_(desc))
+            
+            # Dwell = Region.create_group('Dwell')
+            # Dwell.create_dataset('Value', data=np.string_('Unknown'))
+            
+            # Region.create_dataset('EnergyMode', data=np.string_('Kinetic'))
+            
+            # ExcitationEnergy = Region.create_group('ExcitationEnergy')
+            # ExcitationEnergy.create_dataset('Value', data=[e_photon])
+            
+            # HighEnergy = Region.create_group('HighEnergy')
+            # HighEnergy.create_dataset('Value', data=[y[-1]])
+            
+            # Iterations = Region.create_group('Iterations')
+            # Iterations.create_dataset('Value', data=np.string_('Unknown'))
+            
+            # Region.create_dataset('LensMode', data=np.string_('Angular'))
+            
+            # LowEnergy = Region.create_group('LowEnergy')
+            # LowEnergy.create_dataset('Value', data=[y[0]])
+            
+            # Region.create_dataset('Name', data=np.string_(os.path.basename(tpath)))
+            
+            # PassEnergy = Region.create_group('PassEnergy')
+            # PassEnergy.create_dataset('Value', data=np.string_('Unknown'))
+            
+            # Region.create_dataset('Slit', data=np.string_('Unknown'))
+            
+            # Step = Region.create_group('Step')
+            # Step.create_dataset('Value', data=[y[1]-y[0]])
+            
+            # YScaleMax = Region.create_group('YScaleMax')
+            # YScaleMax.create_dataset('Value', data=[x[-1]])
+            
+            # XScaleMax = Region.create_group('XScaleMax')
+            # XScaleMax.create_dataset('Value', data=[x[0]])
+            
+            # additional data
+            path = np.array([bytes(i, 'utf-8') for i in path], dtype=h5py.special_dtype(vlen=str))
+            f.create_dataset('VolumeSlicer/path', data=path)
+            angle = np.array([angle], dtype=float)
+            f.create_dataset('VolumeSlicer/angle', data=angle)
+            cx = np.array([cx], dtype=float)
+            f.create_dataset('VolumeSlicer/cx', data=cx)
+            cy = np.array([cy], dtype=float)
+            f.create_dataset('VolumeSlicer/cy', data=cy)
+            cdx = np.array([cdx], dtype=float)
+            f.create_dataset('VolumeSlicer/cdx', data=cdx)
+            cdy = np.array([cdy], dtype=float)
+            f.create_dataset('VolumeSlicer/cdy', data=cdy)
+            phi_offset = np.array([phi_offset], dtype=float)
+            f.create_dataset('VolumeSlicer/phi_offset', data=phi_offset)
+            r1_offset = np.array([r1_offset], dtype=float)
+            f.create_dataset('VolumeSlicer/r1_offset', data=r1_offset)
+            slim = np.array([slim], dtype=int)
+            f.create_dataset('VolumeSlicer/slim', data=slim)
+            
+            # vs = f.create_group('VolumeSlicer')
+            # vs.create_dataset('path', data=[np.string_(path)])
+            # vs.create_dataset('angle', data=[angle])
+            # vs.create_dataset('cx', data=[cx])
+            # vs.create_dataset('cy', data=[cy])
+            # vs.create_dataset('cdx', data=[cdx])
+            # vs.create_dataset('cdy', data=[cdy])
+            # vs.create_dataset('phi_offset', data=[phi_offset])
+            # vs.create_dataset('r1_offset', data=[r1_offset])
+            # vs.create_dataset('slim', data=[slim])
+            
+            f.create_dataset('Spectrum', data=np.array(data))
+            
+    def save_cut(self, *args):
         try:
-            path = fd.asksaveasfilename(title="Save as", filetypes=(("NPZ files", "*.npz"),), initialdir=os.path.dirname(self.path[0]), initialfile='data_cut.npz')
+            path = fd.asksaveasfilename(title="Save as", filetypes=(("HDF5 files", "*.h5"), ("NPZ files", "*.npz"),), initialdir=self.path[0], initialfile='data_cut', defaultextension=".h5")
             if not path:
                 print('Save operation cancelled')
                 return
-            np.savez(path, path=self.path, data=self.data_cut, x=self.x_cut, y=self.y_cut, angle=self.angle_cut, cx=self.cx_cut, cy=self.cy_cut, cdx=self.cdx_cut, cdy=self.cdy_cut, phi_offset=self.phi_offset_cut, r1_offset=self.r1_offset_cut, e_photon=self.e_photon, slim=self.slim_cut, desc=["Sliced data"])
+            elif path.split('.')[-1] == 'npz':
+                np.savez(path, path=self.path, data=self.data_cut, x=self.x_cut, y=self.y_cut, angle=self.angle_cut, cx=self.cx_cut, cy=self.cy_cut, cdx=self.cdx_cut, cdy=self.cdy_cut, phi_offset=self.phi_offset_cut, r1_offset=self.r1_offset_cut, e_photon=self.e_photon, slim=self.slim_cut, desc=["Sliced data"])
+            elif path.split('.')[-1] == 'h5':
+                self.saveh5(path, path=self.path, data=self.data_cut, x=self.x_cut, y=self.y_cut, angle=self.angle_cut, cx=self.cx_cut, cy=self.cy_cut, cdx=self.cdx_cut, cdy=self.cdy_cut, phi_offset=self.phi_offset_cut, r1_offset=self.r1_offset_cut, e_photon=self.e_photon, slim=self.slim_cut, desc=["Sliced data"])
             print('Data saved to %s'%path)
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -4016,7 +4303,6 @@ class VolumeSlicer(tk.Frame):
         print('done') 
         self.fg = tk.Toplevel(self)
         self.fg.title('Cut Plot')
-        self.fg.focus_set()
         self.fg.protocol("WM_DELETE_WINDOW", self.on_closing)    
         fig = plt.Figure(figsize=(9, 9),constrained_layout=True)
         ax = fig.add_subplot(111)
@@ -4044,6 +4330,8 @@ class VolumeSlicer(tk.Frame):
         
         save_button = tk.Button(self.fg, text='Save', command=self.save_cut, bg='white', font=('Arial', 16, "bold"))
         save_button.pack(side=tk.BOTTOM)
+        self.fg.bind("<Return>", self.save_cut)
+        self.fg.focus_set()
         self.fg.update()
         
     def set_density(self, *args):
@@ -4934,7 +5222,7 @@ def o_load():
         rdd = tpath
         fpr = 0
         if len(files) > 1:  #mulitple files
-            if len(lfs.n)==0:lfs.sort='no'
+            if len(lfs.n)>0:lfs.sort='no'
             try:
                 b_tools.grid_forget()
                 l_name.grid_forget()
@@ -5092,17 +5380,7 @@ def o_angcut():
 
 
 def res(a, b):
-    det = [1 for i in range(len(a)-1)]
-    while sum(det) != 0:
-        for i in range(len(a)-1):
-            if a[i+1] < a[i]:
-                det[i] = 1
-                a[i+1], a[i] = a[i], a[i+1]
-                b[i+1], b[i] = b[i], b[i+1]
-            else:
-                det[i] = 0
-    return b
-
+    return np.array([b[i] for i in np.argsort(a)])
 
 def loadmfit_re():
     file = fd.askopenfilename(
@@ -7008,7 +7286,7 @@ def feedmove(event):
 def saveefit():
     global epos, efwhm, fphi, efwhm, epos, semin, semax, seaa1, seaa2, sefp, sefi
     path = fd.asksaveasfilename(title="Save EDC Fitted Data", initialdir=dpath,
-                                initialfile=name+"_efit.npz", filetype=[("NPZ files", ".npz"),])
+                                initialfile=name+"_efit", filetype=[("NPZ files", ".npz"),], defaultextension=".npz")
     if len(path) > 2:
         efwhm = res(sefi, efwhm)
         epos = res(sefi, epos)
@@ -8359,7 +8637,7 @@ def savemfit():
     global smresult, smcst, fev, fwhm, pos, skmin, skmax, smaa1, smaa2, smfp, smfi
     smresult = pack_fitpar(mresult)
     path = fd.asksaveasfilename(title="Save MDC Fitted Data", initialdir=dpath,
-                                initialfile=name+"_mfit.npz", filetype=[("NPZ files", ".npz"),])
+                                initialfile=name+"_mfit", filetype=[("NPZ files", ".npz"),], defaultextension=".npz")
     if len(path) > 2:
         fwhm = res(smfi, fwhm)
         pos = res(smfi, pos)
