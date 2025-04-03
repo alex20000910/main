@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "5.4"
-__release_date__ = "2025-02-11"
+__version__ = "5.4.1"
+__release_date__ = "2025-04-03"
 import os, inspect
 import json
 import tkinter as tk
@@ -21,6 +21,7 @@ from multiprocessing import Pool
 import time, subprocess
 # cdir = os.getcwd()
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+app_name = os.path.basename(inspect.stack()[0].filename).removesuffix('.py')
 if os.name == 'nt':  # only execute on Windows OS
     cdir = cdir[0].upper() + cdir[1:]
 try:
@@ -990,7 +991,7 @@ def pr_exp_origin():
         no.append(10)
         
 def exp_origin(*e):
-    origin_temp_var = f'''from MDC_cut import *
+    origin_temp_var = f'''from {app_name} import *
 
 npzf = {npzf}
 dpath = r"{dpath}"      # Data Path
@@ -3553,7 +3554,7 @@ class loadfiles():
                         except:
                             for j in self.sep:
                                 if j in t:
-                                    t=t.replace(j, '')
+                                    t=t.split(j)[0]
                     r1.append(a)
                 return np.float64(r1)
             except:
@@ -3574,7 +3575,7 @@ class loadfiles():
                         except:
                             for j in self.sep:
                                 if j in t:
-                                    t=t.replace(j, '')
+                                    t=t.split(j)[0]
                     r2.append(a)
                 return np.float64(r2)
             except:
@@ -9345,6 +9346,10 @@ def _mpr3draw():
                 x2.append(vfe-ev[v])
                 y1.append(maa2[v, 2])
                 y2.append(maa2[v, 6])
+        y1 = res(x1, y1)
+        y2 = res(x2, y2)
+        x1 = res(x1, x1)
+        x2 = res(x2, x2)
         mfprc[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')    #plot
         mfprc[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')    #plot
         # mfprc[0].scatter(x1, y1, c='r', s=0.5, label='Comp 1')    #scatter
@@ -13826,7 +13831,13 @@ if __name__ == '__main__':
         with open ('open_check_MDC_cut.txt', 'w', encoding = 'utf-8') as f:
             f.write('1')
             f.close()
-        os.system('start cmd /C "chcp 65001 & python -W ignore::SyntaxWarning -W ignore::UserWarning "MDC_cut.py""')
+        if os.name == 'nt':
+            os.system(rf'start cmd /C "chcp 65001 & python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+        elif os.name == 'posix':
+            try:
+                os.system(rf'start cmd /C "chcp 65001 & python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+            except:
+                os.system(rf'start cmd /C "chcp 65001 & python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')
@@ -14513,8 +14524,8 @@ if __name__ == '__main__':
     g.update_idletasks()
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
-    g.geometry(f"{screen_width+50}x{screen_height}+0+0")
-    g.protocol("WM_DELETE_WINDOW", quit)
+    g.geometry(f"{screen_width*ScaleFactor//100+50}x{screen_height*ScaleFactor//100}+0+0")
+    # g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
     if cec is not None: # CEC loaded old data to show the cutting rectangle
         cec.tlg.focus_set()
