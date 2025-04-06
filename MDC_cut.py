@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "5.4.1"
-__release_date__ = "2025-04-03"
+__version__ = "5.4.2"
+__release_date__ = "2025-04-06"
 import os, inspect
 import json
 import tkinter as tk
@@ -5396,6 +5396,18 @@ def o_angcut():
     print('Done')
     st.put('Done')
 
+# def res(a, b):
+#     a = np.array(a)
+#     det = [1 for i in range(len(a)-1)]
+#     while sum(det) != 0:
+#         for i in range(len(a)-1):
+#             if a[i+1] < a[i]:
+#                 det[i] = 1
+#                 a[i+1], a[i] = a[i], a[i+1]
+#                 b[i+1], b[i] = b[i], b[i+1]
+#             else:
+#                 det[i] = 0
+#     return np.array(b)
 
 def res(a, b):
     return np.array([b[i] for i in np.argsort(a)])
@@ -7306,22 +7318,30 @@ def saveefit():
     path = fd.asksaveasfilename(title="Save EDC Fitted Data", initialdir=dpath,
                                 initialfile=name+"_efit", filetype=[("NPZ files", ".npz"),], defaultextension=".npz")
     if len(path) > 2:
+        global eendg
+        try:
+            egg.focus_set()
+            eendg.destroy()
+        except:
+            pass
         efwhm = res(sefi, efwhm)
         epos = res(sefi, epos)
-        semin = res(sefi, semin)
-        semax = res(sefi, semax)
-        sefp = res(sefi, sefp)
+        # semin = res(sefi, semin)
+        # semax = res(sefi, semax)
+        # sefp = res(sefi, sefp)
         fphi = res(sefi, fphi)
         sefi = res(sefi, sefi)
         np.savez(path, path=dpath, fphi=fphi, efwhm=efwhm, epos=epos, semin=semin,
                  semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
-
+    else:
+        egg.focus_set()
+        eendg.focus_set()
 
 scei = []
 
 
 def feend():
-    global epos, efwhm, fphi, eedxdata, eedydata, eedfitout, semin, semax, seaa1, seaa2, sefp, sefi, fk, fpr, scei
+    global epos, efwhm, fphi, eedxdata, eedydata, eedfitout, semin, semax, seaa1, seaa2, sefp, sefi, fk, fpr, scei, eendg
     fphi, epos, efwhm = [], [], []
     semin, semax, seaa1, seaa2 = emin, emax, eaa1, eaa2
     sefp = efp
@@ -7341,9 +7361,9 @@ def feend():
             
     efwhm = res(sefi, efwhm)
     epos = res(sefi, epos)
-    semin = res(sefi, semin)
-    semax = res(sefi, semax)
-    sefp = res(sefi, sefp)
+    # semin = res(sefi, semin)
+    # semax = res(sefi, semax)
+    # sefp = res(sefi, sefp)
     fphi = res(sefi, fphi)
     sefi = res(sefi, sefi)
             
@@ -7353,6 +7373,10 @@ def feend():
         np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
     scei = cei
     fpr = 1
+    try:
+        eendg.destroy()
+    except:
+        pass
     eendg = tk.Toplevel(g)
     eendg.title('EDC Lorentz Fit Result')
     fr = tk.Frame(master=eendg, bd=5)
@@ -8657,15 +8681,17 @@ def savemfit():
     path = fd.asksaveasfilename(title="Save MDC Fitted Data", initialdir=dpath,
                                 initialfile=name+"_mfit", filetype=[("NPZ files", ".npz"),], defaultextension=".npz")
     if len(path) > 2:
-        fwhm = res(smfi, fwhm)
-        pos = res(smfi, pos)
-        skmin = res(smfi, skmin)
-        skmax = res(smfi, skmax)
-        smfp = res(smfi, smfp)
-        fev = res(smfi, fev)
-        smfi = res(smfi, smfi)
+        global mendg
+        try:
+            mgg.focus_set()
+            mendg.destroy()
+        except:
+            pass
         np.savez(path, path=dpath, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
                  skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
+    else:
+        mgg.focus_set()
+        mendg.focus_set()
 
 
 def fmresidual():
@@ -8880,7 +8906,7 @@ def fmpreview():
     
 scki = []
 
-def mprend():
+def mprend(p=0):
     global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
     fev, pos, fwhm = [], [], []
     skmin, skmax, smaa1, smaa2 = kmin, kmax, maa1, maa2
@@ -8892,29 +8918,42 @@ def mprend():
             pos.append(maa1[v, 0])
             fwhm.append(maa1[v, 2])
         elif mfp[v] == 2:
-            fev.append(ev[v])
-            fev.append(ev[v])
-            pos.append(maa2[v, 0])
-            pos.append(maa2[v, 4])
-            fwhm.append(maa2[v, 2])
-            fwhm.append(maa2[v, 6])
+            if p == 1:
+                fev.append(ev[v])
+                pos.append(maa2[v, 0])
+                fwhm.append(maa2[v, 2])
+            elif p == 2:
+                fev.append(ev[v])
+                pos.append(maa2[v, 4])
+                fwhm.append(maa2[v, 6])
+            else:
+                fev.append(ev[v])
+                fev.append(ev[v])
+                pos.append(maa2[v, 0])
+                pos.append(maa2[v, 4])
+                fwhm.append(maa2[v, 2])
+                fwhm.append(maa2[v, 6])
             
-    fwhm = res(smfi, fwhm)
-    pos = res(smfi, pos)
-    skmin = res(smfi, skmin)
-    skmax = res(smfi, skmax)
-    smfp = res(smfi, smfp)
-    fev = res(smfi, fev)
+    fwhm = res(fev, fwhm)
+    pos = res(fev, pos)
+    # skmin = res(smfi, skmin)
+    # skmax = res(smfi, skmax)
+    # smfp = res(smfi, smfp)
+    fev = res(fev, fev)
     smfi = res(smfi, smfi)
             
     rpos, fev, pos, fwhm = np.float64(pos), np.float64(
         fev), np.float64(pos), np.float64(fwhm)
 
 def fmend():
-    global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
+    global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki, mendg
     mprend()
     scki = cki
     fpr = 1
+    try:
+        mendg.destroy()
+    except:
+        pass
     mendg = tk.Toplevel(g)
     mendg.title('MDC Lorentz Fit Result')
     fr = tk.Frame(master=mendg, bd=5)
@@ -8949,33 +8988,14 @@ def fmend():
 
 
 def fmend1():
-    global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
-    fev, pos, fwhm = [], [], []
-    skmin, skmax, smaa1, smaa2 = kmin, kmax, maa1, maa2
-    smfp = mfp
-    smfi = mfi
-    for i, v in enumerate(mfi):
-        if mfp[v] == 1:
-            fev.append(ev[v])
-            pos.append(maa1[v, 0])
-            fwhm.append(maa1[v, 2])
-        elif mfp[v] == 2:
-            fev.append(ev[v])
-            pos.append(maa2[v, 0])
-            fwhm.append(maa2[v, 2])
-            
-    fwhm = res(smfi, fwhm)
-    pos = res(smfi, pos)
-    skmin = res(smfi, skmin)
-    skmax = res(smfi, skmax)
-    smfp = res(smfi, smfp)
-    fev = res(smfi, fev)
-    smfi = res(smfi, smfi)
-    
-    rpos, fev, pos, fwhm = np.float64(pos), np.float64(
-        fev), np.float64(pos), np.float64(fwhm)
+    global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki, mendg
+    mprend(p=1)
     scki = cki
     fpr = 1
+    try:
+        mendg.destroy()
+    except:
+        pass
     mendg = tk.Toplevel(g)
     mendg.title('MDC Lorentz Fit Result')
     fr = tk.Frame(master=mendg, bd=5)
@@ -9009,33 +9029,14 @@ def fmend1():
     mendg.update()
 
 def fmend2():
-    global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki
-    fev, pos, fwhm = [], [], []
-    skmin, skmax, smaa1, smaa2 = kmin, kmax, maa1, maa2
-    smfp = mfp
-    smfi = mfi
-    for i, v in enumerate(mfi):
-        if mfp[v] == 1:
-            fev.append(ev[v])
-            pos.append(maa1[v, 0])
-            fwhm.append(maa1[v, 2])
-        elif mfp[v] == 2:
-            fev.append(ev[v])
-            pos.append(maa2[v, 4])
-            fwhm.append(maa2[v, 6])
-            
-    fwhm = res(smfi, fwhm)
-    pos = res(smfi, pos)
-    skmin = res(smfi, skmin)
-    skmax = res(smfi, skmax)
-    smfp = res(smfi, smfp)
-    fev = res(smfi, fev)
-    smfi = res(smfi, smfi)
-    
-    rpos, fev, pos, fwhm = np.float64(pos), np.float64(
-        fev), np.float64(pos), np.float64(fwhm)
+    global rpos, pos, fwhm, fev, medxdata, medydata, medfitout, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, scki, mendg
+    mprend(p=2)
     scki = cki
     fpr = 1
+    try:
+        mendg.destroy()
+    except:
+        pass
     mendg = tk.Toplevel(g)
     mendg.title('MDC Lorentz Fit Result')
     fr = tk.Frame(master=mendg, bd=5)
@@ -10165,14 +10166,14 @@ def mjob():     # MDC Fitting GUI
 
     frpara = tk.Frame(master=mgg, bd=5, bg='white')
     frpara.grid(row=1, column=2)
+    
+    mfp = [1 for i in range(len(ev))]
     try:
         if fpr == 1:
             mfp = list(smfp)
             mfi = list(smfi)
-        else:
-            mfp = [1 for i in range(len(ev))]
     except:
-        mfp = [1 for i in range(len(ev))]
+        pass
     flmcgl2 = -1
     frre = tk.Frame(master=frpara, bd=5, bg='white')
     frre.grid(row=0, column=0)
@@ -10484,6 +10485,11 @@ def fitm():
         # print('MDC '+str(round((i+1)/len(ev)*100))+'%'+' ('+str(len(ev))+')')
         # st.put('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
     pbar.close()
+    global mgg
+    try:
+        mgg.destroy()
+    except:
+        pass
     tt1 = threading.Thread(target=mjob)
     tt1.daemon = True
     tt1.start()
@@ -10569,6 +10575,11 @@ def fite():
         # print('EDC '+str(round((i+1)/len(phi)*100))+'%'+' ('+str(len(phi))+')')
         # st.put('EDC '+str(round((i+1)/len(fphi)*100))+'%'+' ('+str(len(fphi))+')')
     pbar.close()
+    global egg
+    try:
+        egg.destroy()
+    except:
+        pass
     tt2 = threading.Thread(target=ejob)
     tt2.daemon = True
     tt2.start()
@@ -14202,12 +14213,12 @@ if __name__ == '__main__':
 
     cfit = tk.Frame(step, bg='white')
     cfit.grid(row=4, column=1)
-    cmfit = tk.Button(cfit, text='Clear MDC fitted File', font=(
+    b_cmfit = tk.Button(cfit, text='Clear MDC fitted File', font=(
         "Arial", 12, "bold"), width=15, height='1', command=clmfit, bd=5, fg='blue')
-    cmfit.grid(row=0, column=0)
-    cefit = tk.Button(cfit, text='Clear EDC fitted File', font=(
+    b_cmfit.grid(row=0, column=0)
+    b_cefit = tk.Button(cfit, text='Clear EDC fitted File', font=(
         "Arial", 12, "bold"), width=15, height='1', command=clefit, bd=5, fg='black')
-    cefit.grid(row=0, column=1)
+    b_cefit.grid(row=0, column=1)
 
 
     lbb = tk.Button(step, text='Load Bare Band File', font=(
