@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "5.4.2"
+__version__ = "5.4.3"
 __release_date__ = "2025-04-06"
 import os, inspect
 import json
@@ -4047,7 +4047,7 @@ class VolumeSlicer(tk.Frame):
                 surface = np.nan_to_num(surface)
             except:
                 surface = np.zeros((self.cdensity, self.cdensity))
-        surface = ndimage.rotate(surface, angle, axes=(0, 1), reshape=False)
+        surface = ndimage.rotate(surface, -angle, axes=(0, 1), reshape=False)
         return surface
     
     def on_closing(self):
@@ -4458,7 +4458,7 @@ class VolumeSlicer(tk.Frame):
             set_entry_value(self.entry_max, str(self.slim[1]))
             self.x, self.volume = [], []
             self.interpolate_slice(self.slice_index)
-            rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
+            rotated_volume = ndimage.rotate(self.surface, -self.angle, axes=(0, 1), reshape=False)
             self.ax.clear()
             self.hl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
             self.vl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
@@ -4514,7 +4514,7 @@ class VolumeSlicer(tk.Frame):
             set_entry_value(self.entry_r1_offset, str(self.r1_offset))
             self.x, self.volume = [], []
             self.interpolate_slice(self.slice_index)
-            rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
+            rotated_volume = ndimage.rotate(self.surface, -self.angle, axes=(0, 1), reshape=False)
             self.ax.clear()
             self.img = self.ax.imshow(rotated_volume, cmap=self.cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
             self.hl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
@@ -4616,7 +4616,7 @@ class VolumeSlicer(tk.Frame):
         self.vl.set_data([],[])
         self.slice_index = np.argwhere(np.abs(self.ev-self.slider.val)<(self.ev[1]-self.ev[0])/4)[0][0]
         self.interpolate_slice(self.slice_index)
-        rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
+        rotated_volume = ndimage.rotate(self.surface, -self.angle, axes=(0, 1), reshape=False)
         self.img.set_data(rotated_volume)
         self.canvas.draw()
 
@@ -4644,7 +4644,7 @@ class VolumeSlicer(tk.Frame):
         elif self.type == 'reciprocal':
             self.hl.set_data([0, 0], [self.xmin, self.xmax])
             self.vl.set_data([self.ymin, self.ymax], [0, 0])
-        rotated_volume = ndimage.rotate(self.surface, self.angle, axes=(0, 1), reshape=False)
+        rotated_volume = ndimage.rotate(self.surface, -self.angle, axes=(0, 1), reshape=False)
         self.img.set_data(rotated_volume)
         self.canvas.draw()
 
