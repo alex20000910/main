@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "5.4.3"
-__release_date__ = "2025-04-06"
+__version__ = "5.4.4"
+__release_date__ = "2025-04-08"
 import os, inspect
 import json
 import tkinter as tk
@@ -2464,12 +2464,15 @@ class spectrogram:
         
         self.fr_info=tk.Frame(self.tpg,bg='white',bd=10)
         self.fr_info.grid(row=0,column=1)
-        if len(self.lfs.name)>1:    
-            nlist = self.lfs.name
-            self.namevar = tk.StringVar(value=nlist[0])
-            self.l_name = tk.OptionMenu(self.fr_info, self.namevar, *nlist, command=self.__change_file)
-            self.l_name.config(font=('Arial', 13, 'bold'))
-            self.l_name.grid(row=0, column=0, sticky='ew')
+        try:
+            if len(self.lfs.name)>1:
+                nlist = self.lfs.name
+                self.namevar = tk.StringVar(value=nlist[0])
+                self.l_name = tk.OptionMenu(self.fr_info, self.namevar, *nlist, command=self.__change_file)
+                self.l_name.config(font=('Arial', 13, 'bold'))
+                self.l_name.grid(row=0, column=0, sticky='ew')
+        except:
+            pass
         self.l_path = tk.Text(self.fr_info, wrap='word', font=("Arial", 11, "bold"), bg="white", fg="black", state='disabled',height=3,width=30)
         self.l_path.grid(row=1, column=0)
         self.l_path.config(width=max(self.lst)+2, state='normal')
@@ -3259,14 +3262,14 @@ def trans_plot():
 def raw_plot(*args):
     gtp.destroy()
     cmap=value3.get()
-    s=spectrogram(path=[rdd])
+    s=spectrogram(data)
     s.plot(g, cmap)
 
 def smooth_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(path=[rdd])
+    s=spectrogram(data)
     s.setdata(ev, y, dtype='smooth', unit='Counts')
     s.plot(g, cmap)
 
@@ -3274,7 +3277,7 @@ def fd_plot():
     gtp.destroy()
     cmap=value3.get()
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-    s=spectrogram(path=[rdd])
+    s=spectrogram(data)
     s.setdata(ev[0:-1]+(ev[1]-ev[0])/2, np.diff(y)/np.diff(ev), dtype='fd', unit='dN/dE')
     s.plot(g, cmap)
 
