@@ -3704,7 +3704,6 @@ class VolumeSlicer(tk.Frame):
         self.angle = 0
         self.density = density
         self.ovolume = volume
-        self.density = density
         self.phi_offset = 48 # mm / 0 degree
         self.r1_offset = 11.5 # mm / -31 degree
         self.e_photon = e_photon
