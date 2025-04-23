@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "5.4.4"
-__release_date__ = "2025-04-08"
+__version__ = "5.4.5"
+__release_date__ = "2025-04-23"
 import os, inspect
 import json
 import tkinter as tk
@@ -3994,6 +3994,7 @@ class VolumeSlicer(tk.Frame):
                 c = (xlim[0]+xlim[1])/2
                 xlim = [float(c-d), float(c+d)]
                 print(f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
+                print('in combine_slice')
             tmax = np.max(data)
             base = np.zeros((self.cdensity, self.cdensity))
             r1 = np.linspace(xlim[0], xlim[1], int(self.cdensity/180*(xlim[1]-xlim[0])))
@@ -4686,6 +4687,8 @@ class VolumeSlicer(tk.Frame):
                 c = (xlim[0]+xlim[1])/2
                 xlim = [float(c-d), float(c+d)]
                 print(f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
+                tk.messagebox.showwarning("Warning",f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
+                self.focus_set()
             tmax = np.max(data)
             base = np.zeros((self.density, self.density))
             r1 = np.linspace(xlim[0], xlim[1], int(self.density/180*(xlim[1]-xlim[0]))*4)
