@@ -3999,11 +3999,9 @@ class VolumeSlicer(tk.Frame):
             r1 = np.linspace(xlim[0], xlim[1], int(self.cdensity/180*(xlim[1]-xlim[0])))
             phi = np.linspace(ylim[0], ylim[1], int(self.cdensity/180*(ylim[1]-ylim[0])))
             r1, phi = np.meshgrid(r1, phi)
-            x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)
-            y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi/180*np.pi)
-            txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
             x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)  # x: r1, y: phi, at r2=0
             y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi/180*np.pi)
+            txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
             fig, ax = plt.subplots(dpi=150)
             fig.patch.set_facecolor('black')
             ax.set_facecolor('black')
