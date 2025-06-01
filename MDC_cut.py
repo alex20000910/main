@@ -5200,7 +5200,7 @@ class CEC(loadfiles):
                 else:
                     s += v.split('=')[1]
             print('\033[0m%s=%s'%(v.split('=')[0], s))
-        print('Slices: %d'%len(self.r2))
+        print('Slices: %d'%len(self.r1))
         print('Data Cube Size: %f MB'%(np.float64(self.size)/1024/1024))
         if self.mode == 'load':
             print(f'\033[32mFile Name: \033[36m{self.info_name}\033[0m')
