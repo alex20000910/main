@@ -18,7 +18,6 @@ import gc
 from tkinter import messagebox
 from multiprocessing import Pool
 import time, subprocess
-# cdir = os.getcwd()
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 app_name = os.path.basename(inspect.stack()[0].filename).removesuffix('.py')
 if os.name == 'nt':  # only execute on Windows OS
@@ -1382,11 +1381,6 @@ def cexcitation_h5(s:str):
         print("Original:", data)
         
         # Prepare the new data
-        # s1 = b'BUF : 1.68E-6 mbar'
-        # s2 = b'0.50kV 100mA'
-        # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-        
-        # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
         new_data = np.array([float(s)], dtype=float)  # Use vlen=str for variable-length strings
         
         # Delete the old dataset
@@ -1468,11 +1462,6 @@ def cname_h5(s:str):
         print("Original:", data)
         
         # Prepare the new data
-        # s1 = b'BUF : 1.68E-6 mbar'
-        # s2 = b'0.50kV 100mA'
-        # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-        
-        # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
         new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
         
         # Delete the old dataset
@@ -5648,7 +5637,6 @@ def pr_load(data):
             print(_,':', data.attrs[_])
     print()
     tst=st
-    # info.config(text=st,justify='left')
     l_path.config(width=max(lst), state='normal')
     l_path.delete(1.0, tk.END)
     l_path.insert(tk.END,dpath)
@@ -5694,10 +5682,6 @@ def o_load():
     global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist, b_tools, f_npz, npzf
     files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
-    # files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
-    #     ("NPZ files", "*.npz"), ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
-    # tpath = fd.askopenfilename(title="Select Raw Data", filetypes=(
-    #     ("HDF5 files", "*.h5"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     if len(files) > 0:
         f_npz = 0   # initial value to determine if CEC when loaded npz
@@ -6926,187 +6910,6 @@ def o_loadefit():
     print('Done')
     st.put('Done')
 
-
-##################################################################
-##################################################################
-##################################################################
-##################################################################
-##################################################################
-
-# def gl(x,x0,a,w,y0):
-#     v=a/(1+(x-x0)**2/(1/2*w)**2)+y0
-#     return v
-
-# def o_efitplot(*e):
-#     global ef,st
-#     if len(evv)==0:
-#         ef=1
-#         egg.destroy()
-#     else:
-#         ef=0
-#         i=efiti.get()
-#         efitfig.clear()
-#         fitax=efitfig.subplots()
-#         fitax.set_title('Pos:'+str(round(eaa[i,0],3))+' (eV)'+', FWHM:'+str(round(eaa[i,2],3))+' (eV)'+', Deg:'+str(round(evv[i],3))+r' $^{\circ}$')
-#         fitax.scatter(fex[i,:],fey[i,:],c='k',s=4)
-#         fitax.plot(fexx[i,np.argwhere(fexx[i,:]>=-20)],gl(fexx[i,np.argwhere(fexx[i,:]>=-20)],eaa[i,0],eaa[i,1],eaa[i,2],eaa[i,3]),'b-',lw=2)
-#         fitax.scatter(fexx[i,np.argwhere(fexx[i,:]>=-20)],feyy[i,np.argwhere(feyy[i,:]>=-20)],c='g',s=4)
-#         fitax.axvline(min(fexx[i,np.argwhere(fexx[i,:]>=-20)]),c='r')
-#         fitax.axvline(max(fexx[i,np.argwhere(fexx[i,:]>=-20)]),c='r')
-#         fitax.set_xlabel('Kinetic Energy (eV)',fontsize=14)
-#         fitax.set_ylabel('Intensity (Counts)',fontsize=14)
-#         efitout.draw()
-
-# def o_mfitplot(*e):
-#     global mf,st
-#     if len(mvv)==0:
-#         mf=1
-#         mgg.destroy()
-#     else:
-#         mf=0
-#         i=mfiti.get()
-#         mfitfig.clear()
-#         fitax=mfitfig.subplots()
-#         fitax.set_title('Pos:'+str(round(maa[i,0],3))+r' $(\frac{2\pi}{\AA})$'+', FWHM:'+str(round(maa[i,2],3))+r' $(\frac{2\pi}{\AA})$'+', Kinetic Energy:'+str(round(mvv[i],3))+' eV')
-#         fitax.scatter(fmx[i,:],fmy[i,:],c='k',s=4)
-#         fitax.plot(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],gl(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],maa[i,0],maa[i,1],maa[i,2],maa[i,3]),'b-',lw=2)
-#         fitax.scatter(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],y,c='g',s=4)
-#         fitax.axvline(min(fmxx[i,np.argwhere(fmxx[i,:]>=-20)]),c='r')
-#         fitax.axvline(max(fmxx[i,np.argwhere(fmxx[i,:]>=-20)]),c='r')
-#         fitax.set_xlabel(r'k ($\frac{2\pi}{\AA}$)',fontsize=14)
-#         fitax.set_ylabel('Intensity (Counts)',fontsize=14)
-#         mfitout.draw()
-    
-# def o_ejob():
-#     global g,efiti,efitfig,efitout,egg
-#     egg=tk.Toplevel(g)
-#     egg.title('EDC Lorentz Fit')
-#     fr=tk.Frame(master=egg,bd=5)
-#     fr.grid(row=0,column=0)
-#     efitfig = Figure(figsize=(8,6),layout='constrained')
-#     efitout = FigureCanvasTkAgg(efitfig, master=fr)
-#     efitout.get_tk_widget().grid(row=0,column=0)
-#     # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
-#     # bstop.grid(row=1,column=0)
-#     efiti=tk.IntVar()
-#     efiti.set(0)
-#     efiti.trace_add('write',o_efitplot)
-#     sc=tk.Frame(master=egg,bd=5)
-#     sc.grid(row=1,column=0)
-#     chi=tk.Scale(sc,from_=0,to=np.size(eaa,0)-1,orient='horizontal',variable=efiti,state='active',bg='white',fg='black',length=400,width=50,resolution=1)
-#     chi.pack()
-#     o_efitplot()
-#     egg.update()
-
-# def o_mjob():
-#     global g,mfiti,mfitfig,mfitout,mgg
-#     mgg=tk.Toplevel(g)
-#     mgg.title('MDC Lorentz Fit')
-#     fr=tk.Frame(master=mgg,bd=5)
-#     fr.grid(row=0,column=0)
-#     mfitfig = Figure(figsize=(8,6),layout='constrained')
-#     mfitout = FigureCanvasTkAgg(mfitfig, master=fr)
-#     mfitout.get_tk_widget().grid(row=0,column=0)
-#     # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
-#     # bstop.grid(row=1,column=0)
-#     mfiti=tk.IntVar()
-#     mfiti.set(0)
-#     mfiti.trace_add('write',o_mfitplot)
-#     sc=tk.Frame(master=mgg,bd=5)
-#     sc.grid(row=1,column=0)
-#     chi=tk.Scale(sc,from_=0,to=np.size(maa,0)-1,orient='horizontal',variable=mfiti,state='active',bg='white',fg='black',length=400,width=50,resolution=1)
-#     chi.pack()
-#     o_mfitplot()
-#     mgg.update()
-
-# def o_fitm():
-#     global mf,pos,fwhm,base,k_offset,st,mvv,maa,fmxx,fmyy,fmx,fmy
-#     try:
-#         fmxx=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
-#         fmyy=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
-#         fmxx=fmxx/fmxx*-50
-#         fmyy=fmyy/fmyy*-50
-#         fmx=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
-#         fmy=np.float64(np.arange(len(phi)*len(fev)).reshape(len(fev),len(phi)))
-#         mvv=np.float64(np.arange(len(fev)))
-#         maa=np.float64(np.arange(4*len(fev)).reshape(len(fev),4))
-#         for i,v in enumerate(fev):
-#             ecut=data.sel(eV=v,method='nearest')
-#             x = (2*m*v*1.602176634*10**-19)**0.5*np.sin((phi+np.float64(k_offset.get()))/180*np.pi)*10**-10/(h/2/np.pi)
-#             y=ecut.to_numpy().reshape(len(x))
-#             tx=x[np.argwhere(x>=kmin[i])].flatten()
-#             xx=tx[np.argwhere(tx<=kmax[i])].flatten()
-#             ty=y[np.argwhere(x>=kmin[i])].flatten()
-#             yy=ty[np.argwhere(tx<=kmax[i])].flatten()
-#             yy=np.where(yy>int(base.get()),yy,int(base.get()))
-#             a,b=curve_fit(gl,xx,yy,bounds=([pos[i]-0.01,(np.max(y)-int(base.get()))/10,0,int(base.get())-1],[pos[i]+0.01,np.max(y)-int(base.get()),0.3,int(base.get())+1]))
-#             pos[i]=a[0]
-#             fwhm[i]=a[2]
-#             print('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
-#             st.put('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
-            
-#             fmxx[i,0:len(xx)]=xx
-#             fmyy[i,0:len(yy)]=yy
-#             fmx[i,:]=x
-#             fmy[i,:]=y
-#             mvv[i]=v
-#             maa[i,:]=a
-            
-#         tt1=threading.Thread(target=o_mjob)
-#         tt1.daemon=True
-#         tt1.start()
-#     except:
-#         mf=1
-#         pass
-# def o_fite():
-#     global ef,pos,fwhm,base,k_offset,st,evv,eaa,fexx,feyy,fex,fey
-#     try:
-#         fexx=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
-#         feyy=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
-#         fexx=fexx/fexx*-50
-#         feyy=feyy/feyy*-50
-#         fex=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
-#         fey=np.float64(np.arange(len(ev)*len(fphi)).reshape(len(fphi),len(ev)))
-#         evv=np.float64(np.arange(len(fphi)))
-#         eaa=np.float64(np.arange(4*len(fphi)).reshape(len(fphi),4))
-#         for i,v in enumerate(fphi):
-#             angcut=data.sel(phi=v,method='nearest')
-#             x = ev
-#             y=angcut.to_numpy().reshape(len(x))
-#             tx=x[np.argwhere(x>=emin[i])].flatten()
-#             xx=tx[np.argwhere(tx<=emax[i])].flatten()
-#             ty=y[np.argwhere(x>=emin[i])].flatten()
-#             yy=ty[np.argwhere(tx<=emax[i])].flatten()
-#             yy=np.where(yy>int(base.get()),yy,int(base.get()))
-            
-#             a,b=curve_fit(gl,xx,yy,bounds=([epos[i]-0.1,(np.max(y)-int(base.get()))/10,0,int(base.get())-1],[epos[i]+0.1,np.max(y)-int(base.get()),3,int(base.get())+1]))
-#             epos[i]=a[0]
-#             efwhm[i]=a[2]
-#             print('EDC '+str(round((i+1)/len(fphi)*100))+'%'+' ('+str(len(fphi))+')')
-#             st.put('EDC '+str(round((i+1)/len(fphi)*100))+'%'+' ('+str(len(fphi))+')')
-            
-#             fexx[i,0:len(xx)]=xx
-#             feyy[i,0:len(yy)]=yy
-#             fex[i,:]=x
-#             fey[i,:]=y
-#             evv[i]=v
-#             eaa[i,:]=a
-            
-#         tt2=threading.Thread(target=o_ejob)
-#         tt2.daemon=True
-#         tt2.start()
-#     except:
-#         ef=1
-
-###################################################################
-###################################################################
-###################################################################
-###################################################################
-###################################################################
-###################################################################
-###################################################################
-
-
 def gl1(x, x0, a, w, y0):
     """
     Calculate the value of a Lorentzian function at a given x-coordinate.
@@ -7151,11 +6954,6 @@ wr2 = 0
 fa1 = 0
 fa2 = 0
 
-#######################################################
-#######################################################
-#######################################################
-#######################################################
-# User function to calculate residuals
 def pr_fitgl2(params, x, data):
     fitter0 = Minimizer(fgl2, params, fcn_args=(x, data))
     result = fitter0.minimize()
@@ -7311,8 +7109,6 @@ def putfitpar(inpars, modelpars=None, show_correl=True, min_correl=0.1,
             key = alphanumeric_sort
         parnames = sorted(params, key=key)
     else:
-        # dict.keys() returns a KeysView in py3, and they're indexed
-        # further down
         parnames = list(params.keys())
 
     buff = []
@@ -7402,37 +7198,6 @@ def fitpar2(result, lm1, lm2, lm3, lm4, lm5, lm6):
     for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], [x1, x2, h1, h2, w1, w2]):
         l.config(text=v)
         l.config(anchor='w')
-# Define the parameters
-# pars = Parameters()
-# wr1,wr2=int(wf1.get()),int(wf2.get())
-# fa1,fa2=int(af1.get()),int(af2.get())
-# pars.add('wr1',value=wr1)
-# pars.add('wr2',value=wr2)
-# pars.add('x1',value=0,min=-5,max=5)
-# pars.add('x2',value=0,min=-5,max=5)
-# pars.add('h1',value=0.3,min=0.2,max=1)
-# pars.add('h2',value=0.3,min=0.2,max=1)
-# pars.add('w1', value=0.5, min=0, max=1)
-# if wr1!=0 and wr2!=0:
-#     pars.add('w2', expr='w1/wr1*wr2')
-# else:
-#     pars.add('w2', value=0.5, min=0, max=1)
-# pars.add('y1',value=0,min=-5,max=5)
-# pars.add('y2',value=0,min=-5,max=5)
-
-# Create Minimizer object and fit the data
-# fitter = Minimizer(fgl2, pars, fcn_args=(x, data))
-# result = fitter.minimize()
-
-# print(result.params['h1'].value)
-# Print fitting results
-# report_fit(result)
-
-#######################################################
-#######################################################
-#######################################################
-#######################################################
-
 
 def lnr_bg(x: np.ndarray, n_samples=5) -> np.ndarray:
     while len(x) < 2*n_samples:
