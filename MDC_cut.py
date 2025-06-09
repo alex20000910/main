@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.1"
-__release_date__ = "2025-06-04"
+__version__ = "6.1.1"
+__release_date__ = "2025-06-09"
 import os, inspect
 import json
 import tkinter as tk
@@ -1626,7 +1626,22 @@ def desc():
     b2.grid(row=1,column=1)
     gstr.update()
 
+def poly_smooth(x, y, order=6,xx=None):
+    """
+    x : 1D array
 
+    y : 1D array
+    
+    order : int, default: 6
+    
+    xx : 1D array, interpolation points, default: None
+    """
+    coeffs = np.polyfit(x, y, order)
+    if xx is None:
+        y = np.polyval(coeffs, x)
+    else:
+        y = np.polyval(coeffs, xx)
+    return y
 
 def smooth(x,l=20,p=3):
     """
@@ -7042,8 +7057,9 @@ def toa2(xx):
     fswa1a2 = 0
     i = mfiti.get()
     
-    fmxx[i, :len(xx)] = xx
-    x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+    # fmxx[i, :len(xx)] = xx
+    # x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+    x = xx
     ty = gl1(x, *a2[:4])
     s1 = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
             # Area 1
@@ -7355,8 +7371,6 @@ def efitjob():
                                 a2 = toa2(xx)
                                 checkfit()
                                 t -= 1
-                        # p0=[emin[i]+(emax[i]-emin[i])*0.3,(np.max(y)-ebase[i])+1,1,0,emax[i]-(emax[i]-emin[i])*0.3,(np.max(y)-ebase[i])+1,1,0]
-                        # a2,b=curve_fit(gl2,xx,yy-shirley_bg(yy),p0=p0,bounds=([emin[i],(np.max(y)-ebase[i])/10,0,0,emin[i],(np.max(y)-ebase[i])/10,0,0],[emax[i],np.max(y)-ebase[i]+1,3,0.01,emax[i],np.max(y)-ebase[i]+1,3,0.01]))
 
                 if bg_warn == 0 and fit_warn == 0:  # shirley base line warn
                     if i not in efi:
@@ -7382,8 +7396,6 @@ def efitjob():
             a1 = [(emin[i]+emax[i])/2, (np.max(y)-ebase[i]), 5, ebase[i]]
             a2 = [(emin[i]+emax[i])/2, (np.max(y)-ebase[i]), 5, ebase[i],
                   (emin[i]+emax[i])/2, (np.max(y)-ebase[i]), 5, ebase[i]]
-        # epos[i]=a[0]
-        # efwhm[i]=a[2]
 
         fexx[i, :len(xx)] = xx
         feyy[i, :len(yy)] = yy
@@ -7457,8 +7469,6 @@ def efit():
                     checkfit()
                     t -= 1
             report_fit(result)
-            # p0=[emin[i]+(emax[i]-emin[i])*0.3,(np.max(y)-ebase[i])+1,1,0,emax[i]-(emax[i]-emin[i])*0.3,(np.max(y)-ebase[i])+1,1,0]
-            # a2,b=curve_fit(gl2,xx,yy-shirley_bg(yy),p0=p0,bounds=([emin[i],(np.max(y)-ebase[i])/10,0,0,emin[i],(np.max(y)-ebase[i])/10,0,0],[emax[i],np.max(y)-ebase[i]+1,3,0.01,emax[i],np.max(y)-ebase[i]+1,3,0.01]))
 
         if (emin[i], emax[i]) == (np.min(ev), np.max(ev)):
             if i not in efi_x:
@@ -7492,9 +7502,6 @@ def efit():
         a1 = [(emin[i]+emax[i])/2, (np.max(y)-ebase[i]), 5, ebase[i]]
         a2 = [(emin[i]+emax[i])/2, (np.max(y)-ebase[i]), 5, ebase[i],
               (emin[i]+emax[i])/2, (np.max(y)-ebase[i]), 5, ebase[i]]
-
-    # epos[i]=a[0]
-    # efwhm[i]=a[2]
 
     fexx[i, :len(xx)] = xx
     feyy[i, :len(yy)] = yy
@@ -7769,15 +7776,6 @@ def efitplot():  # efiti Scale
 def emove(event):
     global exdata, eydata, edxdata, edydata, x2, y2, efitax, efitout, elmin, elmax, emin, emax, tpx1, tpx2, tpy1, tpy2, tx2, ty2
     if event.xdata != None:
-        # efitout.get_tk_widget().config(cursor="crosshair")
-        # try:
-        #     # efitout.get_tk_widget().delete('rec')
-        #     # efitout.get_tk_widget().delete('x1')
-        #     # efitout.get_tk_widget().delete('y1')
-        #     # efitout.get_tk_widget().delete('x2')
-        #     # efitout.get_tk_widget().delete('y2')
-        # except:
-        #     pass
         if emof == -1:
             x2, y2 = event.xdata, event.ydata
             px2, py2 = event.x, event.y
@@ -8058,9 +8056,6 @@ def ejob():     # MDC Fitting GUI
         "Arial", 12, "bold"), width='15', height='1', bd=5, bg='white')
     edydata.grid(row=0, column=3)
 
-    # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=10)
-    # bstop.grid(row=1,column=0)
-
     frpara = tk.Frame(master=egg, bd=5, bg='white')
     frpara.grid(row=1, column=1)
     try:
@@ -8150,31 +8145,6 @@ def ejob():     # MDC Fitting GUI
     screen_height = egg.winfo_reqheight()
     egg.geometry(f"{screen_width}x{screen_height}+0+0")
     egg.update()
-################################# efit above ####################################################
-
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-#################################### original mfit below ######################################################
-# finish
-#################################### original mfit above ######################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-####################################################################################################################################
-
 
 def fmcgl2():
     global mbcgl2, kmin, kmax, flmcgl2, micgl2, mfp, mbcomp1, mbcomp2, flmcomp1, flmcomp2
@@ -8332,16 +8302,18 @@ def mfitjob():
     pbar = tqdm.tqdm(total=len(ev), desc='Fitting MDC', colour='green')
     for i in range(len(ev)):
         mbase[i] = int(base.get())  # 待調整
-        fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
-        fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
+        # fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
+        # fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
         ecut = data.sel(eV=ev[i], method='nearest')
         if npzf:x = phi
         else:x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
         y = ecut.to_numpy().reshape(len(x))
-        tx = x[np.argwhere(x >= kmin[i])].flatten()
-        xx = tx[np.argwhere(tx <= kmax[i])].flatten()
-        ty = y[np.argwhere(x >= kmin[i])].flatten()
-        yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+        xx, x_arg = filter(x, kmin[i], kmax[i])
+        # tx = x[np.argwhere(x >= kmin[i])].flatten()
+        # xx = tx[np.argwhere(tx <= kmax[i])].flatten()
+        # ty = y[np.argwhere(x >= kmin[i])].flatten()
+        # yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+        yy = y[x_arg]
         yy = np.where(yy > mbase[i], yy, mbase[i])
         try:
             # if (kmin[i],kmax[i])==((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi),(2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)) and i not in mfi:
@@ -8358,8 +8330,6 @@ def mfitjob():
             if mfp[i] == 1:
                 smcst[i] = [0, 0, 0, 0, 0, 0]
                 if i in mfi_err and (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
-                    # a1,b=curve_fit(gl1,xx,yy-lnr_bg(yy),bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
-                    # fit_warn=0
                     pars = Parameters()
                     pars.add(
                         'x', value=kmin[i]+(kmax[i]-kmin[i])*0.3, min=kmin[i], max=kmax[i])
@@ -8386,8 +8356,6 @@ def mfitjob():
                     if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
                         fit_warn = 2
                     elif i not in mfi:
-                        # a1,b=curve_fit(gl1,xx,yy-lnr_bg(yy),bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
-                        # fit_warn=0
                         pars = Parameters()
                         pars.add(
                             'x', value=kmin[i]+(kmax[i]-kmin[i])*0.3, min=kmin[i], max=kmax[i])
@@ -8455,8 +8423,6 @@ def mfitjob():
                             a2 = toa2(xx)
                             checkfit()
                             t -= 1
-                    # p0=[kmin[i]+(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0,kmax[i]-(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0]
-                    # a2,b=curve_fit(gl2,xx,yy-lnr_bg(yy),p0=p0,bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0,kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01,kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
                 else:
                     if i in mfi:
                         result = mresult[i]
@@ -8539,20 +8505,6 @@ def mfitjob():
                     mfi_x.remove(i)
                 if i in mfi:
                     mfi.remove(i)
-            # if bg_warn==0:  #shirley base line warn
-            #     if i not in mfi:
-            #         mfi.append(i)
-            #     if i in mfi_x:
-            #         mfi_x.remove(i)
-            #     if i in mfi_err:
-            #         mfi_err.remove(i)
-            # else:
-            #     if i not in mfi_err:
-            #         mfi_err.append(i)
-            #     if i in mfi_x:
-            #         mfi_x.remove(i)
-            #     if i in mfi:
-            #         mfi.remove(i)
         except RuntimeError:
             print('runtime error')
             if i not in mfi_err:
@@ -8564,10 +8516,8 @@ def mfitjob():
             a1 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 5, mbase[i]]
             a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 5, mbase[i],
                   (kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 5, mbase[i]]
-        # pos[i]=a[0]
-        # fwhm[i]=a[2]
-        fmxx[i, :len(xx)] = xx
-        fmyy[i, :len(yy)] = yy
+        # fmxx[i, :len(xx)] = xx
+        # fmyy[i, :len(yy)] = yy
         fmx[i, :] = x
         fmy[i, :] = y
         mvv[i] = ev[i]
@@ -8593,22 +8543,22 @@ def mfit():
     msave_state()
     i = mfiti.get()
     mbase[i] = int(base.get())  # 待調整
-    fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
-    fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
+    # fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
+    # fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
     ecut = data.sel(eV=ev[i], method='nearest')
     if npzf:x = phi
     else:x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
     y = ecut.to_numpy().reshape(len(x))
-    tx = x[np.argwhere(x >= kmin[i])].flatten()
-    xx = tx[np.argwhere(tx <= kmax[i])].flatten()
-    ty = y[np.argwhere(x >= kmin[i])].flatten()
-    yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+    xx, x_arg = filter(x, kmin[i], kmax[i])
+    # tx = x[np.argwhere(x >= kmin[i])].flatten()
+    # xx = tx[np.argwhere(tx <= kmax[i])].flatten()
+    # ty = y[np.argwhere(x >= kmin[i])].flatten()
+    # yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+    yy = y[x_arg]
     yy = np.where(yy > mbase[i], yy, mbase[i])
     try:
         if mfp[i] == 1:
             smcst[i] = [0, 0, 0, 0, 0, 0]
-            # a1,b=curve_fit(gl1,xx,yy-lnr_bg(yy),bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
-            # fit_warn=0
             pars = Parameters()
             pars.add('x', value=kmin[i]+(kmax[i]-kmin[i])
                      * 0.2, min=kmin[i], max=kmax[i])
@@ -8707,8 +8657,6 @@ def mfit():
         report_fit(result)
         result=swapc1c2()
         mresult[i] = result
-        # p0=[kmin[i]+(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0,kmax[i]-(kmax[i]-kmin[i])*0.3,(np.max(y)-mbase[i])+1,0.1,0]
-        # a2,b=curve_fit(gl2,xx,yy-lnr_bg(yy),p0=p0,bounds=([kmin[i],(np.max(y)-mbase[i])/10,0,0,kmin[i],(np.max(y)-mbase[i])/10,0,0],[kmax[i],np.max(y)-mbase[i]+1,0.3,0.01,kmax[i],np.max(y)-mbase[i]+1,0.3,0.01]))
 
         if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
             if i not in mfi_x:
@@ -8732,20 +8680,6 @@ def mfit():
                     mfi_x.remove(i)
                 if i in mfi:
                     mfi.remove(i)
-            # if bg_warn==0:  #shirley base line warn
-            #     if i not in mfi:
-            #         mfi.append(i)
-            #     if i in mfi_x:
-            #         mfi_x.remove(i)
-            #     if i in mfi_err:
-            #         mfi_err.remove(i)
-            # else:
-            #     if i not in mfi_err:
-            #         mfi_err.append(i)
-            #     if i in mfi_x:
-            #         mfi_x.remove(i)
-            #     if i in mfi:
-            #         mfi.remove(i)
     except RuntimeError:
         if i not in mfi_err:
             mfi_err.append(i)
@@ -8757,11 +8691,8 @@ def mfit():
         a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 0.5, mbase[i],
               (kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 0.5, mbase[i]]
 
-    # pos[i]=a[0]
-    # fwhm[i]=a[2]
-
-    fmxx[i, :len(xx)] = xx
-    fmyy[i, :len(yy)] = yy
+    # fmxx[i, :len(xx)] = xx
+    # fmyy[i, :len(yy)] = yy
     fmx[i, :] = x
     fmy[i, :] = y
     mvv[i] = ev[i]
@@ -8933,9 +8864,12 @@ def fmresidual():
     s3,s4=[],[]
     for i in range(len(ev)):
         if i in mfi_err or i in mfi:
-            x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
-            y = fmyy[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
-            lbg=lnr_bg(fmyy[i, :len(x)])
+            # x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+            # y = fmyy[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+            # lbg=lnr_bg(fmyy[i, :len(x)])
+            x, x_arg = filter(fmx[i, :], kmin[i], kmax[i])
+            y = fmy[i, x_arg]
+            lbg = lnr_bg(y)
             s3.append(np.std(gl2(x, *maa2[i, :])+lbg-y))  # STD
             s4.append(np.sqrt(np.mean((gl2(x, *maa2[i, :])+lbg-y)**2)))  # RMS
         else:
@@ -8953,8 +8887,9 @@ def fmarea():
     s1,s2=[],[]
     for i in range(len(ev)):
         if i in mfi_err or i in mfi:
-            x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
-            y = fmyy[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+            # x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+            # y = fmyy[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+            x, x_arg = filter(fmx[i, :], kmin[i], kmax[i])
             ty = gl1(x, *maa2[i, :4])
             s1.append(np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
                         # Area 1
@@ -9373,16 +9308,18 @@ def mfbgu(event):
     global mbgv
     i=mfiti.get()
     mbase[i] = int(base.get())  # 待調整
-    fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
-    fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
+    # fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
+    # fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
     ecut = data.sel(eV=ev[i], method='nearest')
     if npzf:x = phi
     else:x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
     y = ecut.to_numpy().reshape(len(x))
-    tx = x[np.argwhere(x >= kmin[i])].flatten()
-    xx = tx[np.argwhere(tx <= kmax[i])].flatten()
-    ty = y[np.argwhere(x >= kmin[i])].flatten()
-    yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+    xx, x_arg = filter(x, kmin[i], kmax[i])
+    # tx = x[np.argwhere(x >= kmin[i])].flatten()
+    # xx = tx[np.argwhere(tx <= kmax[i])].flatten()
+    # ty = y[np.argwhere(x >= kmin[i])].flatten()
+    # yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+    yy = y[x_arg]
     yy = np.where(yy > mbase[i], yy, mbase[i])
     d = sorted(abs(np.diff(np.append(yy[0:5],yy[-6:-1]))))
     t=0
@@ -9404,16 +9341,18 @@ def mfbgd(event):
     global mbgv
     i=mfiti.get()
     mbase[i] = int(base.get())  # 待調整
-    fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
-    fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
+    # fmxx[i, :] = fmxx[i, :]/fmxx[i, :]*-50
+    # fmyy[i, :] = fmyy[i, :]/fmyy[i, :]*-50
     ecut = data.sel(eV=ev[i], method='nearest')
     if npzf:x = phi
     else:x = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi)
     y = ecut.to_numpy().reshape(len(x))
-    tx = x[np.argwhere(x >= kmin[i])].flatten()
-    xx = tx[np.argwhere(tx <= kmax[i])].flatten()
-    ty = y[np.argwhere(x >= kmin[i])].flatten()
-    yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+    xx, x_arg = filter(x, kmin[i], kmax[i])
+    # tx = x[np.argwhere(x >= kmin[i])].flatten()
+    # xx = tx[np.argwhere(tx <= kmax[i])].flatten()
+    # ty = y[np.argwhere(x >= kmin[i])].flatten()
+    # yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+    yy = y[x_arg]
     yy = np.where(yy > mbase[i], yy, mbase[i])
     d = sorted(abs(np.diff(np.append(yy[0:5],yy[-6:-1]))))
     t=0
@@ -9430,95 +9369,6 @@ def mfbgd(event):
         mfitplot()
     except:
         pass
-    
-#####################################################################stable below
-###############################################################################
-# def mprplot(xl):
-#     i = mfiti.get()
-#     mfitprfig1.clear()
-#     mfitprfig2.clear()
-#     mfitprfig3.clear()
-#     a = mfitprfig1.subplots()
-#     b = mfitprfig2.subplots()
-#     c = mfitprfig3.subplots(2, 1)
-#     c[1].set_xlabel('Binding Energy (eV)')
-#     c[0].set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)')
-#     c[1].set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)')
-#     c[0].set_xticks([])
-#     c[0].invert_xaxis()
-#     c[1].invert_xaxis()
-#     x1=[]
-#     x2=[]
-#     y1=[]
-#     y2=[]
-#     for j, v in enumerate(mfi):
-#         if mfp[v] == 1:
-#             x1.append(vfe-ev[v])
-#             y1.append(maa2[v, 2])
-#         elif mfp[v] == 2:
-#             x1.append(vfe-ev[v])
-#             x2.append(vfe-ev[v])
-#             y1.append(maa2[v, 2])
-#             y2.append(maa2[v, 6])
-#     c[0].plot(x1, y1, c='r', marker='o', markersize=0.5, label='Comp 1')
-#     c[1].plot(x2, y2, c='b', marker='o', markersize=0.5, label='Comp 2')
-#     l1=c[0].legend()
-#     l2=c[1].legend()
-#     l1.draw_frame(False)
-#     l2.draw_frame(False)
-#     mprend()
-#     if emf=='KE':
-#         px, py = np.meshgrid(phi, ev)
-#         b.scatter(pos+fwhm/2, fev, c='r', s=0.5)
-#         b.scatter(pos-fwhm/2, fev, c='r', s=0.5)
-#         b.scatter(pos, fev, c='k', s=0.5)
-#     else:
-#         px, py = np.meshgrid(phi, vfe-ev)
-#         b.scatter(pos+fwhm/2, vfe-fev, c='r', s=0.5)
-#         b.scatter(pos-fwhm/2, vfe-fev, c='r', s=0.5)
-#         b.scatter(pos, vfe-fev, c='k', s=0.5)
-#     b.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
-#     # px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-#     # )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
-#     px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-#     )**0.5*np.sin(px/180*np.pi)*10**-10/(h/2/np.pi)
-#     pz = data.to_numpy()
-#     a.pcolormesh(px, py, pz, cmap=value3.get())
-#     oyl=a.get_ylim()
-    
-#     if emf=='KE':
-#         a.plot([xl[0], xl[1]], [ev[i], ev[i]], 'r-')
-#         b.plot(b.get_xlim(), [ev[i], ev[i]], 'b-')
-#     else:
-#         a.plot([xl[0], xl[1]], [vfe-ev[i], vfe-ev[i]], 'r-')
-#         b.plot(b.get_xlim(), [vfe-ev[i], vfe-ev[i]], 'b-')
-#     c[0].plot([vfe-ev[i],vfe-ev[i]],c[0].get_ylim(),'b-')
-#     c[1].plot([vfe-ev[i],vfe-ev[i]],c[1].get_ylim(),'r-')
-    
-#     de=(ev[1]-ev[0])*8
-
-#     a.set_ylim(oyl)
-#     if emf=='KE':
-#         a.plot([xl[0], xl[0]],[ev[i]-de, ev[i]+de], 'r-')
-#         a.plot([xl[1], xl[1]],[ev[i]-de, ev[i]+de], 'r-')
-#         a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
-#         b.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
-#     else:
-#         a.plot([xl[0], xl[0]],[vfe-ev[i]-de, vfe-ev[i]+de], 'r-')
-#         a.plot([xl[1], xl[1]],[vfe-ev[i]-de, vfe-ev[i]+de], 'r-')
-#         a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
-#         b.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
-#         a.invert_yaxis()
-#         b.invert_yaxis()
-#     mfitprout1.draw()
-#     mfitprout2.draw()
-#     mfitprout3.draw()
-###############################################################################
-############################################################################### stable above
-
-
-############################################################################### try below
-###############################################################################
 
 def _mpr2draw():
     global mfitprfig2, mfitprout2, mfprb
@@ -9682,8 +9532,7 @@ def mprplot(xl):
         mpr2draw()
         mpr3draw()
         mprplot_job1()
-        
-############# try draw in thread ############
+
 def mprbgjob1():
     while True:
         if mpr==1:
@@ -9716,9 +9565,7 @@ def mprbgjob3():
 def mprbg3():
     t = threading.Thread(target=mprbgjob3)
     t.daemon = True
-    t.start()
-############################################    
-
+    t.start() 
 
 def f_pr():
     global mfpr, mpr, mfitprfig1, mfitprfig2, mfitprfig3, mfitprout1, mfitprout2, mfitprout3
@@ -9736,11 +9583,14 @@ def f_pr():
         mpr=1
         mprplot(mxl)
         b_pr.config(text='Real Time Preview ON', fg='green')
-        
 
-###############################################################################
-############################################################################### try above
-
+def filter(y, a, b):
+    """
+    Filters the input array y based on the conditions defined by a and b.
+    """
+    if a > b:
+        a, b = b, a  # Ensure a is less than or equal to b
+    return np.array([x for x in y if a <= x <= b]), np.array([i for i, x in enumerate(y) if a <= x <= b])
 
 def mfitplot():  # mfiti Scale
     global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6, mxf1, mxf2, mwf1, mwf2, maf1, maf2, mt1, mt2, mt3, mt4, mt5, fdo, mf_prswap
@@ -9762,8 +9612,10 @@ def mfitplot():  # mfiti Scale
     txmin = txl[0]
     txmax = txl[1]
     mfitax.axhline(tymax+dy, c='grey')
-    x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
-    y = fmyy[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+    # x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+    # y = fmyy[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+    x, x_arg = filter(fmx[i, :], kmin[i], kmax[i])
+    y = fmy[i, x_arg]
     lbg = lnr_bg(y)
     if i in mfi_x:
         for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], ['', '', '', '', '', '']):
@@ -9914,13 +9766,15 @@ def mfitplot():  # mfiti Scale
                         pass
             except:
                 pass
-    mfitax.plot(fmxx[i, np.argwhere(fmxx[i, :] >= -20)], lbg, 'g--')
+    # mfitax.plot(fmxx[i, np.argwhere(fmxx[i, :] >= -20)], lbg, 'g--')
+    mfitax.plot(x, lbg, 'g--')
     # if bg_warn==1:  #shirley base line warn
     #     mfitax.plot(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],lbg,'r--')
     # else:
     #     mfitax.plot(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],lbg,'g--')
 
-    mfitax.scatter(fmxx[i, np.argwhere(fmxx[i, :] >= -20)], y, c='g', s=4)
+    # mfitax.scatter(fmxx[i, np.argwhere(fmxx[i, :] >= -20)], y, c='g', s=4)
+    mfitax.scatter(x, y, c='g', s=4)
     if (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
         klmin = mfitax.axvline(kmin[i], c='r')
         klmax = mfitax.axvline(kmax[i], c='r')
@@ -9940,15 +9794,6 @@ def mfitplot():  # mfiti Scale
 def mmove(event):
     global mxdata, mydata, mdxdata, mdydata, x2, y2, mfitax, mfitout, klmin, klmax, kmin, kmax, tpx1, tpx2, tpy1, tpy2, tx2, ty2, mcpx1, mcpy1, mcpx2, mcpy2
     if event.xdata != None:
-        # mfitout.get_tk_widget().config(cursor="crosshair")
-        # try:
-        #     # mfitout.get_tk_widget().delete('rec')
-        #     # mfitout.get_tk_widget().delete('x1')
-        #     # mfitout.get_tk_widget().delete('y1')
-        #     # mfitout.get_tk_widget().delete('x2')
-        #     # mfitout.get_tk_widget().delete('y2')
-        # except:
-        #     pass
         if mmof == -1:
             x2, y2 = event.xdata, event.ydata
             px2, py2 = event.x, event.y
@@ -10626,14 +10471,10 @@ def fitm():
     else:
         kmin, kmax = np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
             h/2/np.pi)), np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
-    # fmxx=np.float64((np.arange(len(phi)*len(ev))+1).reshape(len(ev),len(phi)))
-    # fmyy=np.float64((np.arange(len(phi)*len(ev))+1).reshape(len(ev),len(phi)))
-    # fmxx=fmxx/fmxx*-50
-    # fmyy=fmyy/fmyy*-50
-    fmxx = np.float64((np.ones(len(phi)*len(ev))).reshape(len(ev), len(phi)))
-    fmyy = np.float64((np.ones(len(phi)*len(ev))).reshape(len(ev), len(phi)))
-    fmxx *= -50
-    fmyy *= -50
+    # fmxx = np.float64((np.ones(len(phi)*len(ev))).reshape(len(ev), len(phi)))
+    # fmyy = np.float64((np.ones(len(phi)*len(ev))).reshape(len(ev), len(phi)))
+    # fmxx *= -50
+    # fmyy *= -50
     fmx = np.float64(np.arange(len(phi)*len(ev)).reshape(len(ev), len(phi)))
     fmy = np.float64(np.arange(len(phi)*len(ev)).reshape(len(ev), len(phi)))
     mvv = np.float64(np.arange(len(ev)))
@@ -10645,10 +10486,12 @@ def fitm():
         if npzf:x = phi
         else:x = np.float64((2*m*v*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi))
         y = ecut.to_numpy().reshape(len(x))
-        tx = x[np.argwhere(x >= kmin[i])].flatten()
-        xx = tx[np.argwhere(tx <= kmax[i])].flatten()
-        ty = y[np.argwhere(x >= kmin[i])].flatten()
-        yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+        xx, x_arg = filter(x, kmin[i], kmax[i])
+        # tx = x[np.argwhere(x >= kmin[i])].flatten()
+        # xx = tx[np.argwhere(tx <= kmax[i])].flatten()
+        # ty = y[np.argwhere(x >= kmin[i])].flatten()
+        # yy = ty[np.argwhere(tx <= kmax[i])].flatten()
+        yy = y[x_arg]
         yy = np.where(yy > int(base.get()), yy, int(base.get()))
         try:
             if i in smfi and fpr == 1:
@@ -10663,8 +10506,9 @@ def fitm():
                 if smaa1[i, 1] == 10 or smaa2[i, 1] == 10:
                     mprfit = 1
                 else:
-                    fmxx[i, :len(xx)] = xx
-                    tx = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+                    # fmxx[i, :len(xx)] = xx
+                    # tx = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
+                    tx = xx
                     ty = gl1(tx, *a2[:4])
                     s1 = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(tx)-1)])
                             # Area 1
@@ -10699,17 +10543,10 @@ def fitm():
                   (kmin[i]+kmax[i])/2, (np.max(y)-int(base.get())), 0.5, int(base.get())]
             smr = ['' for i in range(6)]
 
-        # try:
-        #     a,b=curve_fit(gl1,xx,yy,bounds=([kmin[i],(np.max(y)-int(base.get()))/10,0,0],[kmax[i],np.max(y)-int(base.get())+1,0.3,0.01]))
-        #     a,b=curve_fit(gl2,xx,yy,bounds=([kmin[i],(np.max(y)-int(base.get()))/10,0,0,kmin[i],(np.max(y)-int(base.get()))/10,0,0],[kmax[i],np.max(y)-int(base.get())+1,0.3,0.01,kmax[i],np.max(y)-int(base.get())+1,0.3,0.01]))
-        # except RuntimeError:
-        #     # a=[(kmin[i]+kmax[i])/2,(np.max(y)-int(base.get())),0.5,int(base.get())]
-        #     a=[(kmin[i]+kmax[i])/2,(np.max(y)-int(base.get())),0.5,int(base.get()),(kmin[i]+kmax[i])/2,(np.max(y)-int(base.get())),0.5,int(base.get())]
-
-        # pos[i]=a[0]
-        # fwhm[i]=a[2]
-        fmxx[i, :len(xx)] = xx
-        fmyy[i, :len(yy)] = yy
+        # fmxx[i, :len(xx)] = xx
+        # fmyy[i, :len(yy)] = yy
+        fmxx, fmyy = 1, 1 # 未使用 暫時保留
+        
         fmx[i, :] = x
         fmy[i, :] = y
         mvv[i] = v
@@ -10720,8 +10557,6 @@ def fitm():
         except:
             pass
         pbar.update(1)
-        # print('MDC '+str(round((i+1)/len(ev)*100))+'%'+' ('+str(len(ev))+')')
-        # st.put('MDC '+str(round((i+1)/len(fev)*100))+'%'+' ('+str(len(fev))+')')
     pbar.close()
     global mgg
     try:
@@ -10751,10 +10586,6 @@ def fite():
     else:
         emin = np.float64([np.min(ev) for i in range(len(phi))])
         emax = np.float64([np.max(ev) for i in range(len(phi))])
-    # fexx=np.float64((np.arange(len(ev)*len(phi))+1).reshape(len(phi),len(ev)))
-    # feyy=np.float64((np.arange(len(ev)*len(phi))+1).reshape(len(phi),len(ev)))
-    # fexx=fexx/fexx*-50
-    # feyy=feyy/feyy*-50
     fexx = np.float64((np.ones(len(ev)*len(phi))).reshape(len(phi), len(ev)))
     feyy = np.float64((np.ones(len(ev)*len(phi))).reshape(len(phi), len(ev)))
     fexx *= -50
@@ -10791,17 +10622,6 @@ def fite():
             a2 = [(emin[i]+emax[i])/2, (np.max(y)-int(base.get())), 5, int(base.get()),
                   (emin[i]+emax[i])/2, (np.max(y)-int(base.get())), 5, int(base.get())]
 
-        # try:
-        #     a,b=curve_fit(gl1,xx,yy,bounds=([emin[i],(np.max(y)-int(base.get()))/10,0,0],[emax[i],np.max(y)-int(base.get())+1,3,0.01]))
-        #     a,b=curve_fit(gl2,xx,yy,bounds=([emin[i],(np.max(y)-int(base.get()))/10,0,0,emin[i],(np.max(y)-int(base.get()))/10,0,0],[emax[i],np.max(y)-int(base.get())+1,3,0.01,emax[i],np.max(y)-int(base.get())+1,3,0.01]))
-
-        # except RuntimeError:
-        #     # a=[(emin[i]+emax[i])/2,(np.max(y)-int(base.get())),5,int(base.get())]
-        #     a=[(emin[i]+emax[i])/2,(np.max(y)-int(base.get())),5,int(base.get()),(emin[i]+emax[i])/2,(np.max(y)-int(base.get())),5,int(base.get())]
-
-        # epos[i]=a[0]
-        # efwhm[i]=a[2]
-
         fexx[i, :len(xx)] = xx
         feyy[i, :len(yy)] = yy
         fex[i, :] = x
@@ -10810,8 +10630,6 @@ def fite():
         eaa1[i, :] = a1
         eaa2[i, :] = a2
         pbar.update(1)
-        # print('EDC '+str(round((i+1)/len(phi)*100))+'%'+' ('+str(len(phi))+')')
-        # st.put('EDC '+str(round((i+1)/len(fphi)*100))+'%'+' ('+str(len(fphi))+')')
     pbar.close()
     global egg
     try:
@@ -14552,7 +14370,6 @@ if __name__ == '__main__':
         'prevac_cmap', prevac_colors, N=256)
     mpl.colormaps.register(prevac_cmap)
 
-    # plt.register_cmap('custom_cmap', custom_cmap)
     optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo',
                 'inferno', 'plasma', 'copper', 'grey', 'bwr']
     cmp = plt.colormaps()
@@ -14598,6 +14415,8 @@ if __name__ == '__main__':
     menu2 = tk.OptionMenu(frfit, value1, *optionList1)
     menu2.grid(row=0, column=0)
     value1.trace_add('write', plot2)
+    
+    ##### Base and FWHM not packing to frfit #####
     l_fit = tk.Label(frfit, text='Base counts:', font=(
         "Arial", 10, "bold"), bg="white", height='1', bd=5)
     # l_fit.grid(row=0, column=1)
@@ -14609,6 +14428,7 @@ if __name__ == '__main__':
     b_fit = tk.Button(frfit, text='Fit FWHM', font=(
         "Arial", 10, "bold"), bg="white", height='1', bd=5, command=fitgl)
     # b_fit.grid(row=0, column=3)
+    ##### Base and FWHM not packing to frfit #####
 
     optionList2 = ['Real & Imaginary', 'KK Transform Real & Imaginary', 'KK Transform Real Part', 'KK Transform Imaginary Part', 'KK Transform Real Part 2nd Derivative', 'KK Transform Imaginary Part 1st Derivative', 'Data Plot with Pos', 'Data Plot with Pos and Bare Band']   # 選項
     value2 = tk.StringVar()                                        # 取值
@@ -14723,10 +14543,6 @@ if __name__ == '__main__':
     Cmin = tk.Scale(cmin, from_=cm.get(), to=cM.get(), orient='horizontal',
                     variable=vcmin, state='disabled', bg='white', fg='white')
     Cmin.pack()
-    # Cmax=tk.Scrollbar(cmax,orient='horizontal',bd=9,width=15)
-    # Cmax.pack(fill='x')
-    # Cmin=tk.Scrollbar(cmin,orient='horizontal',bd=9,width=15)
-    # Cmin.pack(fill='x')
 
     expf = tk.Frame(exf, bg='white')
     expf.grid(row=1,column=0)
