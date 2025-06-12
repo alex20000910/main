@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.1.1"
-__release_date__ = "2025-06-09"
+__version__ = "6.1.2"
+__release_date__ = "2025-06-12"
 import os, inspect
 import json
 import tkinter as tk
@@ -232,11 +232,10 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
     Dwell = 'Unknown'
     CenterEnergy = np.average(np.float64(e))
     Iterations = 'Unknown'
-    Step = 'Unknown'
+    Step = (e_high - e_low)/(e_num - 1)
     Slit = 'Unknown'
     aq = 'Unknown'
-    name = path_to_file.split('/')
-    name = name[-1].removesuffix('.txt')
+    name = os.path.basename(path_to_file).removesuffix('.txt')
     if e_mode == 'Kinetic':
         e = np.linspace(e_low, e_high, e_num)
         CenterEnergy = str(CenterEnergy)+' eV'
@@ -253,24 +252,27 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
     # data[0:,0:,0]=d
     data = np.arange(float(len(e)*len(a))).reshape(len(e), len(a))
     data[0:, 0:] = d
-    data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
-                                                                 'Acquisition': aq,
-                                                                 'EnergyMode': e_mode,
-                                                                 'ExcitationEnergy': str(e_photon)+' eV',
-                                                                 'CenterEnergy': CenterEnergy,
-                                                                 'HighEnergy': e_high,
-                                                                 'LowEnergy': e_low,
-                                                                 'Step': str(Step)+' eV',
-                                                                 'LensMode': LensMode,
-                                                                 'PassEnergy': str(PassEnergy)+' meV',
-                                                                 'Slit': Slit,
-                                                                 'Dwell': str(Dwell)+' s',
-                                                                 'Iterations': Iterations,
-                                                                 'Path': path_to_file
-                                                                 })
+    data = xr.DataArray(data,
+                        coords={'eV': e, 'phi': a},
+                        attrs={'Name': name,
+                            'Acquisition': aq,
+                            'EnergyMode': e_mode,
+                            'ExcitationEnergy': str(e_photon)+' eV',
+                            'CenterEnergy': CenterEnergy,
+                            'HighEnergy': e_high,
+                            'LowEnergy': e_low,
+                            'Step': str(Step)+' eV',
+                            'LensMode': LensMode,
+                            'PassEnergy': str(PassEnergy)+' meV',
+                            'Slit': Slit,
+                            'Dwell': str(Dwell)+' s',
+                            'Iterations': Iterations,
+                            'Description': 'BiSe',
+                            'Path': path_to_file
+                            })
     return data
 
-def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
+def load_txt_sk(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
     """
     Args:
         path_to_file (str): File Path
@@ -278,7 +280,7 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
     Returns:
         xr.DataArray: shape=(len(eV), len(phi))
     """
-    name=path_to_file.split('/')[-1].removesuffix('.txt')
+    name = os.path.basename(path_to_file).removesuffix('.txt')
     e = np.linspace(21.2-1,21.2+0.2,659)    #fix BE 1~-0.2
     # e = np.linspace(21.2-2,21.2+1,284)     #scan BE 2~-1
     a = np.linspace(-10,10,494)     #A20
@@ -297,22 +299,24 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
     Slit = 'Unknown'
     aq = 'SRNET'
     data = np.loadtxt(path_to_file).transpose()*100
-    data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
-                                                                 'Acquisition': aq,
-                                                                 'EnergyMode': e_mode,
-                                                                 'ExcitationEnergy': str(e_photon)+' eV',
-                                                                 'CenterEnergy': CenterEnergy,
-                                                                 'HighEnergy': e_high,
-                                                                 'LowEnergy': e_low,
-                                                                 'Step': str(Step)+' eV',
-                                                                 'LensMode': LensMode,
-                                                                 'PassEnergy': str(PassEnergy)+' eV',
-                                                                 'Slit': Slit,
-                                                                 'Dwell': Dwell,
-                                                                 'Iterations': Iterations,
-                                                                 'Description': description,
-                                                                 'Path': path_to_file
-                                                                 })
+    data = xr.DataArray(data,
+                        coords={'eV': e, 'phi': a},
+                        attrs={'Name': name,
+                            'Acquisition': aq,
+                            'EnergyMode': e_mode,
+                            'ExcitationEnergy': str(e_photon)+' eV',
+                            'CenterEnergy': CenterEnergy,
+                            'HighEnergy': e_high,
+                            'LowEnergy': e_low,
+                            'Step': str(Step)+' eV',
+                            'LensMode': LensMode,
+                            'PassEnergy': str(PassEnergy)+' eV',
+                            'Slit': Slit,
+                            'Dwell': Dwell,
+                            'Iterations': Iterations,
+                            'Description': description,
+                            'Path': path_to_file
+                            })
     return data
 
 def load_json(path_to_file: str) -> xr.DataArray:
@@ -362,22 +366,24 @@ def load_json(path_to_file: str) -> xr.DataArray:
     # data[0:,0:,0]=d
     data = np.arange(float(len(e)*len(a))).reshape(len(e), len(a))
     data[0:, 0:] = d
-    data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
-                                                                'Acquisition': aq,
-                                                                'EnergyMode': e_mode,
-                                                                'ExcitationEnergy': str(e_photon)+' eV',
-                                                                'CenterEnergy': CenterEnergy,
-                                                                'HighEnergy': e_high,
-                                                                'LowEnergy': e_low,
-                                                                'Step': str(Step)+' eV',
-                                                                'LensMode': LensMode,
-                                                                'PassEnergy': str(PassEnergy)+' eV',
-                                                                'Slit': Slit,
-                                                                'Dwell': str(Dwell)+' s',
-                                                                'Iterations': Iterations,
-                                                                'Description': description,
-                                                                'Path': path_to_file
-                                                                })
+    data = xr.DataArray(data,
+                        coords={'eV': e, 'phi': a},
+                        attrs={'Name': name,
+                            'Acquisition': aq,
+                            'EnergyMode': e_mode,
+                            'ExcitationEnergy': str(e_photon)+' eV',
+                            'CenterEnergy': CenterEnergy,
+                            'HighEnergy': e_high,
+                            'LowEnergy': e_low,
+                            'Step': str(Step)+' eV',
+                            'LensMode': LensMode,
+                            'PassEnergy': str(PassEnergy)+' eV',
+                            'Slit': Slit,
+                            'Dwell': str(Dwell)+' s',
+                            'Iterations': Iterations,
+                            'Description': description,
+                            'Path': path_to_file
+                            })
     return data
 
 cec = None
@@ -564,22 +570,24 @@ def load_h5(path_to_file: str) -> xr.DataArray:
         Dwell = Dwell.removesuffix(' s')
         PassEnergy = PassEnergy.removesuffix(' eV')
         data[0:, 0:] = d.T
-    data = xr.DataArray(data, coords={'eV': e, 'phi': a}, attrs={'Name': name,
-                                                                'Acquisition': aq,
-                                                                'EnergyMode': e_mode,
-                                                                'ExcitationEnergy': str(e_photon)+' eV',
-                                                                'CenterEnergy': CenterEnergy,
-                                                                'HighEnergy': e_high,
-                                                                'LowEnergy': e_low,
-                                                                'Step': str(Step)+' eV',
-                                                                'LensMode': LensMode,
-                                                                'PassEnergy': str(PassEnergy)+' eV',
-                                                                'Slit': Slit,
-                                                                'Dwell': str(Dwell)+' s',
-                                                                'Iterations': Iterations,
-                                                                'Description': description,
-                                                                'Path': path_to_file
-                                                                })
+    data = xr.DataArray(data,
+                        coords={'eV': e, 'phi': a},
+                        attrs={'Name': name,
+                            'Acquisition': aq,
+                            'EnergyMode': e_mode,
+                            'ExcitationEnergy': str(e_photon)+' eV',
+                            'CenterEnergy': CenterEnergy,
+                            'HighEnergy': e_high,
+                            'LowEnergy': e_low,
+                            'Step': str(Step)+' eV',
+                            'LensMode': LensMode,
+                            'PassEnergy': str(PassEnergy)+' eV',
+                            'Slit': Slit,
+                            'Dwell': str(Dwell)+' s',
+                            'Iterations': Iterations,
+                            'Description': description,
+                            'Path': path_to_file
+                            })
     return data
 
 def load_npz(path_to_file: str) -> xr.DataArray:
@@ -673,22 +681,24 @@ def load_npz(path_to_file: str) -> xr.DataArray:
     ev = f['y']
     ExcitationEnergy = f['e_photon']
     desc = f['desc'][0]
-    data = xr.DataArray(data, coords={'eV': ev, 'phi': phi}, attrs={'Name': Name,
-                                                                'Acquisition': 'VolumeSlicer',
-                                                                'EnergyMode': 'Kinetic',
-                                                                'ExcitationEnergy': str(ExcitationEnergy)+' eV',
-                                                                'CenterEnergy': '%.3f'%((ev[0]+ev[-1])/2)+' eV',
-                                                                'HighEnergy': str(ev[-1])+' eV (K.E.)',
-                                                                'LowEnergy': str(ev[0])+' eV (K.E.)',
-                                                                'Step': str(ev[1]-ev[0])+' eV',
-                                                                'LensMode': 'Angular',
-                                                                'PassEnergy': PassEnergy,
-                                                                'Slit': Slit,
-                                                                'Dwell': Dwell,
-                                                                'Iterations': Iterations,
-                                                                'Description': desc,
-                                                                'Path': path_to_file
-                                                                })
+    data = xr.DataArray(data,
+                        coords={'eV': ev, 'phi': phi},
+                        attrs={'Name': Name,
+                            'Acquisition': 'VolumeSlicer',
+                            'EnergyMode': 'Kinetic',
+                            'ExcitationEnergy': str(ExcitationEnergy)+' eV',
+                            'CenterEnergy': '%.3f'%((ev[0]+ev[-1])/2)+' eV',
+                            'HighEnergy': str(ev[-1])+' eV (K.E.)',
+                            'LowEnergy': str(ev[0])+' eV (K.E.)',
+                            'Step': str(ev[1]-ev[0])+' eV',
+                            'LensMode': 'Angular',
+                            'PassEnergy': PassEnergy,
+                            'Slit': Slit,
+                            'Dwell': Dwell,
+                            'Iterations': Iterations,
+                            'Description': desc,
+                            'Path': path_to_file
+                            })
     return data
 
 def g_emode():
@@ -761,8 +771,8 @@ def f_patch_origin():
             path = path.removeprefix(" ")
             path = rf"{path}"
             path = rf"{path}{exe}"
-            if path.split('\\')[-2] != 'Crack':
-                ori_temp_path = path.removesuffix('\\'+path.split('\\')[-1])
+            if path.split(os.sep)[-2] != 'Crack':
+                ori_temp_path = path.removesuffix(os.sep+path.split(os.sep)[-1])
                 print('Origin Path: '+ori_temp_path)
                 os.system(f"\"{path}\"")
     result.close()
@@ -1816,7 +1826,10 @@ class spectrogram:
         self.lst = lst
         self.x = ev
         self.y = np.sum(self.data.to_numpy().transpose(),axis=0)
-        self.s_exp=self.name+'.txt'
+        if os.path.basename(self.rdd).split('.')[-1] != 'txt':
+            self.s_exp=self.name+'.txt'
+        else:
+            self.s_exp=self.name+'_txt.txt'
         self.s_exp_casa=self.name+'_Casa.vms'
         self.s_yl='Intensity (Counts)'
         self.type='raw'
@@ -2381,11 +2394,17 @@ class spectrogram:
             raise ValueError('The length of x and y must be the same.')
         if dtype=='raw':
             self.s_yl='Intensity (Counts)'
-            self.s_exp=self.name+'.txt'
+            if os.path.basename(self.rdd).split('.')[-1]!='txt':
+                self.s_exp=self.name+'.txt'
+            else:
+                self.s_exp=self.name+'_txt'+'.txt'
             self.s_exp_casa=self.name+'_Casa.vms'
         else:
             self.s_yl='Intensity ('+unit+')'
-            self.s_exp=self.name+'_'+dtype+'.txt'
+            if os.path.basename(self.rdd).split('.')[-1]!='txt':
+                self.s_exp=self.name+'.txt'
+            else:
+                self.s_exp=self.name+'_txt'+'.txt'
             self.s_exp_casa=self.name+'_'+dtype+'_Casa.vms'
     
     def __scroll(self, event):
@@ -2545,7 +2564,8 @@ class spectrogram:
         self.tpg.update()
     
     def __export(self):
-        os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+        # os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+        os.chdir(os.path.dirname(self.rdd))
         x, y = self.__sel_y()
         f = open(self.s_exp, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         f.write('Kinetic Energy'+'\t'+'Intensity'+'\n')
@@ -2615,7 +2635,7 @@ FAT
 -1
 Kinetic Energy
 eV
-{self.ev[0]}
+{np.max(self.ev)}
 {self.dvalue[7].replace(' eV','')}
 1
 Intensity
@@ -2644,7 +2664,8 @@ pulse counting
             if path.split('.')[-1] != 'vms':
                 path += '.vms'
             if path != '':
-                os.chdir(path.removesuffix(path.split('/')[-1]))
+                # os.chdir(path.removesuffix(path.split('/')[-1]))
+                os.chdir(os.path.dirname(path))
                 f = open(path, 'w', encoding='utf-8')
                 head = rf'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
     Not Specified
@@ -2674,7 +2695,8 @@ pulse counting
                     body+=s.gen_casa_body()
                 f.write(head+body+'end of experiment\n')
         else:
-            os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+            # os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+            os.chdir(os.path.dirname(self.rdd))
             f = open(self.s_exp_casa, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
             head = r'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
 Not Specified
@@ -3418,12 +3440,17 @@ class loadfiles():
     def __init__(self, files):
         self.f_npz = [False for i in files]
         self.n = []
-        for i,v  in enumerate(files):
-            if '.npz' in os.path.basename(v) or load_h5(v).attrs['Acquisition']=='VolumeSlicer':
+        for i, v in enumerate(files):
+            tf=False
+            try:
+                if load_h5(v).attrs['Acquisition']=='VolumeSlicer':
+                    tf=True
+            except: pass
+            if '.npz' in os.path.basename(v) or tf:
                 self.f_npz[i] = True
                 self.n.append(i)
         self.opath = [f for f in files]
-        self.oname = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '').replace('.npz', '') for f in self.opath]
+        self.oname = [os.path.basename(f).split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '').replace('.npz', '') for f in self.opath]
         self.r1s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1']
         self.r2s = ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
         self.sep = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
@@ -3482,14 +3509,14 @@ class loadfiles():
                     self.path.append(v)
                     self.r1.append(r1[j])
                 t+=1
-            self.name = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
+            self.name = [os.path.basename(f).split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
             self.name = self.check_repeat(self.name)
             
         def __sort_r1():
             self.or1 = self.gen_r1(self.oname, self.r1_splitter, self.r2_splitter)
             self.path = res(self.or1, self.opath)
             self.r1 = res(self.or1, self.or1)
-            self.name = [f.split('/')[-1].split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
+            self.name = [os.path.basename(f).split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
             self.name = self.check_repeat(self.name)
             
         self.r1_splitter , self.r2_splitter= [], []
@@ -3612,7 +3639,8 @@ class loadfiles():
         if path.split('.')[-1] != 'vms':
             path += '.vms'
         if path != '.vms':
-            os.chdir(path.removesuffix(path.split('/')[-1]))
+            # os.chdir(path.removesuffix(path.split('/')[-1]))
+            os.chdir(os.path.dirname(path))
             f = open(path, 'w', encoding='utf-8')
             head = rf'''VAMAS Surface Chemical Analysis Standard Data Transfer Format 1988 May 4
     Not Specified
@@ -5788,10 +5816,11 @@ def o_ecut():
     global data, ev, phi, mfpath, limg, img, name, rdd, st
     limg.config(image=img[np.random.randint(len(img))])
     mfpath = ''
-    os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    os.chdir(os.path.dirname(rdd))
     try:
-        ndir = os.getcwd()
-        if ndir.split('\\')[-1] == name+'_MDC_'+lowlim.get():
+        ndir = os.path.dirname(rdd)
+        if ndir.split(os.sep)[-1] == name+'_MDC_'+lowlim.get():
             os.chdir('../')
         os.chdir(ndir)
         os.makedirs(name+'_MDC_'+lowlim.get())
@@ -5819,7 +5848,8 @@ def o_ecut():
         f.close()
     os.chdir(cdir)
     np.savez('mfpath', mfpath=mfpath)
-    os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    os.chdir(os.path.dirname(rdd))
     pbar.close()
     print('Done')
     st.put('Done')
@@ -5829,10 +5859,11 @@ def o_angcut():
     global data, ev, phi, efpath, limg, img, name, rdd, st
     limg.config(image=img[np.random.randint(len(img))])
     efpath = ''
-    os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    os.chdir(os.path.dirname(rdd))
     try:
-        ndir = os.getcwd()
-        if ndir.split('\\')[-1] == name+'_EDC'+lowlim.get():
+        ndir = os.path.dirname(rdd)
+        if ndir.split(os.sep)[-1] == name+'_EDC'+lowlim.get():
             os.chdir('../')
         os.chdir(ndir)
         os.makedirs(name+'_EDC'+lowlim.get())
@@ -5859,7 +5890,8 @@ def o_angcut():
         f.close()
     os.chdir(cdir)
     np.savez('efpath', efpath=efpath)
-    os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    os.chdir(os.path.dirname(rdd))
     pbar.close()
     print('Done')
     st.put('Done')
@@ -5912,8 +5944,9 @@ def loadmfit_re():
         skmin = []
         skmax = []
         smfp = [1 for i in range(len(ev))]
-        os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
-        fc = open('rev_'+file.split('/')[-1], 'w', encoding='utf-8')
+        # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+        os.chdir(os.path.dirname(rdd))
+        fc = open('rev_'+os.path.basename(file), 'w', encoding='utf-8')
         ff = open(name+'_mdc_fitted_raw_data.txt', 'w',
                   encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         ff.write('K.E. (eV)'+'\t'+'FWHM (k)'+'\t'+'Position (k)'+'\n')
@@ -6229,8 +6262,9 @@ def loadmfit_():
         skmin = []
         skmax = []
         smfp = [1 for i in range(len(ev))]
-        os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
-        fc = open('copy2p_'+file.split('/')[-1], 'w', encoding='utf-8')
+        # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+        os.chdir(os.path.dirname(rdd))
+        fc = open('copy2p_'+os.path.basename(file), 'w', encoding='utf-8')
         ff = open(name+'_mdc_fitted_raw_data.txt', 'w',
                   encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         ff.write('K.E. (eV)'+'\t'+'FWHM (k)'+'\t'+'Position (k)'+'\n')
@@ -6513,8 +6547,9 @@ def loadmfit_2p():
         lmgg.destroy()
     if ".vms" in file:
         n = -1
-        os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
-        fc = open('copy2p_'+file.split('/')[-1], 'w', encoding='utf-8')
+        # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+        os.chdir(os.path.dirname(rdd))
+        fc = open('copy2p_'+os.path.basename(file), 'w', encoding='utf-8')
         try:
             with open(file) as f:
                 f1 = 0
@@ -6776,7 +6811,8 @@ def o_loadefit():
         semax = []
         sefp = [1 for i in range(len(phi))]
         tphi = []
-        os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+        # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+        os.chdir(os.path.dirname(rdd))
         ff = open(name+'_edc_fitted_raw_data.txt', 'w',
                   encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         if npzf:ff.write('k (2pi/A)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
@@ -10880,8 +10916,9 @@ def o_exptm():
     global name, pos, fwhm, fev, st
     print('Processing...')
     st.put('Processing...')
-    os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
-    print('export to ',rdd.removesuffix(rdd.split('/')[-1]))
+    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    os.chdir(os.path.dirname(rdd))
+    print('export to ',os.path.dirname(rdd))
     ff = open(name+'_mdc_fitted_data.txt', 'w',
               encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
     ff.write('K.E. (eV)'+'\t'+'FWHM (k)'+'\t'+'Position (k)'+'\n')
@@ -10896,8 +10933,9 @@ def o_expte():
     global name, epos, efwhm, ffphi, st
     print('Processing...')
     st.put('Processing...')
-    os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
-    print('export to ',rdd.removesuffix(rdd.split('/')[-1]))
+    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
+    os.chdir(os.path.dirname(rdd))
+    print('export to ',os.path.dirname(rdd))
     ff = open(name+'_edc_fitted_data.txt', 'w',
               encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
     if npzf:ff.write('k (2pi/A)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
