@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "6.1.2"
+__version__ = "6.1.3"
 __release_date__ = "2025-06-12"
 import os, inspect
 import json
@@ -1027,6 +1027,7 @@ bbo = {bb_offset.get()}
 bbk = {bbk_offset.get()}
 vfe = {vfe}
 im_kernel = {im_kernel}     # Gaussian Filter Kernel Size
+nan = np.nan
 '''
     try:
         origin_temp_var += f'''
@@ -1082,9 +1083,11 @@ ev, phi = np.float64(ev), np.float64(phi)
 if emf=='KE':
     le_mode='Kinetic Energy'
     tx, ty = np.meshgrid(phi, ev)
+    tev = ty.copy()
 else:
     le_mode='Binding Energy'
     tx, ty = np.meshgrid(phi, vfe-ev)
+    tev = vfe-ty.copy()
 tz = data.to_numpy()
 sdz = laplacian_filter(data.to_numpy(), im_kernel)
 '''
@@ -1241,7 +1244,7 @@ def note():
 def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel=f'{le_mode}', zlabel='Intensity', xunit="deg", yunit='eV', zunit='Counts'):
     if title!='E-Phi (Raw Data)':
         if not npzf:
-            x = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose()**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
+            x = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
         xlabel='k'
     else:   # title == E-Phi (Raw Data)
         if npzf:
@@ -9502,18 +9505,19 @@ def _mprplot_job1():
             mprend()
             if emf == 'KE':
                 px, py = np.meshgrid(phi, ev)
+                tev = py.copy()
                 mfpra.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=8)
                 mfpra.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
             else:
                 px, py = np.meshgrid(phi, vfe - ev)
+                tev = vfe - py.copy()
                 mfpra.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=8)
                 mfpra.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=12)
                 mfpra.invert_yaxis()
             if npzf:
                 px = phi
             else:
-                px = (2 * m * np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev) * 1.6 * 10 ** -19).transpose(
-            ) ** 0.5 * np.sin(px / 180 * np.pi) * 10 ** -10 / (h / 2 / np.pi)
+                px = (2 * m * tev * 1.6 * 10 ** -19) ** 0.5 * np.sin(px / 180 * np.pi) * 10 ** -10 / (h / 2 / np.pi)
             pz = data.to_numpy()
             mfpra.pcolormesh(px, py, pz, cmap=value3.get())
             oyl = mfpra.get_ylim()
@@ -11105,14 +11109,15 @@ def o_plot1(*e):
                 ao = fig.subplots()
                 pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
                 if emf=='KE':
-                    px, py = np.meshgrid(phi[0:-1], ev)
+                    px, py = np.meshgrid(phi[0:-1]+np.diff(phi)/2, ev)
+                    tev = py.copy()
                 else:
-                    px, py = np.meshgrid(phi[0:-1], vfe-ev)
+                    px, py = np.meshgrid(phi[0:-1]+np.diff(phi)/2, vfe-ev)
+                    tev = vfe-py.copy()
                 if npzf:
                     px = phi[0:-1]+np.diff(phi)/2
                 else:
-                    px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-                )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
+                    px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
@@ -11122,11 +11127,12 @@ def o_plot1(*e):
             #     pz = np.diff(smooth(data.to_numpy().transpose()))/np.diff(ev)
             #     pz = pz.transpose()
             #     if emf=='KE':
-            #         px, py = np.meshgrid(phi, ev[0:-1])
+            #         px, py = np.meshgrid(phi, ev[0:-1]+np.diff(ev)/2)
+            #         tev = py.copy()
             #     else:
-            #         px, py = np.meshgrid(phi, vfe-ev[0:-1])
-            #     px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-1])], dtype=float), ev[0:-1]+np.diff(ev)/2*1)*1.602176634*10**-19).transpose(
-            #     )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+            #         px, py = np.meshgrid(phi, vfe-ev[0:-1]-np.diff(ev)/2)
+            #         tev = vfe-py.copy()
+            #     px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
             #     cb = fig.colorbar(h0)
             #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
@@ -11146,13 +11152,14 @@ def o_plot1(*e):
                 pz = laplacian_filter(data.to_numpy(), im_kernel)
                 if emf=='KE':
                     px, py = np.meshgrid(phi, ev)
+                    tev = py.copy()
                 else:
                     px, py = np.meshgrid(phi, vfe-ev)
+                    tev = vfe-py.copy()
                 if npzf:
                     px = phi
                 else:
-                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-                )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                    px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                 
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
@@ -11205,13 +11212,14 @@ def o_plot1(*e):
                     # h1=a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
                     if emf=='KE':
                         px, py = np.meshgrid(phi, ev)
+                        tev = py.copy()
                     else:
                         px, py = np.meshgrid(phi, vfe-ev)
+                        tev = vfe-py.copy()
                     if npzf:
                         px = phi
                     else:
-                        px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-                    )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                        px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                     cb = fig.colorbar(h0)
@@ -11288,13 +11296,14 @@ def o_plot1(*e):
                     pbar.close()
                     if emf=='KE':
                         px, py = np.meshgrid(phi, ev)
+                        tev = py.copy()
                     else:
                         px, py = np.meshgrid(phi, vfe-ev)
+                        tev = vfe-py.copy()
                     if npzf:
                         px = phi
                     else:
-                        px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-                    )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                        px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                     ylb=ao1.twinx()
@@ -11869,13 +11878,14 @@ def o_plot3(*e):
             bo = fig.subplots()
             if emf=='KE':
                 px, py = np.meshgrid(phi, ev)
+                tev = py.copy()
             else:
                 px, py =np.meshgrid(phi, vfe-ev)
+                tev = vfe-py.copy()
             if npzf:
                 px = phi
             else:
-                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-            )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             pz = data.to_numpy()
             h0 = bo.pcolormesh(px, py, pz, cmap=value3.get())
             txl = bo.get_xlim()
@@ -12386,13 +12396,14 @@ def exp(*e):
             pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
             if emf=='KE':
                 px, py = np.meshgrid(phi[0:-1], ev)
+                tev = py.copy()
             else:
                 px, py = np.meshgrid(phi[0:-1], vfe-ev)
+                tev = vfe-py.copy()
             if npzf:
                 px = phi[0:-1]+np.diff(phi)/2
             else:
-                px = (2*m*np.full_like(np.zeros([len(phi[0:-1]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-            )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
+                px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
             if emf=='KE':
                 yl = a.get_ylim()
@@ -12434,13 +12445,14 @@ def exp(*e):
             pz = laplacian_filter(data.to_numpy(), im_kernel)
             if emf=='KE':
                 px, py = np.meshgrid(phi, ev)
+                tev = py.copy()
             else:
                 px, py = np.meshgrid(phi, vfe-ev)
+                tev = vfe-py.copy()
             if npzf:
                 px = phi
             else:
-                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-            )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
             if emf=='KE':
@@ -12475,13 +12487,14 @@ def exp(*e):
                 # h1=a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
                 if emf=='KE':
                     px, py = np.meshgrid(phi, ev)
+                    tev = py.copy()
                 else:
                     px, py = np.meshgrid(phi, vfe-ev)
+                    tev = vfe-py.copy()
                 if npzf:
                     px = phi
                 else:
-                    px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-                )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                    px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                 pz = data.to_numpy()
                 h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
                 if emf=='KE':
@@ -12568,13 +12581,14 @@ def exp(*e):
                         a1_.plot(x, yy, c='black')
                     if emf=='KE':
                         px, py = np.meshgrid(phi, ev)
+                        tev = py.copy()
                     else:
                         px, py = np.meshgrid(phi, vfe-ev)
+                        tev = vfe-py.copy()
                     if npzf:
                         px = phi
                     else:
-                        px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-                    )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                        px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                     pz = data.to_numpy()
                     h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
                     ylb=a1_.twinx()
@@ -13063,13 +13077,14 @@ def exp(*e):
             f, a = plt.subplots(dpi=150)
             if emf=='KE':
                 px, py = np.meshgrid(phi, ev)
+                tev = py.copy()
             else:
                 px, py = np.meshgrid(phi, vfe-ev)
+                tev = vfe - py.copy()
             if npzf:
                 px = phi
             else:
-                px = (2*m*np.full_like(np.zeros([len(phi), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-            )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             pz = data.to_numpy()
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
             if emf=='KE':
