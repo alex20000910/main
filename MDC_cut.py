@@ -3432,7 +3432,7 @@ def tools(*args):
     b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b_spec.grid(row=0, column=0)
     if lfs.sort != 'no':
-        b_kplane = tk.Button(toolg, text='K-Plane', command=kplane, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+        b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
         b_kplane.grid(row=0, column=1)
     b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b_exp_casa.grid(row=0, column=2)
