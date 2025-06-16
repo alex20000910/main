@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.1.3"
-__release_date__ = "2025-06-12"
+__version__ = "6.1.4"
+__release_date__ = "2025-06-16"
 import os, inspect
 import json
 import tkinter as tk
@@ -1042,9 +1042,9 @@ k = np.float64({pre_process(k)})
         pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
         origin_temp_var += f'''
-fev = np.float64({pre_process(np.float64(fev))})
-pos = np.float64({pre_process(pos)})
-fwhm = np.float64({pre_process(fwhm)})
+fev = np.float64({pre_process(np.array(fev, dtype=np.float64))})
+pos = np.float64({pre_process(np.array(pos), dtype=np.float64)})
+fwhm = np.float64({pre_process(np.array(fwhm, dtype=np.float64))})
 '''
     except: pass
     try:
@@ -1052,9 +1052,9 @@ fwhm = np.float64({pre_process(fwhm)})
         fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
             np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
         origin_temp_var += f'''
-fk = np.float64({pre_process(fk)})
-epos = np.float64({pre_process(epos)})
-efwhm = np.float64({pre_process(efwhm)})
+fk = np.float64({pre_process(np.array(fk, dtype=np.float64))})
+epos = np.float64({pre_process(np.array(epos, dtype=np.float64))})
+efwhm = np.float64({pre_process(np.array(efwhm, dtype=np.float64))})
 '''
     except: pass
     if '.h5' in os.path.basename(dpath):
@@ -1116,7 +1116,7 @@ save()
         st.put('Exporting to Origin...')
         temp=r"\origin_temp.py"
         os.system(f'python "{cdir+temp}"')
-        os.system(f'del "{cdir+temp}"')
+        # os.system(f'del "{cdir+temp}"')
         limg.config(image=img[np.random.randint(len(img))])
         print('Exported to Origin')
         st.put('Exported to Origin')
@@ -1374,7 +1374,7 @@ def rplot(f, canvas):
     # a.set_title('Raw Data',font='Arial',fontsize=16)
     rcx.set_title('            Raw Data', font='Arial', fontsize=16)
     if npzf:ao.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=12)
-    else:ao.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=12)
+    else:ao.set_xlabel('Angle (deg)', font='Arial', fontsize=12)
     if emf=='KE':
         ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=12)
     else:
@@ -7671,7 +7671,7 @@ def feend():
     a.scatter(fphi, epos-efwhm/2, c='r', s=10)
     a.scatter(fphi, epos, c='k', s=10)
     if npzf:a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)')
-    else:a.set_xlabel(r'$\phi$'+' (deg)')
+    else:a.set_xlabel('Angle (deg)')
     a.set_ylabel('Kinetic Energy (eV)', fontsize=14)
     eedfitout.draw()
 
@@ -12659,8 +12659,8 @@ def exp(*e):
                 a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
                 a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
             else:
-                a.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
-                a0.set_xlabel(r'$\phi$ (deg)', font='Arial', fontsize=16)
+                a.set_xlabel('Angle (deg)', font='Arial', fontsize=16)
+                a0.set_xlabel('Angle (deg)', font='Arial', fontsize=16)
             a.set_xticklabels(labels=a.get_xticklabels(), fontsize=14)
             a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=14)
         # a.set_xticklabels(labels=a.get_xticklabels(),fontsize=10)
