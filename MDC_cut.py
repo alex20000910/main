@@ -1042,9 +1042,9 @@ k = np.float64({pre_process(k)})
         pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
         origin_temp_var += f'''
-fev = np.float64({pre_process(np.array(fev, dtype=np.float64))})
-pos = np.float64({pre_process(np.array(pos), dtype=np.float64)})
-fwhm = np.float64({pre_process(np.array(fwhm, dtype=np.float64))})
+fev = np.float64({pre_process(np.asarray(fev, dtype=np.float64))})
+pos = np.float64({pre_process(np.asarray(pos, dtype=np.float64))})
+fwhm = np.float64({pre_process(np.asarray(fwhm, dtype=np.float64))})
 '''
     except: pass
     try:
@@ -1052,9 +1052,9 @@ fwhm = np.float64({pre_process(np.array(fwhm, dtype=np.float64))})
         fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
             np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
         origin_temp_var += f'''
-fk = np.float64({pre_process(np.array(fk, dtype=np.float64))})
-epos = np.float64({pre_process(np.array(epos, dtype=np.float64))})
-efwhm = np.float64({pre_process(np.array(efwhm, dtype=np.float64))})
+fk = np.float64({pre_process(np.asarray(fk, dtype=np.float64))})
+epos = np.float64({pre_process(np.asarray(epos, dtype=np.float64))})
+efwhm = np.float64({pre_process(np.asarray(efwhm, dtype=np.float64))})
 '''
     except: pass
     if '.h5' in os.path.basename(dpath):
@@ -1106,7 +1106,7 @@ save()
         if cl[i]==1:
             origin_temp_exec+=cmdlist[i]
         
-    with open(cdir+r'\origin_temp.py', 'w', encoding='utf-8') as f:
+    with open(cdir+os.sep+'origin_temp.py', 'w', encoding='utf-8') as f:
         f.write(origin_temp_var+origin_temp_func+origin_temp_exec+origin_temp_save)
     f.close()
     def j():
@@ -1114,7 +1114,7 @@ save()
         limg.config(image=img[np.random.randint(len(img))])
         print('Exporting to Origin...')
         st.put('Exporting to Origin...')
-        temp=r"\origin_temp.py"
+        temp=os.sep+"origin_temp.py"
         os.system(f'python "{cdir+temp}"')
         os.system(f'del "{cdir+temp}"')
         limg.config(image=img[np.random.randint(len(img))])
@@ -1242,89 +1242,102 @@ def note():
         nt.append(f'        Bare Band Path: None\n')
 
 def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel=f'{le_mode}', zlabel='Intensity', xunit="deg", yunit='eV', zunit='Counts'):
-    if title!='E-Phi (Raw Data)':
-        if not npzf:
-            x = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
-        xlabel='k'
-    else:   # title == E-Phi (Raw Data)
-        if npzf:
-            title = 'E-K (Sliced Data)'
+    try:
+        if title!='E-Phi (Raw Data)':
+            if not npzf:
+                x = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
             xlabel='k'
-    if 'Second Derivative' in title:
-        z=sdz
-    if 'Data plot with pos' in title:
-        x1 = pos
-        if emf=='KE':
-            y1=fev
-        else:
-            y1= vfe-fev
-    if title=='Data plot with pos & bare band':
-        x2 = k*bbk
-        if emf=='KE':
-            y2 = (be - np.float64(bbo))/1000+vfe
-        else:
-            y2 = (-be + np.float64(bbo))/1000
-    if xlabel=='k':
-        xunit=r"2\g(p)Å\+(-1)"
-    x,y,z = x.flatten(), y.flatten(), z.flatten()
-    # create a new book
-    wb = op.new_book('w',title)
-    # access the first sheet
-    sheet = wb[0]
-    # add data to the sheet
-    sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
-    sheet.from_list(1, y, lname=ylabel, units=yunit, axis='Y')
-    sheet.from_list(2, z, lname=zlabel, units=zunit, axis='Z')
-    gr=op.new_graph(title, 'TriContgray')
-    gr[0].add_plot(sheet, 1, 0, 2)
-    if ylabel=='Binding Energy':
-        ylm=gr[0].ylim
-        gr[0].set_ylim(ylm[1],ylm[0])
-        gr[0].set_ylim(step=-1*float(ylm[2]))
-    if len(x1) != 0:
-        sheet.from_list(3, x1, lname='x1', units=xunit, axis='X')
-        sheet.from_list(4, y1, lname='y1', units=yunit, axis='Y')
-        g1=gr[0].add_plot(sheet, 4, 3,type='s')
-        g1.symbol_size = 5
-        g1.symbol_kind = 2
-    if len(x2) != 0:
-        sheet.from_list(5, x2, lname='x2', units=xunit, axis='X')
-        sheet.from_list(6, y2, lname='y2', units=yunit, axis='Y')
-        g2=gr[0].add_plot(sheet, 6, 5,type='l')
-        g2.symbol_size = 5
-        g2.symbol_kind = 2
-        g2.color = 'red'
-    gr[0].rescale()
-    wb.show = False
+        else:   # title == E-Phi (Raw Data)
+            if npzf:
+                title = 'E-K (Sliced Data)'
+                xlabel='k'
+        if 'Second Derivative' in title:
+            z=sdz
+        if 'Data plot with pos' in title:
+            x1 = pos
+            if emf=='KE':
+                y1=fev
+            else:
+                y1= vfe-fev
+        if title=='Data plot with pos & bare band':
+            x2 = k*bbk
+            if emf=='KE':
+                y2 = (be - np.float64(bbo))/1000+vfe
+            else:
+                y2 = (-be + np.float64(bbo))/1000
+        if xlabel=='k':
+            xunit=r"2\g(p)Å\+(-1)"
+        x,y,z = x.flatten(), y.flatten(), z.flatten()
+        # create a new book
+        wb = op.new_book('w',title)
+        # access the first sheet
+        sheet = wb[0]
+        # add data to the sheet
+        sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
+        sheet.from_list(1, y, lname=ylabel, units=yunit, axis='Y')
+        sheet.from_list(2, z, lname=zlabel, units=zunit, axis='Z')
+        gr=op.new_graph(title, 'TriContgray')
+        gr[0].add_plot(sheet, 1, 0, 2)
+        if ylabel=='Binding Energy':
+            ylm=gr[0].ylim
+            gr[0].set_ylim(ylm[1],ylm[0])
+            gr[0].set_ylim(step=-1*float(ylm[2]))
+        if len(x1) != 0:
+            sheet.from_list(3, x1, lname='x1', units=xunit, axis='X')
+            sheet.from_list(4, y1, lname='y1', units=yunit, axis='Y')
+            g1=gr[0].add_plot(sheet, 4, 3,type='s')
+            g1.symbol_size = 5
+            g1.symbol_kind = 2
+        if len(x2) != 0:
+            sheet.from_list(5, x2, lname='x2', units=xunit, axis='X')
+            sheet.from_list(6, y2, lname='y2', units=yunit, axis='Y')
+            g2=gr[0].add_plot(sheet, 6, 5,type='l')
+            g2.symbol_size = 5
+            g2.symbol_kind = 2
+            g2.color = 'red'
+        gr[0].rescale()
+        wb.show = False
+    except Exception as e:
+        print(f"Error in plot2d: {e}")
+        try:
+            print(title)
+        except:
+            pass
 
 def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], title='title', xlabel='x', ylabel='y', ylabel1='y1', ylabel2='y2', xunit='arb', yunit='arb'):
-    # create a new book
-    wb = op.new_book('w',title)
-    # access the first sheet
-    sheet = wb[0]
-    # add data to the sheet
-    if ylabel1 == 'y1':
-        ylabel1 = ylabel
-    sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
-    sheet.from_list(1, y1, lname=ylabel1, units=yunit, axis='Y')
-    gr=op.new_graph(title, 'scatter')
-    g1=gr[0].add_plot(sheet, 1, 0)
-    g1.symbol_size = 5
-    g1.symbol_kind = 2
-    if len(y2) != 0:
-        sheet.from_list(2, y2, lname=ylabel2, units=yunit, axis='Y')
-        g2=gr[0].add_plot(sheet, 2, 0)
-        g2.symbol_size = 5
-        g2.symbol_kind = 2
-        g2.color = 'red'
-        gr[0].label('yl').text = f'{ylabel} ({yunit})'
-    if xlabel=='Binding Energy':
-        xlm=gr[0].xlim
-        gr[0].set_xlim(xlm[1],xlm[0])
-        gr[0].set_xlim(step=-1*float(xlm[2]))
-    gr[0].rescale()
-    wb.show = False
-
+    try:
+        # create a new book
+        wb = op.new_book('w',title)
+        # access the first sheet
+        sheet = wb[0]
+        # add data to the sheet
+        if ylabel1 == 'y1':
+            ylabel1 = ylabel
+        sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
+        sheet.from_list(1, y1, lname=ylabel1, units=yunit, axis='Y')
+        gr=op.new_graph(title, 'scatter')
+        g1=gr[0].add_plot(sheet, 1, 0)
+        g1.symbol_size = 5
+        g1.symbol_kind = 2
+        if len(y2) != 0:
+            sheet.from_list(2, y2, lname=ylabel2, units=yunit, axis='Y')
+            g2=gr[0].add_plot(sheet, 2, 0)
+            g2.symbol_size = 5
+            g2.symbol_kind = 2
+            g2.color = 'red'
+            gr[0].label('yl').text = f'{ylabel} ({yunit})'
+        if xlabel=='Binding Energy':
+            xlm=gr[0].xlim
+            gr[0].set_xlim(xlm[1],xlm[0])
+            gr[0].set_xlim(step=-1*float(xlm[2]))
+        gr[0].rescale()
+        wb.show = False
+    except Exception as e:
+        print(f"Error in plot1d: {e}")
+        try:
+            print(title)
+        except:
+            pass
 def save(format='opj'):
     """
     Save the Origin data in .opj format.
