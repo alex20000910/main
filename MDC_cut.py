@@ -1116,7 +1116,7 @@ save()
         st.put('Exporting to Origin...')
         temp=r"\origin_temp.py"
         os.system(f'python "{cdir+temp}"')
-        # os.system(f'del "{cdir+temp}"')
+        os.system(f'del "{cdir+temp}"')
         limg.config(image=img[np.random.randint(len(img))])
         print('Exported to Origin')
         st.put('Exported to Origin')
