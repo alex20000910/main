@@ -1,6 +1,50 @@
 # MDC cut GUI
-__version__ = "6.1.4"
-__release_date__ = "2025-06-16"
+__version__ = "6.2"
+__release_date__ = "2025-06-28"
+# asteval                   1.0.6                    pypi_0    pypi
+# bzip2                     1.0.8                h2bbff1b_6
+# ca-certificates           2025.2.25            haa95532_0
+# colorama                  0.4.6                    pypi_0    pypi
+# contourpy                 1.3.2                    pypi_0    pypi
+# cycler                    0.12.1                   pypi_0    pypi
+# dill                      0.4.0                    pypi_0    pypi
+# expat                     2.7.1                h8ddb27b_0
+# fonttools                 4.58.4                   pypi_0    pypi
+# h5py                      3.14.0                   pypi_0    pypi
+# kiwisolver                1.4.8                    pypi_0    pypi
+# libffi                    3.4.4                hd77b12b_1
+# lmfit                     1.3.3                    pypi_0    pypi
+# matplotlib                3.10.3                   pypi_0    pypi
+# numpy                     2.3.1                    pypi_0    pypi
+# opencv-python             4.11.0.86                pypi_0    pypi
+# openssl                   3.0.16               h3f729d1_0
+# originext                 1.2.4                    pypi_0    pypi
+# originpro                 1.1.12                   pypi_0    pypi
+# packaging                 25.0                     pypi_0    pypi
+# pandas                    2.3.0                    pypi_0    pypi
+# pillow                    11.2.1                   pypi_0    pypi
+# pip                       25.1               pyhc872135_2
+# psutil                    7.0.0                    pypi_0    pypi
+# py-cpuinfo                9.0.0                    pypi_0    pypi
+# pyparsing                 3.2.3                    pypi_0    pypi
+# python                    3.12.3               h1d929f7_1
+# python-dateutil           2.9.0.post0              pypi_0    pypi
+# pytz                      2025.2                   pypi_0    pypi
+# pywin32                   310                      pypi_0    pypi
+# scipy                     1.16.0                   pypi_0    pypi
+# setuptools                78.1.1          py312haa95532_0
+# six                       1.17.0                   pypi_0    pypi
+# sqlite                    3.45.3               h2bbff1b_0
+# tk                        8.6.14               h5e9d12e_1
+# tqdm                      4.67.1                   pypi_0    pypi
+# tzdata                    2025.2                   pypi_0    pypi
+# uncertainties             3.2.3                    pypi_0    pypi
+# vc                        14.42                haa95532_5
+# vs2015_runtime            14.42.34433          hbfb602d_5
+# wheel                     0.45.1          py312haa95532_0
+# xarray                    2025.6.1                 pypi_0    pypi
+# xz                        5.6.4                h4754444_1
+# zlib                      1.2.13               h8cc25b3_1
 import os, inspect
 import json
 import tkinter as tk
@@ -64,27 +108,14 @@ def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
     if a.lower() == 'y':
-        if s == 'matplotlib':
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", s+'==3.8.4'])
-            except subprocess.CalledProcessError:
-                subprocess.check_call([sys.executable, "-m", "pip3", "install", s+'==3.8.4'])
-        elif s == 'numpy':
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", s+'==1.26.4'])
-            except subprocess.CalledProcessError:
-                subprocess.check_call([sys.executable, "-m", "pip3", "install", s+'==1.26.4'])
-        else:
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", s])
-            except subprocess.CalledProcessError:
-                subprocess.check_call([sys.executable, "-m", "pip3", "install", s])
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", s])
+        except subprocess.CalledProcessError:
+            subprocess.check_call([sys.executable, "-m", "pip3", "install", s])
     else:
         quit()
 try:
-    import matplotlib   # matplotlib version: 3.8.4
-    if matplotlib.__version__ != '3.8.4':
-        os.system('pip install matplotlib==3.8.4')
+    import matplotlib
 except ModuleNotFoundError:
     install('matplotlib')
     import matplotlib
@@ -100,8 +131,6 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 try:
     import numpy as np
-    if np.__version__ != '1.26.4':
-        os.system('pip install numpy==1.26.4')
 except ModuleNotFoundError:
     install('numpy')
     import numpy as np
@@ -8368,7 +8397,7 @@ def mfitjob():
         yy = y[x_arg]
         yy = np.where(yy > mbase[i], yy, mbase[i])
         try:
-            # if (kmin[i],kmax[i])==((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi),(2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)) and i not in mfi:
+            # if (kmin[i],kmax[i])==(klim.min[i], klim.max[i]) and i not in mfi:
             # if i not in mfi:
             #     if i not in mfi_x:
             #         mfi_x.append(i)
@@ -8378,10 +8407,10 @@ def mfitjob():
             #         mfi_err.remove(i)
             #     a1=[(kmin[i]+kmax[i])/2,(np.max(y)-mbase[i]),5,mbase[i]]
             #     a2=[(kmin[i]+kmax[i])/2,(np.max(y)-mbase[i]),5,mbase[i],(kmin[i]+kmax[i])/2,(np.max(y)-mbase[i]),5,mbase[i]]
-            # elif (kmin[i],kmax[i])!=((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi),(2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+            # elif (kmin[i],kmax[i])!=(klim.min[i], klim.max[i]):
             if mfp[i] == 1:
                 smcst[i] = [0, 0, 0, 0, 0, 0]
-                if i in mfi_err and (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+                if i in mfi_err and (kmin[i], kmax[i]) != (klim.min[i], klim.max[i]):
                     pars = Parameters()
                     pars.add(
                         'x', value=kmin[i]+(kmax[i]-kmin[i])*0.3, min=kmin[i], max=kmax[i])
@@ -8405,7 +8434,7 @@ def mfitjob():
                     if i in mfi:
                         result = mresult[i]
                     a1 = maa1[i, :]
-                    if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+                    if (kmin[i], kmax[i]) == (klim.min[i], klim.max[i]):
                         fit_warn = 2
                     elif i not in mfi:
                         pars = Parameters()
@@ -8430,7 +8459,7 @@ def mfitjob():
                     else:
                         fit_warn = 0
             elif mfp[i] == 2:
-                if i in mfi_err and (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+                if i in mfi_err and (kmin[i], kmax[i]) != (klim.min[i], klim.max[i]):
                     pars = Parameters()
                     xr1, xr2 = float(mxf1.get()), float(mxf2.get())
                     wr1, wr2 = float(mwf1.get()), float(mwf2.get())
@@ -8479,7 +8508,7 @@ def mfitjob():
                     if i in mfi:
                         result = mresult[i]
                     a2 = maa2[i, :]
-                    if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+                    if (kmin[i], kmax[i]) == (klim.min[i], klim.max[i]):
                         fit_warn = 2
                     elif i not in mfi:
                         pars = Parameters()
@@ -8710,14 +8739,14 @@ def mfit():
         result=swapc1c2()
         mresult[i] = result
 
-        if (kmin[i], kmax[i]) == ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+        if (kmin[i], kmax[i]) == (klim.min[i], klim.max[i]):
             if i not in mfi_x:
                 mfi_x.append(i)
             if i in mfi:
                 mfi.remove(i)
             if i in mfi_err:
                 mfi_err.remove(i)
-        elif (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+        elif (kmin[i], kmax[i]) != (klim.min[i], klim.max[i]):
             if fit_warn == 0:
                 if i not in mfi:
                     mfi.append(i)
@@ -8855,8 +8884,7 @@ def fmrmv():
         ti = sorted([i, mirmv])
         for i in np.linspace(ti[0], ti[1], ti[1]-ti[0]+1, dtype=int):
             mfp[i] = 1
-            kmin[i], kmax[i] = (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
-                h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)
+            kmin[i], kmax[i] = klim.min[i], klim.max[i]
             if i not in mfi_x:
                 mfi_x.append(i)
             if i in mfi:
@@ -9828,7 +9856,7 @@ def mfitplot():  # mfiti Scale
 
     # mfitax.scatter(fmxx[i, np.argwhere(fmxx[i, :] >= -20)], y, c='g', s=4)
     mfitax.scatter(x, y, c='g', s=4)
-    if (kmin[i], kmax[i]) != ((2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi), (2*m*ev[i]*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi)):
+    if (kmin[i], kmax[i]) != (klim.min[i], klim.max[i]):
         klmin = mfitax.axvline(kmin[i], c='r')
         klmax = mfitax.axvline(kmax[i], c='r')
     else:
@@ -10505,25 +10533,34 @@ def mjob():     # MDC Fitting GUI
 #################################### prefit ######################################################
 mprfit = 0
 
+class oklim():
+    def __init__(self, npzf, ev, phi):
+        if npzf:
+            avg = np.mean(phi)
+            l = max(phi) - min(phi)
+            self.min = np.float64([avg - l/40 for i in ev])
+            self.max = np.float64([avg + l/40 for i in ev])
+        else:
+            self.min = np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi))
+            self.max = np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
+        
 
 def fitm():
-    global ev, phi, data, mvv, maa1, maa2, fmxx, fmyy, fmx, fmy, kmin, kmax, cki, mbase, mprfit, mf_prswap, smresult
+    global ev, phi, data, mvv, maa1, maa2, fmxx, fmyy, fmx, fmy, kmin, kmax, cki, mbase, mprfit, mf_prswap, smresult, klim
     mprfit = 0
     cki = []
     mbase = [0 for i in range(len(ev))]
     mf_prswap = []
-
+    klim = oklim(npzf, ev, phi)
     if fpr == 1:
         try:
             kmin, kmax = skmin, skmax
         except NameError:
-            kmin, kmax = np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
-                h/2/np.pi)), np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
+            kmin, kmax = klim.min.copy(), klim.max.copy()
         if len(scki) >= 2:
             cki = scki
     else:
-        kmin, kmax = np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(-0.5/180*np.pi)*10**-10/(
-            h/2/np.pi)), np.float64((2*m*ev*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
+        kmin, kmax = klim.min.copy(), klim.max.copy()
     # fmxx = np.float64((np.ones(len(phi)*len(ev))).reshape(len(ev), len(phi)))
     # fmyy = np.float64((np.ones(len(phi)*len(ev))).reshape(len(ev), len(phi)))
     # fmxx *= -50
@@ -10544,8 +10581,8 @@ def fitm():
         # xx = tx[np.argwhere(tx <= kmax[i])].flatten()
         # ty = y[np.argwhere(x >= kmin[i])].flatten()
         # yy = ty[np.argwhere(tx <= kmax[i])].flatten()
-        yy = y[x_arg]
-        yy = np.where(yy > int(base.get()), yy, int(base.get()))
+        # yy = y[x_arg]
+        # yy = np.where(yy > int(base.get()), yy, int(base.get()))
         try:
             if i in smfi and fpr == 1:
                 a1 = smaa1[i, :]
