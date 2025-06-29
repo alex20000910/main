@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.2.1"
-__release_date__ = "2025-06-29"
+__version__ = "6.3"
+__release_date__ = "2025-06-30"
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6
 # ca-certificates           2025.2.25            haa95532_0
@@ -12223,6 +12223,49 @@ def select_callback(eclick, erelease):
 #                 selector.set_active(True)
 
 
+def cur_move(event):
+    global f, a, xx, yy
+    if event.inaxes == a and event.xdata is not None and event.ydata is not None:
+        f.canvas.get_tk_widget().config(cursor="crosshair")
+        try:
+            xx.remove()
+            yy.remove()
+        except:
+            pass
+        xx=a.axvline(event.xdata, color='red')
+        yy=a.axhline(event.ydata, color='red')
+    f.show()
+    
+
+def cur_on_move(event):
+    if event.inaxes == a and event.xdata is not None and event.ydata is not None:
+        annot.xy = (event.xdata, event.ydata)
+        text = f"x={event.xdata:.3f}\ny={event.ydata:.3f}"
+        annot.set_text(text)
+        # 取得座標軸範圍
+        xlim = a.get_xlim()
+        ylim = a.get_ylim()
+        # 設定 annotation 方向
+        offset_x, offset_y = 20, 20
+        # 靠近右邊界
+        if event.xdata > xlim[1] - (xlim[1]-xlim[0])*0.15:
+            offset_x = -60
+        # 靠近左邊界
+        elif event.xdata < xlim[0] + (xlim[1]-xlim[0])*0.15:
+            offset_x = 20
+        # 靠近上邊界
+        if event.ydata > ylim[1] - (ylim[1]-ylim[0])*0.15:
+            offset_y = -40
+        # 靠近下邊界
+        elif event.ydata < ylim[0] + (ylim[1]-ylim[0])*0.15:
+            offset_y = 20
+        annot.set_position((offset_x, offset_y))
+        annot.set_visible(True)
+        f.canvas.draw_idle()
+    else:
+        annot.set_visible(False)
+        f.canvas.draw_idle()
+
 def onselect(xmin, xmax):
     global f, f0, h1, h2
     if xmin > xmax:
@@ -12360,7 +12403,7 @@ def cut_select(event):
 
 
 def exp(*e):
-    global value, value1, value2, value3, data, ev, phi, mx, my, mz, mfpath, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax
+    global value, value1, value2, value3, data, ev, phi, mx, my, mz, mfpath, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax, annot
     limg.config(image=img[np.random.randint(len(img))])
     selectors = []
     cursor = []
@@ -12410,6 +12453,15 @@ def exp(*e):
                 mx, my = np.meshgrid(phi, vfe-ev)
             # h1 = a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
             h1 = a.pcolormesh(mx, my, mz, cmap=value3.get())
+            annot = a.annotate(
+                "", xy=(0,0), xytext=(20,20), textcoords="offset points",
+                bbox=dict(boxstyle="round", fc="w", alpha=0.6),
+                fontsize=14
+                # fontsize=12,
+                # arrowprops=dict(arrowstyle="->")
+            )
+            annot.set_visible(False)
+            f.canvas.mpl_connect('motion_notify_event', cur_on_move)
             if emf=='KE':
                 yl = a.get_ylim()
             else:
@@ -12455,7 +12507,17 @@ def exp(*e):
             else:
                 px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
-            cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+            # cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+            annot = a.annotate(
+                "", xy=(0,0), xytext=(20,20), textcoords="offset points",
+                bbox=dict(boxstyle="round", fc="w", alpha=0.6),
+                fontsize=12
+                # fontsize=12,
+                # arrowprops=dict(arrowstyle="->")
+            )
+            annot.set_visible(False)
+            f.canvas.mpl_connect('motion_notify_event', cur_move)
+            f.canvas.mpl_connect('motion_notify_event', cur_on_move)
             if emf=='KE':
                 yl = a.get_ylim()
             else:
@@ -12506,7 +12568,17 @@ def exp(*e):
                 px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
-            cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+            # cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+            annot = a.annotate(
+                "", xy=(0,0), xytext=(20,20), textcoords="offset points",
+                bbox=dict(boxstyle="round", fc="w", alpha=0.6),
+                fontsize=12
+                # fontsize=12,
+                # arrowprops=dict(arrowstyle="->")
+            )
+            annot.set_visible(False)
+            f.canvas.mpl_connect('motion_notify_event', cur_move)
+            f.canvas.mpl_connect('motion_notify_event', cur_on_move)
             if emf=='KE':
                 yl = a.get_ylim()
             else:
@@ -12549,7 +12621,17 @@ def exp(*e):
                     px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                 pz = data.to_numpy()
                 h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
-                cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+                # cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+                annot = a.annotate(
+                    "", xy=(0,0), xytext=(20,20), textcoords="offset points",
+                    bbox=dict(boxstyle="round", fc="w", alpha=0.6),
+                    fontsize=12
+                    # fontsize=12,
+                    # arrowprops=dict(arrowstyle="->")
+                )
+                annot.set_visible(False)
+                f.canvas.mpl_connect('motion_notify_event', cur_move)
+                f.canvas.mpl_connect('motion_notify_event', cur_on_move)
                 if emf=='KE':
                     yl = a.get_ylim()
                 else:
@@ -12604,7 +12686,17 @@ def exp(*e):
                         yl = sorted(a.get_ylim(), reverse=True)
                     a0.pcolormesh(px, py, np.full_like(
                         np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
-                cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+                # cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+                annot = a.annotate(
+                    "", xy=(0,0), xytext=(20,20), textcoords="offset points",
+                    bbox=dict(boxstyle="round", fc="w", alpha=0.6),
+                    fontsize=12
+                    # fontsize=12,
+                    # arrowprops=dict(arrowstyle="->")
+                )
+                annot.set_visible(False)
+                f.canvas.mpl_connect('motion_notify_event', cur_move)
+                f.canvas.mpl_connect('motion_notify_event', cur_on_move)
             elif value.get() == 'MDC Curves':
                 y = np.zeros([len(ev),len(phi)],dtype=float)
                 for n in range(len(ev)):
@@ -13289,7 +13381,17 @@ def exp(*e):
             if emf=='BE':
                 a.invert_yaxis()
                 a0.invert_yaxis()
-            cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+            # cursor = Cursor(a, useblit=True, color='red', linewidth=1)
+            annot = a.annotate(
+                "", xy=(0,0), xytext=(20,20), textcoords="offset points",
+                bbox=dict(boxstyle="round", fc="w", alpha=0.6),
+                fontsize=12
+                # fontsize=12,
+                # arrowprops=dict(arrowstyle="->")
+            )
+            annot.set_visible(False)
+            f.canvas.mpl_connect('motion_notify_event', cur_move)
+            f.canvas.mpl_connect('motion_notify_event', cur_on_move)
     try:
         if value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
             try:
