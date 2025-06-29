@@ -11364,7 +11364,7 @@ def o_plot1(*e):
             if 'E-k with' not in value.get():
                 ao.set_title(value.get(), font='Arial', fontsize=16)
             else:
-                at.set_title(value.get(), font='Arial', fontsize=16)
+                at.set_title(value.get(), font='Arial', fontsize=18)
             ao.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=14)
             if 'MDC Curves' not in value.get():
                 if emf=='KE':
@@ -12654,7 +12654,7 @@ def exp(*e):
             if  value.get() != 'Raw Data':
                 a.set_title(value.get(), font='Arial', fontsize=18)
         else:
-            at_.set_title(value.get(), font='Arial', fontsize=18)
+            at_.set_title(value.get(), font='Arial', fontsize=24)
         a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
         # a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
         if 'MDC Curves' not in value.get():
@@ -12693,6 +12693,8 @@ def exp(*e):
                     a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
                     a.invert_yaxis()
                     a.set_ylim([vfe-ev[0], vfe-ev[n*d]])
+                a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
+                a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
                 a1_.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
                 a1_.set_xticklabels(labels=a1_.get_xticklabels(), fontsize=20)
                 a1_.set_yticklabels([])
