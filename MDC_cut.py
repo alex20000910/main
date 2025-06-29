@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.2"
-__release_date__ = "2025-06-28"
+__version__ = "6.2.1"
+__release_date__ = "2025-06-29"
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6
 # ca-certificates           2025.2.25            haa95532_0
@@ -826,9 +826,9 @@ def gui_exp_origin():
     pr_exp_origin()
     v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
     c1=tk.Checkbutton(fr,text='E-Phi (Raw Data)',variable=v1,font=('Arial', 18, "bold"),bg='white')
-    if npzf:c1.config(text='E-K (Sliced Data)')
+    if npzf:c1.config(text='E-k (Sliced Data)')
     c1.grid(row=0,column=0,sticky='w')
-    c2=tk.Checkbutton(fr,text='E-K (Processed Data)',variable=v2,font=('Arial', 18, "bold"),bg='white')
+    c2=tk.Checkbutton(fr,text='E-k (Processed Data)',variable=v2,font=('Arial', 18, "bold"),bg='white')
     c2.grid(row=1,column=0,sticky='w')
     c3=tk.Checkbutton(fr,text='MDC Fit Position',variable=v3,font=('Arial', 18, "bold"),bg='white')
     c3.grid(row=2,column=0,sticky='w')
@@ -875,7 +875,7 @@ def pr_exp_origin():
     except:
         no.append(0)
     try:
-        cmdlist[1]=f'''plot2d(title='E-K (Processed Data)')\n'''
+        cmdlist[1]=f'''plot2d(title='E-k (Processed Data)')\n'''
     except:
         no.append(1)
     try:
@@ -1278,7 +1278,7 @@ def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)
             xlabel='k'
         else:   # title == E-Phi (Raw Data)
             if npzf:
-                title = 'E-K (Sliced Data)'
+                title = 'E-k (Sliced Data)'
                 xlabel='k'
         if 'Second Derivative' in title:
             z=sdz
@@ -7624,8 +7624,8 @@ def feedmove(event):
     global eedxdata, eedydata, eedfitout
     if event.xdata != None:
         eedfitout.get_tk_widget().config(cursor="crosshair")
-        eedxdata.config(text='xdata:'+str('%.3f' % event.xdata))
-        eedydata.config(text='ydata:'+str('%.3f' % event.ydata))
+        eedxdata.config(text='xdata:'+str(' %.3f' % event.xdata))
+        eedydata.config(text='ydata:'+str(' %.3f' % event.ydata))
     else:
         eedfitout.get_tk_widget().config(cursor="")
         try:
@@ -7889,10 +7889,10 @@ def emove(event):
                 [tpx1, tpx2] = sorted([tpx1, tpx2])
                 [tpy1, tpy2] = sorted([tpy1, tpy2])
                 tx2, ty2 = x2, y2
-                edxdata.config(text='dx:'+str('%.3f' % abs(x2-x1)))
-                edydata.config(text='dy:'+str('%.3f' % abs(y2-y1)))
-        exdata.config(text='xdata:'+str('%.3f' % event.xdata))
-        eydata.config(text='ydata:'+str('%.3f' % event.ydata))
+                edxdata.config(text='dx:'+str(' %.3f' % abs(x2-x1)))
+                edydata.config(text='dy:'+str(' %.3f' % abs(y2-y1)))
+        exdata.config(text='xdata:'+str(' %.3f' % event.xdata))
+        eydata.config(text='ydata:'+str(' %.3f' % event.ydata))
     else:
         efitout.get_tk_widget().config(cursor="")
         try:
@@ -8909,8 +8909,8 @@ def fmedmove(event):
     global medxdata, medydata, medfitout
     if event.xdata != None:
         medfitout.get_tk_widget().config(cursor="crosshair")
-        medxdata.config(text='xdata:'+str('%.3f' % event.xdata))
-        medydata.config(text='ydata:'+str('%.3f' % event.ydata))
+        medxdata.config(text='xdata:'+str(' %.3f' % event.xdata))
+        medydata.config(text='ydata:'+str(' %.3f' % event.ydata))
     else:
         medfitout.get_tk_widget().config(cursor="")
         try:
@@ -9914,10 +9914,10 @@ def mmove(event):
                 [tpx1, tpx2] = sorted([tpx1, tpx2])
                 [tpy1, tpy2] = sorted([tpy1, tpy2])
                 tx2, ty2 = x2, y2
-                mdxdata.config(text='dx:'+str('%.3f' % abs(x2-x1)))
-                mdydata.config(text='dy:'+str('%.3f' % abs(y2-y1)))
-        mxdata.config(text='xdata:'+str('%.3f' % event.xdata))
-        mydata.config(text='ydata:'+str('%.3f' % event.ydata))
+                mdxdata.config(text='dx:'+str(' %.3f' % abs(x2-x1)))
+                mdydata.config(text='dy:'+str(' %.3f' % abs(y2-y1)))
+        mxdata.config(text='xdata:'+str(' %.3f' % event.xdata))
+        mydata.config(text='ydata:'+str(' %.3f' % event.ydata))
     else:
         mfitout.get_tk_widget().config(cursor="")
         try:
@@ -11258,7 +11258,7 @@ def o_plot1(*e):
                     at.set_yticks([])
                     ao = fig.add_axes([0.1, 0.13, 0.4, 0.8])
                     ao1 = fig.add_axes([0.5, 0.13, 0.4, 0.8])
-                if value.get() == 'E-K Diagram':
+                if value.get() == 'E-k Diagram':
                     # h1=a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
                     if emf=='KE':
                         px, py = np.meshgrid(phi, ev)
@@ -11323,7 +11323,7 @@ def o_plot1(*e):
                         st.put(str(round((n+1)/(len(ev)//d)*100)) +
                                '%'+' ('+str(len(ev)//d)+')')
                     pbar.close()
-                elif value.get() == 'E-K with MDC Curves':
+                elif value.get() == 'E-k with MDC Curves':
                     pbar = tqdm.tqdm(
                         total=len(ev)//d, desc='MDC', colour='red')
                     y = np.zeros([len(ev),len(phi)],dtype=float)
@@ -11361,7 +11361,7 @@ def o_plot1(*e):
                     ylb.set_yticklabels([])
                     # cb = fig.colorbar(h0, ax=ao1)
                     # cb.set_ticklabels(cb.get_ticks(), font='Arial')
-            if 'E-K with' not in value.get():
+            if 'E-k with' not in value.get():
                 ao.set_title(value.get(), font='Arial', fontsize=16)
             else:
                 at.set_title(value.get(), font='Arial', fontsize=16)
@@ -11373,7 +11373,7 @@ def o_plot1(*e):
                     ao.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=14)
                     ao.invert_yaxis()
             else:
-                if 'E-K with' in value.get():
+                if 'E-k with' in value.get():
                     if emf=='KE':
                         ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=14)
                         ao.set_ylim([ev[0], ev[n*d]])
@@ -12389,7 +12389,7 @@ def exp(*e):
         elif value.get() == 'MDC Curves':
             f=plt.figure(figsize=(4,6),dpi=150)
             a = f.subplots()
-        elif value.get() == 'E-K with MDC Curves':
+        elif value.get() == 'E-k with MDC Curves':
             f = plt.figure(figsize=(9, 7), layout='constrained')
             at_ = plt.axes([0.28, 0.15, 0.5, 0.75])
             at_.set_xticks([])
@@ -12415,11 +12415,11 @@ def exp(*e):
             else:
                 yl = sorted(a.get_ylim(), reverse=True)
             cb = f.colorbar(h1, cax=eacb, orientation='vertical')
-            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
+            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
             
             h2 = a0.pcolormesh(mx, my, mz, cmap=value3.get())
             cb1 = f0.colorbar(h2)
-            cb1.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
+            # cb1.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
 
             acx.set_xticks([])
             acx.set_yticks([])
@@ -12455,16 +12455,17 @@ def exp(*e):
             else:
                 px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
+            cursor = Cursor(a, useblit=True, color='red', linewidth=1)
             if emf=='KE':
                 yl = a.get_ylim()
             else:
                 yl = sorted(a.get_ylim(), reverse=True)
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
-            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
+            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
             
             cb1 = f0.colorbar(h2)
-            cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=14)
+            # cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=14)
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
                 min(pz.flatten()), max(pz.flatten()), 50), color='green')
@@ -12505,16 +12506,17 @@ def exp(*e):
                 px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
             
             h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
+            cursor = Cursor(a, useblit=True, color='red', linewidth=1)
             if emf=='KE':
                 yl = a.get_ylim()
             else:
                 yl = sorted(a.get_ylim(), reverse=True)
             h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
             cb = f.colorbar(h1)
-            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
+            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
             
             cb1 = f0.colorbar(h2)
-            cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=14)
+            # cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=14)
 
             n = a1.hist(pz.flatten(), bins=np.linspace(
                 min(pz.flatten()), max(pz.flatten()), 50), color='green')
@@ -12533,7 +12535,7 @@ def exp(*e):
                 snap_values=n[1]
             ))
         else:
-            if value.get() == 'E-K Diagram':
+            if value.get() == 'E-k Diagram':
                 # h1=a.scatter(mx,my,c=mz,marker='o',s=0.9,cmap=value3.get());
                 if emf=='KE':
                     px, py = np.meshgrid(phi, ev)
@@ -12547,16 +12549,17 @@ def exp(*e):
                     px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
                 pz = data.to_numpy()
                 h1 = a.pcolormesh(px, py, pz, cmap=value3.get())
+                cursor = Cursor(a, useblit=True, color='red', linewidth=1)
                 if emf=='KE':
                     yl = a.get_ylim()
                 else:
                     yl = sorted(a.get_ylim(), reverse=True)
                 h2 = a0.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = f.colorbar(h1)
-                cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
+                # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
                 
                 cb1 = f0.colorbar(h2)
-                cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=14)
+                # cb1.set_ticklabels(cb1.get_ticks(), font='Arial', fontsize=14)
                 
 
                 n = a1.hist(pz.flatten(), bins=np.linspace(
@@ -12601,6 +12604,7 @@ def exp(*e):
                         yl = sorted(a.get_ylim(), reverse=True)
                     a0.pcolormesh(px, py, np.full_like(
                         np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
+                cursor = Cursor(a, useblit=True, color='red', linewidth=1)
             elif value.get() == 'MDC Curves':
                 y = np.zeros([len(ev),len(phi)],dtype=float)
                 for n in range(len(ev)):
@@ -12615,7 +12619,7 @@ def exp(*e):
                     yy=y[n*d][:]+n*np.max(y)/d
                     yy=smooth(yy,l,p)
                     a.plot(x, yy, c='black')
-            elif value.get() == 'E-K with MDC Curves':
+            elif value.get() == 'E-k with MDC Curves':
                     y = np.zeros([len(ev),len(phi)],dtype=float)
                     for n in range(len(ev)):
                         ecut = data.sel(eV=ev[n], method='nearest')
@@ -12646,40 +12650,40 @@ def exp(*e):
                     ylb.set_yticklabels([])
                     # cb = fig.colorbar(h1, ax=a1_)
                     # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
-        if 'E-K with' not in value.get():
+        if 'E-k with' not in value.get():
             if  value.get() != 'Raw Data':
-                a.set_title(value.get(), font='Arial', fontsize=24)
+                a.set_title(value.get(), font='Arial', fontsize=18)
         else:
-            at_.set_title(value.get(), font='Arial', fontsize=24)
-        a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
-        a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
+            at_.set_title(value.get(), font='Arial', fontsize=18)
+        a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+        # a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
         if 'MDC Curves' not in value.get():
             a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
-            a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=14)
+            # a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=14)
             if emf=='KE':
-                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
-                a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
+                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
+                # a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
                 a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
-                a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
+                # a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
                 if value.get() == 'Raw Data':
                     a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
-                    a.set_yticklabels(labels=a.get_yticklabels(), fontsize=14)
+                    # a.set_yticklabels(labels=a.get_yticklabels(), fontsize=14)
                     a0.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
-                    a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
+                    # a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
             else:
-                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
-                a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
+                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+                # a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
                 a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
-                a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
+                # a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
                 if value.get() == 'Raw Data':
                     a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
-                    a.set_yticklabels(labels=a.get_yticklabels(), fontsize=14)
+                    # a.set_yticklabels(labels=a.get_yticklabels(), fontsize=14)
                     a0.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
-                    a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
+                    # a0.set_yticklabels(labels=a0.get_yticklabels(), fontsize=14)
                 a.invert_yaxis()
                 a0.invert_yaxis()
         else:
-            if 'E-K with' in value.get():
+            if 'E-k with' in value.get():
                 if emf=='KE':
                     a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
                     a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
@@ -12697,25 +12701,24 @@ def exp(*e):
             else:
                 ylr=a.twinx()
                 a.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=22)
-                a.set_yticklabels([])
+                # a.set_yticklabels([])
                 ylr.set_ylabel(r'$\longleftarrow$ Binding Energy', font='Arial', fontsize=22)
                 ylr.set_yticklabels([])
                 a.set_xlim([min(x), max(x)])
                 a.set_ylim([0, np.max(n*np.max(y)/d)])
         if value.get() == 'Raw Data':
             acx.set_title('                Raw Data', font='Arial', fontsize=18)
-            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
+            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
             if npzf:
                 a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
                 a0.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
             else:
                 a.set_xlabel('Angle (deg)', font='Arial', fontsize=16)
                 a0.set_xlabel('Angle (deg)', font='Arial', fontsize=16)
-            a.set_xticklabels(labels=a.get_xticklabels(), fontsize=14)
-            a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=14)
+            # a.set_xticklabels(labels=a.get_xticklabels(), fontsize=14)
+            # a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=14)
         # a.set_xticklabels(labels=a.get_xticklabels(),fontsize=10)
         # a.set_yticklabels(labels=a.get_yticklabels(),fontsize=10)
-        # cursor = Cursor(a, useblit=True, color='red', linewidth=1)
     if pflag == 2:
         f, a = plt.subplots(2, 1, dpi=150)
         if value1.get() == 'MDC fitted Data':
@@ -13142,17 +13145,16 @@ def exp(*e):
             else:
                 yl = sorted(a.get_ylim(), reverse=True)
             cb = f.colorbar(h1)
-            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20, minor=False)
-            cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=20)
+            # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=14)
             
-            a.set_title(value2.get(), font='Arial', fontsize=24)
-            a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=22)
-            a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
+            a.set_title(value2.get(), font='Arial', fontsize=18)
+            a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=16)
+            # a.set_xticklabels(labels=a.get_xticklabels(), fontsize=20)
             if emf=='KE':
-                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=22)
+                a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=16)
             else:
-                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=22)
-            a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
+                a.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=16)
+            # a.set_yticklabels(labels=a.get_yticklabels(), fontsize=20)
             try:
                 if mp == 1:
                     if emf=='KE':
@@ -13382,8 +13384,8 @@ def move(event):
                     rcx.set_xlim(ao.get_xlim())
                     rcy.set_ylim(ao.get_ylim())
                     out.draw()
-        xdata.config(text='xdata:'+str('%.3f' % event.xdata))
-        ydata.config(text='ydata:'+str('%.3f' % event.ydata))
+        xdata.config(text='xdata:'+str(' %.3f' % event.xdata))
+        ydata.config(text='ydata:'+str(' %.3f' % event.ydata))
     else:
         if value.get() == 'Raw Data':
             rcx.clear()
@@ -14493,8 +14495,8 @@ if __name__ == '__main__':
     frraw = tk.Frame(plots, bg='white')
     frraw.grid(row=1, column=1)
 
-    optionList = ['Raw Data', 'E-K Diagram', 'MDC Normalized',
-                'First Derivative', 'Second Derivative', 'MDC Curves', 'E-K with MDC Curves']   # 選項
+    optionList = ['Raw Data', 'E-k Diagram', 'MDC Normalized',
+                'First Derivative', 'Second Derivative', 'MDC Curves', 'E-k with MDC Curves']   # 選項
     value = tk.StringVar()                                        # 取值
     value.set('---Plot1---')
     # 第二個參數是取值，第三個開始是選項，使用星號展開
