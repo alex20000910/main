@@ -13393,16 +13393,19 @@ def exp(*e):
             f.canvas.mpl_connect('motion_notify_event', cur_move)
             f.canvas.mpl_connect('motion_notify_event', cur_on_move)
     try:
-        if value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
+        if value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' != value.get():
             try:
                 h1.set_clim([vcmin.get(), vcmax.get()])
                 h2.set_clim([vcmin.get(), vcmax.get()])
             except:
                 pass
-            a0.set_xlim(xl)
-            a0.set_ylim(yl)
-            a.set_xlim(xl)
-            a.set_ylim(yl)
+            try:    # ignore the problem occurred in E-k with MDC curves
+                a0.set_xlim(xl)
+                a0.set_ylim(yl)
+                a.set_xlim(xl)
+                a.set_ylim(yl)
+            except:
+                pass
             if value.get() != 'Raw Data':
                 plt.tight_layout()
             # if value.get()=='Raw Data':
