@@ -1,50 +1,53 @@
 # MDC cut GUI
-__version__ = "6.3"
+__version__ = "6.4"
 __release_date__ = "2025-06-30"
-# asteval                   1.0.6                    pypi_0    pypi
-# bzip2                     1.0.8                h2bbff1b_6
-# ca-certificates           2025.2.25            haa95532_0
-# colorama                  0.4.6                    pypi_0    pypi
-# contourpy                 1.3.2                    pypi_0    pypi
-# cycler                    0.12.1                   pypi_0    pypi
-# dill                      0.4.0                    pypi_0    pypi
-# expat                     2.7.1                h8ddb27b_0
-# fonttools                 4.58.4                   pypi_0    pypi
-# h5py                      3.14.0                   pypi_0    pypi
-# kiwisolver                1.4.8                    pypi_0    pypi
-# libffi                    3.4.4                hd77b12b_1
-# lmfit                     1.3.3                    pypi_0    pypi
-# matplotlib                3.10.3                   pypi_0    pypi
-# numpy                     2.3.1                    pypi_0    pypi
-# opencv-python             4.11.0.86                pypi_0    pypi
-# openssl                   3.0.16               h3f729d1_0
-# originext                 1.2.4                    pypi_0    pypi
-# originpro                 1.1.12                   pypi_0    pypi
-# packaging                 25.0                     pypi_0    pypi
-# pandas                    2.3.0                    pypi_0    pypi
-# pillow                    11.2.1                   pypi_0    pypi
-# pip                       25.1               pyhc872135_2
-# psutil                    7.0.0                    pypi_0    pypi
-# py-cpuinfo                9.0.0                    pypi_0    pypi
-# pyparsing                 3.2.3                    pypi_0    pypi
-# python                    3.12.3               h1d929f7_1
-# python-dateutil           2.9.0.post0              pypi_0    pypi
-# pytz                      2025.2                   pypi_0    pypi
-# pywin32                   310                      pypi_0    pypi
-# scipy                     1.16.0                   pypi_0    pypi
-# setuptools                78.1.1          py312haa95532_0
-# six                       1.17.0                   pypi_0    pypi
-# sqlite                    3.45.3               h2bbff1b_0
-# tk                        8.6.14               h5e9d12e_1
-# tqdm                      4.67.1                   pypi_0    pypi
-# tzdata                    2025.2                   pypi_0    pypi
-# uncertainties             3.2.3                    pypi_0    pypi
-# vc                        14.42                haa95532_5
-# vs2015_runtime            14.42.34433          hbfb602d_5
-# wheel                     0.45.1          py312haa95532_0
-# xarray                    2025.6.1                 pypi_0    pypi
-# xz                        5.6.4                h4754444_1
-# zlib                      1.2.13               h8cc25b3_1
+# Name                     Version          Build               Channel
+# asteval                    1.0.6            pypi_0              pypi
+# bzip2                      1.0.8            h2bbff1b_6
+# ca-certificates            2025.2.25        haa95532_0
+# colorama                   0.4.6            pypi_0              pypi
+# contourpy                  1.3.2            pypi_0              pypi
+# cycler                     0.12.1           pypi_0              pypi
+# dill                       0.4.0            pypi_0              pypi
+# expat                      2.7.1            h8ddb27b_0
+# fonttools                  4.58.4           pypi_0              pypi
+# h5py                       3.14.0           pypi_0              pypi
+# kiwisolver                 1.4.8            pypi_0              pypi
+# libffi                     3.4.4            hd77b12b_1
+# libmpdec                   4.0.0            h827c3e9_0
+# lmfit                      1.3.3            pypi_0              pypi
+# matplotlib                 3.10.3           pypi_0              pypi
+# numpy                      2.3.1            pypi_0              pypi
+# opencv-python              4.11.0.86        pypi_0              pypi
+# openssl                    3.0.16           h3f729d1_0
+# originext                  1.2.4            pypi_0              pypi
+# originpro                  1.1.12           pypi_0              pypi
+# packaging                  25.0             pypi_0              pypi
+# pandas                     2.3.0            pypi_0              pypi
+# pillow                     11.2.1           pypi_0              pypi
+# pip                        25.1             pyhc872135_2
+# psutil                     7.0.0            pypi_0              pypi
+# py-cpuinfo                 9.0.0            pypi_0              pypi
+# pyparsing                  3.2.3            pypi_0              pypi
+# python                     3.13.5           h286a616_100_cp313
+# python-dateutil            2.9.0.post0      pypi_0              pypi
+# python_abi                 3.13             0_cp313
+# pytz                       2025.2           pypi_0              pypi
+# pywin32                    310              pypi_0              pypi
+# scipy                      1.16.0           pypi_0              pypi
+# setuptools                 78.1.1           py313haa95532_0
+# six                        1.17.0           pypi_0              pypi
+# sqlite                     3.45.3           h2bbff1b_0
+# tk                         8.6.14           h5e9d12e_1
+# tqdm                       4.67.1           pypi_0              pypi
+# tzdata                     2025.2           pypi_0              pypi
+# uncertainties              3.2.3            pypi_0              pypi
+# vc                         14.42            haa95532_5
+# vs2015_runtime             14.42.34433      hbfb602d_5
+# wheel                      0.45.1           py313haa95532_0
+# xarray                     2025.6.1         pypi_0              pypi
+# xz                         5.6.4            h4754444_1
+# zlib                       1.2.13           h8cc25b3_1
 import os, inspect
 import json
 import tkinter as tk
@@ -1721,13 +1724,17 @@ def show_info():
     # 創建自定義窗口
     info_window = tk.Toplevel()
     info_window.title("Information")
-    info_window.geometry(f"600x150+{screen_width//2-300}+{screen_height//2-75}")
     
     # 添加信息標籤
     l = tk.Label(info_window, text="Graph copied to clipboard", font=("Arial", 30, "bold"),fg='red')
     l.pack(pady=5)
     label = tk.Label(info_window, text="window closed in 3 second", font=("Arial", 20))
     label.pack(pady=5)
+
+    info_window.update_idletasks()
+    w= info_window.winfo_reqwidth()
+    h= info_window.winfo_reqheight()
+    info_window.geometry(f"{w}x{h}+{screen_width//2-w//2}+{screen_height//2-h//2}")
     
     # 設置計時器，3 秒後自動關閉窗口
     info_window.update()
@@ -1982,6 +1989,11 @@ class spectrogram:
             self.emaxc_label.grid()
             self.eminc_entry.grid()
             self.emaxc_entry.grid()
+        self.root.update_idletasks()
+        w = self.root.winfo_reqwidth()
+        h = self.root.winfo_reqheight()
+        self.root.geometry(f'{int(w*ScaleFactor/100)}x{int(h*ScaleFactor/100)}')
+        self.root.update()
     
     def fit_press(self, event):
         if event.button == 1 and event.inaxes:
@@ -2312,7 +2324,6 @@ class spectrogram:
     def __ups(self):
         self.root = tk.Toplevel(g,bg='white')
         self.root.title('UPS spectrum')
-        self.root.geometry('1920x1080')
         
         # OptionMenu 設定
         fit_options = ["Raw Data", "Smooth Data", "Fermi-Dirac Fitting", "Linear Fits", "ERFC Fit", "First Derivative", "Second Derivative", "Smooth Data with First Derivative", "Segmented Tangents"]
@@ -2823,7 +2834,7 @@ d
         self.grg.title('Data Range')
         
         fr=tk.Frame(self.grg,bg='white')
-        fr.grid(row=0,column=0)
+        fr.pack(side=tk.TOP, padx=5, pady=5)
         
         self.v_r1=tk.DoubleVar(value=self.rr1)
         l_rr1in1 = tk.Label(fr, text='From', font=('Arial', 16, "bold"), bg='white')
@@ -2848,15 +2859,19 @@ d
         l_rr2in2.grid(row=1,column=2)
         
         fr1 = tk.Frame(self.grg,bg='white')
-        fr1.grid(row=2,column=0)
-        b1=tk.Button(fr1,text='Confirm',command=self.__save_rg, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
-        b1.grid(row=2,column=0)
+        fr1.pack(side=tk.TOP, padx=5, pady=5)
+        b1=tk.Button(self.grg,text='Confirm',command=self.__save_rg, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
+        b1.pack(side=tk.TOP, padx=5, pady=5)
         
         self.grg.bind('<Return>', self.__save_rg)
         self.grg.focus_set()
         self.rr1_in.focus_set()
         self.rr1_in.select_range(0,tk.END)
         self.rr1_in.icursor(tk.END)
+        self.grg.update_idletasks()
+        w = self.grg.winfo_reqwidth()
+        h = self.grg.winfo_reqheight()
+        self.grg.geometry(f"{int(w*1.4)}x{h}")  # Adjust height to fit the buttons
         self.grg.update()
 
     def __save_rg(self, *args):
@@ -3974,8 +3989,6 @@ class wait(tk.Toplevel):
     def __init__(self, master):
         super().__init__(master, background = 'white')
         self.title('Info')
-        self.geometry('400x200')
-        self.resizable(False, False)
         tk.Label(self, bg='white', text='Please wait...', font=('Arial', 16, "bold")).pack(side=tk.TOP, pady=20)
         self.label_info = tk.Label(self, bg='white', text='', font=('Arial', 14))
         self.label_info.pack(side=tk.TOP, pady=20)
@@ -3986,6 +3999,10 @@ class wait(tk.Toplevel):
     def text(self, text):
         self.label_info.config(text=text)
         self.update_idletasks()
+        w = self.winfo_reqwidth()
+        h = self.winfo_reqheight()
+        self.geometry(f'{w+round(w/5)}x{h}')
+        self.update()
     
     def done(self):
         self.grab_release()
@@ -5234,7 +5251,10 @@ class CEC(loadfiles):
         self.frame1.grid(row=0, column=1)
         self.__check_re()
         
-        self.tlg.geometry(f"{1900}x{990}+0+0")
+        self.tlg.update_idletasks()
+        w = self.tlg.winfo_reqwidth()
+        h = self.tlg.winfo_reqheight()
+        self.tlg.geometry(f'{w}x{h}')
         self.tlg.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.tlg.update()
     
@@ -7885,7 +7905,7 @@ def emove(event):
                 efitout.get_tk_widget().delete('rec')
                 tpx1, tpy1, tpx2, tpy2 = px1, py1, px2, py2
                 efitout.get_tk_widget().create_rectangle(
-                    (px1, 600-py1), (px2, 600-py2), outline='grey', width=2, tag='rec')
+                    (px1, int(600*dpi/odpi)-py1), (px2, int(600*dpi/odpi)-py2), outline='grey', width=2, tag='rec')
                 [tpx1, tpx2] = sorted([tpx1, tpx2])
                 [tpy1, tpy2] = sorted([tpy1, tpy2])
                 tx2, ty2 = x2, y2
@@ -8084,7 +8104,8 @@ def feaf2(*e):
 def ejob():     # MDC Fitting GUI
     global g, efiti, efitfig, efitout, egg, exdata, eydata, edxdata, edydata, eiout, eifig, efi, efi_err, efi_x, ebrmv, flermv, ebcgl2, efp, flecgl2, fpr, est, estate, ewf1, ewf2, eaf1, eaf2, elind, erind, ein_w1, ein_w2, ein_a1, ein_a2
     egg = tk.Toplevel(g, bg='white')
-    egg.geometry(f"1900x1000+0+0")
+    edpi = egg.winfo_fpixels('1i')
+    # egg.geometry(f"1900x1000+0+{sc_y}")
     egg.title('EDC Lorentz Fit')
     est = queue.Queue(maxsize=0)
     estate = tk.Label(egg, text='', font=(
@@ -8105,8 +8126,35 @@ def ejob():     # MDC Fitting GUI
     efiti = tk.IntVar()
     efiti.set(0)
     efiti.trace_add('write', fchei)
+    if ScaleFactor <= 100:
+        tlength = int(1/0.975*6*edpi)  # 100
+        twidth = int(1/0.975*0.2*edpi)
+    elif ScaleFactor <= 125:
+        tlength = int(1/0.985*6*edpi)  # 125
+        twidth = int(1/0.985*0.2*edpi)
+    elif ScaleFactor <= 150:
+        tlength = int(1*6*edpi)  # 150
+        twidth = int(1*0.2*edpi)
+    elif ScaleFactor <= 175:
+        tlength = int(0.99*6*edpi)  # 175
+        twidth = int(0.99*0.2*edpi)
+    elif ScaleFactor <= 200:
+        tlength = int(0.985*6*edpi)  # 200
+        twidth = int(0.985*0.2*edpi)
+    elif ScaleFactor <= 225:
+        tlength = int(0.98*6*edpi)  # 225
+        twidth = int(0.98*0.2*edpi)
+    elif ScaleFactor <= 250:
+        tlength = int(0.977*6*edpi)  # 250
+        twidth = int(0.977*0.2*edpi)
+    elif ScaleFactor <= 275:
+        tlength = int(0.975*6*edpi)  # 275
+        twidth = int(0.975*0.2*edpi)
+    elif ScaleFactor <= 300:
+        tlength = int(0.97*6*edpi)  # 300
+        twidth = int(0.97*0.2*edpi)
     chi = tk.Scale(frind, label='Index', from_=0, to=len(phi)-1, orient='horizontal',
-                   variable=efiti, state='active', bg='white', fg='black', length=580, width=50, resolution=1)
+                   variable=efiti, state='active', bg='white', fg='black', length=tlength, width=twidth, resolution=1)
     chi.grid(row=0, column=1)
 
     efi, efi_err, efi_x = [], [], [i for i in range(len(phi))]
@@ -8224,7 +8272,7 @@ def ejob():     # MDC Fitting GUI
     egg.update_idletasks()
     screen_width = egg.winfo_reqwidth()
     screen_height = egg.winfo_reqheight()
-    egg.geometry(f"{screen_width}x{screen_height}+0+0")
+    # egg.geometry(f"{screen_width}x{screen_height}+0+{sc_y}")
     egg.update()
 
 def fmcgl2():
@@ -9151,6 +9199,10 @@ def fmpreview():
     bmfwhm.pack()
     bmimse = tk.Button(mprvg, text='Imaginary Part', command=fmimse, width=30, height=2, font=('Arial', 16, "bold"), bg='white', bd=10)
     bmimse.pack()
+    mprvg.update_idletasks()
+    w=mprvg.winfo_reqwidth()
+    h=mprvg.winfo_reqheight()
+    mprvg.geometry(f'{w}x{h}')
     mprvg.update()
     
 scki = []
@@ -9910,7 +9962,7 @@ def mmove(event):
                 mfitout.get_tk_widget().delete('rec')
                 tpx1, tpy1, tpx2, tpy2 = px1, py1, px2, py2
                 mfitout.get_tk_widget().create_rectangle(
-                    (px1, 600-py1), (px2, 600-py2), outline='grey', width=2, tag='rec')
+                    (px1, int(600*dpi/odpi)-py1), (px2, int(600*dpi/odpi)-py2), outline='grey', width=2, tag='rec')
                 [tpx1, tpx2] = sorted([tpx1, tpx2])
                 [tpy1, tpy2] = sorted([tpy1, tpy2])
                 tx2, ty2 = x2, y2
@@ -10251,7 +10303,8 @@ def fmposcst():
 def mjob():     # MDC Fitting GUI
     global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mprf, mpr, b_pr, mbgv, fdo
     mgg = tk.Toplevel(g, bg='white')
-    mgg.geometry(f"1900x1000+0+0")
+    mdpi = mgg.winfo_fpixels('1i')
+    # mgg.geometry(f"1900x1000+0+{sc_y}")
     mgg.title('MDC Lorentz Fit')
     fdo=0
     mpr=0   #button flag 1:ON 0:OFF initial 0:OFF
@@ -10293,8 +10346,35 @@ def mjob():     # MDC Fitting GUI
     mfiti = tk.IntVar()
     mfiti.set(0)
     mfiti.trace_add('write', fchki)
+    if ScaleFactor <= 100:
+        tlength = int(1/0.975*6*mdpi)  # 100
+        twidth = int(1/0.975*0.2*mdpi)
+    elif ScaleFactor <= 125:
+        tlength = int(1/0.985*6*mdpi)  # 125
+        twidth = int(1/0.985*0.2*mdpi)
+    elif ScaleFactor <= 150:
+        tlength = int(1*6*mdpi)  # 150
+        twidth = int(1*0.2*mdpi)
+    elif ScaleFactor <= 175:
+        tlength = int(0.99*6*mdpi)  # 175
+        twidth = int(0.99*0.2*mdpi)
+    elif ScaleFactor <= 200:
+        tlength = int(0.985*6*mdpi)  # 200
+        twidth = int(0.985*0.2*mdpi)
+    elif ScaleFactor <= 225:
+        tlength = int(0.98*6*mdpi)  # 225
+        twidth = int(0.98*0.2*mdpi)
+    elif ScaleFactor <= 250:
+        tlength = int(0.977*6*mdpi)  # 250
+        twidth = int(0.977*0.2*mdpi)
+    elif ScaleFactor <= 275:
+        tlength = int(0.975*6*mdpi)  # 275
+        twidth = int(0.975*0.2*mdpi)
+    elif ScaleFactor <= 300:
+        tlength = int(0.97*6*mdpi)  # 300
+        twidth = int(0.97*0.2*mdpi)
     chi = tk.Scale(frind, label='Index', from_=0, to=len(ev)-1, orient='horizontal',
-                   variable=mfiti, state='active', bg='white', fg='black', length=580, width=30, resolution=1)
+                   variable=mfiti, state='active', bg='white', fg='black', length=tlength, width=twidth, resolution=1)
     chi.grid(row=0, column=1)
 
     mfi, mfi_err, mfi_x = [], [], [i for i in range(len(ev))]
@@ -10523,10 +10603,10 @@ def mjob():     # MDC Fitting GUI
     tt = threading.Thread(target=tmstate)
     tt.daemon = True
     tt.start()
-    mgg.update_idletasks()
-    screen_width = mgg.winfo_reqwidth()
-    screen_height = mgg.winfo_reqheight()
-    mgg.geometry(f"{screen_width}x{screen_height}+0+0")
+    # mgg.update_idletasks()
+    # screen_width = mgg.winfo_reqwidth()
+    # screen_height = mgg.winfo_reqheight()
+    # mgg.geometry(f"{screen_width}x{screen_height}+0+{sc_y}")
     mgg.update()
 
 
@@ -13451,7 +13531,7 @@ def move(event):
         if mof == -1 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
             x2, y2 = event.xdata, event.ydata
             px2, py2 = event.x, event.y
-            out.get_tk_widget().create_rectangle((px1, 600-py1), (px2, 600-py2),
+            out.get_tk_widget().create_rectangle((px1, int(600*dpi/odpi)-py1), (px2, int(600*dpi/odpi)-py2),
                                                  outline='black', width=2, tag='rec')
         if value.get() == 'Raw Data':
             if event.inaxes:
@@ -14096,6 +14176,10 @@ def o_loadmfit():
     b3 = tk.Button(lmgg, command=lm, text='load MDC fitted File', font=(
         "Arial", 12, "bold"), fg='red', width=30, height='1', bd=10)
     b3.pack()
+    lmgg.update_idletasks()
+    w=lmgg.winfo_reqwidth()
+    h=lmgg.winfo_reqheight()
+    lmgg.geometry(f'{w}x{h}')
     lmgg.update()
 
 def dl_sw():
@@ -14124,6 +14208,44 @@ if __name__ == '__main__':
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')
+    if os.name == 'nt':
+        import ctypes
+        from ctypes import wintypes
+        class APPBARDATA(ctypes.Structure):
+            _fields_ = [
+                ('cbSize', wintypes.DWORD),
+                ('hWnd', wintypes.HWND),
+                ('uCallbackMessage', wintypes.UINT),
+                ('uEdge', wintypes.UINT),
+                ('rc', wintypes.RECT),
+                ('lParam', wintypes.LPARAM),
+            ]
+        ABM_GETTASKBARPOS = 0x00000005
+        def get_taskbar_position():
+            appbar = APPBARDATA()
+            appbar.cbSize = ctypes.sizeof(APPBARDATA)
+            result = ctypes.windll.shell32.SHAppBarMessage(ABM_GETTASKBARPOS, ctypes.byref(appbar))
+            if not result:
+                return None
+            edge = appbar.uEdge
+            positions = {0: 'left', 1: 'top', 2: 'right', 3: 'bottom'}
+            return positions.get(edge, 'unknown')
+        
+        bar_pos = get_taskbar_position()
+
+    elif os.name == 'posix':
+        def get_dock_position():
+            script = 'tell application "System Events" to get the properties of the dock preferences'
+            result = subprocess.check_output(['osascript', '-e', script])
+            if b'left' in result:
+                return 'left'
+            elif b'bottom' in result:
+                return 'bottom'
+            elif b'right' in result:
+                return 'right'
+            else:
+                return 'unknown'
+        bar_pos = get_dock_position()
     try:
         with np.load('rd.npz', 'rb') as ff:
             path = str(ff['path'])
@@ -14265,8 +14387,15 @@ if __name__ == '__main__':
     v_fe.set(str(vfe))
     windll.shcore.SetProcessDpiAwareness(1)
     ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
-    g.tk.call('tk', 'scaling', ScaleFactor/ScaleFactor/0.75)
-    g.geometry('1900x1080+0+0')
+    t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
+    if bar_pos == 'top':    #taskbar on top
+        sc_y = int(40*ScaleFactor/100)
+    else:
+        sc_y = 0
+    odpi=g.winfo_fpixels('1i')
+    g.tk.call('tk', 'scaling', ScaleFactor/100)
+    dpi=g.winfo_fpixels('1i')
+    g.geometry(f'1900x1080+0+{sc_y}')
     g.title('MDC cut')
     g.config(bg='white')
     # g.geometry('1920x980')  # format:'1400x800'
@@ -14449,10 +14578,10 @@ if __name__ == '__main__':
     cut = tk.Frame(step, bg='white')
     cut.grid(row=1, column=1)
     mdccut = tk.Button(cut, text='MDC cut', font=(
-        "Arial", 12, "bold"), width=8, height='1', command=ecut, bd=9, fg='blue')
+        "Arial", 12, "bold"), width=8, height='1', command=ecut, bd=5, fg='blue')
     mdccut.grid(row=0, column=0)
     edccut = tk.Button(cut, text='EDC cut', font=(
-        "Arial", 12, "bold"), width=8, height='1', command=angcut, bd=9, fg='black')
+        "Arial", 12, "bold"), width=8, height='1', command=angcut, bd=5, fg='black')
     edccut.grid(row=0, column=1)
     l_lowlim = tk.Label(cut, text='Lower Limit', font=(
         "Arial", 10, "bold"), bg="white", fg="black", height=1)
@@ -14477,24 +14606,24 @@ if __name__ == '__main__':
     lfit = tk.Frame(step, bg='white')
     lfit.grid(row=3, column=1)
     lmfit = tk.Button(lfit, text='Load MDC fitted File', font=(
-        "Arial", 12, "bold"), width=15, height='1', command=loadmfit, bd=9, fg='blue')
+        "Arial", 12, "bold"), width=16, height='1', command=loadmfit, bd=5, fg='blue')
     lmfit.grid(row=0, column=0)
     lefit = tk.Button(lfit, text='Load EDC fitted File', font=(
-        "Arial", 12, "bold"), width=15, height='1', command=loadefit, bd=9, fg='black')
+        "Arial", 12, "bold"), width=16, height='1', command=loadefit, bd=5, fg='black')
     lefit.grid(row=0, column=1)
 
     cfit = tk.Frame(step, bg='white')
     cfit.grid(row=4, column=1)
     b_cmfit = tk.Button(cfit, text='Clear MDC fitted File', font=(
-        "Arial", 12, "bold"), width=15, height='1', command=clmfit, bd=5, fg='blue')
+        "Arial", 12, "bold"), width=16, height='1', command=clmfit, bd=5, fg='blue')
     b_cmfit.grid(row=0, column=0)
     b_cefit = tk.Button(cfit, text='Clear EDC fitted File', font=(
-        "Arial", 12, "bold"), width=15, height='1', command=clefit, bd=5, fg='black')
+        "Arial", 12, "bold"), width=16, height='1', command=clefit, bd=5, fg='black')
     b_cefit.grid(row=0, column=1)
 
 
     lbb = tk.Button(step, text='Load Bare Band File', font=(
-        "Arial", 12, "bold"), width=15, height='1', command=bareband, bd=9, fg='blue')
+        "Arial", 12, "bold"), width=16, height='1', command=bareband, bd=5, fg='blue')
     lbb.grid(row=5, column=1)
 
     plots = tk.Frame(g, bg='white')
@@ -14805,7 +14934,7 @@ if __name__ == '__main__':
     g.update_idletasks()
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
-    g.geometry(f"{screen_width}x{screen_height}+0+0")
+    g.geometry(f"{screen_width}x{screen_height}+0+{sc_y}")
     # g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
     if cec is not None: # CEC loaded old data to show the cutting rectangle
