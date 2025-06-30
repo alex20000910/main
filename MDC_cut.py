@@ -12795,7 +12795,7 @@ def exp(*e):
             else:
                 ylr=a.twinx()
                 a.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=22)
-                # a.set_yticklabels([])
+                a.set_yticklabels([])
                 ylr.set_ylabel(r'$\longleftarrow$ Binding Energy', font='Arial', fontsize=22)
                 ylr.set_yticklabels([])
                 a.set_xlim([min(x), max(x)])
