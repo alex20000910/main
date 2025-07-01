@@ -1,6 +1,6 @@
 # MDC cut GUI
 __version__ = "6.4"
-__release_date__ = "2025-06-30"
+__release_date__ = "2025-07-01"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -2537,14 +2537,14 @@ class spectrogram:
         fr_fig=tk.Frame(self.tpg,bg='white',bd=0)
         fr_fig.grid(row=0,column=0)
         
-        self.rpf = Figure(figsize=(15, 4.5), layout='constrained')
+        self.rpf = Figure(figsize=(14, 4.5), layout='constrained')
         self.rpo = FigureCanvasTkAgg(self.rpf, master=fr_fig)
         self.rpo.get_tk_widget().grid(row=0, column=0)
         self.rpo.mpl_connect('motion_notify_event', self.__rp_move)
         self.rpo.mpl_connect('button_press_event', self.__rp_press)
         self.rpo.mpl_connect('button_release_event', self.__rp_release)
         
-        self.tpf = Figure(figsize=(15, 4.5), layout='constrained')
+        self.tpf = Figure(figsize=(14, 4.5), layout='constrained')
         self.tpo = FigureCanvasTkAgg(self.tpf, master=fr_fig)
         self.tpo.get_tk_widget().grid(row=1, column=0)
         self.tpo.mpl_connect('motion_notify_event', self.__tp_move)
@@ -2558,7 +2558,7 @@ class spectrogram:
         self.rgo.mpl_connect('button_press_event', self.__rg_press)
         self.rgo.mpl_connect('button_release_event', self.__rg_release)
         
-        self.fr_info=tk.Frame(self.tpg,bg='white',bd=10)
+        self.fr_info=tk.Frame(self.tpg,bg='white',bd=5)
         self.fr_info.grid(row=0,column=1)
         try:
             if len(self.lfs.name)>1:
@@ -14388,13 +14388,21 @@ if __name__ == '__main__':
     windll.shcore.SetProcessDpiAwareness(1)
     ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
     t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
+    t_sc_h-=int(40*ScaleFactor/100)
+    odpi=g.winfo_fpixels('1i')
+    # print('odpi:',odpi)
     if bar_pos == 'top':    #taskbar on top
         sc_y = int(40*ScaleFactor/100)
     else:
         sc_y = 0
-    odpi=g.winfo_fpixels('1i')
+    # w 1920 1374 (96 dpi)
+    # h 1080 748 (96 dpi)
+    prfactor = 1 if ScaleFactor <= 150 else 1.03
+    ScaleFactor /= prfactor*(ScaleFactor/100*1374/96*odpi/t_sc_w) if 1374/t_sc_w >= 748/t_sc_h else prfactor*(ScaleFactor/100*748/96*odpi/t_sc_h)
     g.tk.call('tk', 'scaling', ScaleFactor/100)
     dpi=g.winfo_fpixels('1i')
+    # print('dpi:',dpi)
+    # print('ScaleFactor:',ScaleFactor)
     g.geometry(f'1900x1080+0+{sc_y}')
     g.title('MDC cut')
     g.config(bg='white')
@@ -14934,6 +14942,7 @@ if __name__ == '__main__':
     g.update_idletasks()
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
+    # print(f"Screen Width: {screen_width}, Screen Height: {screen_height}")
     g.geometry(f"{screen_width}x{screen_height}+0+{sc_y}")
     # g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
