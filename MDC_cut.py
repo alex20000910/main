@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.4"
-__release_date__ = "2025-07-01"
+__version__ = "6.4.1"
+__release_date__ = "2025-07-03"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -823,7 +823,7 @@ def gui_exp_origin():
     l1=tk.Label(gori,text=f"{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.opj",font=('Arial', 10, "bold"),bg='white',wraplength=600)
     l1.grid(row=0,column=0)
     b1=tk.Button(gori,text='Patch Origin',command=patch_origin, width=15, height=1, font=('Arial', 18, "bold"), bg='white', bd=5)
-    b1.grid(row=1,column=0)
+    # b1.grid(row=1,column=0)
     fr=tk.Frame(gori,bg='white')
     fr.grid(row=2,column=0)
     pr_exp_origin()
@@ -3448,6 +3448,10 @@ npzf = False
 def change_file(*args):
     global data, rdd, npzf
     name = namevar.get()
+    if len(name) >20:
+        l_name.config(font=('Arial', 14, "bold"))
+    else:
+        l_name.config(font=('Arial', 16, "bold"))
     for i, j, k, l in zip(lfs.name, lfs.data, lfs.path, lfs.f_npz):
         if name == i:
             data = j
@@ -5754,6 +5758,7 @@ def pr_load(data):
     if len(st.split('\n'))>24:
         info.config(height=24, width=max(lst)+1, state='normal')
     info.insert(tk.END, '\n'+st+'\n')
+    info.update_idletasks()
     info.see(tk.END)
     info.config(state='disabled')
     global ev, phi
@@ -5812,7 +5817,10 @@ def o_load():
             nlist = lfs.name
             namevar = tk.StringVar(value=nlist[0])
             l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
-            l_name.config(font=('Arial', 16, 'bold'))
+            if len(namevar.get()) >20:
+                l_name.config(font=('Arial', 14, "bold"))
+            else:
+                l_name.config(font=('Arial', 16, "bold"))
             l_name.grid(row=0, column=1)
         else:   #single file
             try:
@@ -12373,9 +12381,7 @@ def onmove_callback(xmin, xmax):
     # f.canvas.draw_idle()
     f.show()
 
-
 cf = True
-
 
 def cut_move(event):
     global cxdata, cydata, acx, acy, a, f, xx ,yy
@@ -12435,7 +12441,6 @@ def cut_move(event):
             pass
     f.show()
 
-
 def cut_select(event):
     global cf, a, f, x, y, acx, acy
     if event.button == 1 and cf:
@@ -12475,12 +12480,6 @@ def cut_select(event):
     # f.canvas.draw_idle()
     copy_to_clipboard(ff=f)
     f.show()
-
-# def cut_click(event):
-#     if event.button is MouseButton.LEFT:
-#         print('disconnecting callback')
-# def o_exp():
-
 
 def exp(*e):
     global value, value1, value2, value3, data, ev, phi, mx, my, mz, mfpath, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax, annot
@@ -14922,7 +14921,10 @@ if __name__ == '__main__':
             nlist = lfs.name
             namevar = tk.StringVar(value=nlist[0])
             l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
-            l_name.config(font=('Arial', 16, 'bold'))
+            if len(namevar.get()) >20:
+                l_name.config(font=('Arial', 14, "bold"))
+            else:
+                l_name.config(font=('Arial', 16, "bold"))
             l_name.grid(row=0, column=1)
         if lfs.f_npz[0]:
             npzf = True
