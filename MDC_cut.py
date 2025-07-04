@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.4.1"
-__release_date__ = "2025-07-03"
+__version__ = "6.5"
+__release_date__ = "2025-07-05"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -62,7 +62,7 @@ from ctypes import windll
 import copy
 from datetime import datetime
 import gc
-from tkinter import messagebox
+from tkinter import messagebox, colorchooser
 from multiprocessing import Pool
 import time, subprocess
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -3499,7 +3499,206 @@ def tools(*args):
     b_exp_casa.grid(row=0, column=2)
     toolg.bind('<Return>', spec)
     toolg.update()
+
+def def_cmap():
+    ColormapEditor().update()
+
+class ColormapEditor(tk.Toplevel):
+    def __init__(self):
+        super().__init__()
+        self.title("Colormap Editor")
+        self.colors = ['#0000ff', '#00ff00', '#ff0000']  # default three colors
+        self.scales = [0, 0.5, 1]
+        self.entries = []
+        self.scale_entries = []
+        self.vmin = tk.DoubleVar(value=0.0)
+        self.vmax = tk.DoubleVar(value=1.0)
+        self.colormap_name = tk.StringVar(value="custom_cmap")
+        self._draw_ui()
+
+    def _draw_ui(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+        self.entries.clear()
+        self.scale_entries.clear()
+        n = len(self.colors)
+
+        # Frame for color buttons and - + buttons
+        colorbar = tk.Frame(self)
+        colorbar.grid(row=0, column=0, columnspan=10, pady=5)
+
+        # - button (left)
+        if n > 2:
+            btn_minus = tk.Button(colorbar, font=('Arial', 15), text=" - ", command=self.remove_node)
+            btn_minus.pack(side=tk.LEFT, padx=4)
+        else:
+            btn_minus = None
+
+        # Color buttons and Entry vertically stacked
+        for i, (color, scale) in enumerate(zip(self.colors, self.scales)):
+            btn_frame = tk.Frame(colorbar)
+            btn_frame.pack(side=tk.LEFT, padx=4)
+            btn = tk.Button(btn_frame, bg=color, width=10, font=('Arial', 15), command=lambda i=i: self.pick_color(i))
+            btn.pack(side=tk.TOP)
+            self.entries.append(btn)
+            scale_entry = tk.Entry(btn_frame, font=('Arial', 15), width=5, justify='center')
+            scale_entry.insert(0, str(scale))
+            # 讓第0個和最後一個Entry為readonly
+            if i == 0 or i == n - 1:
+                scale_entry.config(state='readonly')
+            scale_entry.pack(side=tk.TOP, pady=(2, 0))
+            self.scale_entries.append(scale_entry)
+
+        # + button (right)
+        btn_plus = tk.Button(colorbar, font=('Arial', 15), text=" + ", command=self.add_node)
+        btn_plus.pack(side=tk.LEFT, padx=4)
+
+        # Other widgets
+        tk.Label(self, font=('Arial', 15), text="vmin:").grid(row=3, column=0, sticky='e')
+        tk.Entry(self, font=('Arial', 15), textvariable=self.vmin, width=7).grid(row=3, column=1, sticky='w')
+        tk.Label(self, font=('Arial', 15), text="vmax:").grid(row=3, column=2, sticky='e')
+        tk.Entry(self, font=('Arial', 15), textvariable=self.vmax, width=7).grid(row=3, column=3, sticky='w')
+        tk.Label(self, font=('Arial', 15), text="Colormap Name:").grid(row=4, column=0, sticky='e')
+        tk.Entry(self, font=('Arial', 15), textvariable=self.colormap_name, width=15).grid(row=4, column=1, columnspan=2, sticky='w')
+        tk.Button(self, font=('Arial', 15), text="Show Colormap", command=self.show_colormap_toplevel).grid(row=5, column=0, columnspan=max(3, len(self.colors)), pady=5)
+        tk.Button(self, font=('Arial', 15), text="Register & Save", command=self.register_and_save).grid(row=6, column=0, columnspan=2, pady=5)
+        tk.Button(self, font=('Arial', 15), text="Load Colormap", command=self.load_colormap).grid(row=6, column=2, columnspan=2, pady=5)
     
+    def pick_color(self, idx):
+        color = colorchooser.askcolor(title="Pick a color")[1]
+        if color:
+            self.colors[idx] = color
+            self.entries[idx].config(bg=color)
+        self.focus_set()
+
+    def add_node(self):
+        if len(self.colors) >= 10:
+            return
+        mid = len(self.colors) // 2
+        self.colors.insert(mid, '#ffffff')
+        # 重新等分 scale
+        n = len(self.colors)
+        self.scales = [round(i/(n-1), 4) for i in range(n)]
+        self._draw_ui()
+
+    def remove_node(self):
+        if len(self.colors) > 2:
+            self.colors.pop(-2)
+            # 重新等分 scale
+            n = len(self.colors)
+            self.scales = [round(i/(n-1), 4) for i in range(n)]
+            self._draw_ui()
+
+    def get_colormap(self):
+        try:
+            self.scales = [float(e.get()) for e in self.scale_entries]
+        except ValueError:
+            messagebox.showerror("Error", "Please enter valid scale values.")
+            return None
+        if not (all(0 <= s <= 1 for s in self.scales) and all(self.scales[i] < self.scales[i+1] for i in range(len(self.scales)-1))):
+            messagebox.showerror("Error", "Scales must be increasing and between 0 and 1.")
+            return None
+        from matplotlib.colors import LinearSegmentedColormap
+        cmap = LinearSegmentedColormap.from_list(self.colormap_name.get(), list(zip(self.scales, self.colors)))
+        return cmap
+
+    def show_colormap_toplevel(self):
+        cmap = self.get_colormap()
+        if cmap is None:
+            return
+        arr = np.linspace(self.vmin.get(), self.vmax.get(), 100).reshape(1, -1)
+        top = tk.Toplevel(self)
+        top.title(f"Colormap Preview: {self.colormap_name.get()}")
+        fig, ax = plt.subplots(figsize=(5, 3))
+        im = ax.imshow(arr, aspect='auto', cmap=cmap, vmin=self.vmin.get(), vmax=self.vmax.get())
+        ax.set_xticks([])
+        ax.set_yticks([])
+        fig.colorbar(im, ax=ax, orientation='horizontal')
+        canvas = FigureCanvasTkAgg(fig, master=top)
+        fig.tight_layout()
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        # Release resources when closing
+        def on_close():
+            plt.close(fig)
+            top.destroy()
+        top.protocol("WM_DELETE_WINDOW", on_close)
+
+    def register_and_save(self):
+        global optionList3, value3, setcmap
+        cmap = self.get_colormap()
+        if cmap is None:
+            return
+        name = self.colormap_name.get()
+        # Register to matplotlib colormap
+        matplotlib.colormaps.register(cmap, name=name, force=True)
+        messagebox.showinfo("Colormap", f"Colormap '{name}' has been registered to matplotlib.")
+        if colormap_name:
+            optionList3 = [name, 'prevac_cmap', colormap_name, 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
+        else:
+            optionList3 = [name, 'prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
+        setcmap.grid_forget()
+        value3.set(name)
+        setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
+        setcmap.grid(row=0, column=1)
+        g.update_idletasks()
+        # Save file
+        data = {
+            "colors": np.array(self.colors),
+            "scales": np.array(self.scales),
+            "vmin": self.vmin.get(),
+            "vmax": self.vmax.get(),
+            "name": name
+        }
+        save_path = fd.asksaveasfilename(
+            title="Save custom colormap",
+            defaultextension=".npz",
+            filetypes=[("NumPy zip", "*.npz")],
+            initialdir=cdir,
+            initialfile=f"{name}.npz"
+        )
+        np.savez(save_path, **data)
+        np.savez(os.path.join(cdir,"colormaps.npz"), **data)
+        if save_path:
+            messagebox.showinfo("Colormap", f"Colormap has been saved to:\n{save_path}")
+
+    def load_colormap(self):
+        global optionList3, value3, setcmap
+        # Load npz file
+        load_dir = cdir
+        file_path = fd.askopenfilename(
+            title="Select custom colormap file",
+            filetypes=[("NumPy zip", "*.npz")],
+            initialdir=load_dir if os.path.exists(load_dir) else "."
+        )
+        if not file_path:
+            return
+        try:
+            data = np.load(file_path, allow_pickle=True)
+            self.colors = list(data["colors"])
+            self.scales = list(data["scales"])
+            self.vmin.set(float(data["vmin"]))
+            self.vmax.set(float(data["vmax"]))
+            self.colormap_name.set(str(data["name"]))
+            self._draw_ui()
+            messagebox.showinfo("Colormap", f"Colormap loaded: {self.colormap_name.get()}")
+            cmap = self.get_colormap()
+            if cmap is None:
+                return
+            name = self.colormap_name.get()
+            # Register to matplotlib colormap
+            matplotlib.colormaps.register(cmap, name=name, force=True)
+            optionList3.append(name)
+            setcmap.grid_forget()
+            value3.set(name)
+            setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
+            setcmap.grid(row=0, column=1)
+            g.update_idletasks()
+            np.savez(os.path.join(cdir,"colormaps.npz"), **data)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load: {e}")
+
 class loadfiles():
     def __init__(self, files):
         self.f_npz = [False for i in files]
@@ -14343,6 +14542,20 @@ if __name__ == '__main__':
     except:
         print('No MDC fitted data preloaded (Casa)')
 
+    try:
+        cdata = np.load('colormaps.npz', allow_pickle=True)
+        colors = list(cdata["colors"])
+        scales = list(cdata["scales"])
+        vmin = float(cdata["vmin"])
+        vmax = float(cdata["vmax"])
+        colormap_name = str(cdata["name"])
+        pr_cmap = LinearSegmentedColormap.from_list(colormap_name, list(zip(scales, colors)))
+        mpl.colormaps.register(pr_cmap, force=True)
+        print('Last User Defined Colormap preloaded')
+    except:
+        pr_cmap = None
+        pass
+
     emf='KE'
     try:
         vfe=e_photon
@@ -14640,9 +14853,15 @@ if __name__ == '__main__':
     cmf = tk.Frame(plots, bg='white')
     cmf.grid(row=0, column=1)
 
-    bchcmp = tk.Button(cmf, text='Change Colormap', font=(
-        "Arial", 12, "bold"), height='1', command=Chcmp, border=5)
-    bchcmp.grid(row=0, column=0)
+    cmbf = tk.Frame(cmf, bg='white')
+    cmbf.grid(row=0, column=0)
+    
+    bchcmp = tk.Button(cmbf, text='Change cmap', font=(
+        "Arial", 12, "bold"), height='1', command=Chcmp, border=2)
+    bchcmp.pack(side='left', padx=2, pady=2)
+    bdefcmp = tk.Button(cmbf, text='User Defined cmap', font=(
+        "Arial", 12, "bold"), height='1', command=def_cmap, border=2)
+    bdefcmp.pack(side='left', padx=2, pady=2)
 
     cmlf = tk.Frame(cmf, bg='white')
     cmlf.grid(row=1, column=0)
@@ -14717,9 +14936,11 @@ if __name__ == '__main__':
     prevac_cmap = LinearSegmentedColormap.from_list(
         'prevac_cmap', prevac_colors, N=256)
     mpl.colormaps.register(prevac_cmap)
-
-    optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo',
-                'inferno', 'plasma', 'copper', 'grey', 'bwr']
+    
+    if pr_cmap is not None:
+        optionList3 = ['prevac_cmap', colormap_name, 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
+    else:
+        optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
     cmp = plt.colormaps()
     value3 = tk.StringVar()
     value3.set('prevac_cmap')
