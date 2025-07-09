@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.5"
-__release_date__ = "2025-07-05"
+__version__ = "6.5.1"
+__release_date__ = "2025-07-10"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -4060,7 +4060,7 @@ class g_cut_plot(tk.Toplevel):
         self.title('Cut Plot')
         self.protocol("WM_DELETE_WINDOW", self.on_closing)    
 
-        fig = plt.Figure(figsize=(9, 9), constrained_layout=True)
+        fig = plt.Figure(figsize=(8, 8), constrained_layout=True)
         ax = fig.add_subplot(111)
         ax.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', fontsize=16)
         ax.set_ylabel('Kinetic Energy (eV)', fontsize=16)
@@ -4527,11 +4527,11 @@ class VolumeSlicer(tk.Frame):
         '''
         r1 = self.y - self.r1_offset
         phi = self.x - self.phi_offset
-        # r = np.sqrt(2*self.m*self.e*self.e_photon)/self.hbar*10**-10*(np.max(np.abs(np.sin(r1/180*np.pi)))**2+np.max(np.abs(np.sin(phi/180*np.pi)))**2)**0.5
-        tr1, tphi = self.rot(np.max(np.abs(r1)), np.max(np.abs(phi)), 0, 0, 0)
+        tr1 = np.array([np.min(r1), np.max(r1), np.max(r1), np.min(r1)])
+        tphi = np.array([np.min(phi), np.min(phi), np.max(phi), np.max(phi)])
         tx = np.sqrt(2*self.m*self.e*self.e_photon)/self.hbar*10**-10*np.sin(tr1/180*np.pi) * np.cos(tphi/180*np.pi)
         ty = np.sqrt(2*self.m*self.e*self.e_photon)/self.hbar*10**-10*np.sin(tphi/180*np.pi)
-        r = np.sqrt(tx**2 + ty**2)
+        r = np.max(np.sqrt(tx**2 + ty**2))
         self.xmin, self.xmax = -r, r
         self.ymin, self.ymax = -r, r
         
@@ -4561,17 +4561,15 @@ class VolumeSlicer(tk.Frame):
         self.canvas.draw()
     
     def k_map(self, data, density, xlim, ylim, kxlim, kylim, ev):
-        ky_grid, kx_grid = np.meshgrid(
-        np.linspace(kylim[0], kylim[1], int(density/180*(xlim[1]-xlim[0]))*4),
+        kx_grid, ky_grid = np.meshgrid(
         np.linspace(kxlim[0], kxlim[1], int(density/180*(xlim[1]-xlim[0]))*4),
-        indexing='ij'
-        )
-        Phi_target = np.arcsin(np.clip(ky_grid / np.sqrt(2*self.m*self.e*ev)*self.hbar*1e10, -1, 1)) * 180 / np.pi
+        np.linspace(kylim[0], kylim[1], int(density/180*(xlim[1]-xlim[0]))*4))
+        Phi_target = np.arcsin(np.clip(ky_grid / (np.sqrt(2*self.m*self.e*ev)/self.hbar*1e-10), -1, 1)) * 180 / np.pi
         cos_phi = np.cos(np.deg2rad(Phi_target))
         cos_phi[cos_phi == 0] = 1e-8
-        R1_target = np.arcsin(np.clip(kx_grid / (np.sqrt(2*self.m*self.e*ev)/self.hbar*1e-10 * cos_phi), -1, 1)) * 180 / np.pi            
-        map_y = (R1_target - xlim[0]) / (xlim[1] - xlim[0]) * (data.shape[0] - 1)
-        map_x = (Phi_target - ylim[0]) / (ylim[1] - ylim[0]) * (data.shape[1] - 1)
+        R1_target = np.arcsin(np.clip(kx_grid / (np.sqrt(2*self.m*self.e*ev)/self.hbar*1e-10 * cos_phi), -1, 1)) * 180 / np.pi
+        map_x = (R1_target - xlim[0]) / (xlim[1] - xlim[0]) * (data.shape[0] - 1)
+        map_y = (Phi_target - ylim[0]) / (ylim[1] - ylim[0]) * (data.shape[1] - 1)
         valid_mask = (
             (R1_target >= xlim[0]) & (R1_target <= xlim[1]) &
             (Phi_target >= ylim[0]) & (Phi_target <= ylim[1]) &
@@ -4579,9 +4577,9 @@ class VolumeSlicer(tk.Frame):
         )
         map_x[~np.isfinite(map_x)] = 0
         map_y[~np.isfinite(map_y)] = 0
-        map_x = np.clip(map_x, 0, data.shape[1] - 1).astype(np.float32)
-        map_y = np.clip(map_y, 0, data.shape[0] - 1).astype(np.float32)
-        data = cv2.remap(data.astype(np.float32), map_x, map_y, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+        map_x = np.clip(map_x, 0, data.shape[0] - 1).astype(np.float32)
+        map_y = np.clip(map_y, 0, data.shape[1] - 1).astype(np.float32)
+        data = cv2.remap(data.T.astype(np.float32), map_x, map_y, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
         data[~valid_mask] = 0
         data = cv2.resize(data, (int(density/(self.xmax-self.xmin)*(kxlim[1]-kxlim[0])), int(density/(self.ymax-self.ymin)*(kylim[1]-kylim[0]))), interpolation=cv2.INTER_CUBIC)
         return data
@@ -4607,7 +4605,7 @@ class VolumeSlicer(tk.Frame):
                 xlim[1] += step
                 xlim[0] -= step
             base = np.zeros((self.cdensity, self.cdensity))
-            data = cv2.resize(data, (int(self.cdensity/(self.xmax-self.xmin)*(ylim[1]-ylim[0])), int(self.cdensity/(self.ymax-self.ymin)*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
+            data = cv2.resize(data, (int(self.cdensity/(self.ymax-self.ymin)*(ylim[1]-ylim[0])), int(self.cdensity/(self.xmax-self.xmin)*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
             base[0:data.shape[0], 0:data.shape[1]] = data
             data = np.roll(base.T, (int((ylim[0]-self.xmin)/(self.xmax-self.xmin)*self.cdensity), int((xlim[0]-self.ymin)/(self.ymax-self.ymin)*self.cdensity)), axis=(0, 1))
             data = data
@@ -4897,11 +4895,11 @@ class VolumeSlicer(tk.Frame):
                 self.r1_offset = -31
                 r1 = self.y - self.r1_offset
                 phi = self.x - self.phi_offset
-                # r = np.sqrt(2*self.m*self.e*self.ev[self.slice_index])/self.hbar*10**-10*(np.max(np.abs(np.sin(r1/180*np.pi)))**2+np.max(np.abs(np.sin(phi/180*np.pi)))**2)**0.5
-                tr1, tphi = self.rot(np.max(np.abs(r1)), np.max(np.abs(phi)), 0, 0, 0)
+                tr1 = np.array([np.min(r1), np.max(r1), np.max(r1), np.min(r1)])
+                tphi = np.array([np.min(phi), np.min(phi), np.max(phi), np.max(phi)])
                 tx = np.sqrt(2*self.m*self.e*self.ev[self.slice_index])/self.hbar*10**-10*np.sin(tr1/180*np.pi) * np.cos(tphi/180*np.pi)
                 ty = np.sqrt(2*self.m*self.e*self.ev[self.slice_index])/self.hbar*10**-10*np.sin(tphi/180*np.pi)
-                r = np.sqrt(tx**2 + ty**2)
+                r = np.max(np.sqrt(tx**2 + ty**2))
                 self.xmin, self.xmax = -r, r
                 self.ymin, self.ymax = -r, r
                 self.txlim, self.tylim = [-r, r], [-r, r]
@@ -4974,11 +4972,11 @@ class VolumeSlicer(tk.Frame):
                 self.r1_offset = -31
                 r1 = self.y - self.r1_offset
                 phi = self.x - self.phi_offset
-                # r = np.sqrt(2*self.m*self.e*self.ev[self.slice_index])/self.hbar*10**-10*(np.max(np.abs(np.sin(r1/180*np.pi)))**2+np.max(np.abs(np.sin(phi/180*np.pi)))**2)**0.5
-                tr1, tphi = self.rot(np.max(np.abs(r1)), np.max(np.abs(phi)), 0, 0, 0)
+                tr1 = np.array([np.min(r1), np.max(r1), np.max(r1), np.min(r1)])
+                tphi = np.array([np.min(phi), np.min(phi), np.max(phi), np.max(phi)])
                 tx = np.sqrt(2*self.m*self.e*self.ev[self.slice_index])/self.hbar*10**-10*np.sin(tr1/180*np.pi) * np.cos(tphi/180*np.pi)
                 ty = np.sqrt(2*self.m*self.e*self.ev[self.slice_index])/self.hbar*10**-10*np.sin(tphi/180*np.pi)
-                r = np.sqrt(tx**2 + ty**2)
+                r = np.max(np.sqrt(tx**2 + ty**2))
                 self.xmin, self.xmax = -r, r
                 self.ymin, self.ymax = -r, r
                 self.txlim, self.tylim = [-r, r], [-r, r]
@@ -5164,11 +5162,11 @@ class VolumeSlicer(tk.Frame):
         elif self.type == 'reciprocal':
             r1 = self.y - self.r1_offset
             phi = self.x - self.phi_offset
-            # r = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*(np.max(np.abs(np.sin(r1/180*np.pi)))**2+np.max(np.abs(np.sin(phi/180*np.pi)))**2)**0.5
-            tr1, tphi = self.rot(np.max(np.abs(r1)), np.max(np.abs(phi)), 0, 0, 0)
+            tr1 = np.array([np.min(r1), np.max(r1), np.max(r1), np.min(r1)])
+            tphi = np.array([np.min(phi), np.min(phi), np.max(phi), np.max(phi)])
             tx = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(tr1/180*np.pi) * np.cos(tphi/180*np.pi)
             ty = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(tphi/180*np.pi)
-            r = np.sqrt(tx**2 + ty**2)
+            r = np.max(np.sqrt(tx**2 + ty**2))
             self.xmin, self.xmax = -r, r
             self.ymin, self.ymax = -r, r
             
@@ -5361,7 +5359,7 @@ class VolumeSlicer(tk.Frame):
                 xlim[1] += step
                 xlim[0] -= step
             base = np.zeros((self.density, self.density))
-            data = cv2.resize(data, (int(self.density/(self.xmax-self.xmin)*(ylim[1]-ylim[0])), int(self.density/(self.ymax-self.ymin)*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
+            data = cv2.resize(data, (int(self.density/(self.ymax-self.ymin)*(ylim[1]-ylim[0])), int(self.density/(self.xmax-self.xmin)*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
             base[0:data.shape[0], 0:data.shape[1]] = data
             data = np.roll(base.T, (int((ylim[0]-self.xmin)/(self.xmax-self.xmin)*self.density), int((xlim[0]-self.ymin)/(self.ymax-self.ymin)*self.density)), axis=(0, 1))
             data = data
@@ -5419,8 +5417,7 @@ class VolumeSlicer(tk.Frame):
             del base
             gc.collect()
             # t = time.time()
-            mat = cv2.getRotationMatrix2D((self.density/2, self.density/2), r2-self.z[0], 1)
-            data = cv2.warpAffine(data, mat, (self.density, self.density), flags=cv2.INTER_NEAREST)
+            data = rotate(data, r2-self.z[0], data.shape)
             # print('4, rotate:', time.time()-t)
             if not fr2:
                 self.z = None
@@ -5453,13 +5450,6 @@ class CEC(loadfiles):
         self.frame1 = tk.Frame(self.tlg, bg='white')
         self.frame1.grid(row=0, column=1)
         self.__check_re()
-        
-        self.tlg.update_idletasks()
-        w = self.tlg.winfo_reqwidth()
-        h = self.tlg.winfo_reqheight()
-        self.tlg.geometry(f'{w}x{h}')
-        self.tlg.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.tlg.update()
     
     def on_closing(self):
         try:
@@ -5564,6 +5554,12 @@ class CEC(loadfiles):
             if self.mode == 'normal':
                 self.view.set_slim()
             self.view.show()
+            self.tlg.update_idletasks()
+            w = self.tlg.winfo_reqwidth()
+            h = self.tlg.winfo_reqheight()
+            self.tlg.geometry(f'{w}x{h}')
+            self.tlg.protocol("WM_DELETE_WINDOW", self.on_closing)
+            self.tlg.update()
 
     def __rlist(self):
         self.frame0 = tk.Frame(self.tlg, bg='white')
