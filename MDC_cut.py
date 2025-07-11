@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.5.1"
-__release_date__ = "2025-07-10"
+__version__ = "6.5.2"
+__release_date__ = "2025-07-11"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -735,7 +735,7 @@ def load_npz(path_to_file: str) -> xr.DataArray:
 
 def g_emode():
     global gfe,fe_in,b_emode,emf,v_fe
-    gfe=tk.Toplevel(g,bg='white')
+    gfe=RestrictedToplevel(g,bg='white')
     gfe.title('Fermi Level')
     fr=tk.Frame(gfe,bg='white')
     fr.grid(row=0,column=0)
@@ -748,10 +748,12 @@ def g_emode():
     b1=tk.Button(fr1,text='Confirm',command=save_fe, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b1.grid(row=1,column=0)
     gfe.bind('<Return>', on_enter)
+    set_center(g, gfe, 0, 0)
     gfe.focus_set()
     fe_in.focus_set()
     fe_in.icursor(tk.END)
     gfe.update()
+    gfe.limit_bind()
 
 def emode():
     global gfe,fe_in,b_emode,emf,v_fe,mfpr
@@ -774,6 +776,9 @@ def save_fe():
     try:
         vfe=float(fe_in.get())
         gfe.destroy()
+        plot1()
+        plot2()
+        plot3()
     except:
         tk.messagebox.showwarning("Warning","Invalid Input\n"+str(sys.exc_info()[1]))
         gfe.destroy()
@@ -818,7 +823,7 @@ def pre_process(input):
 def gui_exp_origin():
     global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11
     limg.config(image=img[np.random.randint(len(img))])
-    gori=tk.Toplevel(g,bg='white')
+    gori=RestrictedToplevel(g,bg='white')
     gori.title('Export to Origin')
     l1=tk.Label(gori,text=f"{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.opj",font=('Arial', 10, "bold"),bg='white',wraplength=600)
     l1.grid(row=0,column=0)
@@ -865,8 +870,9 @@ def gui_exp_origin():
         c2.deselect()
         c2.config(state='disabled')
     gori.bind('<Return>', exp_origin)
+    set_center(g, gori, 0, 0)
     gori.focus_set()
-    gori.update()
+    gori.limit_bind()
     
 def pr_exp_origin():
     global cmdlist, no
@@ -1494,7 +1500,7 @@ def cexcitation_save_str():
 def cexcitation():
     global gcestr,t_cein
     tk.messagebox.showwarning("Warning","Floats Input Only")
-    gcestr=tk.Toplevel(g,bg='white')
+    gcestr=RestrictedToplevel(g,bg='white')
     gcestr.title('Excitation Energy')
     fr=tk.Frame(gcestr,bg='white')
     fr.grid(row=0,column=0)
@@ -1511,7 +1517,9 @@ def cexcitation():
     b1.grid(row=1,column=0)
     b2=tk.Button(fr1,text='Cancel',command=gcestr.destroy, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b2.grid(row=1,column=1)
+    set_center(g, gcestr, 0, 0)
     gcestr.update()
+    gcestr.limit_bind()
 
 def cname_h5(s:str):
     with h5py.File(dpath, 'r+') as hf:
@@ -1584,7 +1592,7 @@ def cname_save_str():
 def cname():
     global gcstr,t_cin
     tk.messagebox.showwarning("Warning","允許中文、符號")
-    gcstr=tk.Toplevel(g,bg='white')
+    gcstr=RestrictedToplevel(g,bg='white')
     gcstr.title('Name')
     fr=tk.Frame(gcstr,bg='white')
     fr.grid(row=0,column=0)
@@ -1599,7 +1607,9 @@ def cname():
     b1.grid(row=1,column=0)
     b2=tk.Button(fr1,text='Cancel',command=gcstr.destroy, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b2.grid(row=1,column=1)
+    set_center(g, gcstr, 0, 0)
     gcstr.update()
+    gcstr.limit_bind()
 
 def desc_h5(s:str):
     with h5py.File(dpath, 'r+') as hf:
@@ -1667,7 +1677,7 @@ def save_str():
 def desc():
     global gstr,t_in
     tk.messagebox.showwarning("Warning","允許中文、符號")
-    gstr=tk.Toplevel(g,bg='white')
+    gstr=RestrictedToplevel(g,bg='white')
     gstr.title('Description')
     fr=tk.Frame(gstr,bg='white')
     fr.grid(row=0,column=0)
@@ -1682,7 +1692,9 @@ def desc():
     b1.grid(row=1,column=0)
     b2=tk.Button(fr1,text='Cancel',command=gstr.destroy, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b2.grid(row=1,column=1)
+    set_center(g, gstr, 0, 0)
     gstr.update()
+    gstr.limit_bind()
 
 def poly_smooth(x, y, order=6,xx=None):
     """
@@ -1731,7 +1743,7 @@ def show_info():
     label = tk.Label(info_window, text="window closed in 3 second", font=("Arial", 20))
     label.pack(pady=5)
 
-    info_window.update_idletasks()
+    info_window.update()
     w= info_window.winfo_reqwidth()
     h= info_window.winfo_reqheight()
     info_window.geometry(f"{w}x{h}+{screen_width//2-w//2}+{screen_height//2-h//2}")
@@ -1989,7 +2001,7 @@ class spectrogram:
             self.emaxc_label.grid()
             self.eminc_entry.grid()
             self.emaxc_entry.grid()
-        self.root.update_idletasks()
+        self.root.update()
         w = self.root.winfo_reqwidth()
         h = self.root.winfo_reqheight()
         self.root.geometry(f'{int(w*ScaleFactor/100)}x{int(h*ScaleFactor/100)}')
@@ -2532,6 +2544,8 @@ class spectrogram:
         self.g = g
         self.cmap = cmap
         self.tpg = tk.Toplevel(self.g, bg='white')
+        tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+        self.tpg.geometry(f"1900x1000+{tx}+{sc_y}")
         self.tpg.title('Spectrogram: '+self.name)
         
         fr_fig=tk.Frame(self.tpg,bg='white',bd=0)
@@ -2594,8 +2608,9 @@ class spectrogram:
         self.l_dy=tk.Label(self.fr_info,text='%11s'%'Data : ',fg='red',font=('Arial',18),bg='white',width=20,anchor='w')
         self.l_dy.grid(row=5,column=0)
         
-        self.b_ups = tk.Button(self.fr_info, text='Fermi Level Fitting', command=self.__ups, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
-        self.b_ups.grid(row=6, column=0)
+        if self.type != 'fd':
+            self.b_ups = tk.Button(self.fr_info, text='Fermi Level Fitting', command=self.__ups, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
+            self.b_ups.grid(row=6, column=0)
         
         self.b_exp = tk.Button(self.fr_info, text='Export Data ( .txt )', command=self.__export, width=30, height=1, font=('Arial', 12, "bold"), bg='white', bd=5)
         self.b_exp.grid(row=7, column=0)
@@ -2617,6 +2632,11 @@ class spectrogram:
             self.tpg.bind('<Up>', self.__cf_up)
             self.tpg.bind('<Down>', self.__cf_down)
             self.tpg.bind('<MouseWheel>', self.__scroll)
+        self.tpg.update()
+        screen_width = self.tpg.winfo_reqwidth()
+        screen_height = self.tpg.winfo_reqheight()
+        tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+        self.tpg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
         self.tpg.update()
     
     def __export(self):
@@ -2830,7 +2850,7 @@ d
     #     f.close()
     
     def __rg_entry(self, *args):
-        self.grg=tk.Toplevel(self.g, bg='white')
+        self.grg=RestrictedToplevel(self.tpg, bg='white')
         self.grg.title('Data Range')
         
         fr=tk.Frame(self.grg,bg='white')
@@ -2868,11 +2888,13 @@ d
         self.rr1_in.focus_set()
         self.rr1_in.select_range(0,tk.END)
         self.rr1_in.icursor(tk.END)
-        self.grg.update_idletasks()
+        self.grg.update()
         w = self.grg.winfo_reqwidth()
         h = self.grg.winfo_reqheight()
         self.grg.geometry(f"{int(w*1.4)}x{h}")  # Adjust height to fit the buttons
+        set_center(self.tpg, self.grg, 0, 0)
         self.grg.update()
+        self.grg.limit_bind()
 
     def __save_rg(self, *args):
         try:
@@ -3350,7 +3372,7 @@ d
             
 def trans_plot():
     global gtp
-    gtp=tk.Toplevel(g)
+    gtp=RestrictedToplevel(g)
     gtp.title('Spectrogram')
     b_raw = tk.Button(gtp, text='Raw', command=raw_plot, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b_raw.grid(row=0, column=0)
@@ -3358,9 +3380,10 @@ def trans_plot():
     b_smooth.grid(row=0, column=1)
     b_fd = tk.Button(gtp, text='First Derivative', command=fd_plot, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b_fd.grid(row=0, column=2)
+    set_center(g, gtp, 0, 0)
     gtp.focus_set()
     gtp.bind('<Return>', raw_plot)
-    gtp.update()
+    gtp.limit_bind()
 
 def raw_plot(*args):
     gtp.destroy()
@@ -3417,10 +3440,11 @@ def cal(*e):
     t.start()
 
 def scroll(event):
-    if event.delta>0:
-        cf_up()
-    elif event.delta<0:
-        cf_down()
+    if len(lfs.name) >1:
+        if event.delta>0:
+            cf_up()
+        elif event.delta<0:
+            cf_down()
 
 def cf_up(*args):
     global namevar
@@ -3487,9 +3511,8 @@ def tools(*args):
         g_CEC = CEC(g, lfs.path)
         toolg.destroy()
 
-    toolg = tk.Toplevel(g)
+    toolg = RestrictedToplevel(g)
     toolg.title('Batch Master')
-    toolg.focus_set()
     b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b_spec.grid(row=0, column=0)
     if lfs.sort != 'no':
@@ -3498,14 +3521,48 @@ def tools(*args):
     b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
     b_exp_casa.grid(row=0, column=2)
     toolg.bind('<Return>', spec)
-    toolg.update()
-
+    set_center(g, toolg, 0, 0)
+    toolg.focus_set()
+    toolg.limit_bind()
+    
+class RestrictedToplevel(tk.Toplevel):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+        set_center(parent, self, 0, 0)
+        self.parent = parent
+        self.width = parent.winfo_reqwidth()
+        self.height = parent.winfo_reqheight()
+        
+    def limit_bind(self):
+        # 綁定配置變化事件
+        self.bind('<Configure>', self.on_configure)
+        
+    def on_configure(self, event):
+        # 只處理視窗位置變化（不是大小變化）
+        if event.widget == self:
+            x = self.winfo_x()
+            y = self.winfo_y()
+            self.x_min = int(self.parent.geometry().split('+')[1])
+            self.y_min = int(self.parent.geometry().split('+')[2])
+            self.x_max = self.x_min + self.width or self.winfo_screenwidth()
+            self.y_max = self.y_min + self.height or self.winfo_screenheight()
+            # 限制移動範圍
+            new_x = max(self.x_min, min(x, self.x_max - self.winfo_width()))
+            new_y = max(self.y_min, min(y, self.y_max - self.winfo_height()))
+            
+            # 如果位置超出範圍，重新設定
+            if x != new_x or y != new_y:
+                self.geometry(f"+{new_x}+{new_y}")
+                
 def def_cmap():
-    ColormapEditor().update()
+    CE = ColormapEditor()
+    set_center(g, CE, 0, 0)
+    CE.update()
 
 class ColormapEditor(tk.Toplevel):
     def __init__(self):
         super().__init__()
+        set_center(g, self, 0, 0)
         self.title("Colormap Editor")
         self.colors = ['#0000ff', '#00ff00', '#ff0000']  # default three colors
         self.scales = [0, 0.5, 1]
@@ -3641,7 +3698,7 @@ class ColormapEditor(tk.Toplevel):
         value3.set(name)
         setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
         setcmap.grid(row=0, column=1)
-        g.update_idletasks()
+        g.update()
         # Save file
         data = {
             "colors": np.array(self.colors),
@@ -3693,7 +3750,7 @@ class ColormapEditor(tk.Toplevel):
             value3.set(name)
             setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
             setcmap.grid(row=0, column=1)
-            g.update_idletasks()
+            g.update()
             np.savez(os.path.join(cdir,"colormaps.npz"), **data)
             
         except Exception as e:
@@ -4092,7 +4149,6 @@ class g_cut_plot(tk.Toplevel):
         save_button.pack(side=tk.BOTTOM)
         self.bind("<Return>", self.save_cut)
         self.focus_set()
-        self.update()
 
     def save_cut(self, event=None):
         try:
@@ -4187,24 +4243,56 @@ class g_cut_plot(tk.Toplevel):
             f.create_dataset('VolumeSlicer/sym', data=sym)
             
             f.create_dataset('Spectrum', data=np.array(data))
-            
+
+def set_center(parent, child, w_extend=None, h_extend=None):
+    """
+    
+    Set the position of child window to the center of parent window.
+    The parent window should have been set with a certain geometry.
+    
+    Args:
+    ------
+    parent: tk.Tk or tk.Toplevel
+    child: tk.Toplevel
+    Returns:
+    -------
+    None
+    """
+    if not isinstance(parent, tk.Tk) and not isinstance(parent, tk.Toplevel):
+        raise TypeError("Parent must be a Tk or Toplevel instance.")
+    if not isinstance(child, tk.Toplevel):
+        raise TypeError("Child must be a Toplevel instance.")
+    child.update()
+    if w_extend is None and h_extend is None:
+        w_extend = round(child.winfo_reqwidth()/5)
+        h_extend = round(child.winfo_reqheight()/5)
+    if w_extend is None:
+        w_extend = 0
+    if h_extend is None:
+        h_extend = 0
+    if not isinstance(w_extend, int) or not isinstance(h_extend, int):
+        raise TypeError("w_extend and h_extend must be integers.")
+    w_parent, h_parent = parent.winfo_reqwidth(), parent.winfo_reqheight()
+    w_child, h_child = child.winfo_reqwidth(), child.winfo_reqheight()
+    px = parent.winfo_x() + w_parent // 2 - w_child // 2
+    py = parent.winfo_y() + h_parent // 2 - h_child // 2
+    child.geometry(f'{w_child+w_extend}x{h_child+h_extend}+{px}+{py}')
+ 
 class wait(tk.Toplevel):
     def __init__(self, master):
+        self.g = master
         super().__init__(master, background = 'white')
+        set_center(self.g, self)
         self.title('Info')
         tk.Label(self, bg='white', text='Please wait...', font=('Arial', 16, "bold")).pack(side=tk.TOP, pady=20)
         self.label_info = tk.Label(self, bg='white', text='', font=('Arial', 14))
         self.label_info.pack(side=tk.TOP, pady=20)
         self.grab_set()
         self.focus_set()
-        self.update()
     
     def text(self, text):
         self.label_info.config(text=text)
-        self.update_idletasks()
-        w = self.winfo_reqwidth()
-        h = self.winfo_reqheight()
-        self.geometry(f'{w+round(w/5)}x{h}')
+        set_center(self.g, self)
         self.update()
     
     def done(self):
@@ -4214,7 +4302,7 @@ class wait(tk.Toplevel):
         gc.collect()
 
 class VolumeSlicer(tk.Frame):
-    def __init__(self, parent=None, path=None, volume=np.zeros((5,5,5), dtype=np.float64), cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=600):
+    def __init__(self, parent=None, path=None, volume=np.zeros((5,5,5), dtype=np.float64), cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=600, g=None):
         '''
         Args:
         ------
@@ -4249,6 +4337,7 @@ class VolumeSlicer(tk.Frame):
         self.type = 'real'   # directly stack  'real', 'reciprocal'
         self.mode = 'normal'
         self.sym = 1
+        self.g = g
         
         if x is not None and y is not None:
             self.ox = np.float64(x)
@@ -4483,13 +4572,15 @@ class VolumeSlicer(tk.Frame):
                 b_cut_plot.pack(side=tk.RIGHT)
     
     def symmetry(self):
-        self.sym_g = tk.Toplevel(self, background='white')
+        self.sym_g = RestrictedToplevel(self.g, background='white')
         self.sym_g.title('Symmetry')
         self.sym_g.resizable(False, False)
         tk.Button(self.sym_g, text='2-fold symmetry', command=self.symmetry_2, bg='white', font=('Arial', 16, "bold")).pack(side=tk.TOP, pady=5)
         tk.Button(self.sym_g, text='3-fold symmetry', command=self.symmetry_3, bg='white', font=('Arial', 16, "bold")).pack(side=tk.TOP, pady=5)
         tk.Button(self.sym_g, text='4-fold symmetry', command=self.symmetry_4, bg='white', font=('Arial', 16, "bold")).pack(side=tk.TOP, pady=5)
-        self.sym_g.update()        
+        set_center(self.g, self.sym_g, 50)
+        self.sym_g.update()
+        self.sym_g.limit_bind()
     
     def gen_sym(self, n):
         try:
@@ -4808,14 +4899,15 @@ class VolumeSlicer(tk.Frame):
     
     def pr_cut_plot(self):
         if self.sym != 1:
-            self.pr_cut_g = tk.Toplevel(self, background='white')
+            self.pr_cut_g = RestrictedToplevel(self.g, background='white')
             self.pr_cut_g.title('Info')
             self.pr_cut_g.resizable(False, False)
             tk.Label(self.pr_cut_g, bg='white', text=f'Using {self.sym}-fold symmetry', font=('Arial', 16, "bold")).pack(side=tk.TOP, padx=10, pady=10)
             tk.Button(self.pr_cut_g, text='OK', command=self.confirm_cut, bg='white', font=('Arial', 16, "bold")).pack(side=tk.TOP, pady=10)
             self.pr_cut_g.bind("<Return>", self.confirm_cut)
+            set_center(self.g, self.pr_cut_g, 100)
             self.pr_cut_g.focus_set()
-            self.pr_cut_g.update()
+            self.pr_cut_g.limit_bind()
         else:
             self.cut_plot()
             
@@ -5003,7 +5095,7 @@ class VolumeSlicer(tk.Frame):
             self.__get_slim()
             self.x, self.volume = [], []
             self.slice_index = np.argwhere(np.abs(self.ev-self.slider.val)<(self.ev[1]-self.ev[0])/2)[0][0]
-            self.wait = wait(self)
+            self.wait = wait(self.g)
             self.interpolate_slice(self.slice_index)
             self.disp_region()
             rotated_volume = rotate(self.surface, -self.angle, self.surface.shape)
@@ -5040,6 +5132,7 @@ class VolumeSlicer(tk.Frame):
                 set_entry_value(self.entry_ymax, str(self.xmax))
                 self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=16)
                 self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=16)
+            copy_to_clipboard(self.fig)
         except ValueError:
             self.wait.done()
             print("Invalid input for slim values")
@@ -5066,7 +5159,7 @@ class VolumeSlicer(tk.Frame):
             set_entry_value(self.entry_phi_offset, str(self.phi_offset))
             set_entry_value(self.entry_r1_offset, str(self.r1_offset))
             self.x, self.volume = [], []
-            self.wait = wait(self)
+            self.wait = wait(self.g)
             self.interpolate_slice(self.slice_index)
             self.disp_region()
             rotated_volume = rotate(self.surface, -self.angle, self.surface.shape)
@@ -5088,6 +5181,7 @@ class VolumeSlicer(tk.Frame):
                 self.ax.set_ylim([self.xmin, self.xmax])
                 self.ax.set_xlabel('x (mm)', fontsize=16)
                 self.ax.set_ylabel('z (mm)', fontsize=16)
+            copy_to_clipboard(self.fig)
             self.canvas.draw()
             self.wait.done()
             if self.type == 'real':
@@ -5211,10 +5305,11 @@ class VolumeSlicer(tk.Frame):
         self.hl.set_data([],[])
         self.vl.set_data([],[])
         self.slice_index = np.argwhere(np.abs(self.ev-self.slider.val)<(self.ev[1]-self.ev[0])/2)[0][0]
-        self.wait = wait(self)
+        self.wait = wait(self.g)
         self.interpolate_slice(self.slice_index)
         rotated_volume = rotate(self.surface, -self.angle, self.surface.shape)
         self.img.set_data(rotated_volume)
+        copy_to_clipboard(self.fig)
         self.canvas.draw()
         self.wait.done()
 
@@ -5446,7 +5541,6 @@ class CEC(loadfiles):
         self.g = g
         self.tlg = tk.Toplevel(g, bg='white')
         self.tlg.title('Constant Energy Cut')
-        self.tlg.focus_set()
         self.frame1 = tk.Frame(self.tlg, bg='white')
         self.frame1.grid(row=0, column=1)
         self.__check_re()
@@ -5529,6 +5623,8 @@ class CEC(loadfiles):
     
     def __set_data(self, odata=[], density=800, *args):
         if len(odata) > 0:
+            # self.tlg.geometry(f'800x600+0+{sc_y}')
+            set_center(self.g, self.tlg, 0, 0)
             self.size = 0
             for i in self.path:
                 self.size += os.path.getsize(i)
@@ -5539,7 +5635,7 @@ class CEC(loadfiles):
                 r1 = self.r1
                 ev, phi = odata[0].indexes.values()
                 e_photon = float(odata[0].attrs['ExcitationEnergy'].removesuffix(' eV'))
-                self.view = VolumeSlicer(parent=self.frame1, path=self.path, volume=odataframe, cmap='viridis', x=phi, y=r1, ev=ev, e_photon=e_photon, density=density)
+                self.view = VolumeSlicer(parent=self.frame1, path=self.path, volume=odataframe, cmap='viridis', x=phi, y=r1, ev=ev, e_photon=e_photon, density=density, g=self.tlg)
             elif self.sort == 'r1r2':
                 r1 = self.r1
                 r2 = self.r2
@@ -5548,16 +5644,17 @@ class CEC(loadfiles):
                 
                 ev, phi = odata[0].indexes.values()
                 e_photon = float(odata[0].attrs['ExcitationEnergy'].removesuffix(' eV'))
-                self.view = VolumeSlicer(parent=self.frame1, path=self.path, volume=odataframe, cmap='viridis', x=phi, y=r1, z=r2, ev=ev, e_photon=e_photon, density=density)
+                self.view = VolumeSlicer(parent=self.frame1, path=self.path, volume=odataframe, cmap='viridis', x=phi, y=r1, z=r2, ev=ev, e_photon=e_photon, density=density, g=self.tlg)
                 
             self.tlg.bind('<Return>', self.view.set_slim)
             if self.mode == 'normal':
                 self.view.set_slim()
             self.view.show()
-            self.tlg.update_idletasks()
+            self.tlg.update()
             w = self.tlg.winfo_reqwidth()
             h = self.tlg.winfo_reqheight()
-            self.tlg.geometry(f'{w}x{h}')
+            tx = t_sc_w if self.tlg.winfo_x() > t_sc_w else 0
+            self.tlg.geometry(f'{w}x{h}+{tx}+{sc_y}')
             self.tlg.protocol("WM_DELETE_WINDOW", self.on_closing)
             self.tlg.update()
 
@@ -5649,16 +5746,15 @@ class CEC(loadfiles):
             self.path = path
             self.name = name
             self.data = data
-        self.tlg.focus_set()
         if f==False:
             self.gg.destroy()
         self.__prework()
+        self.tlg.focus_set()
         
     def __check_file(self):
-        self.gg = tk.Toplevel(self.g, bg='white')
+        self.gg = RestrictedToplevel(self.g, bg='white')
         self.gg.protocol("WM_DELETE_WINDOW", self.__check)
         self.gg.title('File Check')
-        self.gg.focus_set()
         text = 'Same File Name Exists\nSelect the file you want to preserve'
         tk.Label(self.gg, text=text, width=len(text), height=2, font=('Arial', 14, "bold"), bg='white', bd=5).grid(row=0, column=0)
         frame1 = tk.Frame(self.gg, bg='white')
@@ -5740,14 +5836,15 @@ class CEC(loadfiles):
         tk.Button(self.gg, text='OK', command=self.__check, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5).grid(row=2, column=0)
         self.f1 = False
         self.gg.bind('<Return>', self.__check)
-        self.gg.update()
+        set_center(self.g, self.gg, 0, 0)
+        self.gg.focus_set()
+        self.gg.limit_bind()
         
     def __select_file(self):
         if self.f2:
-            self.gg = tk.Toplevel(self.g, bg='white')
+            self.gg = RestrictedToplevel(self.g, bg='white')
             self.gg.protocol("WM_DELETE_WINDOW", self.__check)
             self.gg.title('File Check')
-            self.gg.focus_set()
             if self.sort == 'r1r2':
                 text = f'Same {self.r1s[2]} and {self.r2s[2]} Exists\nSelect the file you want to preserve'
             elif self.sort == 'r1':
@@ -5802,7 +5899,9 @@ class CEC(loadfiles):
             tk.Button(self.gg, text='OK', command=self.__check, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5).grid(row=2, column=0)
             self.f2 = False
             self.gg.bind('<Return>', self.__check)
-            self.gg.update()
+            set_center(self.g, self.gg ,0 ,0)
+            self.gg.focus_set()
+            self.gg.limit_bind()
         else:
             self.__check(f=True)
         
@@ -5953,7 +6052,7 @@ def pr_load(data):
     if len(st.split('\n'))>24:
         info.config(height=24, width=max(lst)+1, state='normal')
     info.insert(tk.END, '\n'+st+'\n')
-    info.update_idletasks()
+    info.update()
     info.see(tk.END)
     info.config(state='disabled')
     global ev, phi
@@ -6047,23 +6146,25 @@ def o_load():
         data = lfs.data[0]  # data save as xarray.DataArray format
         pr_load(data)
         tname = lfs.name[0]
-        print(tname)
+        print(f'\n{tname}')
         if tname != name:
-            print('path: ',tname, '\nh5: ', name)
-            print('name need correction')
+            print(f'\033[31mname need correction\033[0m')
+            print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'H5 Name', name))
         else:
-            print('name correct')
+            print('Name is correct')
+            print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'H5 Name'))
         st.put(tname)
     elif '.json' in tbasename:
         data = lfs.data[0]
         pr_load(data)
         tname = lfs.name[0]
-        print(tname)
+        print(f'\n{tname}')
         if tname != name:
-            print('path: ',tname, '\njson: ', name)
-            print('name need correction')
+            print(f'\033[31mname need correction\033[0m')
+            print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'JSON Name', name))
         else:
-            print('name correct')
+            print('Name is correct')
+            print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'JSON Name'))
         st.put(tname)
     elif '.txt' in tbasename:
         data = lfs.data[0]
@@ -8308,7 +8409,8 @@ def ejob():     # MDC Fitting GUI
     global g, efiti, efitfig, efitout, egg, exdata, eydata, edxdata, edydata, eiout, eifig, efi, efi_err, efi_x, ebrmv, flermv, ebcgl2, efp, flecgl2, fpr, est, estate, ewf1, ewf2, eaf1, eaf2, elind, erind, ein_w1, ein_w2, ein_a1, ein_a2
     egg = tk.Toplevel(g, bg='white')
     edpi = egg.winfo_fpixels('1i')
-    # egg.geometry(f"1900x1000+0+{sc_y}")
+    tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+    egg.geometry(f"1900x1000+{tx}+{sc_y}")
     egg.title('EDC Lorentz Fit')
     est = queue.Queue(maxsize=0)
     estate = tk.Label(egg, text='', font=(
@@ -8472,10 +8574,11 @@ def ejob():     # MDC Fitting GUI
     tt = threading.Thread(target=testate)
     tt.daemon = True
     tt.start()
-    egg.update_idletasks()
+    egg.update()
     screen_width = egg.winfo_reqwidth()
     screen_height = egg.winfo_reqheight()
-    # egg.geometry(f"{screen_width}x{screen_height}+0+{sc_y}")
+    tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+    egg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
     egg.update()
 
 def fmcgl2():
@@ -9402,7 +9505,7 @@ def fmpreview():
     bmfwhm.pack()
     bmimse = tk.Button(mprvg, text='Imaginary Part', command=fmimse, width=30, height=2, font=('Arial', 16, "bold"), bg='white', bd=10)
     bmimse.pack()
-    mprvg.update_idletasks()
+    mprvg.update()
     w=mprvg.winfo_reqwidth()
     h=mprvg.winfo_reqheight()
     mprvg.geometry(f'{w}x{h}')
@@ -10507,7 +10610,8 @@ def mjob():     # MDC Fitting GUI
     global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mprf, mpr, b_pr, mbgv, fdo
     mgg = tk.Toplevel(g, bg='white')
     mdpi = mgg.winfo_fpixels('1i')
-    # mgg.geometry(f"1900x1000+0+{sc_y}")
+    tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+    mgg.geometry(f"1900x1000+{tx}+{sc_y}")
     mgg.title('MDC Lorentz Fit')
     fdo=0
     mpr=0   #button flag 1:ON 0:OFF initial 0:OFF
@@ -10806,10 +10910,11 @@ def mjob():     # MDC Fitting GUI
     tt = threading.Thread(target=tmstate)
     tt.daemon = True
     tt.start()
-    # mgg.update_idletasks()
-    # screen_width = mgg.winfo_reqwidth()
-    # screen_height = mgg.winfo_reqheight()
-    # mgg.geometry(f"{screen_width}x{screen_height}+0+{sc_y}")
+    mgg.update()
+    screen_width = mgg.winfo_reqwidth()
+    screen_height = mgg.winfo_reqheight()
+    tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+    mgg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
     mgg.update()
 
 
@@ -13798,13 +13903,16 @@ def press(event):
     global x1, y1, mof, px1, py1, ao, bo, out, tb0, tb0_, tb1, tb1_, tb2
     if event.button == 1:
         x1, y1 = event.xdata, event.ydata
-        px1, py1 = event.x, event.y
-        mof = -1
+        if value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
+            if value2.get() == '---Plot3---':
+                px1, py1 = event.x, event.y
+                mof = -1
     elif event.button == 3 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
         if value2.get() == '---Plot3---':
-            ao.set_xlim(xl)
-            ao.set_ylim(yl)
-            out.draw()
+            if ao:
+                ao.set_xlim(xl)
+                ao.set_ylim(yl)
+                out.draw()
         else:
             bo.set_xlim(xl)
             bo.set_ylim(yl)
@@ -13879,12 +13987,13 @@ def release(event):
     if event.button == 1 and mof == -1 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
         x2, y2 = event.xdata, event.ydata
         if value2.get() == '---Plot3---':
-            ao.set_xlim(sorted([x1, x2]))
-            if emf=='KE':    
-                ao.set_ylim(sorted([y1, y2]))
-            else:
-                ao.set_ylim(sorted([y1, y2], reverse=True))
-            out.draw()
+            if ao:
+                ao.set_xlim(sorted([x1, x2]))
+                if emf=='KE':    
+                    ao.set_ylim(sorted([y1, y2]))
+                else:
+                    ao.set_ylim(sorted([y1, y2], reverse=True))
+                out.draw()
         else:
             bo.set_xlim(sorted([x1, x2]))
             if emf=='KE':    
@@ -14116,7 +14225,7 @@ def plot1(*e):
         def on_enter(event):
             chf()
             
-        gg = tk.Toplevel(g, bg="white", padx=10, pady=10)
+        gg = RestrictedToplevel(g, bg="white", padx=10, pady=10)
         gg.title('Plotting Parameter')
         gg.iconphoto(False, tk.PhotoImage(data=b64decode(gicon)))
 
@@ -14160,9 +14269,10 @@ def plot1(*e):
         cd.bind('<FocusIn>', select_all)
         cl.bind('<FocusIn>', select_all)
         cp.bind('<FocusIn>', select_all)
-        
+        set_center(g, gg, 0, 0)
         gg.bind('<Return>', on_enter)
         gg.focus_set()
+        gg.limit_bind()
         ini()
     elif value.get() == 'Second Derivative':
         def select_all(event):
@@ -14192,7 +14302,7 @@ def plot1(*e):
         def on_enter(event):
             chf()
             
-        gg = tk.Toplevel(g, bg="white", padx=10, pady=10)
+        gg = RestrictedToplevel(g, bg="white", padx=10, pady=10)
         gg.title('Gaussian Smoothing Kernel Size')
         gg.iconphoto(False, tk.PhotoImage(data=b64decode(gicon)))
 
@@ -14216,8 +14326,10 @@ def plot1(*e):
         
         ck.bind('<FocusIn>', select_all)
         
+        set_center(g, gg, 0, 0)
         gg.bind('<Return>', on_enter)
         gg.focus_set()
+        gg.limit_bind()
         ini()
     else:
         t8 = threading.Thread(target=o_plot1)
@@ -14264,7 +14376,7 @@ def plot3(*e):
         def on_enter(event):
             chf()
             
-        gg = tk.Toplevel(g, bg="white", padx=10, pady=10)
+        gg = RestrictedToplevel(g, bg="white", padx=10, pady=10)
         gg.title('Data Point List')
         gg.iconphoto(False, tk.PhotoImage(data=b64decode(gicon)))
         lpos = tk.Label(gg, text='Position', font=(
@@ -14310,8 +14422,10 @@ def plot3(*e):
         bflag = tk.Button(gg, text="OK", font=("Arial", 16, "bold"),
                           height=2, width=10, bg="white", command=chf)
         bflag.grid(row=4, column=0, padx=10, pady=5)
+        set_center(g, gg, 0, 0)
         gg.bind('<Return>', on_enter)
         gg.focus_set()
+        gg.limit_bind()
         ini()
     else:
         t10 = threading.Thread(target=o_plot3)
@@ -14358,7 +14472,7 @@ def lm():
 
 def o_loadmfit():
     global g, st, lmgg
-    lmgg = tk.Toplevel(g)
+    lmgg = RestrictedToplevel(g)
     lmgg.title('Load MDC fitted File')
     lmgg.geometry('400x200')  # format:'1400x800'
     b1 = tk.Button(lmgg, command=lm2p, text='vms 1 peak to 2 peaks', font=(
@@ -14370,11 +14484,13 @@ def o_loadmfit():
     b3 = tk.Button(lmgg, command=lm, text='load MDC fitted File', font=(
         "Arial", 12, "bold"), fg='red', width=30, height='1', bd=10)
     b3.pack()
-    lmgg.update_idletasks()
+    lmgg.update()
     w=lmgg.winfo_reqwidth()
     h=lmgg.winfo_reqheight()
     lmgg.geometry(f'{w}x{h}')
-    lmgg.update()
+    set_center(g, lmgg, 0, 0)
+    lmgg.focus_set()
+    lmgg.limit_bind()
 
 def dl_sw():
     global dl, b_sw
@@ -14386,19 +14502,18 @@ def dl_sw():
     t.start()
 
 if __name__ == '__main__':
-    g = tk.Tk()
     os.chdir(cdir)
     if os.path.exists('open_check_MDC_cut.txt')==0:
         with open ('open_check_MDC_cut.txt', 'w', encoding = 'utf-8') as f:
             f.write('1')
             f.close()
         if os.name == 'nt':
-            os.system(rf'start cmd /C "chcp 65001 & python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+            os.system(rf'start cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         elif os.name == 'posix':
             try:
-                os.system(rf'start cmd /C "chcp 65001 & python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                os.system(rf'start cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
             except:
-                os.system(rf'start cmd /C "chcp 65001 & python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                os.system(rf'start cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')
@@ -14440,6 +14555,32 @@ if __name__ == '__main__':
             else:
                 return 'unknown'
         bar_pos = get_dock_position()
+    
+    g = tk.Tk()
+    windll.shcore.SetProcessDpiAwareness(1)
+    ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+    t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
+    t_sc_h-=int(40*ScaleFactor/100)
+    odpi=g.winfo_fpixels('1i')
+    # print('odpi:',odpi)
+    if bar_pos == 'top':    #taskbar on top
+        sc_y = int(40*ScaleFactor/100)
+    else:
+        sc_y = 0
+    # w 1920 1374 (96 dpi)
+    # h 1080 748 (96 dpi)
+    prfactor = 1 if ScaleFactor <= 150 else 1.03
+    ScaleFactor /= prfactor*(ScaleFactor/100*1374/96*odpi/t_sc_w) if 1374/t_sc_w >= 748/t_sc_h else prfactor*(ScaleFactor/100*748/96*odpi/t_sc_h)
+    g.tk.call('tk', 'scaling', ScaleFactor/100)
+    dpi=g.winfo_fpixels('1i')
+    # print('dpi:',dpi)
+    # print('ScaleFactor:',ScaleFactor)
+    g.geometry(f'1900x1080+0+{sc_y}')
+    g.title('MDC cut')
+    g.config(bg='white')
+    # g.geometry('1920x980')  # format:'1400x800'
+    g.resizable(True, True)
+    
     try:
         with np.load('rd.npz', 'rb') as ff:
             path = str(ff['path'])
@@ -14593,29 +14734,6 @@ if __name__ == '__main__':
     '''
     v_fe = tk.StringVar()
     v_fe.set(str(vfe))
-    windll.shcore.SetProcessDpiAwareness(1)
-    ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
-    t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
-    t_sc_h-=int(40*ScaleFactor/100)
-    odpi=g.winfo_fpixels('1i')
-    # print('odpi:',odpi)
-    if bar_pos == 'top':    #taskbar on top
-        sc_y = int(40*ScaleFactor/100)
-    else:
-        sc_y = 0
-    # w 1920 1374 (96 dpi)
-    # h 1080 748 (96 dpi)
-    prfactor = 1 if ScaleFactor <= 150 else 1.03
-    ScaleFactor /= prfactor*(ScaleFactor/100*1374/96*odpi/t_sc_w) if 1374/t_sc_w >= 748/t_sc_h else prfactor*(ScaleFactor/100*748/96*odpi/t_sc_h)
-    g.tk.call('tk', 'scaling', ScaleFactor/100)
-    dpi=g.winfo_fpixels('1i')
-    # print('dpi:',dpi)
-    # print('ScaleFactor:',ScaleFactor)
-    g.geometry(f'1900x1080+0+{sc_y}')
-    g.title('MDC cut')
-    g.config(bg='white')
-    # g.geometry('1920x980')  # format:'1400x800'
-    g.resizable(True, True)
     icon = "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"
     icon1 = "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"
     icon2 = "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"
@@ -14666,59 +14784,7 @@ if __name__ == '__main__':
     b_excitation.grid(row=0,column=1)
     b_desc = tk.Button(fr_mod, text='Modify Description', font=('Arial', 10, 'bold'),command=desc)
     b_desc.grid(row=0,column=2)
-    # try:
-    #     info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
-    #     info.insert(tk.END, '\n'+st+'\n')
-    #     info.see(tk.END)
-    #     info.config(state='disabled')
-    # except:
-    #     pass
-
-    img1 = Image.open(io.BytesIO(b64decode(icon1))).resize([250, 250])
-    tk_img1 = ImageTk.PhotoImage(img1)
-    img2 = Image.open(io.BytesIO(b64decode(icon2))).resize([250, 250])
-    tk_img2 = ImageTk.PhotoImage(img2)
-    img3 = Image.open(io.BytesIO(b64decode(icon3))).resize([250, 250])
-    tk_img3 = ImageTk.PhotoImage(img3)
-    img4 = Image.open(io.BytesIO(b64decode(icon4))).resize([250, 250])
-    tk_img4 = ImageTk.PhotoImage(img4)
-    img5 = Image.open(io.BytesIO(b64decode(icon5))).resize([250, 250])
-    tk_img5 = ImageTk.PhotoImage(img5)
-    img6 = Image.open(io.BytesIO(b64decode(icon6))).resize([250, 250])
-    tk_img6 = ImageTk.PhotoImage(img6)
-    img7 = Image.open(io.BytesIO(b64decode(icon7))).resize([250, 250])
-    tk_img7 = ImageTk.PhotoImage(img7)
-    img8 = Image.open(io.BytesIO(b64decode(icon8))).resize([250, 250])
-    tk_img8 = ImageTk.PhotoImage(img8)
-    img9 = Image.open(io.BytesIO(b64decode(icon9))).resize([250, 250])
-    tk_img9 = ImageTk.PhotoImage(img9)
-    img10 = Image.open(io.BytesIO(b64decode(icon10))).resize([250, 250])
-    tk_img10 = ImageTk.PhotoImage(img10)
-    img11 = Image.open(io.BytesIO(b64decode(icon11))).resize([250, 250])
-    tk_img11 = ImageTk.PhotoImage(img11)
-    img12 = Image.open(io.BytesIO(b64decode(icon12))).resize([250, 250])
-    tk_img12 = ImageTk.PhotoImage(img12)
-    img13 = Image.open(io.BytesIO(b64decode(icon13))).resize([250, 250])
-    tk_img13 = ImageTk.PhotoImage(img13)
-    img14 = Image.open(io.BytesIO(b64decode(icon14))).resize([250, 250])
-    tk_img14 = ImageTk.PhotoImage(img14)
-    img15 = Image.open(io.BytesIO(b64decode(icon15))).resize([250, 250])
-    tk_img15 = ImageTk.PhotoImage(img15)
-    img16 = Image.open(io.BytesIO(b64decode(icon16))).resize([250, 250])
-    tk_img16 = ImageTk.PhotoImage(img16)
-    img17 = Image.open(io.BytesIO(b64decode(icon17))).resize([250, 250])
-    tk_img17 = ImageTk.PhotoImage(img17)
-    img18 = Image.open(io.BytesIO(b64decode(icon18))).resize([250, 250])
-    tk_img18 = ImageTk.PhotoImage(img18)
-    img19 = Image.open(io.BytesIO(b64decode(icon19))).resize([250, 250])
-    tk_img19 = ImageTk.PhotoImage(img19)
-    img20 = Image.open(io.BytesIO(b64decode(icon20))).resize([250, 250])
-    tk_img20 = ImageTk.PhotoImage(img20)
-
-    img = [tk_img1, tk_img2, tk_img3, tk_img4, tk_img5, tk_img6, tk_img7,
-        tk_img8, tk_img9, tk_img10, tk_img11, tk_img12, tk_img13, tk_img14,
-        tk_img15, tk_img16, tk_img17, tk_img18, tk_img19, tk_img20]
-
+    
     mid = tk.Frame(g, bg='white')
     mid.grid(row=0, column=1)
 
@@ -14727,6 +14793,13 @@ if __name__ == '__main__':
         "Arial", 14, "bold"), bg="white", fg="black")
     state.grid(row=0, column=0)
 
+    Icon = [icon1, icon2, icon3, icon4, icon5, icon6, icon7, icon8, icon9, icon10, icon11, icon12, icon13, icon14, icon15, icon16, icon17, icon18, icon19, icon20]
+    img = []
+    for _ in Icon:
+        if _:
+            timg = Image.open(io.BytesIO(b64decode(_))).resize([250, 250])
+            tk_img = ImageTk.PhotoImage(timg)
+            img.append(tk_img)
     limg = tk.Label(mid, image=img[np.random.randint(
         len(img))], width='250', height='250', bg='white')
     limg.grid(row=1, column=0)
@@ -15056,6 +15129,7 @@ if __name__ == '__main__':
     fig = Figure(figsize=(8, 6), layout='constrained')
     out = FigureCanvasTkAgg(fig, master=figfr)
     out.get_tk_widget().grid(row=0, column=0)
+    ao = None
     out.mpl_connect('motion_notify_event', move)
     out.mpl_connect('button_press_event', press)
     out.mpl_connect('button_release_event', release)
@@ -15158,7 +15232,7 @@ if __name__ == '__main__':
     g.bind('<Down>', cf_down)
     g.bind('<MouseWheel>', scroll)
     g.bind('<MouseWheel>', scroll)
-    g.update_idletasks()
+    g.update()
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
     # print(f"Screen Width: {screen_width}, Screen Height: {screen_height}")
@@ -15166,5 +15240,5 @@ if __name__ == '__main__':
     # g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
     if cec is not None: # CEC loaded old data to show the cutting rectangle
-        cec.tlg.focus_set()
+        cec.tlg.focus_force()
     g.mainloop()
