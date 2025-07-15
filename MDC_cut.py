@@ -802,10 +802,8 @@ def g_emode():
 
 def emode():
     global gfe,fe_in,b_emode,emf,v_fe,mfpr
-    try:
+    if 'gfe' in globals():
         gfe.destroy()
-    except:
-        pass
     mfpr=0
     if emf=='KE':
         emf='BE'
@@ -868,6 +866,8 @@ def pre_process(input):
 def gui_exp_origin():
     global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11
     limg.config(image=img[np.random.randint(len(img))])
+    if 'gori' in globals():
+        gori.destroy()
     gori=RestrictedToplevel(g,bg='white')
     gori.title('Export to Origin')
     l1=tk.Label(gori,text=f"{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.opj",font=('Arial', 10, "bold"),bg='white',wraplength=600)
@@ -1545,6 +1545,8 @@ def cexcitation_save_str():
 def cexcitation():
     global gcestr,t_cein
     tk.messagebox.showwarning("Warning","Floats Input Only")
+    if 'gcestr' in globals():
+        gcestr.destroy()
     gcestr=RestrictedToplevel(g,bg='white')
     gcestr.title('Excitation Energy')
     fr=tk.Frame(gcestr,bg='white')
@@ -1637,6 +1639,8 @@ def cname_save_str():
 def cname():
     global gcstr,t_cin
     tk.messagebox.showwarning("Warning","允許中文、符號")
+    if 'gcstr' in globals():
+        gcstr.destroy()
     gcstr=RestrictedToplevel(g,bg='white')
     gcstr.title('Name')
     fr=tk.Frame(gcstr,bg='white')
@@ -1722,6 +1726,8 @@ def save_str():
 def desc():
     global gstr,t_in
     tk.messagebox.showwarning("Warning","允許中文、符號")
+    if 'gstr' in globals():
+        gstr.destroy()
     gstr=RestrictedToplevel(g,bg='white')
     gstr.title('Description')
     fr=tk.Frame(gstr,bg='white')
@@ -3561,7 +3567,9 @@ def tools(*args):
     def kplane():
         g_CEC = CEC(g, lfs.path)
         toolg.destroy()
-
+    global toolg
+    if 'toolg' in globals():
+        toolg.destroy()
     toolg = RestrictedToplevel(g)
     toolg.title('Batch Master')
     b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', 14, "bold"), bg='white', bd=5)
@@ -3606,6 +3614,9 @@ class RestrictedToplevel(tk.Toplevel):
                 self.geometry(f"+{new_x}+{new_y}")
                 
 def def_cmap():
+    global CE
+    if 'CE' in globals():
+        CE.destroy()
     CE = ColormapEditor()
     set_center(g, CE, 0, 0)
     CE.update()
@@ -8014,13 +8025,12 @@ def saveefit():
     global epos, efwhm, fphi, efwhm, epos, semin, semax, seaa1, seaa2, sefp, sefi
     path = fd.asksaveasfilename(title="Save EDC Fitted Data", initialdir=dpath,
                                 initialfile=name+"_efit", filetype=[("NPZ files", ".npz"),], defaultextension=".npz")
+    try:
+        egg.focus_force()
+    except:
+        pass
     if len(path) > 2:
-        global eendg
-        try:
-            egg.focus_set()
-            eendg.destroy()
-        except:
-            pass
+        eendg.destroy()
         efwhm = res(sefi, efwhm)
         epos = res(sefi, epos)
         # semin = res(sefi, semin)
@@ -8031,8 +8041,7 @@ def saveefit():
         np.savez(path, path=dpath, fphi=fphi, efwhm=efwhm, epos=epos, semin=semin,
                  semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
     else:
-        egg.focus_set()
-        eendg.focus_set()
+        eendg.focus_force()
 
 scei = []
 
@@ -8070,10 +8079,8 @@ def feend():
         np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
     scei = cei
     fpr = 1
-    try:
+    if 'eendg' in globals():
         eendg.destroy()
-    except:
-        pass
     eendg = tk.Toplevel(g)
     eendg.title('EDC Lorentz Fit Result')
     fr = tk.Frame(master=eendg, bd=5)
@@ -9330,18 +9337,16 @@ def savemfit():
     smresult = pack_fitpar(mresult)
     path = fd.asksaveasfilename(title="Save MDC Fitted Data", initialdir=dpath,
                                 initialfile=name+"_mfit", filetype=[("NPZ files", ".npz"),], defaultextension=".npz")
+    try:
+        mgg.focus_force()
+    except:
+        pass
     if len(path) > 2:
-        global mendg
-        try:
-            mgg.focus_set()
-            mendg.destroy()
-        except:
-            pass
+        mendg.destroy()
         np.savez(path, path=dpath, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
                  skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
     else:
-        mgg.focus_set()
-        mendg.focus_set()
+        mendg.focus_force()
 
 
 def fmresidual():
@@ -9608,10 +9613,8 @@ def fmend():
     mprend()
     scki = cki
     fpr = 1
-    try:
+    if 'mendg' in globals():
         mendg.destroy()
-    except:
-        pass
     mendg = tk.Toplevel(g)
     mendg.title('MDC Lorentz Fit Result')
     fr = tk.Frame(master=mendg, bd=5)
@@ -9650,10 +9653,8 @@ def fmend1():
     mprend(p=1)
     scki = cki
     fpr = 1
-    try:
+    if 'mendg' in globals():
         mendg.destroy()
-    except:
-        pass
     mendg = tk.Toplevel(g)
     mendg.title('MDC Lorentz Fit Result')
     fr = tk.Frame(master=mendg, bd=5)
@@ -9691,10 +9692,8 @@ def fmend2():
     mprend(p=2)
     scki = cki
     fpr = 1
-    try:
+    if 'mendg' in globals():
         mendg.destroy()
-    except:
-        pass
     mendg = tk.Toplevel(g)
     mendg.title('MDC Lorentz Fit Result')
     fr = tk.Frame(master=mendg, bd=5)
@@ -14523,6 +14522,8 @@ def lm():
 
 def o_loadmfit():
     global g, st, lmgg
+    if 'lmgg' in globals():
+        lmgg.destroy()
     lmgg = RestrictedToplevel(g)
     lmgg.title('Load MDC fitted File')
     lmgg.geometry('400x200')  # format:'1400x800'
