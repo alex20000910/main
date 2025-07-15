@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "6.5.2"
-__release_date__ = "2025-07-11"
+__version__ = "6.5.3"
+__release_date__ = "2025-07-15"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -69,6 +69,51 @@ cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 app_name = os.path.basename(inspect.stack()[0].filename).removesuffix('.py')
 if os.name == 'nt':  # only execute on Windows OS
     cdir = cdir[0].upper() + cdir[1:]
+    import ctypes
+    from ctypes import wintypes
+    class APPBARDATA(ctypes.Structure):
+        _fields_ = [
+            ('cbSize', wintypes.DWORD),
+            ('hWnd', wintypes.HWND),
+            ('uCallbackMessage', wintypes.UINT),
+            ('uEdge', wintypes.UINT),
+            ('rc', wintypes.RECT),
+            ('lParam', wintypes.LPARAM),
+        ]
+    ABM_GETTASKBARPOS = 0x00000005
+    def get_taskbar_position():
+        appbar = APPBARDATA()
+        appbar.cbSize = ctypes.sizeof(APPBARDATA)
+        result = ctypes.windll.shell32.SHAppBarMessage(ABM_GETTASKBARPOS, ctypes.byref(appbar))
+        if not result:
+            return None
+        edge = appbar.uEdge
+        positions = {0: 'left', 1: 'top', 2: 'right', 3: 'bottom'}
+        return positions.get(edge, 'unknown')
+    
+    bar_pos = get_taskbar_position()
+
+elif os.name == 'posix':
+    def get_dock_position():
+        script = 'tell application "System Events" to get the properties of the dock preferences'
+        result = subprocess.check_output(['osascript', '-e', script])
+        if b'left' in result:
+            return 'left'
+        elif b'bottom' in result:
+            return 'bottom'
+        elif b'right' in result:
+            return 'right'
+        else:
+            return 'unknown'
+    bar_pos = get_dock_position()
+windll.shcore.SetProcessDpiAwareness(1)
+ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
+t_sc_h-=int(40*ScaleFactor/100)
+if bar_pos == 'top':    #taskbar on top
+    sc_y = int(40*ScaleFactor/100)
+else:
+    sc_y = 0
 try:
     os.chdir(cdir)
     if os.path.exists('pip_check.txt')==0:
@@ -82,15 +127,15 @@ try:
                 if os.name == 'nt':
                     print('pip not found\nOS: Windows\nInstalling pip...')
                     os.system('python -m ensurepip')    #install pip
-                    os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')  #restart the script to ensure pip works without potential errors
+                    os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')  #restart the script to ensure pip works without potential errors
                 elif os.name == 'posix':
                     print('pip not found\nOS: Linux or MacOS\nInstalling pip...')
                     try:    #python3 if installed
                         os.system('python3 -m ensurepip')   #install pip
-                        os.system('python3 "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')   #restart the script to ensure pip works without potential errors
+                        os.system('python3 -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')   #restart the script to ensure pip works without potential errors
                     except: #python2.7(default in MacOS)
                         os.system('python -m ensurepip')
-                        os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+                        os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
                 with open ('pip_check.txt', 'w', encoding = 'utf-8') as f:
                     f.write('pip found')
                     f.close()
@@ -101,12 +146,12 @@ except:
     pass
 def restart():
     if os.name == 'nt':
-        os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+        os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
     elif os.name == 'posix':
         try:
-            os.system('python3 "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+            os.system('python3 -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
         except:
-            os.system('python "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+            os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
 def install(s: str):
     print('\n\n"'+s+'" Module Not Found')
     a = input('pip install '+s+' ???\nProceed (Y/n)? ')
@@ -1153,7 +1198,7 @@ save()
         print('Exporting to Origin...')
         st.put('Exporting to Origin...')
         temp=os.sep+"origin_temp.py"
-        os.system(f'python "{cdir+temp}"')
+        os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{cdir+temp}"')
         os.system(f'del "{cdir+temp}"')
         limg.config(image=img[np.random.randint(len(img))])
         print('Exported to Origin')
@@ -2502,7 +2547,7 @@ class spectrogram:
         self.__change_file()
     
     
-    def plot(self, g, cmap='viridis'):
+    def plot(self, g=None, cmap='viridis'):
         """Plot the spectrogram data in a new Tkinter Toplevel window.
         This method creates a new Tkinter Toplevel window and populates it with
         various widgets to display the spectrogram data and related information.
@@ -2541,11 +2586,14 @@ class spectrogram:
         
         """
         # global tpf,tpo,rpf,rpo,l_cx,l_cy,l_dy
-        self.g = g
         self.cmap = cmap
-        self.tpg = tk.Toplevel(self.g, bg='white')
-        tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
-        self.tpg.geometry(f"1900x1000+{tx}+{sc_y}")
+        if g is None:
+            self.tpg = tk.Tk()
+            self.tpg.config(bg='white')
+        else:
+            self.tpg = tk.Toplevel(g, bg='white')
+            tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+            self.tpg.geometry(f"1900x1000+{tx}+{sc_y}")
         self.tpg.title('Spectrogram: '+self.name)
         
         fr_fig=tk.Frame(self.tpg,bg='white',bd=0)
@@ -2632,12 +2680,15 @@ class spectrogram:
             self.tpg.bind('<Up>', self.__cf_up)
             self.tpg.bind('<Down>', self.__cf_down)
             self.tpg.bind('<MouseWheel>', self.__scroll)
-        self.tpg.update()
-        screen_width = self.tpg.winfo_reqwidth()
-        screen_height = self.tpg.winfo_reqheight()
-        tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
-        self.tpg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
-        self.tpg.update()
+        if g is not None:
+            self.tpg.update()
+            screen_width = self.tpg.winfo_reqwidth()
+            screen_height = self.tpg.winfo_reqheight()
+            tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+            self.tpg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
+            self.tpg.focus_force()
+        else:
+            self.tpg.mainloop()
     
     def __export(self):
         # os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
@@ -14517,58 +14568,12 @@ if __name__ == '__main__':
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')
-    if os.name == 'nt':
-        import ctypes
-        from ctypes import wintypes
-        class APPBARDATA(ctypes.Structure):
-            _fields_ = [
-                ('cbSize', wintypes.DWORD),
-                ('hWnd', wintypes.HWND),
-                ('uCallbackMessage', wintypes.UINT),
-                ('uEdge', wintypes.UINT),
-                ('rc', wintypes.RECT),
-                ('lParam', wintypes.LPARAM),
-            ]
-        ABM_GETTASKBARPOS = 0x00000005
-        def get_taskbar_position():
-            appbar = APPBARDATA()
-            appbar.cbSize = ctypes.sizeof(APPBARDATA)
-            result = ctypes.windll.shell32.SHAppBarMessage(ABM_GETTASKBARPOS, ctypes.byref(appbar))
-            if not result:
-                return None
-            edge = appbar.uEdge
-            positions = {0: 'left', 1: 'top', 2: 'right', 3: 'bottom'}
-            return positions.get(edge, 'unknown')
-        
-        bar_pos = get_taskbar_position()
-
-    elif os.name == 'posix':
-        def get_dock_position():
-            script = 'tell application "System Events" to get the properties of the dock preferences'
-            result = subprocess.check_output(['osascript', '-e', script])
-            if b'left' in result:
-                return 'left'
-            elif b'bottom' in result:
-                return 'bottom'
-            elif b'right' in result:
-                return 'right'
-            else:
-                return 'unknown'
-        bar_pos = get_dock_position()
     
     g = tk.Tk()
-    windll.shcore.SetProcessDpiAwareness(1)
-    ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
-    t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
-    t_sc_h-=int(40*ScaleFactor/100)
-    odpi=g.winfo_fpixels('1i')
-    # print('odpi:',odpi)
-    if bar_pos == 'top':    #taskbar on top
-        sc_y = int(40*ScaleFactor/100)
-    else:
-        sc_y = 0
     # w 1920 1374 (96 dpi)
     # h 1080 748 (96 dpi)
+    odpi=g.winfo_fpixels('1i')
+    # print('odpi:',odpi)
     prfactor = 1 if ScaleFactor <= 150 else 1.03
     ScaleFactor /= prfactor*(ScaleFactor/100*1374/96*odpi/t_sc_w) if 1374/t_sc_w >= 748/t_sc_h else prfactor*(ScaleFactor/100*748/96*odpi/t_sc_h)
     g.tk.call('tk', 'scaling', ScaleFactor/100)
