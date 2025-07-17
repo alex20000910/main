@@ -1,6 +1,6 @@
 # MDC cut GUI
 __version__ = "6.5.3"
-__release_date__ = "2025-07-15"
+__release_date__ = "2025-07-17"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -14589,7 +14589,6 @@ if __name__ == '__main__':
     windll.shcore.SetProcessDpiAwareness(1)
     ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
     t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
-    print('t_sc_w:', t_sc_w, 't_sc_h:', t_sc_h)
     t_sc_h-=int(40*ScaleFactor/100)
     if bar_pos == 'top':    #taskbar on top
         sc_y = int(40*ScaleFactor/100)
