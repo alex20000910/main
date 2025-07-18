@@ -2885,13 +2885,24 @@ class spectrogram:
             odpi=self.tpg.winfo_fpixels('1i')
             # prfactor = 1.03 if ScaleFactor <= 100 else 1.2 if ScaleFactor <= 125 else 0.9 if ScaleFactor <= 150 else 0.55
             prfactor = 1
-            ScaleFactor /= prfactor*(ScaleFactor/100*1905/96*odpi/t_sc_w) if 1905/t_sc_w >= (953+40)/t_sc_h else prfactor*(ScaleFactor/100*(953+40)/96*odpi/t_sc_h)
+            ScaleFactor /= prfactor*(ScaleFactor/100*1890/96*odpi/t_sc_w) if 1890/t_sc_w >= (954)/t_sc_h else prfactor*(ScaleFactor/100*(954)/96*odpi/t_sc_h)
             self.tpg.tk.call('tk', 'scaling', ScaleFactor/100)
             dpi = self.tpg.winfo_fpixels('1i')
             windll.shcore.SetProcessDpiAwareness(1)
             global scale
-            scale = odpi / dpi
+            scale = odpi / dpi * ScaleFactor / 100
             self.tpg.config(bg='white')
+            base_font_size = 14
+            scaled_font_size = int(base_font_size * scale)
+
+            plt.rcParams['font.family'] = 'Arial'
+            plt.rcParams['font.size'] = int(plt.rcParams['font.size'] * scale)
+            plt.rcParams['lines.linewidth'] = int(plt.rcParams['lines.linewidth'] * scale)
+            plt.rcParams['lines.markersize'] = int(plt.rcParams['lines.markersize'] * scale)
+                
+            # 設定預設字體
+            default_font = ('Arial', scaled_font_size)
+            self.tpg.option_add('*Font', default_font)
         else:
             ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
             t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
@@ -2906,7 +2917,7 @@ class spectrogram:
         self.tpg.title('Spectrogram: '+self.name)
         
         fr_fig=tk.Frame(self.tpg,bg='white',bd=0)
-        fr_fig.grid(row=0,column=0)
+        fr_fig.grid(row=0,column=0,sticky='nsew')
         
         self.rpf = Figure(figsize=(15*scale, 4.75*scale), layout='constrained')
         self.rpo = FigureCanvasTkAgg(self.rpf, master=fr_fig)
@@ -14968,12 +14979,11 @@ if __name__ == '__main__':
     # prfactor = 1 if ScaleFactor <= 150 else 1.03
     # prfactor = 1.03 if ScaleFactor <= 100 else 0.9 if ScaleFactor <= 125 else 0.8 if ScaleFactor <= 150 else 0.5
     prfactor = 1
-    ScaleFactor /= prfactor*(ScaleFactor/100*1900/96*odpi/t_sc_w) if 1900/t_sc_w >= (953)/t_sc_h else prfactor*(ScaleFactor/100*(953)/96*odpi/t_sc_h)
+    ScaleFactor /= prfactor*(ScaleFactor/100*1880/96*odpi/t_sc_w) if 1880/t_sc_w >= (950)/t_sc_h else prfactor*(ScaleFactor/100*(950)/96*odpi/t_sc_h)
     g.tk.call('tk', 'scaling', ScaleFactor/100)
     dpi=g.winfo_fpixels('1i')
     # print('dpi:',dpi)
     windll.shcore.SetProcessDpiAwareness(1)
-    
     scale = odpi / dpi
     base_font_size = 14
     scaled_font_size = int(base_font_size * scale)
@@ -14983,9 +14993,6 @@ if __name__ == '__main__':
     plt.rcParams['lines.linewidth'] = int(plt.rcParams['lines.linewidth'] * scale)
     plt.rcParams['lines.markersize'] = int(plt.rcParams['lines.markersize'] * scale)
     # print('scale:', scale)
-    
-    def hello():
-        print("Hello, World!")
         
     # 設定預設字體
     default_font = ('Arial', scaled_font_size)
@@ -15520,7 +15527,8 @@ if __name__ == '__main__':
     figfr.grid(row=0, column=1, sticky='nsew')
     global figy
     figy = 8.5 if osf<=100 else 8.25 if osf<=150 else 8
-    fig = Figure(figsize=(11.25*scale, figy*scale), layout='constrained')
+    figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
+    fig = Figure(figsize=(figx*scale, figy*scale), layout='constrained')
     out = FigureCanvasTkAgg(fig, master=figfr)
     out.get_tk_widget().grid(row=0, column=0, sticky='nsew')
     ao = None
@@ -15762,7 +15770,7 @@ if __name__ == '__main__':
     g.update()
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
-    # print(f"Screen Width: {screen_width}, Screen Height: {screen_height}")
+    print(f"Screen Width: {screen_width}, Screen Height: {screen_height}")
     g.geometry(f"{screen_width}x{screen_height}+0+{sc_y}")
     # g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
