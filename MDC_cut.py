@@ -15537,14 +15537,14 @@ if __name__ == '__main__':
     figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
     fig = Figure(figsize=(figx*scale, figy*scale), layout='constrained')
     out = FigureCanvasTkAgg(fig, master=figfr)
-    out.get_tk_widget().grid(row=0, column=0, sticky='nsew')
+    out.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     ao = None
     out.mpl_connect('motion_notify_event', move)
     out.mpl_connect('button_press_event', press)
     out.mpl_connect('button_release_event', release)
 
     xydata = tk.Frame(figfr, bg='white')
-    xydata.grid(row=1, column=0)
+    xydata.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
     xdata = tk.Label(xydata, text='xdata:', font=(
         "Arial", size(16), "bold"), width='15', height='1', bd=9, bg='white')
@@ -15777,7 +15777,7 @@ if __name__ == '__main__':
     g.update()
     screen_width = g.winfo_reqwidth()
     screen_height = g.winfo_reqheight()
-    print(f"Screen Width: {screen_width}, Screen Height: {screen_height}")
+    # print(f"Screen Width: {screen_width}, Screen Height: {screen_height}")
     g.geometry(f"{screen_width}x{screen_height}+0+{sc_y}")
     # g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
