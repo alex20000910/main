@@ -1433,14 +1433,14 @@ def rplot(f, canvas):
     """
     Plot the raw data on a given canvas.
 
-    Parameters:
-    - f: Figure object
-        The figure object on which the plot will be created.
-    - canvas: Canvas object
-        The canvas object on which the plot will be drawn.
+    Parameters
+    -----
+        f (Figure object): The figure object on which the plot will be created.
+        canvas (Canvas object): The canvas object on which the plot will be drawn.
 
-    Returns:
-    None
+    Returns
+    -----
+        None
     """
     global data, ev, phi, value3, h0, ao, xl, yl, rcx, rcy, acb
     ao = f.add_axes([0.13, 0.1, 0.6, 0.65])
@@ -2029,13 +2029,17 @@ class Button(tk.Button):
 
 def poly_smooth(x, y, order=6,xx=None):
     """
-    x : 1D array
-
-    y : 1D array
+    Polynomial fitting and smoothing.
     
-    order : int, default: 6
-    
-    xx : 1D array, interpolation points, default: None
+    Parameters
+    ----------
+        x (array-like): 1D array
+        y (array-like): 1D array
+        order (int): default=6
+        xx (array-like): 1D array, interpolation points, default: None
+    Returns
+    -------
+        y (np.ndarray) : Smoothed or interpolated y values.
     """
     coeffs = np.polyfit(x, y, order)
     if xx is None:
@@ -2098,13 +2102,13 @@ def copy_to_clipboard(ff) -> None:
     """
     Copies the given figure to the clipboard as a bitmap image.
     
-    Parameters:
+    Parameters
     -----------
-    ff (matplotlib.figure.Figure): The figure to be copied to the clipboard.
+        ff (matplotlib.figure.Figure): The figure to be copied to the clipboard.
     
-    Returns:
+    Returns
     -----------
-    None
+        None
     """
     try:
         limg.config(image=img[np.random.randint(len(img))])
@@ -2135,7 +2139,7 @@ class spectrogram:
     file paths and additional information, labels for displaying energy, cursor,
     and data values, and buttons for exporting data and copying images to the clipboard.
     
-    Attributes:
+    Attributes
     ------------
         g (Tk): The Tkinter root window.
         data (xarray.DataArray): The spectrogram data.
@@ -2777,14 +2781,14 @@ class spectrogram:
     def setdata(self, x, y, dtype='raw', unit='Counts'):
         """Set the data for plotting.
         
-        Args:
+        Args
         -----------
             x (list or array-like): The x-axis data.
             y (list or array-like): The y-axis data.
             dtype (str, optional): The type of data. Defaults to 'raw'.
             unit (str, optional): The unit of the y-axis data. Defaults to 'Counts'.
             
-        Raises:
+        Raises
         -----------
             ValueError: If the length of x and y are not the same.
         """
@@ -2844,7 +2848,7 @@ class spectrogram:
         file paths and additional information, labels for displaying energy, cursor,
         and data values, and buttons for exporting data and copying images to the clipboard.
         
-        Widgets:
+        .. Widgets:
         --------
             - Toplevel window with title 'Spectrogram: <name>'
             - Fitting utility button for Fermi level fitting
@@ -2854,14 +2858,14 @@ class spectrogram:
             - Labels for displaying energy, cursor, and data values
             - Buttons for exporting raw data and copying images to the clipboard
             
-        Event Bindings:
+        .. Event Bindings:
         --------
             - Motion notify event for matplotlib figures
             - Button press event for matplotlib figures
             - Button release event for matplotlib figures
             - FocusIn event for the additional information text widget
             
-        Methods Called:
+        .. Methods Called:
         --------
             - __ups
             - __export
@@ -4182,6 +4186,24 @@ class ColormapEditor(tk.Toplevel):
             messagebox.showerror("Error", f"Failed to load: {e}")
 
 class loadfiles():
+    """
+    A class to handle loading and organizing multiple file types for analysis.
+    It supports h5, json, txt, and npz files, and organizes them based on R1 and R2 values.
+    
+    Parameters
+    ----------
+        files (list) : List of file paths to be loaded. Can include h5, json, txt, and npz files.
+    
+    Attributes
+    ----------
+        data (list): List of loaded data from files.
+        path (list): List of file paths.
+        name (list): List of file names without extensions.
+        r1 (list): List of R1 values extracted from file names.
+        r2 (list): List of R2 values extracted from file names.
+        f_npz (list): Boolean list indicating if the corresponding file is a npz file
+        n (list): Indices of files that are npz or VolumeSlicer h5 files.
+    """
     def __init__(self, files):
         self.f_npz = [False for i in files]
         self.n = []
@@ -4675,13 +4697,13 @@ def set_center(parent, child, w_extend=None, h_extend=None):
     Set the position of child window to the center of parent window.
     The parent window should have been set with a certain geometry.
     
-    Args:
+    Args
     ------
-    parent: tk.Tk or tk.Toplevel
-    child: tk.Toplevel
-    Returns:
+        parent : tk.Tk or tk.Toplevel
+        child : tk.Toplevel
+    Returns
     -------
-    None
+        None
     """
     if not isinstance(parent, tk.Tk) and not isinstance(parent, tk.Toplevel):
         raise TypeError("Parent must be a Tk or Toplevel instance.")
@@ -4729,15 +4751,23 @@ class wait(tk.Toplevel):
 class VolumeSlicer(tk.Frame):
     def __init__(self, parent=None, path=None, volume=np.zeros((5,5,5), dtype=np.float64), cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=600, g=None):
         '''
-        Args:
+        Args
         ------
-        parent: tk.Tk
-        path: loadfiles.path
-        volume: shape: (r1, phi, ev)
+            parent (tkinker-master object or None) : If the master given, the plot will be embedded in the master window.
+            path (list) : `loadfiles.path`
+            volume (np.ndarray) : shape=(r1, phi, ev)
+            cmap (str) : Colormap to be used for the plot, default is 'gray'.
+            x (array-like) : 1-D array representing phi values of the raw data in reciprocal mode and z values in real mode.
+            y (array-like) : 1-D array representing r1 positions of the data cube in reciprocal mode and x positions in real mode.
+            z (array-like) : 1-D array representing r2 positions of the data cube in reciprocal mode, or z positions in real mode.
+            ev (array-like) : 1-D array representing kinetic energy values of the raw data.
+            e_photon (float) : Photon energy in eV, default is 21.2 eV.
+            density (int) : Density of the plot, default is 600.
+            g (tkinter main window) : Used to define other tk.Toplevel windows, such as wait window and symmetry choosing window.
         
-        Returns:
+        Returns
         ------
-        None
+            Frame (tk.Frame) : A tkinter Frame object containing the plot and controls.
         '''
         if parent is not None:
             super().__init__(parent, bg='white')
@@ -7767,14 +7797,14 @@ def gl1(x, x0, a, w, y0):
     Calculate the value of a Lorentzian function at a given x-coordinate.
 
     Parameters:
-    x (float): The x-coordinate at which to evaluate the function.
-    x0 (float): The center of the Lorentzian function.
-    a (float): The amplitude of the Lorentzian function.
-    w (float): The full width at half maximum (FWHM) of the Lorentzian function.
-    y0 (float): The y-offset of the Lorentzian function.
+        x (float): The x-coordinate at which to evaluate the function.
+        x0 (float): The center of the Lorentzian function.
+        a (float): The amplitude of the Lorentzian function.
+        w (float): The full width at half maximum (FWHM) of the Lorentzian function.
+        y0 (float): The y-offset of the Lorentzian function.
 
     Returns:
-    float: The value of the Lorentzian function at the given x-coordinate.
+        float: The value of the Lorentzian function at the given x-coordinate.
     """
     v = a/(1+(x-x0)**2/(1/2*w)**2)+y0
     return v
@@ -7784,18 +7814,18 @@ def gl2(x, x1, h1, w1, y1, x2, h2, w2, y2):
     Calculates the sum of two Lorentzian functions.
 
     Parameters:
-    x (float): The input value.
-    x1 (float): The center of the first Lorentzian function.
-    h1 (float): The height of the first Lorentzian function.
-    w1 (float): The width of the first Lorentzian function.
-    y1 (float): The y-offset of the first Lorentzian function.
-    x2 (float): The center of the second Lorentzian function.
-    h2 (float): The height of the second Lorentzian function.
-    w2 (float): The width of the second Lorentzian function.
-    y2 (float): The y-offset of the second Lorentzian function.
+        x (float): The input value.
+        x1 (float): The center of the first Lorentzian function.
+        h1 (float): The height of the first Lorentzian function.
+        w1 (float): The width of the first Lorentzian function.
+        y1 (float): The y-offset of the first Lorentzian function.
+        x2 (float): The center of the second Lorentzian function.
+        h2 (float): The height of the second Lorentzian function.
+        w2 (float): The width of the second Lorentzian function.
+        y2 (float): The y-offset of the second Lorentzian function.
 
     Returns:
-    float: The sum of the two Lorentzian functions.
+        float: The sum of the two Lorentzian functions.
     """
     v1 = h1/(1+(x-x1)**2/(1/2*w1)**2)+y1
     v2 = h2/(1+(x-x2)**2/(1/2*w2)**2)+y2
@@ -10449,6 +10479,24 @@ def f_pr():
 def filter(y, a, b):
     """
     Filters the input array y based on the conditions defined by a and b.
+    Returns two arrays: one containing the filtered values and another containing
+    the indices of the filtered values in the original array.
+    If a is greater than b, it swaps them to ensure a is always less than or equal to b.
+    If no values in y meet the condition, it returns empty arrays.
+    
+    Parameters:
+        y (array-like): The input array to be filtered.
+        a (float): The lower bound for filtering.
+        b (float): The upper bound for filtering.
+    Returns:
+        tuple ((filtered y, index of filtered y)): A tuple of two ndarrays.
+    
+    Example:
+        >>> y = [1, 2, 3, 4, 5]
+        >>> a = 2
+        >>> b = 4
+        >>> filter(y, a, b)
+        (array([2, 3, 4]), array([1, 2, 3]))
     """
     if a > b:
         a, b = b, a  # Ensure a is less than or equal to b
@@ -11832,7 +11880,7 @@ def interp(x: float, xp: float, fp: float) -> np.ndarray:
 
     Returns
     ----------
-        np.ndarray: The interpolated values, same shape as x.
+        out (ndarray) : The interpolated values, same shape as x.
     
     Example
     ----------
@@ -12850,12 +12898,12 @@ props = dict(facecolor='green', alpha=0.3)
 
 
 def select_callback(eclick, erelease):
-    global ta0, ta0_, ta1, ta1_, ta2, a, f
     """
     Callback for line selection.
 
     *eclick* and *erelease* are the press and release events.
     """
+    global ta0, ta0_, ta1, ta1_, ta2, a, f
     x1, y1 = eclick.xdata, eclick.ydata
     x2, y2 = erelease.xdata, erelease.ydata
     if eclick.button == 1:
