@@ -2335,7 +2335,9 @@ class spectrogram:
         self.root.update()
         w = self.root.winfo_reqwidth()
         h = self.root.winfo_reqheight()
-        self.root.geometry(f'{int(w*ScaleFactor/100)}x{int(h*ScaleFactor/100)}')
+        w = int(12*dpi*scale+w)
+        h = int(6*dpi*scale+h)
+        self.root.geometry(f'{w}x{h}')
         self.root.update()
     
     def fit_press(self, event):
@@ -2507,25 +2509,26 @@ class spectrogram:
                 self.toolbar = NavigationToolbar2Tk(self.canvas, self.frame)
                 self.toolbar.update()
                 self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                self.root.update()
             except:
                 pass
 
         EF = None
 
         if fit_type == "Raw Data":
-            fig = Figure(dpi=100, figsize=(12*scale, 6*scale))
+            fig = Figure(figsize=(12*scale, 6*scale))
             ax = fig.add_subplot(111)
             plot_base_spectrum(ax, e, ss, 'Raw Data', 'Kinetic Energy (eV)', 'Intensity (counts)')
             add_canvas(fig)
         
         elif fit_type == "Smooth Data":
-            fig = Figure(dpi=100, figsize=(12*scale, 6*scale))
+            fig = Figure(figsize=(12*scale, 6*scale))
             ax = fig.add_subplot(111)
             plot_base_spectrum(ax, e, smoothed_ss, 'Smooth Data', 'Kinetic Energy (eV)', 'Intensity (counts)')
             add_canvas(fig)
 
         elif fit_type == "Fermi-Dirac Fitting":
-            fig1 = Figure(dpi=100, figsize=(12*scale, 6*scale))
+            fig1 = Figure(figsize=(12*scale, 6*scale))
             self.a1 = fig1.add_subplot(111)
             plot_base_spectrum(self.a1, e, ss, 'Raw Data with Fermi-Dirac Fitting', 'Kinetic Energy (eV)', 'Intensity (counts)')
 
@@ -2557,7 +2560,7 @@ class spectrogram:
             add_canvas(fig1)
         
         elif fit_type == "ERFC Fit":
-            fig2 = Figure(dpi=100, figsize=(12*scale, 6*scale))
+            fig2 = Figure(figsize=(12*scale, 6*scale))
             self.a2 = fig2.add_subplot(111)
             plot_base_spectrum(self.a2, e, ss, 'Raw Data with ERFC Fit', 'Kinetic Energy (eV)', 'Intensity (counts)')
             
@@ -2590,7 +2593,7 @@ class spectrogram:
             add_canvas(fig2)
 
         elif fit_type == "Linear Fits":
-            fig3 = Figure(dpi=100, figsize=(12*scale, 6*scale))
+            fig3 = Figure(figsize=(12*scale, 6*scale))
             a3 = fig3.add_subplot(111)
             plot_base_spectrum(a3, e, ss, 'Raw Data with Linear Fits', 'Kinetic Energy (eV)', 'Intensity (counts)')
 
@@ -2627,25 +2630,25 @@ class spectrogram:
             add_canvas(fig3)
 
         elif fit_type == "First Derivative":
-            fig4 = Figure(dpi=100, figsize=(12*scale, 6*scale))
+            fig4 = Figure(figsize=(12*scale, 6*scale))
             a4 = fig4.add_subplot(111)
             plot_base_spectrum(a4, e, np.gradient(ss), 'First Derivative', 'Kinetic Energy (eV)', 'dIntensity / dE')
             add_canvas(fig4)
 
         elif fit_type == "Second Derivative":
-            fig5 = Figure(dpi=100, figsize=(12*scale, 6*scale))
+            fig5 = Figure(figsize=(12*scale, 6*scale))
             a5 = fig5.add_subplot(111)
             plot_base_spectrum(a5, e, np.gradient(np.gradient(ss)), 'Second Derivative', 'Kinetic Energy (eV)', 'd²Intensity / dE²')
             add_canvas(fig5)
             
         elif fit_type == "Smooth Data with First Derivative":
-            fig6 = Figure(dpi=100, figsize=(12*scale, 6*scale))
+            fig6 = Figure(figsize=(12*scale, 6*scale))
             a6 = fig6.add_subplot(111)
             plot_base_spectrum(a6, e, np.gradient(smoothed_ss), 'Smoothed Data with First Derivative', 'Kinetic Energy (eV)', 'd(Smoothed Intensity) / dE')
             add_canvas(fig6)
             
         elif fit_type == "Segmented Tangents":
-            fig7 = Figure(dpi=100, figsize=(12*scale, 6*scale))
+            fig7 = Figure(figsize=(12*scale, 6*scale))
             a7 = fig7.add_subplot(111)
             plot_base_spectrum(a7, e, smoothed_ss, 'Smooth Data with Segmented Tangents', 'Kinetic Energy (eV)', 'Intensity (counts)')
 
@@ -2665,7 +2668,7 @@ class spectrogram:
             pass
         
     def __ups(self):
-        self.root = tk.Toplevel(g,bg='white')
+        self.root = tk.Toplevel(self.g,bg='white')
         self.root.title('UPS spectrum')
         
         # OptionMenu 設定
@@ -2882,14 +2885,15 @@ class spectrogram:
             else:
                 sc_y = 0
             self.tpg = tk.Tk()
+            self.g = self.tpg
             odpi=self.tpg.winfo_fpixels('1i')
             # prfactor = 1.03 if ScaleFactor <= 100 else 1.2 if ScaleFactor <= 125 else 0.9 if ScaleFactor <= 150 else 0.55
             prfactor = 1
             ScaleFactor /= prfactor*(ScaleFactor/100*1890/96*odpi/t_sc_w) if 1890/t_sc_w >= (954)/t_sc_h else prfactor*(ScaleFactor/100*(954)/96*odpi/t_sc_h)
             self.tpg.tk.call('tk', 'scaling', ScaleFactor/100)
+            global scale, dpi
             dpi = self.tpg.winfo_fpixels('1i')
             windll.shcore.SetProcessDpiAwareness(1)
-            global scale
             scale = odpi / dpi * ScaleFactor / 100
             self.tpg.config(bg='white')
             base_font_size = 14
@@ -2897,13 +2901,15 @@ class spectrogram:
 
             plt.rcParams['font.family'] = 'Arial'
             plt.rcParams['font.size'] = int(plt.rcParams['font.size'] * scale)
-            plt.rcParams['lines.linewidth'] = int(plt.rcParams['lines.linewidth'] * scale)
-            plt.rcParams['lines.markersize'] = int(plt.rcParams['lines.markersize'] * scale)
+            plt.rcParams['lines.linewidth'] = plt.rcParams['lines.linewidth'] * scale
+            plt.rcParams['lines.markersize'] = plt.rcParams['lines.markersize'] * scale * scale
+            plt.rcParams['figure.figsize'] = (plt.rcParams['figure.figsize'][0] * scale, plt.rcParams['figure.figsize'][1] * scale)
                 
             # 設定預設字體
             default_font = ('Arial', scaled_font_size)
             self.tpg.option_add('*Font', default_font)
         else:
+            self.g = g
             ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
             t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
             t_sc_h-=int(40*ScaleFactor/100)
@@ -5425,7 +5431,7 @@ class VolumeSlicer(tk.Frame):
                 self.g.update()
                 w = self.g.winfo_reqwidth()
                 h = self.g.winfo_reqheight()
-                tx = t_sc_w if self.g.winfo_x() > t_sc_w else 0
+                tx = t_sc_w if self.g.winfo_x()+self.g.winfo_width()/2 > t_sc_w else 0
                 self.g.geometry(f'{w}x{h}+{tx}+{sc_y}')
                 self.g.update()
             except:
@@ -6079,7 +6085,7 @@ class CEC(loadfiles):
             w = self.tlg.winfo_reqwidth()
             h = self.tlg.winfo_reqheight()
             t_sc_w = windll.user32.GetSystemMetrics(0)
-            tx = int(t_sc_w*windll.shcore.GetScaleFactorForDevice(0)/100) if self.tlg.winfo_x() > t_sc_w else 0
+            tx = int(t_sc_w*windll.shcore.GetScaleFactorForDevice(0)/100) if self.tlg.winfo_x()+self.tlg.winfo_width()/2 > t_sc_w else 0
             self.tlg.geometry(f'{w}x{h}+{tx}+{sc_y}')
             self.tlg.protocol("WM_DELETE_WINDOW", self.on_closing)
             self.tlg.update()
@@ -14943,7 +14949,7 @@ def plot3_set(opt):
     value2.set(opt)
     
 def size(s:int)-> int:
-        return int(s * scale)
+    return int(s * scale)
     
 if __name__ == '__main__':
     os.chdir(cdir)
@@ -14990,8 +14996,9 @@ if __name__ == '__main__':
 
     plt.rcParams['font.family'] = 'Arial'
     plt.rcParams['font.size'] = int(plt.rcParams['font.size'] * scale)
-    plt.rcParams['lines.linewidth'] = int(plt.rcParams['lines.linewidth'] * scale)
-    plt.rcParams['lines.markersize'] = int(plt.rcParams['lines.markersize'] * scale)
+    plt.rcParams['lines.linewidth'] = plt.rcParams['lines.linewidth'] * scale
+    plt.rcParams['lines.markersize'] = plt.rcParams['lines.markersize'] * scale
+    plt.rcParams['figure.figsize'] = (plt.rcParams['figure.figsize'][0] * scale, plt.rcParams['figure.figsize'][1] * scale)
     # print('scale:', scale)
         
     # 設定預設字體
