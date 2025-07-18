@@ -15529,48 +15529,6 @@ if __name__ == '__main__':
         "Arial", size(12), "bold"), bg="white", fg="blue")
     m3.grid(row=2, column=0)
 
-
-    figfr = tk.Frame(fr_main, bg='white')
-    figfr.grid(row=0, column=1, sticky='nsew')
-    global figy
-    figy = 8.5 if osf<=100 else 8.25 if osf<=150 else 8
-    figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
-    fig = Figure(figsize=(figx*scale, figy*scale), layout='constrained')
-    out = FigureCanvasTkAgg(fig, master=figfr)
-    out.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-    ao = None
-    out.mpl_connect('motion_notify_event', move)
-    out.mpl_connect('button_press_event', press)
-    out.mpl_connect('button_release_event', release)
-
-    xydata = tk.Frame(figfr, bg='white')
-    xydata.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-
-    xdata = tk.Label(xydata, text='xdata:', font=(
-        "Arial", size(16), "bold"), width='15', height='1', bd=9, bg='white')
-    xdata.grid(row=0, column=0)
-    ydata = tk.Label(xydata, text='ydata:', font=(
-        "Arial", size(16), "bold"), width='15', height='1', bd=9, bg='white')
-    ydata.grid(row=0, column=1)
-    b_emode = tk.Button(xydata, text='K.E.', fg='blue', font=("Arial", size(16), "bold"), width=5, height='1', command=emode, bd=9)
-    b_emode.grid(row=0, column=2)
-    b_copyimg = tk.Button(xydata, fg='red', text='Copy Image to Clipboard', font=('Arial', size(16), 'bold'), command=f_copy_to_clipboard, bd=9)
-    b_copyimg.grid(row=0, column=3)
-    
-    
-    dl=0
-    b_sw = tk.Button(xydata, text='dot', font=('Arial', size(16), 'bold'), command=dl_sw, bd=9)
-
-    lcmp = tk.Frame(plots, bg='white')
-    lcmp.grid(row=0, column=0)
-
-    lcmpd = Figure(figsize=(0.75*scale, 1*scale), layout='constrained')
-    cmpg = FigureCanvasTkAgg(lcmpd, master=lcmp)
-    cmpg.get_tk_widget().grid(row=0, column=1)
-    lsetcmap = tk.Label(lcmp, text='Colormap:', font=(
-        "Arial", size(12), "bold"), bg="white", height='1', bd=9)
-    lsetcmap.grid(row=0, column=0)
-    chcmp()
     
     fr_state = tk.Frame(fr_main, bg='white')
     fr_state.grid(row=0, column=2)
@@ -15582,13 +15540,17 @@ if __name__ == '__main__':
 
     Icon = [icon1, icon2, icon3, icon4, icon5, icon6, icon7, icon8, icon9, icon10, icon11, icon12, icon13, icon14, icon15, icon16, icon17, icon18, icon19, icon20]
     img = []
+    tdata = []
     for _ in Icon:
         if _:
+            tdata.append(io.BytesIO(b64decode(_)))
             timg = Image.open(io.BytesIO(b64decode(_))).resize([250, 250])
             tk_img = ImageTk.PhotoImage(timg)
             img.append(tk_img)
-    limg = tk.Label(fr_state, image=img[np.random.randint(
-        len(img))], width='250', height='250', bg='white')
+    trd = np.random.randint(len(img))
+    timg = ImageTk.PhotoImage(Image.open(tdata[trd]).resize([250, 250]))
+    tdata = tdata[trd]
+    limg = tk.Label(fr_state, image=timg, width='250', height='250', bg='white')
     limg.grid(row=1, column=0)
 
     
@@ -15712,6 +15674,58 @@ if __name__ == '__main__':
         "Arial", size(12), "bold"), bg="white", fg="black", height=1)
     l7.grid(row=4, column=0)
 
+    figfr = tk.Frame(fr_main, bg='white')
+    figfr.grid(row=0, column=1, sticky='nsew')
+    global figy
+    figy = 8.5 if osf<=100 else 8.25 if osf<=150 else 8
+    figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
+    fig = Figure(figsize=(figx*scale, figy*scale), layout='constrained')
+    out = FigureCanvasTkAgg(fig, master=figfr)
+    out.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+    ao = None
+    out.mpl_connect('motion_notify_event', move)
+    out.mpl_connect('button_press_event', press)
+    out.mpl_connect('button_release_event', release)
+    ax= fig.subplots()
+    tim = np.array(Image.open(tdata))
+    ax.imshow(tim, aspect='equal', alpha=0.4)
+    fontdict = {
+    'fontsize': size(40),
+    'fontweight': 'bold',
+    'fontname': 'Arial'
+}
+    ax.text(tim.shape[0]/2, tim.shape[1]/2, f"Version: {__version__}\n\nRelease Date: {__release_date__}", fontdict=fontdict, color='black', ha='center', va='center')
+    ax.axis('off')
+    out.draw()
+
+    xydata = tk.Frame(figfr, bg='white')
+    xydata.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+    xdata = tk.Label(xydata, text='xdata:', font=(
+        "Arial", size(16), "bold"), width='15', height='1', bd=9, bg='white')
+    xdata.grid(row=0, column=0)
+    ydata = tk.Label(xydata, text='ydata:', font=(
+        "Arial", size(16), "bold"), width='15', height='1', bd=9, bg='white')
+    ydata.grid(row=0, column=1)
+    b_emode = tk.Button(xydata, text='K.E.', fg='blue', font=("Arial", size(16), "bold"), width=5, height='1', command=emode, bd=9)
+    b_emode.grid(row=0, column=2)
+    b_copyimg = tk.Button(xydata, fg='red', text='Copy Image to Clipboard', font=('Arial', size(16), 'bold'), command=f_copy_to_clipboard, bd=9)
+    b_copyimg.grid(row=0, column=3)
+    
+    
+    dl=0
+    b_sw = tk.Button(xydata, text='dot', font=('Arial', size(16), 'bold'), command=dl_sw, bd=9)
+
+    lcmp = tk.Frame(plots, bg='white')
+    lcmp.grid(row=0, column=0)
+
+    lcmpd = Figure(figsize=(0.75*scale, 1*scale), layout='constrained')
+    cmpg = FigureCanvasTkAgg(lcmpd, master=lcmp)
+    cmpg.get_tk_widget().grid(row=0, column=1)
+    lsetcmap = tk.Label(lcmp, text='Colormap:', font=(
+        "Arial", size(12), "bold"), bg="white", height='1', bd=9)
+    lsetcmap.grid(row=0, column=0)
+    chcmp()
 
     # expf = tk.Frame(exf, bg='white')
     # expf.grid(row=1,column=0)
