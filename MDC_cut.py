@@ -2104,7 +2104,7 @@ def copy_to_clipboard(ff) -> None:
     
     Parameters
     -----------
-        ff (matplotlib.figure.Figure): The figure to be copied to the clipboard.
+        ff (matplotlib.figure.Figure) : The figure to be copied to the clipboard.
     
     Returns
     -----------
@@ -2790,7 +2790,7 @@ class spectrogram:
             
         Raises
         -----------
-            ValueError: If the length of x and y are not the same.
+            ValueError : If the length of x and y are not the same.
         """
         self.x=x
         self.y=y
@@ -3796,16 +3796,13 @@ def o_cal(*e):
     """
     Calculate the angle in degrees based on the given values of calk and cale.
 
-    Parameters:
-    *e : tuple
-        Variable-length argument list.
+    Parameters
+    ----------
+        \*e (event) : For tkinter event input, not used in this function.
 
-    Returns:
-    float
-        The calculated angle in degrees.
-
-    Raises:
-    None
+    Returns
+    -------
+        float : The calculated angle in degrees.
 
     """
     global calk, cale
@@ -4505,15 +4502,12 @@ def mesh(x, y):
     
     Args
     ------
-    - x : ndarray-like
-        2D array for x-coordinates.
-    - y : ndarray-like
-        2D array for y-coordinates.
+        x (np.ndarray) : 2D array for x-coordinates.
+        y (np.ndarray) : 2D array for y-coordinates.
         
     Returns
     -------
-    (X1, Y1, X2, Y2) : tuple
-        Meshgrid arrays for x and y coordinates.
+        (X1, Y1, X2, Y2) (tuple) : Meshgrid arrays for x and y coordinates.
     """
     x1, y1 = x.T.copy(), y.T.copy()
     for i in range(x.shape[0]):
@@ -10489,7 +10483,7 @@ def filter(y, a, b):
         a (float): The lower bound for filtering.
         b (float): The upper bound for filtering.
     Returns:
-        tuple ((filtered y, index of filtered y)): A tuple of two ndarrays.
+        (filtered y, index of filtered y) (tuple): A tuple of two ndarrays.
     
     Example:
         >>> y = [1, 2, 3, 4, 5]
