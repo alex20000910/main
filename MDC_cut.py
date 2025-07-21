@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.0"
-__release_date__ = "2025-07-18"
+__version__ = "7.0.1"
+__release_date__ = "2025-07-21"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -12269,6 +12269,8 @@ def o_plot1(*e):
 
 def o_plot2(*e):
     global fig, out, fwhm, fev, pos, value, value1, value2, k, be, rx, ry, ix, iy, pflag, limg, img, bb_offset, bbk_offset, optionList1, st
+    if 'gg' in globals():
+        gg.destroy()
     if value1.get() in optionList1:
         try:
             b_sw.grid_remove()
@@ -14662,6 +14664,9 @@ def plot(event):
 im_kernel = 17
 d,l,p = 8,20,3
 def plot1(*e):
+    global gg
+    if 'gg' in globals():
+        gg.destroy()
     if 'MDC Curves' in value.get():
         def select_all(event):
             event.widget.select_range(0, tk.END)
@@ -14813,6 +14818,9 @@ def plot2(*e):
 
 
 def plot3(*e):
+    global gg
+    if 'gg' in globals():
+        gg.destroy()
     if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
         def ini():
             global mp, ep, mf, ef
@@ -15033,7 +15041,7 @@ if __name__ == '__main__':
     # print('dpi:',dpi)
     windll.shcore.SetProcessDpiAwareness(1)
     scale = odpi / dpi
-    base_font_size = 14
+    base_font_size = 16
     scaled_font_size = int(base_font_size * scale)
 
     plt.rcParams['font.family'] = 'Arial'
@@ -15351,7 +15359,7 @@ if __name__ == '__main__':
     fr_main.pack(side=tk.TOP, fill='both', expand=True)
     
     fr = tk.Frame(fr_main, bg='white')
-    fr.grid(row=0, column=0, sticky='nsew')
+    fr.grid(row=0, column=0)
     fr_info = tk.Frame(fr,bg='white')
     fr_info.pack(side=tk.TOP)
     fr_tool = tk.Frame(fr_info,bg='white',width=25)
