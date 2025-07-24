@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.0.1"
-__release_date__ = "2025-07-21"
+__version__ = "7.1"
+__release_date__ = "2025-07-25"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -4141,7 +4141,7 @@ class ColormapEditor(tk.Toplevel):
             initialfile=f"{name}.npz"
         )
         np.savez(save_path, **data)
-        np.savez(os.path.join(cdir,"colormaps.npz"), **data)
+        np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
         if save_path:
             messagebox.showinfo("Colormap", f"Colormap has been saved to:\n{save_path}")
 
@@ -4177,7 +4177,7 @@ class ColormapEditor(tk.Toplevel):
             setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
             setcmap.grid(row=0, column=1)
             g.update()
-            np.savez(os.path.join(cdir,"colormaps.npz"), **data)
+            np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load: {e}")
@@ -4456,12 +4456,11 @@ def cut_job_y(args):
     g.sym = sym
     surface = g.slice_data(i, angle, phi_offset, r1_offset, self_x, self_volume, x, z)
     td = surface[int(cdensity/(xmax-xmin)*(min(z)-xmin)):int(cdensity/(xmax-xmin)*(max(z)-xmin)), int(cdensity/(ymax-ymin)*(min(x)-ymin)):int(cdensity/(ymax-ymin)*(max(x)-ymin))]
-    del surface
     td = cv2.resize(td, (cdensity, td.shape[1]), interpolation=cv2.INTER_CUBIC)
     result = td.mean(axis=0)
     del td
     gc.collect()
-    return i, result
+    return i, result, surface
 
 def cut_job_x(args):
     i, angle, phi_offset, r1_offset, self_x, self_volume, cdensity, xmax, xmin, ymax, ymin, z, x, self_z, self_y, ev, e_photon, sym = args
@@ -4485,12 +4484,11 @@ def cut_job_x(args):
     g.sym = sym
     surface = g.slice_data(i, angle, phi_offset, r1_offset, self_x, self_volume, x, z)
     td = surface[int(cdensity/(xmax-xmin)*(min(z)-xmin)):int(cdensity/(xmax-xmin)*(max(z)-xmin)), int(cdensity/(ymax-ymin)*(min(x)-ymin)):int(cdensity/(ymax-ymin)*(max(x)-ymin))]
-    del surface
     td = cv2.resize(td, (td.shape[0], cdensity), interpolation=cv2.INTER_CUBIC)
     result = td.mean(axis=1)
     del td
     gc.collect()
-    return i, result
+    return i, result, surface
 
 def set_entry_value(entry, value):
     entry.delete(0, tk.END)
@@ -4529,7 +4527,7 @@ def rotate(data, angle, size):
     return data
 
 class g_cut_plot(tk.Toplevel):
-    def __init__(self, master, data_cut, cx, cy, cdx, cdy, cdensity, ty, z, x, angle, phi_offset, r1_offset, stop_event, pool, path, e_photon, slim, sym):
+    def __init__(self, master, data_cut, cx, cy, cdx, cdy, cdensity, ty, z, x, angle, phi_offset, r1_offset, stop_event, pool, path, e_photon, slim, sym, xmin, xmax, ymin, ymax, cube):
         super().__init__(master, background='white')
         self.cx_cut = cx
         self.cy_cut = cy
@@ -4551,12 +4549,17 @@ class g_cut_plot(tk.Toplevel):
         self.stop_event = stop_event
         self.pool = pool
         self.path = path
-
+        self.cube = cube
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
+        self.save_cube()
         self.create_window()
 
     def create_window(self):
         self.title('Cut Plot')
-        self.protocol("WM_DELETE_WINDOW", self.on_closing)    
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         fig = plt.Figure(figsize=(8*scale, 8*scale), constrained_layout=True)
         ax = fig.add_subplot(111)
@@ -4570,7 +4573,9 @@ class g_cut_plot(tk.Toplevel):
         x, y = np.meshgrid(tx, self.ty)
         ax.pcolormesh(x, y, self.data_cut, cmap='gray')
 
-        canvas = FigureCanvasTkAgg(fig, master=self)
+        fr_fig = tk.Frame(self, bg='white')
+        fr_fig.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        canvas = FigureCanvasTkAgg(fig, master=fr_fig)
         canvas.draw()
         self.x_cut = tx
         self.y_cut = self.ty
@@ -4582,14 +4587,31 @@ class g_cut_plot(tk.Toplevel):
         gc.collect()
 
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        toolbar = NavigationToolbar2Tk(canvas, self)
+        toolbar = NavigationToolbar2Tk(canvas, fr_fig)
         toolbar.update()
         toolbar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
 
-        save_button = tk.Button(self, text='Save', command=self.save_cut, bg='white', font=('Arial', size(16), "bold"))
-        save_button.pack(side=tk.BOTTOM)
+        fr_save = tk.Frame(self, bg='white')
+        fr_save.pack(side=tk.TOP, anchor='center')
+        
+        save_button = tk.Button(fr_save, text='Save', command=self.save_cut, bg='white', font=('Arial', size(16), "bold"))
+        save_button.pack(side=tk.LEFT)
+        save_cube_button = tk.Button(fr_save, text='Save Data Cube', command=self.save_cube, bg='white', font=('Arial', size(16), "bold"))
+        save_cube_button.pack(side=tk.LEFT)
+        
         self.bind("<Return>", self.save_cut)
         self.focus_set()
+
+    def save_cube(self, event=None):
+        try:
+            path = fd.asksaveasfilename(title="Save Data Cube", filetypes=(("NPZ files", "*.npz"),), initialdir=self.path[0], initialfile='data_cube', defaultextension=".npz")
+            if not path:
+                print('Save operation cancelled')
+            else:
+                np.savez(path, data=self.cube, xmin=self.xmin, xmax=self.xmax, ymin=self.ymin, ymax=self.ymax, ev=self.ty)
+                print(f'Data cube saved to {path}')
+        except Exception as e:
+            print(f"An error occurred while saving the data cube: {e}")
 
     def save_cut(self, event=None):
         try:
@@ -4606,6 +4628,8 @@ class g_cut_plot(tk.Toplevel):
             print(f"An error occurred: {e}")
 
     def on_closing(self):
+        del self.cube, self.data_cut
+        gc.collect()
         self.stop_event.clear()
         if self.pool:
             self.pool.terminate()
@@ -5269,6 +5293,7 @@ class VolumeSlicer(tk.Frame):
         osurface = surface.copy()
         try:
             tmin = np.min(osurface[osurface>0])
+            osurface[osurface < tmin - tmin / 3] = np.nan
             for ii in range(self.sym-1):
                 rotated_surface = rotate(surface, 360//self.sym*(ii+1), surface.shape)
                 rotated_surface[rotated_surface < tmin-tmin/3] = np.nan
@@ -5306,6 +5331,7 @@ class VolumeSlicer(tk.Frame):
                 args = [(i, angle, phi_offset, r1_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
                 for i, result in enumerate(tqdm.tqdm(self.pool.imap(cut_job_y, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
                     self.data_cut[i, :] = result[1]
+                    self.data_cube[i, :, :] = result[2]
                     if self.stop_event.is_set():
                         break
                 if not self.stop_event.is_set():
@@ -5331,6 +5357,7 @@ class VolumeSlicer(tk.Frame):
                 args = [(i, angle, phi_offset, r1_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
                 for i, result in enumerate(tqdm.tqdm(self.pool.imap(cut_job_x, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
                     self.data_cut[i, :] = result[1]
+                    self.data_cube[i, :, :] = result[2]
                     if self.stop_event.is_set():
                         break
                 if not self.stop_event.is_set():
@@ -5387,6 +5414,7 @@ class VolumeSlicer(tk.Frame):
         z = [self.cy-self.cdy/2, self.cy+self.cdy/2]
         ty = self.ev
         self.data_cut = np.zeros((len(ty), self.cdensity), dtype=np.float64)
+        self.data_cube = np.zeros((len(ty), self.cdensity, self.cdensity), dtype=np.float64)
         phi_offset = self.phi_offset
         r1_offset = self.r1_offset
         self.slim_cut = self.slim.copy()
@@ -5416,7 +5444,7 @@ class VolumeSlicer(tk.Frame):
         t1.join()
         self.t.join()
         print('done')
-        g_cut_plot(self, self.data_cut, self.cx, self.cy, self.cdx, self.cdy, self.cdensity, ty, z, x, angle, phi_offset, r1_offset, self.stop_event, self.pool, self.path, self.e_photon, self.slim_cut, self.sym_cut)
+        g_cut_plot(self, self.data_cut, self.cx, self.cy, self.cdx, self.cdy, self.cdensity, ty, z, x, angle, phi_offset, r1_offset, self.stop_event, self.pool, self.path, self.e_photon, self.slim_cut, self.sym_cut, self.xmin, self.xmax, self.ymin, self.ymax, self.data_cube)
         
     def set_density(self, *args):
         try:
@@ -5559,7 +5587,10 @@ class VolumeSlicer(tk.Frame):
             self.vl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
             self.hl.set_data([],[])
             self.vl.set_data([],[])
-            self.img = self.ax.imshow(rotated_volume, cmap=self.cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
+            if __name__ == '__main__':
+                self.img = self.ax.imshow(rotated_volume, cmap=value3.get(), extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
+            else:
+                self.img = self.ax.imshow(rotated_volume, cmap=self.cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
             self.fig.canvas.draw_idle()
             self.wait.done()
             # setting entry
@@ -5619,7 +5650,10 @@ class VolumeSlicer(tk.Frame):
             self.disp_region()
             rotated_volume = rotate(self.surface, -self.angle, self.surface.shape)
             self.ax.clear()
-            self.img = self.ax.imshow(rotated_volume, cmap=self.cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
+            if __name__ == '__main__':
+                self.img = self.ax.imshow(rotated_volume, cmap=value3.get(), extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
+            else:
+                self.img = self.ax.imshow(rotated_volume, cmap=self.cmap, extent=[self.ymin, self.ymax, self.xmin, self.xmax], origin='lower')
             self.hl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
             self.vl, = self.ax.plot([0, 0], [0, 0], color='green', linestyle='--')
             self.hl.set_data([],[])
@@ -5715,6 +5749,8 @@ class VolumeSlicer(tk.Frame):
             tphi = np.array([np.min(phi), np.min(phi), np.max(phi), np.max(phi)])
             tx = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(tr1/180*np.pi) * np.cos(tphi/180*np.pi)
             ty = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(tphi/180*np.pi)
+            # tx = np.sqrt(2*self.m*self.e*self.e_photon)/self.hbar*10**-10*np.sin(tr1/180*np.pi) * np.cos(tphi/180*np.pi)
+            # ty = np.sqrt(2*self.m*self.e*self.e_photon)/self.hbar*10**-10*np.sin(tphi/180*np.pi)
             r = np.max(np.sqrt(tx**2 + ty**2))
             self.xmin, self.xmax = -r, r
             self.ymin, self.ymax = -r, r
@@ -6536,7 +6572,7 @@ def pr_load(data):
         in_fit.config(state='normal')
         b_fit.config(state='normal')
     os.chdir(cdir)
-    np.savez('rd', path=dpath, name=name, lpath=[i for i in lfs.path], ev=ev,
+    np.savez(os.path.join(cdir, '.MDC_cut', 'rd.npz'), path=dpath, name=name, lpath=[i for i in lfs.path], ev=ev,
              phi=phi, st=st, lst=lst)
 
 fpr = 0
@@ -6672,7 +6708,7 @@ def o_ecut():
             f.write('%-6e' % x[i]+'\t'+'%-6e' % y[i]+'\n')
         f.close()
     os.chdir(cdir)
-    np.savez('mfpath', mfpath=mfpath)
+    np.savez(os.path.join(cdir, '.MDC_cut', 'mfpath.npz'), mfpath=mfpath)
     # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
     os.chdir(os.path.dirname(rdd))
     pbar.close()
@@ -6714,7 +6750,7 @@ def o_angcut():
             f.write('%-6e' % x[i]+'\t'+'%-6e' % y[i]+'\n')
         f.close()
     os.chdir(cdir)
-    np.savez('efpath', efpath=efpath)
+    np.savez(os.path.join(cdir, '.MDC_cut', 'efpath.npz'), efpath=efpath)
     # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
     os.chdir(os.path.dirname(rdd))
     pbar.close()
@@ -7338,10 +7374,10 @@ def loadmfit_():
         except:
             pass
     if ".vms" in file:
-        np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
+        np.savez(os.path.join(cdir, '.MDC_cut', 'mfit.npz'), ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
                  kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
     elif ".npz" in file:
-        np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=skmin,
+        np.savez(os.path.join(cdir, '.MDC_cut', 'mfit.npz'), ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=skmin,
                  kmax=skmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
     limg.config(image=img[np.random.randint(len(img))])
     print('Done')
@@ -7780,7 +7816,7 @@ def o_loadefit():
         except:
             pass
     if ".vms" in file or ".npz" in file:
-        np.savez('efit', ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
+        np.savez(os.path.join(cdir, '.MDC_cut', 'efit.npz'), ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
                  emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
     limg.config(image=img[np.random.randint(len(img))])
     print('Done')
@@ -11672,7 +11708,7 @@ def o_fbb_offset(*e):
         bb_offset.set('0')
         bboffset.select_range(0, 1)
     os.chdir(cdir)
-    np.savez('bb', path=bpath, be=be, k=k, bbo=float(bb_offset.get()), bbk=float(bbk_offset.get()))
+    np.savez(os.path.join(cdir, '.MDC_cut', 'bb.npz'), path=bpath, be=be, k=k, bbo=float(bb_offset.get()), bbk=float(bbk_offset.get()))
 
 
 def fbb_offset(*e):
@@ -11687,7 +11723,7 @@ def o_fbbk_offset(*e):
         bbk_offset.set('1')
         bbkoffset.select_range(0, 1)
     os.chdir(cdir)
-    np.savez('bb', path=bpath, be=be, k=k, bbo=float(bb_offset.get()), bbk=float(bbk_offset.get()))
+    np.savez(os.path.join(cdir, '.MDC_cut', 'bb.npz'), path=bpath, be=be, k=k, bbo=float(bb_offset.get()), bbk=float(bbk_offset.get()))
 
 
 def fbbk_offset(*e):
@@ -11745,16 +11781,16 @@ def o_reload(*e):
     #            180*np.pi)*10**-10/(h/2/np.pi)
     os.chdir(cdir)
     try:
-        np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
+        np.savez(os.path.join(cdir, '.MDC_cut', 'mfit.npz'), ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
                  kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
-        np.savez('mfit', ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
+        np.savez(os.path.join(cdir, '.MDC_cut', 'mfit.npz'), ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
                  kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
     except:
         try:
             ffphi = np.float64(k_offset.get())+fphi
             fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
                 np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
-            np.savez('efit', ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
+            np.savez(os.path.join(cdir, '.MDC_cut', 'efit.npz'), ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
                  emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
         except:
             pass
@@ -11944,7 +11980,7 @@ def o_bareband():
         # [::-1] inverse the order for np.interp (xp values should be increasing)
         k = np.float64(t_k)
         os.chdir(cdir)
-        np.savez('bb', path=bpath, be=be, k=k, bbo=float(bb_offset.get()), bbk=float(bbk_offset.get()))
+        np.savez(os.path.join(cdir, '.MDC_cut', 'bb.npz'), path=bpath, be=be, k=k, bbo=float(bb_offset.get()), bbk=float(bbk_offset.get()))
         limg.config(image=img[np.random.randint(len(img))])
         print('Done')
         st.put('Done')
@@ -15177,8 +15213,86 @@ if __name__ == '__main__':
     ToolTip(b_exp_graph, "Display and save the graph with Matplotlib window.", "F10")
     ToolTip(b_exp_origin, "Select the required data and import it into OriginPro to enable advanced data processing.", "F11")
     
+    # Define your custom colors (as RGB tuples)
+    # (value,(color))
+    custom_colors1 = [(0, (1, 1, 1)),
+                    (0.5, (0, 0, 1)),
+                    (0.85, (0, 1, 1)),
+                    (1, (1, 1, 0.26))]
+
+    # Create a custom colormap
+    custom_cmap1 = LinearSegmentedColormap.from_list(
+        'custom_cmap1', custom_colors1, N=256)
+    mpl.colormaps.register(custom_cmap1)
+
+    # Define your custom colors (as RGB tuples)
+    # (value,(color))
+    custom_colors2 = [(0, (0, 0.08, 0.16)),
+                    (0.2, (0.2, 0.7, 1)),
+                    (0.4, (0.28, 0.2, 0.4)),
+                    (0.62, (0.9, 0.1, 0.1)),
+                    (0.72, (0.7, 0.34, 0.1)),
+                    (0.8, (1, 0.5, 0.1)),
+                    (1, (1, 1, 0))]
+
+    # Create a custom colormap
+    custom_cmap2 = LinearSegmentedColormap.from_list(
+        'custom_cmap2', custom_colors2, N=256)
+    mpl.colormaps.register(custom_cmap2)
+
+    # Define your custom colors (as RGB tuples)
+    # (value,(color))
+    custom_colors3 = [(0, (0.88, 0.84, 0.96)),
+                    (0.5, (0.32, 0, 0.64)),
+                    (0.75, (0, 0, 1)),
+                    (0.85, (0, 0.65, 1)),
+                    (0.9, (0.2, 1, 0.2)),
+                    (0.96, (0.72, 1, 0)),
+                    (1, (1, 1, 0))]
+
+    # Create a custom colormap
+    custom_cmap3 = LinearSegmentedColormap.from_list(
+        'custom_cmap3', custom_colors3, N=256)
+    mpl.colormaps.register(custom_cmap3)
+
+    # Define your custom colors (as RGB tuples)
+    # (value,(color))
+    custom_colors4 = [(0, (1, 1, 1)),
+                    (0.4, (0.3, 0, 0.3)),
+                    (0.5, (0.3, 0, 0.6)),
+                    (0.6, (0, 1, 1)),
+                    (0.7, (0, 1, 0)),
+                    (0.8, (1, 1, 0)),
+                    (1, (1, 0, 0))]
+
+    # Create a custom colormap
+    custom_cmap4 = LinearSegmentedColormap.from_list(
+        'custom_cmap4', custom_colors4, N=256)
+    mpl.colormaps.register(custom_cmap4)
+
+    # Define your custom colors (as RGB tuples)
+    # (value,(color))
+    prevac_colors = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
+                    (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
+                    (0.4, (0, 0.4*0.82, 0)),
+                    (0.6, (0.5*0.82, 1*0.82, 0)),
+                    (0.8,(1*0.82, 1*0.82, 0)),
+                    (1, (1*0.82, 0, 0))]
+    # Create a custom colormap
+    prevac_cmap = LinearSegmentedColormap.from_list(
+        'prevac_cmap', prevac_colors, N=256)
+    mpl.colormaps.register(prevac_cmap)
+    
+    value3 = tk.StringVar()
+    value3.set('prevac_cmap')
+    value3.trace_add('write', chcmp)
+    
+    if not os.path.exists('.MDC_cut'):
+        os.makedirs('.MDC_cut')
+        os.system('attrib +h +s .MDC_cut')
+
     try:
-        with np.load('rd.npz', 'rb') as ff:
+        with np.load(os.path.join('.MDC_cut', 'rd.npz'), 'rb') as ff:
             path = str(ff['path'])
             name = str(ff['name'])
             lpath = ff['lpath']
@@ -15202,7 +15316,7 @@ if __name__ == '__main__':
         print('No Raw Data preloaded')
 
     try:
-        with np.load('bb.npz', 'rb') as f:
+        with np.load(os.path.join('.MDC_cut', 'bb.npz'), 'rb') as f:
             bpath = str(f['path'])
             be = f['be']
             k = f['k']
@@ -15215,21 +15329,21 @@ if __name__ == '__main__':
         print('No Bare Band file preloaded')
 
     try:
-        with np.load('efpath.npz', 'rb') as f:
+        with np.load(os.path.join('.MDC_cut', 'efpath.npz'), 'rb') as f:
             efpath = str(f['efpath'])
             print('EDC Fitted path preloaded')
     except:
         print('No EDC Fitted path preloaded')
 
     try:
-        with np.load('mfpath.npz', 'rb') as f:
+        with np.load(os.path.join('.MDC_cut', 'mfpath.npz'), 'rb') as f:
             mfpath = str(f['mfpath'])
             print('MDC Fitted path preloaded')
     except:
         print('No MDC Fitted path preloaded')
 
     try:
-        with np.load('efit.npz', 'rb') as f:
+        with np.load(os.path.join('.MDC_cut', 'efit.npz'), 'rb') as f:
             ko = str(f['ko'])
             fphi = f['fphi']
             epos = f['epos']
@@ -15250,7 +15364,7 @@ if __name__ == '__main__':
         print('No EDC fitted data preloaded (Casa)')
 
     try:
-        with np.load('mfit.npz', 'rb') as f:
+        with np.load(os.path.join('.MDC_cut', 'mfit.npz'), 'rb') as f:
             ko = str(f['ko'])
             fev = f['fev']
             rpos = f['rpos']
@@ -15276,7 +15390,7 @@ if __name__ == '__main__':
         print('No MDC fitted data preloaded (Casa)')
 
     try:
-        cdata = np.load('colormaps.npz', allow_pickle=True)
+        cdata = np.load(os.path.join('.MDC_cut', 'colormaps.npz'), allow_pickle=True)
         colors = list(cdata["colors"])
         scales = list(cdata["scales"])
         vmin = float(cdata["vmin"])
@@ -15297,7 +15411,7 @@ if __name__ == '__main__':
 
     '''
     try:
-        with np.load('efpara.npz','rb') as f:
+        with np.load(os.path.join('.MDC_cut', 'efpara.npz'),'rb') as f:
             rdd=f['path']
             fphi=f['fphi']
             efwhm=f['efwhm']
@@ -15313,7 +15427,7 @@ if __name__ == '__main__':
         print('No EDC fitted data preloaded')
         
     try:
-        with np.load('mfpara.npz','rb') as f:
+        with np.load(os.path.join('.MDC_cut', 'mfpara.npz'),'rb') as f:
             rdd=f['path']
             fev=f['fev']
             fwhm=f['fwhm']
@@ -15428,88 +15542,13 @@ if __name__ == '__main__':
 
     cmlf = tk.Frame(cmf, bg='white')
     cmlf.grid(row=1, column=0)
-
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors1 = [(0, (1, 1, 1)),
-                    (0.5, (0, 0, 1)),
-                    (0.85, (0, 1, 1)),
-                    (1, (1, 1, 0.26))]
-
-    # Create a custom colormap
-    custom_cmap1 = LinearSegmentedColormap.from_list(
-        'custom_cmap1', custom_colors1, N=256)
-    mpl.colormaps.register(custom_cmap1)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors2 = [(0, (0, 0.08, 0.16)),
-                    (0.2, (0.2, 0.7, 1)),
-                    (0.4, (0.28, 0.2, 0.4)),
-                    (0.62, (0.9, 0.1, 0.1)),
-                    (0.72, (0.7, 0.34, 0.1)),
-                    (0.8, (1, 0.5, 0.1)),
-                    (1, (1, 1, 0))]
-
-    # Create a custom colormap
-    custom_cmap2 = LinearSegmentedColormap.from_list(
-        'custom_cmap2', custom_colors2, N=256)
-    mpl.colormaps.register(custom_cmap2)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors3 = [(0, (0.88, 0.84, 0.96)),
-                    (0.5, (0.32, 0, 0.64)),
-                    (0.75, (0, 0, 1)),
-                    (0.85, (0, 0.65, 1)),
-                    (0.9, (0.2, 1, 0.2)),
-                    (0.96, (0.72, 1, 0)),
-                    (1, (1, 1, 0))]
-
-    # Create a custom colormap
-    custom_cmap3 = LinearSegmentedColormap.from_list(
-        'custom_cmap3', custom_colors3, N=256)
-    mpl.colormaps.register(custom_cmap3)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors4 = [(0, (1, 1, 1)),
-                    (0.4, (0.3, 0, 0.3)),
-                    (0.5, (0.3, 0, 0.6)),
-                    (0.6, (0, 1, 1)),
-                    (0.7, (0, 1, 0)),
-                    (0.8, (1, 1, 0)),
-                    (1, (1, 0, 0))]
-
-    # Create a custom colormap
-    custom_cmap4 = LinearSegmentedColormap.from_list(
-        'custom_cmap4', custom_colors4, N=256)
-    mpl.colormaps.register(custom_cmap4)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    prevac_colors = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
-                    (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
-                    (0.4, (0, 0.4*0.82, 0)),
-                    (0.6, (0.5*0.82, 1*0.82, 0)),
-                    (0.8,(1*0.82, 1*0.82, 0)),
-                    (1, (1*0.82, 0, 0))]
-    # Create a custom colormap
-    prevac_cmap = LinearSegmentedColormap.from_list(
-        'prevac_cmap', prevac_colors, N=256)
-    mpl.colormaps.register(prevac_cmap)
-    
     if pr_cmap is not None:
         optionList3 = ['prevac_cmap', colormap_name, 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
     else:
         optionList3 = ['prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
-    cmp = plt.colormaps()
-    value3 = tk.StringVar()
-    value3.set('prevac_cmap')
-    value3.trace_add('write', chcmp)
     setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
     setcmap.grid(row=0, column=1)
+    cmp = plt.colormaps()
     cm = tk.OptionMenu(cmlf, value3, *cmp)
     cm.grid(row=1, column=1)
 
