@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.1"
-__release_date__ = "2025-07-25"
+__version__ = "7.1.1"
+__release_date__ = "2025-08-05"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
 # bzip2                      1.0.8            h2bbff1b_6
@@ -899,7 +899,7 @@ def gui_exp_origin(*e):
     c11=tk.Checkbutton(fr,text='Second Derivative',variable=v11,font=('Arial', size(18), "bold"),bg='white')
     c11.grid(row=10,column=0,sticky='w')
     b2=tk.Button(fr,text='Export',command=exp_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
-    b2.grid(row=11,column=0)
+    # b2.grid(row=11,column=0)
     cl=[c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
     for i in range(len(cl)):
         if i in no:
@@ -1746,19 +1746,7 @@ def desc():
 
 def view_3d(*e):
     path = fd.askdirectory(title="Select Zarr Folder")
-    print(f"Loading Zarr Data Cube from {path}")
-    print('Please wait...')
-    hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
-    if hwnd:
-        windll.user32.SetForegroundWindow(hwnd)
-    t=time.time()
-    try:
-        data = zarr.load(path)
-    except Exception as e:
-        print(f"Error loading data from {path}: {e}")
-        return
-    print(f"Elapse time: {time.time()-t:.2f} s")
-    dv = DataViewer(master=g, data=data)
+    dv = DataViewer(master=g, path=path)
 
 class ProgressBar(tk.Toplevel):
     def __init__(self, master):
@@ -1806,9 +1794,21 @@ def bin_data(data, axis, bin_size):
     return data.mean(axis=axis + 1)
 
 class DataViewer(tk.Toplevel):
-    def __init__(self, master=None, data=None):
+    def __init__(self, master=None, path=None):
         if master is None:
             master = tk.Tk()
+        print(f"Loading Zarr Data Cube from {path}")
+        print('Please wait...')
+        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        if hwnd:
+            windll.user32.SetForegroundWindow(hwnd)
+        t=time.time()
+        try:
+            data = zarr.load(path)
+        except Exception as e:
+            print(f"Error loading data from {path}: {e}")
+            return
+        print(f"Elapse time: {time.time()-t:.2f} s")
         xmin,xmax = data[0, 1, -1], data[1, 1, -1]
         ymin,ymax = data[2, 1, -1], data[3, 1, -1]
         E = data[:, 0, -1]  # Assuming the last dimension contains the energy values
@@ -2005,7 +2005,7 @@ class DataViewer(tk.Toplevel):
             self.ax.axis('on')
             self.ax.set_xlabel(r'$k_y (2\pi/\AA)$', font='Arial', fontsize=size(16))
             self.ax.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=size(16))
-            self.ax.set_title(f'$k_x$ = {self.kx[idx]:.2f}', font='Arial', fontsize=size(16))
+            self.ax.set_title(f'$k_x$ = {self.kx[idx]:.3f}', font='Arial', fontsize=size(16))
         elif axis == 'ky':
             self.b_E_k.config(command=self.gen_E_kx)
             img = self.data[:, idx, :]
@@ -2023,7 +2023,7 @@ class DataViewer(tk.Toplevel):
             self.ax.axis('on')
             self.ax.set_xlabel(r'$k_x (2\pi/\AA)$', font='Arial', fontsize=size(16))
             self.ax.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=size(16))
-            self.ax.set_title(f'$k_y$ = {self.ky[idx]:.2f}', font='Arial', fontsize=size(16))
+            self.ax.set_title(f'$k_y$ = {self.ky[idx]:.3f}', font='Arial', fontsize=size(16))
         elif axis == 'E':
             self.fr_ang.grid(row=4, column=7, rowspan=2)
             img = self.data[idx, :, :]
@@ -2037,8 +2037,8 @@ class DataViewer(tk.Toplevel):
             self.im.set_data(img)
             self.im.set_extent(extent)
             self.ax.set_aspect('auto')
-            self.ax.set_yticklabels(labels=self.ax.get_yticks(), font='Arial', fontsize=size(14))
-            self.ax.set_xticklabels(labels=self.ax.get_xticks(), font='Arial', fontsize=size(14))
+            self.ax.set_yticklabels(labels=self.ax.get_yticklabels(), font='Arial', fontsize=size(14))
+            self.ax.set_xticklabels(labels=self.ax.get_xticklabels(), font='Arial', fontsize=size(14))
             self.im.set_clim(np.nanmin(img), np.nanmax(img))
             self.fig.tight_layout()
             self.canvas.draw()
@@ -2048,8 +2048,8 @@ class DataViewer(tk.Toplevel):
             self.b_E_k.grid_forget()
             self.rotate_image()
             self.eim.set_extent(extent)
-            self.eax.set_yticklabels(labels=self.eax.get_yticks(), font='Arial', fontsize=size(14))
-            self.eax.set_xticklabels(labels=self.eax.get_xticks(), font='Arial', fontsize=size(14))
+            self.eax.set_yticklabels(labels=self.eax.get_yticklabels(), font='Arial', fontsize=size(14))
+            self.eax.set_xticklabels(labels=self.eax.get_xticklabels(), font='Arial', fontsize=size(14))
             self.eim.set_clim(np.nanmin(img), np.nanmax(img))
             self.efig.tight_layout()
             self.ecanvas.draw()
@@ -2060,7 +2060,7 @@ class DataViewer(tk.Toplevel):
             windll.user32.SetForegroundWindow(hwnd)
         self.__md(axis="E_kx")
         v = self.ky[int(self.idx.get())]
-        self.name = f"{self.dirname}_ky_{v:.2f}"
+        self.name = f"{self.dirname}_ky_{v:.3f}"
         self.file = os.path.join(self.dir, f"{self.name}.h5")
         self.gen_h5(axis='kx')
         print(f"Save to {self.file}")
@@ -2071,7 +2071,7 @@ class DataViewer(tk.Toplevel):
             windll.user32.SetForegroundWindow(hwnd)
         self.__md(axis="E_ky")
         v = self.kx[int(self.idx.get())]
-        self.name = f"{self.dirname}_kx_{v:.2f}"
+        self.name = f"{self.dirname}_kx_{v:.3f}"
         self.file = os.path.join(self.dir, f"{self.name}.h5")
         self.gen_h5(axis='ky')
         print(f"Save to {self.file}")
@@ -5033,13 +5033,29 @@ class g_cut_plot(tk.Toplevel):
         self.bind("<Return>", self.save_cut)
         self.focus_set()
 
+    def save_zarr(self, path=None, data=None, xmin=None, xmax=None, ymin=None, ymax=None, ev=None):
+        attr_array = np.zeros((data.shape[0], data.shape[1], 1))  # Example attribute array
+        attr_array[:, 0, 0] = ev
+        attr_array[0, 1, 0] = xmin
+        attr_array[1, 1, 0] = xmax
+        attr_array[2, 1, 0] = ymin
+        attr_array[3, 1, 0] = ymax
+        data = np.append(data, attr_array, axis=2)
+        zarr.save(path, data)
+        for name in os.listdir(path):
+            item_path = os.path.join(path, name)
+            if os.path.isfile(item_path):
+                os.system(f'attrib +h +s "{item_path}"')
+            elif os.path.isdir(item_path):
+                os.system(f'attrib +h +s "{item_path}"')
+
     def save_cube(self, event=None):
         try:
-            path = fd.asksaveasfilename(title="Save Data Cube", filetypes=(("NPZ files", "*.npz"),), initialdir=self.path[0], initialfile='data_cube', defaultextension=".npz")
+            path = fd.asksaveasfilename(title="Save Data Cube as Zarr Folder", filetypes=(("Zarr folders", "*.zarr"),), initialdir=self.path[0], initialfile='data_cube', defaultextension=".zarr")
             if not path:
                 print('Save operation cancelled')
             else:
-                np.savez(path, data=self.cube, xmin=self.xmin, xmax=self.xmax, ymin=self.ymin, ymax=self.ymax, ev=self.ty)
+                self.save_zarr(path, data=self.cube, xmin=self.xmin, xmax=self.xmax, ymin=self.ymin, ymax=self.ymax, ev=self.ty)
                 print(f'Data cube saved to {path}')
         except Exception as e:
             print(f"An error occurred while saving the data cube: {e}")
@@ -5618,9 +5634,9 @@ class VolumeSlicer(tk.Frame):
             base = np.zeros((self.cdensity, self.cdensity))
             r1 = np.linspace(xlim[0], xlim[1], int(self.cdensity/180*(xlim[1]-xlim[0])+1))
             phi = np.linspace(ylim[0], ylim[1], int(self.cdensity/180*(ylim[1]-ylim[0])))
-            r1, phi = np.meshgrid(r1, phi)
-            x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)  # x: r1, y: phi, at r2=0
-            y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi/180*np.pi)
+            # r1, phi = np.broadcast_arrays(r1, phi)
+            x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1[:, None]/180*np.pi) * np.cos(phi[None, :]/180*np.pi)  # x: r1, y: phi, at r2=0
+            y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi[None, :]/180*np.pi)
             txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
             ####### new method start
             data = self.k_map(data, self.cdensity, xlim, ylim, txlim, tylim, ev)
@@ -5672,9 +5688,9 @@ class VolumeSlicer(tk.Frame):
         zlim : cutting ky lim after rotation, [min, max]
         """
         def filter(ind, ii, r2=None):
-            r1 = np.linspace(min(self.y[ind]), max(self.y[ind]), len(self.y[ind]))
-            phi = np.linspace(min(self_x), max(self_x), len(self_x))
-            r1, phi = np.meshgrid(r1, phi)
+            r1 = np.linspace(min(self.y[ind]), max(self.y[ind]), len(self.y[ind]))[:, None]
+            phi = np.linspace(min(self_x), max(self_x), len(self_x))[None, :]
+            r1, phi = np.broadcast_arrays(r1, phi)
             for i in range(self.sym):
                 if r2 is None:
                     r1, phi = self.rot(r1, phi, r1_offset, phi_offset, angle-360//self.sym*i)
@@ -5701,11 +5717,11 @@ class VolumeSlicer(tk.Frame):
             self.cut_show = True
         xlim, zlim = sorted(xlim), sorted(zlim)
         if self.z is None: # for 1 cube
-            ind = filter(np.arange(len(self.y)), i)
-            if len(ind) != 0:
-                surface = self.combine_slice(self_volume[ind, :, i], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], ev=self.ev[i])
-            else:
-                surface = self.combine_slice(self_volume[:, :, i], xlim = [min(self.y)-r1_offset, max(self.y)-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], ev=self.ev[i])
+            # ind = filter(np.arange(len(self.y)), i)     #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
+            # if len(ind) != 0:       #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
+            #     surface = self.combine_slice(self_volume[ind, :, i], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], ev=self.ev[i])       #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
+            # else:
+            surface = self.combine_slice(self_volume[:, :, i], xlim = [min(self.y)-r1_offset, max(self.y)-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], ev=self.ev[i])
         elif self.z is not None: # for multiple cubes
             img = self_volume[:, :, i]
             try:
@@ -5714,9 +5730,9 @@ class VolumeSlicer(tk.Frame):
                 surface = np.full((self.cdensity, self.cdensity), np.nan, dtype=np.float64)
                 for z in r2:
                     ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
-                    ind = filter(ind, i, r2=z)
-                    if len(ind) != 0:
-                        surface = np.nanmean([surface, self.combine_slice(self_volume[ind, :, i], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], r2=z, ev=self.ev[i])], axis=0)
+                    # ind = filter(ind, i, r2=z)        #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
+                    # if len(ind) != 0:     #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
+                    surface = np.nanmean([surface, self.combine_slice(self_volume[ind, :, i], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], r2=z, ev=self.ev[i])], axis=0)
                 surface = np.nan_to_num(surface)
             except:
                 surface = np.zeros((self.cdensity, self.cdensity))
@@ -6148,9 +6164,9 @@ class VolumeSlicer(tk.Frame):
         self.x = self.ox[self.slim[0]:self.slim[1]+1]
         self.volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
         def filter(ind, i, r2=None):    #test the filtering process in slice_data function
-            r1 = np.linspace(min(self.y[ind]), max(self.y[ind]), len(self.y[ind]))
-            phi = np.linspace(min(self.x), max(self.x), len(self.x))
-            r1, phi = np.meshgrid(r1, phi)
+            r1 = np.linspace(min(self.y[ind]), max(self.y[ind]), len(self.y[ind]))[:, None]
+            phi = np.linspace(min(self.x), max(self.x), len(self.x))[None, :]
+            r1, phi = np.broadcast_arrays(r1, phi)
             if r2 is None:
                 r1, phi = self.rot(r1, phi, self.r1_offset, self.phi_offset, self.angle)
             else:
@@ -6342,11 +6358,11 @@ class VolumeSlicer(tk.Frame):
                 for i, z in enumerate(r2):
                     ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
                     if len(self.y[ind]) > 1:
-                        r1 = self.y[ind]
+                        r1 = self.y[ind][:, None]
                     else:
-                        r1 = np.linspace(self.y[ind]-0.25, self.y[ind]+0.25, 2)
-                    phi = np.linspace(min(self.x), max(self.x), int(max(self.x)-min(self.x)))
-                    r1, phi = np.meshgrid(r1, phi)
+                        r1 = np.linspace(self.y[ind]-0.25, self.y[ind]+0.25, 2)[:, None]
+                    phi = np.linspace(min(self.x), max(self.x), int(max(self.x)-min(self.x)))[None, :]
+                    r1, phi = np.broadcast_arrays(r1, phi)
                     r1, phi = self.rot(r1, phi, self.r1_offset, self.phi_offset, self.angle-(z-r2[0]))
                     r1, phi, r1_, phi_ = mesh(r1, phi)
                     self.reg_l1[i][0].set_data(r1, phi)
@@ -6408,9 +6424,9 @@ class VolumeSlicer(tk.Frame):
             base = np.zeros((self.density, self.density))
             r1 = np.linspace(xlim[0], xlim[1], int(self.density/180*(xlim[1]-xlim[0]))*4)
             phi = np.linspace(ylim[0], ylim[1], int(self.density/180*(ylim[1]-ylim[0]))*4)
-            r1, phi = np.meshgrid(r1, phi)
-            x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)  # x: r1, y: phi, at r2=0
-            y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi/180*np.pi)
+            # r1, phi = np.broadcast_arrays(r1, phi)
+            x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1[:, None]/180*np.pi) * np.cos(phi[None, :]/180*np.pi)  # x: r1, y: phi, at r2=0
+            y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi[None, :]/180*np.pi)
             txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
             ####### new method start
             # t=time.time()
