@@ -1746,7 +1746,8 @@ def desc():
 
 def view_3d(*e):
     path = fd.askdirectory(title="Select Zarr Folder")
-    dv = DataViewer(master=g, path=path)
+    DataViewer(master=g, path=path)
+    
 
 class ProgressBar(tk.Toplevel):
     def __init__(self, master):
@@ -1889,9 +1890,10 @@ class DataViewer(tk.Toplevel):
 
 
         self.b_E_k = ttk.Button(self, text="Export to HDF5 File", style='Large.TButton')
-
-
+        
+        data = None
         self.bind('<Return>', self.apply_bin)
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.apply_bin(init=True)
         
@@ -1930,9 +1932,9 @@ class DataViewer(tk.Toplevel):
         E_binned = self.raw_E[:data_binned.shape[0]*bin_e].reshape(-1, bin_e).mean(axis=1) if bin_e > 1 else self.raw_E
         ky_binned = self.raw_ky[:data_binned.shape[1]*bin_ky].reshape(-1, bin_ky).mean(axis=1) if bin_ky > 1 else self.raw_ky
         kx_binned = self.raw_kx[:data_binned.shape[2]*bin_kx].reshape(-1, bin_kx).mean(axis=1) if bin_kx > 1 else self.raw_kx
-        
-        
+
         self.data = data_binned
+        data_binned = None
         self.kx = kx_binned
         self.ky = ky_binned
         self.E = E_binned
@@ -2162,6 +2164,19 @@ class DataViewer(tk.Toplevel):
         self.dirname = os.path.basename(self.path).removesuffix(".zarr")
         self.dir = os.path.join(self.path, f"Ang_{self.angle:.1f}_bin_{max(1, self.bin_e.get())}_{max(1, self.bin_kx.get())}_{max(1, self.bin_ky.get())}", axis)
         os.makedirs(self.dir, exist_ok=True)
+        
+    def on_closing(self):
+        try:
+            self.ax.clear()
+            self.fig.clf()
+            plt.close(self.fig)
+            self.eax.clear()
+            self.efig.clf()
+            plt.close(self.efig)
+        except Exception:
+            pass
+        gc.collect()
+        self.destroy()
 
 class MenuIconManager:
     def __init__(self):
@@ -4354,8 +4369,9 @@ def tools(*args):
         toolg.destroy()
         
     def kplane():
-        g_CEC = CEC(g, lfs.path)
+        CEC(g, lfs.path)
         toolg.destroy()
+        
     global toolg
     if 'toolg' in globals():
         toolg.destroy()
@@ -6338,9 +6354,9 @@ class VolumeSlicer(tk.Frame):
             tr1 = [0, 0]
             tphi = [0, 0]
             if self.z is None:
-                r1 = self.y
-                phi = np.linspace(min(self.x), max(self.x), int(max(self.x)-min(self.x)))
-                r1, phi = np.meshgrid(r1, phi)
+                r1 = self.y[:, None]
+                phi = np.linspace(min(self.x), max(self.x), int(max(self.x)-min(self.x)))[None, :]
+                r1, phi = np.broadcast_arrays(r1, phi)
                 r1, phi = self.rot(r1, phi, self.r1_offset, self.phi_offset, self.angle)
                 r1, phi, r1_, phi_ = mesh(r1, phi)
                 self.reg_l1[0][0].set_data(r1, phi)
