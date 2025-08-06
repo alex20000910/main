@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "7.2"
+__version__ = "7.2.1"
 __release_date__ = "2025-08-06"
 # Name                     Version          Build               Channel
 # asteval                    1.0.6            pypi_0              pypi
@@ -1810,11 +1810,10 @@ class DataViewer(tk.Toplevel):
             windll.user32.SetForegroundWindow(hwnd)
         t=time.time()
         try:
-            data = zarr.load(path)
+            data = zarr.open(path, mode='r')
         except Exception as e:
             print(f"Error loading data from {path}: {e}")
             return
-        print(f"Elapse time: {time.time()-t:.2f} s")
         xmin,xmax = data[0, 1, -1], data[1, 1, -1]
         ymin,ymax = data[2, 1, -1], data[3, 1, -1]
         E = data[:, 0, -1]  # Assuming the last dimension contains the energy values
@@ -1828,6 +1827,7 @@ class DataViewer(tk.Toplevel):
         self.title("3D Data Viewer")
         self.path = path
         self.raw_data = data    #Axis: 0: E, 1: ky, 2: kx
+        print(f"Elapse time: {time.time()-t:.2f} s")
         self.raw_kx = kx
         self.raw_ky = ky
         self.raw_E = E
@@ -1892,22 +1892,83 @@ class DataViewer(tk.Toplevel):
         self.text_a = tk.StringVar()
         self.text_a.set(str(self.angle))
         self.text_a.trace_add('write', self.set_angle_tx)
-        self.text_ang = tk.Entry(self.fr_ang, bg='white', textvariable=self.text_a, font=('Arial', size(12), "bold"), state='normal', width=7).pack(side=tk.TOP)
+        self.text_ang = tk.Entry(self.fr_ang, bg='white', textvariable=self.text_a, font=('Arial', size(14), "bold"), state='normal', width=7).pack(side=tk.TOP)
         
         self.button_rot = ttk.Button(self.fr_ang, text="Rotate Cube", command=self.rot_cube, style='Large.TButton')
         self.button_rot.pack(side=tk.TOP)
+
+        self.fr_lim = tk.Frame(self, bg='white')
+        self.fr_hlim = tk.Frame(self.fr_lim, bg='white')
+        self.fr_hlim.pack(side=tk.TOP, fill=tk.X)
+        self.fr_llim = tk.Frame(self.fr_lim, bg='white')
+        self.fr_llim.pack(side=tk.TOP, fill=tk.X)
+        self.xlow_label = tk.Label(self.fr_llim, text='kx min:', bg='white', font=('Arial', size(16)))
+        self.xlow_label.pack(side=tk.LEFT)
+        self.xlow = tk.StringVar(value=str('%.3f'%self.raw_kx[0]))
+        self.xlow.trace_add('write', self.set_axis)
+        self.xlow_entry = tk.Entry(self.fr_llim, width=7, bg='white', font=('Arial', size(16)), textvariable=self.xlow)
+        self.xlow_entry.pack(side=tk.LEFT)
+        self.xhigh_label = tk.Label(self.fr_hlim, text='kx max:', bg='white', font=('Arial', size(16)))
+        self.xhigh_label.pack(side=tk.LEFT)
+        self.xhigh = tk.StringVar(value=str('%.3f'%self.raw_kx[-1]))
+        self.xhigh.trace_add('write', self.set_axis)
+        self.xhigh_entry = tk.Entry(self.fr_hlim, width=7, bg='white', font=('Arial', size(16)), textvariable=self.xhigh)
+        self.xhigh_entry.pack(side=tk.LEFT)
 
 
         self.b_E_k = ttk.Button(self, text="Export to HDF5 File", style='Large.TButton')
         self.b_E_k.grid(row=1, column=6)
         
-        data = None
-        self.bind('<Return>', self.apply_bin)
+        self.bind('<Return>', lambda event: self.apply_bin(init=False))
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.apply_bin(init=True)
         
         self.focus_set()
+
+    def set_axis(self, *args):
+        if __name__ == '__main__':
+            cmap=value3.get()   # MDC_cut.py
+        else:
+            cmap = 'viridis'
+        try:
+            xlow, xhigh = float(self.xlow.get()), float(self.xhigh.get())
+        except ValueError:
+            return
+        if xlow > xhigh:
+            xlow, xhigh = xhigh, xlow
+        self.ax.clear()
+        if self.axis.get() == 'kx':
+            if xlow < self.ky[0]:
+                self.xlow.set(str(self.ky[0]))
+            if xhigh > self.ky[-1]:
+                self.xhigh.set(str(self.ky[-1]))
+            try:
+                li = np.argwhere(self.ky-xlow <= (self.ky[1]-self.ky[0])/2)[-1][0]
+            except IndexError:
+                li = 0
+            try:
+                hi = np.argwhere(self.ky-xhigh >= (self.ky[1]-self.ky[0])/2)[0][0]
+            except IndexError:
+                hi = len(self.ky) - 1
+                
+            self.im = self.ax.imshow(self.img, extent=[self.ky[li], self.ky[hi], self.E[0], self.E[-1]],
+                                    aspect='auto', origin='lower', cmap=cmap)
+        elif self.axis.get() == 'ky':
+            if xlow < self.kx[0]:
+                self.xlow.set(str(self.kx[0]))
+            if xhigh > self.kx[-1]:
+                self.xhigh.set(str(self.kx[-1]))
+            try:
+                li = np.argwhere(self.kx-xlow <= (self.kx[1]-self.kx[0])/2)[-1][0]
+            except IndexError:
+                li = 0
+            try:
+                hi = np.argwhere(self.kx-xhigh >= (self.kx[1]-self.kx[0])/2)[0][0]
+            except IndexError:
+                hi = len(self.kx) - 1
+            self.im = self.ax.imshow(self.img, extent=[self.kx[li], self.kx[hi], self.E[0], self.E[-1]],
+                                    aspect='auto', origin='lower', cmap=cmap)
 
     def set_angle_sl(self, *args):
         try:
@@ -1981,8 +2042,9 @@ class DataViewer(tk.Toplevel):
             self.eim = self.eax.imshow(self.data[self.idx.get(), :, :], extent=[self.kx[0], self.kx[-1], self.ky[0], self.ky[-1]],
                                        aspect='equal', origin='lower', cmap=cmap)
             # self.colorbar = self.fig.colorbar(self.im, ax=self.ax, label='Intensity')
-        self.update_plot()
         self.config(cursor="")
+        self.update()
+        self.update_plot()
 
     def update_slider(self):
         axis = self.axis.get()
@@ -2004,10 +2066,28 @@ class DataViewer(tk.Toplevel):
         axis = self.axis.get()
         idx = int(self.idx.get())
         self.idx_label.config(text=f"Index: {idx}")
+        if float(self.xlow.get()) > float(self.xhigh.get()):
+            low, high = float(self.xhigh.get()), float(self.xlow.get())
+            self.xlow.set(str(low))
+            self.xhigh.set(str(high))
         if axis == 'kx':
+            if float(self.xlow.get()) < self.ky[0]:
+                self.xlow.set(str(self.ky[0]))
+            if float(self.xhigh.get()) > self.ky[-1]:
+                self.xhigh.set(str(self.ky[-1]))
+            try:
+                li = np.argwhere(self.ky-float(self.xlow.get()) <= (self.ky[1]-self.ky[0])/2)[-1][0]
+            except IndexError:
+                li = 0
+            try:
+                hi = np.argwhere(self.ky-float(self.xhigh.get()) >= (self.ky[1]-self.ky[0])/2)[0][0]
+            except IndexError:
+                hi = len(self.ky) - 1
+            self.xlow_label.config(text='ky min:')
+            self.xhigh_label.config(text='ky max:')
             self.b_E_k.config(command=self.gen_E_ky)
-            img = self.data[:, :, idx]
-            extent = [self.ky[0], self.ky[-1], self.E[0], self.E[-1]]
+            self.img = self.data[:, li:hi+1, idx]
+            extent = [self.ky[li], self.ky[hi], self.E[0], self.E[-1]]
             # if idx == 1101:
             #     self.ax.axis('off')
             #     self.ax.set_title('')
@@ -2023,9 +2103,23 @@ class DataViewer(tk.Toplevel):
             self.ax.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=size(16))
             self.ax.set_title(f'$k_x$ = {self.kx[idx]:.3f}', font='Arial', fontsize=size(16))
         elif axis == 'ky':
+            if float(self.xlow.get()) < self.kx[0]:
+                self.xlow.set(str(self.kx[0]))
+            if float(self.xhigh.get()) > self.kx[-1]:
+                self.xhigh.set(str(self.kx[-1]))
+            try:
+                li = np.argwhere(self.kx-float(self.xlow.get()) <= (self.kx[1]-self.kx[0])/2)[-1][0]
+            except IndexError:
+                li = 0
+            try:
+                hi = np.argwhere(self.kx-float(self.xhigh.get()) >= (self.kx[1]-self.kx[0])/2)[0][0]
+            except IndexError:
+                hi = len(self.kx) - 1
+            self.xlow_label.config(text='kx min:')
+            self.xhigh_label.config(text='kx max:')
             self.b_E_k.config(command=self.gen_E_kx)
-            img = self.data[:, idx, :]
-            extent = [self.kx[0], self.kx[-1], self.E[0], self.E[-1]]
+            self.img = self.data[:, idx, li:hi+1]
+            extent = [self.kx[li], self.kx[hi], self.E[0], self.E[-1]]
             # if idx == 1101:
             #     self.ax.axis('off')
             #     self.ax.set_title('')
@@ -2041,23 +2135,33 @@ class DataViewer(tk.Toplevel):
             self.ax.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=size(16))
             self.ax.set_title(f'$k_y$ = {self.ky[idx]:.3f}', font='Arial', fontsize=size(16))
         elif axis == 'E':
+            try:
+                self.fr_lim.grid_forget()
+            except:
+                pass
             self.fr_ang.grid(row=4, column=7, rowspan=2)
-            img = self.data[idx, :, :]
+            self.img = self.data[idx, :, :]
             extent = [self.kx[0], self.kx[-1], self.ky[0], self.ky[-1]]
             self.eax.set_title(f'E = {self.E[idx]:.3f} eV', font='Arial', fontsize=size(16))
         if axis != 'E':
             self.ecanvas.get_tk_widget().grid_forget()
             self.canvas.get_tk_widget().grid(row=4, column=0, columnspan=7)
             self.fr_ang.grid_forget()
+            self.fr_lim.grid(row=4, column=7, rowspan=2)
             self.b_E_k.grid(row=1, column=6)
-            self.im.set_data(img)
+            self.im.set_data(self.img)
             self.im.set_extent(extent)
             self.ax.set_aspect('auto')
+            # if float(self.xlow.get()) > float(self.xhigh.get()):
+            #     low, high = float(self.xhigh.get()), float(self.xlow.get())
+            #     self.xlow.set(str(low))
+            #     self.xhigh.set(str(high))
+            # self.ax.set_xlim(float(self.xlow.get()), float(self.xhigh.get()))
             self.ax.set_yticklabels(labels=self.ax.get_yticklabels(), font='Arial', fontsize=size(14))
             self.ax.set_xticklabels(labels=self.ax.get_xticklabels(), font='Arial', fontsize=size(14))
             if __name__ == '__main__':
                 self.im.set_cmap(value3.get())
-            self.im.set_clim(np.nanmin(img), np.nanmax(img))
+            self.im.set_clim(np.nanmin(self.img), np.nanmax(self.img))
             self.fig.tight_layout()
             self.canvas.draw()
         else:
@@ -2070,7 +2174,7 @@ class DataViewer(tk.Toplevel):
             self.eim.set_extent(extent)
             self.eax.set_yticklabels(labels=self.eax.get_yticklabels(), font='Arial', fontsize=size(14))
             self.eax.set_xticklabels(labels=self.eax.get_xticklabels(), font='Arial', fontsize=size(14))
-            self.eim.set_clim(np.nanmin(img), np.nanmax(img))
+            self.eim.set_clim(np.nanmin(self.img), np.nanmax(self.img))
             self.efig.tight_layout()
             self.ecanvas.draw()
         
@@ -2124,9 +2228,25 @@ class DataViewer(tk.Toplevel):
             desc=["Sliced data"]
             y = self.E
             if axis == 'kx':
-                x = self.kx
+                try:
+                    li = np.argwhere(self.kx-float(self.xlow.get()) <= (self.kx[1]-self.kx[0])/2)[-1][0]
+                except IndexError:
+                    li = 0
+                try:
+                    hi = np.argwhere(self.kx-float(self.xhigh.get()) >= (self.kx[1]-self.kx[0])/2)[0][0]
+                except IndexError:
+                    hi = len(self.kx) - 1
+                x = self.kx[li:hi+1]
             else:
-                x = self.ky
+                try:
+                    li = np.argwhere(self.ky-float(self.xlow.get()) <= (self.ky[1]-self.ky[0])/2)[-1][0]
+                except IndexError:
+                    li = 0
+                try:
+                    hi = np.argwhere(self.ky-float(self.xhigh.get()) >= (self.ky[1]-self.ky[0])/2)[0][0]
+                except IndexError:
+                    hi = len(self.ky) - 1
+                x = self.ky[li:hi+1]
             xsize = np.array([len(y)], dtype=int)
             f.create_dataset('Data/XSize/Value', data=xsize, dtype=int)
             ysize = np.array([len(x)], dtype=int)
@@ -2173,9 +2293,9 @@ class DataViewer(tk.Toplevel):
             f.create_dataset('Region/Slit', data=slit, dtype=h5py.special_dtype(vlen=str))
             
             if axis == 'kx':
-                f.create_dataset("Spectrum", data=np.array(self.data[:, int(self.idx.get()), :]))
+                f.create_dataset("Spectrum", data=np.array(self.data[:, int(self.idx.get()), li:hi+1]))
             else:
-                f.create_dataset("Spectrum", data=np.array(self.data[:, :, int(self.idx.get())]))
+                f.create_dataset("Spectrum", data=np.array(self.data[:, li:hi+1, int(self.idx.get())]))
     
     def __md(self, axis="E_kx"):
         hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
@@ -2186,17 +2306,9 @@ class DataViewer(tk.Toplevel):
         os.makedirs(self.dir, exist_ok=True)
         
     def on_closing(self):
-        try:
-            self.ax.clear()
-            self.fig.clf()
-            plt.close(self.fig)
-            self.eax.clear()
-            self.efig.clf()
-            plt.close(self.efig)
-        except Exception:
-            pass
-        gc.collect()
         self.destroy()
+        del self.raw_data, self.data, self.im, self.eim, self.ax, self.eax, self.canvas, self.ecanvas, self.fig, self.efig
+        gc.collect()
 
 class MenuIconManager:
     def __init__(self):
@@ -4673,7 +4785,7 @@ class loadfiles():
         for i, v in enumerate(files):
             tf=False
             try:
-                if load_h5(v).attrs['Acquisition']=='VolumeSlicer':
+                if load_h5(v).attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
                     tf=True
             except: pass
             if '.npz' in os.path.basename(v) or tf:
