@@ -1,56 +1,65 @@
 # MDC cut GUI
-__version__ = "7.3"
-__release_date__ = "2025-08-11"
+__version__ = "7.3.1"
+__release_date__ = "2025-08-12"
 # Name                     Version          Build               Channel
-# asteval                    1.0.6            pypi_0              pypi
-# bzip2                      1.0.8            h2bbff1b_6
-# ca-certificates            2025.2.25        haa95532_0
-# colorama                   0.4.6            pypi_0              pypi
-# contourpy                  1.3.2            pypi_0              pypi
-# cycler                     0.12.1           pypi_0              pypi
-# dill                       0.4.0            pypi_0              pypi
-# expat                      2.7.1            h8ddb27b_0
-# fonttools                  4.58.4           pypi_0              pypi
-# h5py                       3.14.0           pypi_0              pypi
-# kiwisolver                 1.4.8            pypi_0              pypi
-# libffi                     3.4.4            hd77b12b_1
-# libmpdec                   4.0.0            h827c3e9_0
-# lmfit                      1.3.3            pypi_0              pypi
-# matplotlib                 3.10.3           pypi_0              pypi
-# numpy                      2.3.1            pypi_0              pypi
-# opencv-python              4.11.0.86        pypi_0              pypi
-# openssl                    3.0.16           h3f729d1_0
-# originext                  1.2.4            pypi_0              pypi
-# originpro                  1.1.12           pypi_0              pypi
-# packaging                  25.0             pypi_0              pypi
-# pandas                     2.3.0            pypi_0              pypi
-# pillow                     11.2.1           pypi_0              pypi
-# pip                        25.1             pyhc872135_2
-# psutil                     7.0.0            pypi_0              pypi
-# py-cpuinfo                 9.0.0            pypi_0              pypi
-# pyparsing                  3.2.3            pypi_0              pypi
-# python                     3.13.5           h286a616_100_cp313
-# python-dateutil            2.9.0.post0      pypi_0              pypi
-# python_abi                 3.13             0_cp313
-# pytz                       2025.2           pypi_0              pypi
-# pywin32                    310              pypi_0              pypi
-# scipy                      1.16.0           pypi_0              pypi
-# setuptools                 78.1.1           py313haa95532_0
-# six                        1.17.0           pypi_0              pypi
-# sqlite                     3.45.3           h2bbff1b_0
-# tk                         8.6.14           h5e9d12e_1
-# tqdm                       4.67.1           pypi_0              pypi
-# tzdata                     2025.2           pypi_0              pypi
-# uncertainties              3.2.3            pypi_0              pypi
-# vc                         14.42            haa95532_5
-# vs2015_runtime             14.42.34433      hbfb602d_5
-# wheel                      0.45.1           py313haa95532_0
-# xarray                     2025.6.1         pypi_0              pypi
-# xz                         5.6.4            h4754444_1
-# zarr                      3.1.0                    pypi_0    pypi
-# zict                      3.0.0                    pypi_0    pypi
+# asteval                   1.0.6                    pypi_0    pypi
+# bzip2                     1.0.8                h2bbff1b_6
+# ca-certificates           2025.7.15            haa95532_0
+# colorama                  0.4.6                    pypi_0    pypi
+# contourpy                 1.3.3                    pypi_0    pypi
+# crc32c                    2.7.1                    pypi_0    pypi
+# cycler                    0.12.1                   pypi_0    pypi
+# dill                      0.4.0                    pypi_0    pypi
+# donfig                    0.8.1.post1              pypi_0    pypi
+# expat                     2.7.1                h8ddb27b_0
+# fonttools                 4.59.0                   pypi_0    pypi
+# h5py                      3.14.0                   pypi_0    pypi
+# kiwisolver                1.4.9                    pypi_0    pypi
+# libffi                    3.4.4                hd77b12b_1
+# libmpdec                  4.0.0                h827c3e9_0
+# lmfit                     1.3.4                    pypi_0    pypi
+# matplotlib                3.10.5                   pypi_0    pypi
+# numcodecs                 0.16.1                   pypi_0    pypi
+# numpy                     2.2.6                    pypi_0    pypi
+# opencv-python             4.12.0.88                pypi_0    pypi
+# openssl                   3.0.17               h35632f6_0
+# originext                 1.2.4                    pypi_0    pypi
+# originpro                 1.1.13                   pypi_0    pypi
+# packaging                 25.0                     pypi_0    pypi
+# pandas                    2.3.1                    pypi_0    pypi
+# pillow                    11.3.0                   pypi_0    pypi
+# pip                       25.1               pyhc872135_2
+# psutil                    7.0.0                    pypi_0    pypi
+# py-cpuinfo                9.0.0                    pypi_0    pypi
+# pyparsing                 3.2.3                    pypi_0    pypi
+# pyqt5                     5.15.11                  pypi_0    pypi
+# pyqt5-qt5                 5.15.2                   pypi_0    pypi
+# pyqt5-sip                 12.17.0                  pypi_0    pypi
+# pyqtgraph                 0.13.7                   pypi_0    pypi
+# python                    3.13.5          h286a616_100_cp313
+# python-dateutil           2.9.0.post0              pypi_0    pypi
+# python_abi                3.13                    0_cp313
+# pytz                      2025.2                   pypi_0    pypi
+# pywin32                   311                      pypi_0    pypi
+# pyyaml                    6.0.2                    pypi_0    pypi
+# scipy                     1.16.1                   pypi_0    pypi
+# setuptools                78.1.1          py313haa95532_0
+# six                       1.17.0                   pypi_0    pypi
+# sqlite                    3.50.2               hda9a48d_1
+# tk                        8.6.14               h5e9d12e_1
+# tqdm                      4.67.1                   pypi_0    pypi
+# typing-extensions         4.14.1                   pypi_0    pypi
+# tzdata                    2025.2                   pypi_0    pypi
+# ucrt                      10.0.22621.0         haa95532_0
+# uncertainties             3.2.3                    pypi_0    pypi
+# vc                        14.3                h2df5915_10
+# vc14_runtime              14.44.35208         h4927774_10
+# vs2015_runtime            14.44.35208         ha6b5a95_10
+# wheel                     0.45.1          py313haa95532_0
+# xarray                    2025.7.1                 pypi_0    pypi
+# xz                        5.6.4                h4754444_1
+# zarr                      3.1.1                    pypi_0    pypi
 # zlib                      1.2.13               h8cc25b3_1
-# zstd                      1.5.5                hd43e919_2
 import os, inspect
 import json
 import tkinter as tk
@@ -258,15 +267,15 @@ except ModuleNotFoundError:
     install('zarr')
     import zarr
 try:
+    import PyQt5
+except ModuleNotFoundError:
+    install('PyQt5')
+    import PyQt5
+try:
     import pyqtgraph
 except ModuleNotFoundError:
     install('pyqtgraph')
     import pyqtgraph
-try:
-    import PyQt5
-except ModuleNotFoundError:
-    install('PyQt5')
-    import PtQt5
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -916,7 +925,7 @@ def gui_exp_origin(*e):
     c11=tk.Checkbutton(fr,text='Second Derivative',variable=v11,font=('Arial', size(18), "bold"),bg='white')
     c11.grid(row=10,column=0,sticky='w')
     b2=tk.Button(fr,text='Export',command=exp_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
-    # b2.grid(row=11,column=0)
+    b2.grid(row=11,column=0)
     cl=[c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
     for i in range(len(cl)):
         if i in no:
@@ -951,19 +960,23 @@ def pr_exp_origin():
                         10**-10*(h/2/np.pi))*180/np.pi
         pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
             np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-        cmdlist[2]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")\n'''
+        cmdlist[2]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
+'''
     except:
         no.append(2)
     try:
-        cmdlist[3]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(fwhm)}, title='MDC Fit FWHM', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")\n'''
+        cmdlist[3]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(fwhm)}, title='MDC Fit FWHM', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
+'''
     except:
         no.append(3)
     try:
-        cmdlist[4]=f'''plot1d(x={pre_process(fk)}, y1={pre_process((vfe-epos)*1000)}, title='EDC Fit Position', xlabel='k', ylabel='Binding Energy', xunit=r"2\g(p)Å\+(-1)", yunit='meV')\n'''
+        cmdlist[4]=rf'''plot1d(x={pre_process(fk)}, y1={pre_process((vfe-epos)*1000)}, title='EDC Fit Position', xlabel='k', ylabel='Binding Energy', xunit=r"2\g(p)Å\+(-1)", yunit='meV')
+'''
     except:
         no.append(4)
     try:
-        cmdlist[5]=f'''plot1d(x={pre_process(fk)}, y1={pre_process(efwhm)}, title='EDC Fit FWHM', xlabel='k', ylabel='Binding Energy', xunit=r"2\g(p)Å\+(-1)", yunit='meV')\n'''
+        cmdlist[5]=rf'''plot1d(x={pre_process(fk)}, y1={pre_process(efwhm)}, title='EDC Fit FWHM', xlabel='k', ylabel='Binding Energy', xunit=r"2\g(p)Å\+(-1)", yunit='meV')
+'''
     except:
         no.append(5)
     try:
@@ -1025,7 +1038,8 @@ def pr_exp_origin():
         # Reconstructed real and imaginary parts
         reconstructed_real = np.imag(analytic_signal_i)
         reconstructed_imag = -np.imag(analytic_signal_r)
-        cmdlist[6]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(-1*((vfe-fev)*1000+interp(pos, k*np.float64(bbk_offset.get()), be - np.float64(bb_offset.get()))))}, y2={pre_process(reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])))}, title='Self Energy Real Part', xlabel='Binding Energy', ylabel=r"Re \g(S)", ylabel1=r"Re \g(S)", ylabel2=r"Re \g(S)\-(KK)=KK(Im \g(S))", xunit='meV', yunit='meV')\n'''
+        cmdlist[6]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(-1*((vfe-fev)*1000+interp(pos, k*np.float64(bbk_offset.get()), be - np.float64(bb_offset.get()))))}, y2={pre_process(reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])))}, title='Self Energy Real Part', xlabel='Binding Energy', ylabel=r"Re \g(S)", ylabel1=r"Re \g(S)", ylabel2=r"Re \g(S)\-(KK)=KK(Im \g(S))", xunit='meV', yunit='meV')
+'''
     except:
         no.append(6)
     try:
@@ -1087,7 +1101,8 @@ def pr_exp_origin():
         # Reconstructed real and imaginary parts
         reconstructed_real = np.imag(analytic_signal_i)
         reconstructed_imag = -np.imag(analytic_signal_r)
-        cmdlist[7]=f'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(iy)}, y2={pre_process(reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])))}, title='Self Energy Imaginary Part', xlabel='Binding Energy', ylabel=r"Im \g(S)", ylabel1=r"Im \g(S)", ylabel2=r"Im \g(S)\-(KK)=KK(Re \g(S))", xunit='meV', yunit='meV')\n'''
+        cmdlist[7]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(iy)}, y2={pre_process(reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])))}, title='Self Energy Imaginary Part', xlabel='Binding Energy', ylabel=r"Im \g(S)", ylabel1=r"Im \g(S)", ylabel2=r"Im \g(S)\-(KK)=KK(Re \g(S))", xunit='meV', yunit='meV')
+'''
     except:
         no.append(7)
     try:
@@ -1132,7 +1147,10 @@ bpath = r"{bpath}"         # Bare Band Path
 be = np.float64({pre_process(be)})
 k = np.float64({pre_process(k)})
 '''
-    except: pass
+    except:
+        origin_temp_var += f'''
+bpath = None
+'''
     try:
         ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
                         10**-10*(h/2/np.pi))*180/np.pi
@@ -1331,7 +1349,7 @@ def note():
         f'        Fermi Energy: {vfe} eV\n'+\
         f'        k offset: {ko} deg\n'+\
         f'        Gaussian Filter Kernel Size: {im_kernel}\n')
-    if bpath != '':
+    if bpath is not None:
         nt.append(f'        Bare Band Path: {bpath}\n'+\
             f'        Bare Band Offset: {bbo} meV\n'+\
             f'        Bare Band k Ratio: {bbk}\n')
@@ -1862,13 +1880,19 @@ class ProgressDialog(QDialog):
         QApplication.processEvents()  # Update the GUI immediately
         
 
-    def increaseProgress(self):
+    def increaseProgress(self, text=None):
         value = self.progress.value()
         self.progress.setValue(value + 1)
         if value < self.progress.maximum()-1:
-            self.label.setText(f"Progress: {self.progress.value()}/{self.progress.maximum()}")
+            if text:
+                self.label.setText(text)
+            else:
+                self.label.setText(f"Progress: {self.progress.value()}/{self.progress.maximum()}")
         elif value == self.progress.maximum()-1:
-            self.label.setText('Almost Done! Please Wait...')
+            if text:
+                self.label.setText(text)
+            else:
+                self.label.setText('Almost Done! Please Wait...')
         else:
             self.accept()
         QApplication.processEvents()
@@ -1938,6 +1962,18 @@ class SliceBrowser(QMainWindow):
                 font-family: Arial;
                 font-weight: bold;
             }
+            QRadioButton::indicator {
+                background-color: #999;
+                width: 16px;
+                height: 16px;
+                border-radius: 8px;
+            }
+            QRadioButton::indicator:checked {
+                background-color: #FCFCFC;
+                width: 20px;
+                height: 20px;
+                border-radius: 10px;
+            }
             QPushButton:hover {
                 background-color: #555;
                 color: #FFD700;
@@ -2003,8 +2039,17 @@ class SliceBrowser(QMainWindow):
         act_quit = QAction("Quit", self)
         act_quit.setShortcut("Ctrl+Q")
         act_quit.triggered.connect(self.close)
+        act_save_zarr = QAction("Save as Zarr", self)
+        act_save_zarr.triggered.connect(self.save_as_zarr)
+        file_menu.addAction(act_save_zarr)
         file_menu.addAction(act_quit)
-        
+        view_menu = self.menu_bar.addMenu("View")
+        act_grid = QAction("Show Grid", self)
+        act_grid.setCheckable(True)
+        act_grid.setChecked(False)
+        act_grid.triggered.connect(self.toggle_grid)
+        view_menu.addAction(act_grid)
+
         # plot_menu_layout.addWidget(self.menu_bar)
         
         
@@ -2032,9 +2077,12 @@ class SliceBrowser(QMainWindow):
         rdb_layout = QHBoxLayout()
 
         radio1 = QRadioButton("E")
+        radio1.setToolTip("Show E slice (ky-kx)")
         radio1.setChecked(True)
         radio2 = QRadioButton("kx")
+        radio2.setToolTip("Show kx slice (E-ky)")
         radio3 = QRadioButton("ky")
+        radio3.setToolTip("Show ky slice (E-kx)")
 
         group = QButtonGroup(central)
         group.addButton(radio1)
@@ -2053,6 +2101,20 @@ class SliceBrowser(QMainWindow):
 
         # 三個滑桿
         self.slider_E = QSlider(Qt.Horizontal)
+        self.slider_E.setFixedHeight(50)
+        self.slider_E.setStyleSheet("""
+                                    QSlider::handle:horizontal {
+                                        background: #007AD9;
+                                        width: 40px;      /* 控制滑塊寬度 */
+                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
+                                        margin: -10px 0;  /* 讓滑塊更突出 */
+                                    }
+                                    QSlider::groove:horizontal {
+                                        height: 10px;     /* 控制滑道粗細 */
+                                        background: #bcbcbc;
+                                        border-radius: 5px;
+                                    }
+                                    """)
         self.slider_E.setMinimum(0)
         self.slider_E.setMaximum(len(E)-1)
         self.slider_E.setValue(0)
@@ -2064,6 +2126,20 @@ class SliceBrowser(QMainWindow):
         left_layout.addWidget(self.slider_E)
 
         self.slider_kx = QSlider(Qt.Horizontal)
+        self.slider_kx.setFixedHeight(50)
+        self.slider_kx.setStyleSheet("""
+                                    QSlider::handle:horizontal {
+                                        background: #007AD9;
+                                        width: 40px;      /* 控制滑塊寬度 */
+                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
+                                        margin: -10px 0;  /* 讓滑塊更突出 */
+                                    }
+                                    QSlider::groove:horizontal {
+                                        height: 10px;     /* 控制滑道粗細 */
+                                        background: #bcbcbc;
+                                        border-radius: 5px;
+                                    }
+                                    """)
         self.slider_kx.setMinimum(0)
         self.slider_kx.setMaximum(len(kx)-1)
         self.slider_kx.setValue(0)
@@ -2077,6 +2153,20 @@ class SliceBrowser(QMainWindow):
         self.slider_kx.setVisible(False)
 
         self.slider_ky = QSlider(Qt.Horizontal)
+        self.slider_ky.setFixedHeight(50)
+        self.slider_ky.setStyleSheet("""
+                                    QSlider::handle:horizontal {
+                                        background: #007AD9;
+                                        width: 40px;      /* 控制滑塊寬度 */
+                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
+                                        margin: -10px 0;  /* 讓滑塊更突出 */
+                                    }
+                                    QSlider::groove:horizontal {
+                                        height: 10px;     /* 控制滑道粗細 */
+                                        background: #bcbcbc;
+                                        border-radius: 5px;
+                                    }
+                                    """)
         self.slider_ky.setMinimum(0)
         self.slider_ky.setMaximum(len(ky)-1)
         self.slider_ky.setValue(0)
@@ -2158,6 +2248,20 @@ class SliceBrowser(QMainWindow):
         # 旋轉控制
         self.rotate_label = QLabel("Angle (deg)")
         self.rotate_slider = QSlider(Qt.Horizontal)
+        self.rotate_slider.setFixedHeight(50)
+        self.rotate_slider.setStyleSheet("""
+                                    QSlider::handle:horizontal {
+                                        background: #007AD9;
+                                        width: 40px;      /* 控制滑塊寬度 */
+                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
+                                        margin: -10px 0;  /* 讓滑塊更突出 */
+                                    }
+                                    QSlider::groove:horizontal {
+                                        height: 10px;     /* 控制滑道粗細 */
+                                        background: #bcbcbc;
+                                        border-radius: 5px;
+                                    }
+                                    """)
         self.rotate_slider.setMinimum(0)
         self.rotate_slider.setMaximum(3600)  # 0.1度精度
         self.rotate_slider.setValue(0)
@@ -2194,8 +2298,12 @@ class SliceBrowser(QMainWindow):
         
         self.showMaximized()
         self.w, self.h = self.width(), self.height()
-        
-        
+
+    def toggle_grid(self, checked):
+        if checked:
+            self.plot.showGrid(x=True, y=True)
+        else:
+            self.plot.showGrid(x=False, y=False)
 
     def xlim(self):
         xlow = float(self.xlow_edit.text())
@@ -2610,7 +2718,53 @@ class SliceBrowser(QMainWindow):
             self.path_angle -= 360
         self.dir = os.path.join(self.path, f"Ang_{self.path_angle:.1f}_bin_{max(1, self.bin_e)}_{max(1, self.bin_kx)}_{max(1, self.bin_ky)}", axis)
         os.makedirs(self.dir, exist_ok=True)
-    
+
+    def save_as_zarr(self):
+        self.apply_rotation()
+        
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+        pr_bar = ProgressDialog(4, self.icon)
+        pr_bar.resize(self.w//3, self.h//4)
+        pr_bar.show()
+        pr_bar.increaseProgress('Preparing Main Data Array...')
+        
+        data = self.raw_data
+        xmin, xmax = self.raw_kx[0], self.raw_kx[-1]
+        ymin, ymax = self.raw_ky[0], self.raw_ky[-1]
+        ty = self.raw_E
+        
+        pr_bar.increaseProgress('Preparing Metadata for Attributes...')
+        attr_array = np.zeros((data.shape[0], data.shape[1], 1))  # Example attribute array
+        attr_array[:, 0, 0] = ty
+        attr_array[0, 1, 0] = xmin
+        attr_array[1, 1, 0] = xmax
+        attr_array[2, 1, 0] = ymin
+        attr_array[3, 1, 0] = ymax
+        pr_bar.increaseProgress('Combining Data Cube...')
+        data = np.append(data, attr_array, axis=2)
+        pr_bar.increaseProgress('Done')
+        QApplication.restoreOverrideCursor()
+        path, _ = QFileDialog.getSaveFileName(None, "Save Zarr File", f'data_cube_Ang_{self.path_angle:.1f}.zarr', "Zarr Files (*.zarr)")
+        if path == "":
+            return
+
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+        pr_bar = ProgressDialog(3, self.icon)
+        pr_bar.resize(self.w//3, self.h//4)
+        pr_bar.show()
+        pr_bar.increaseProgress('Saving data...')
+        zarr.save(path, data)
+        pr_bar.increaseProgress('Setting file attributes...')
+        for name in os.listdir(path):
+            item_path = os.path.join(path, name)
+            if os.path.isfile(item_path):
+                os.system(f'attrib +h +s "{item_path}"')
+            elif os.path.isdir(item_path):
+                os.system(f'attrib +h +s "{item_path}"')
+        pr_bar.increaseProgress('Done')
+        QApplication.restoreOverrideCursor()
+        
+
     def update_E_job(self, arr):
         img_item = pg.ImageItem(arr.T)
         img_item.setLevels(np.min(arr), np.max(arr))
@@ -5285,7 +5439,7 @@ def fd_plot():
     s.plot(g, cmap)
 
 def o_cal(*e):
-    """
+    r"""
     Calculate the angle in degrees based on the given values of calk and cale.
 
     Parameters
