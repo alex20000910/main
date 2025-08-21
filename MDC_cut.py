@@ -6490,8 +6490,18 @@ class g_cut_plot(tk.Toplevel):
         attr_array[1, 1, 0] = xmax
         attr_array[2, 1, 0] = ymin
         attr_array[3, 1, 0] = ymax
-        data = np.append(data, attr_array, axis=2)
-        zarr.save(path, data)
+        zdata = np.append(data, attr_array, axis=2)
+        zarr.save(path, zdata)
+        for name in os.listdir(path):
+            item_path = os.path.join(path, name)
+            if os.path.isfile(item_path):
+                os.system(f'attrib +h +s "{item_path}"')
+            elif os.path.isdir(item_path):
+                os.system(f'attrib +h +s "{item_path}"')
+        path = os.path.join(path, '__disp__.zarr')
+        zdata = np.asarray(data/np.max(data)*255, dtype=np.uint8)
+        zarr.save_group(path, data=zdata, ang=np.array([0],dtype=np.float32))
+        os.system(f'attrib +h +s "{path}"')
         for name in os.listdir(path):
             item_path = os.path.join(path, name)
             if os.path.isfile(item_path):
