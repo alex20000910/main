@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.3.1"
-__release_date__ = "2025-08-12"
+__version__ = "7.4"
+__release_date__ = "2025-08-25"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6
@@ -1930,7 +1930,13 @@ class SliceBrowser(QMainWindow):
             xmin,xmax = data[0, 1, -1], data[1, 1, -1]
             ymin,ymax = data[2, 1, -1], data[3, 1, -1]
             E = data[:, 0, -1]
-            data = data[:,:,:data.shape[2]-1]  # Remove the last attribute dimension
+            zpath = os.path.join(path, '__disp__.zarr')
+            if not os.path.exists(zpath):
+                data = data[:,:,:data.shape[2]-1]  # Remove the last attribute dimension
+            else:
+                shape = list(data.shape)
+                shape[2] -= 1
+                data = np.zeros(tuple(shape))
             self.mode = 'standard'
         except:
             try:
@@ -1983,7 +1989,12 @@ class SliceBrowser(QMainWindow):
                 font-family: Arial;
                 font-size: 24px;
             }
-            QMenuBar, QMenu, QStatusBar, QSlider, QSpinBox, QLineEdit, QLabel, QRadioButton {
+            QStatusBar {
+                background-color: #D7D7D7;
+                color: #222;
+                font-size: 30px;
+            }
+            QMenuBar, QMenu, QSlider, QSpinBox, QLineEdit, QLabel, QRadioButton {
                 background-color: #000;
                 color: #EEE;
             }
@@ -2059,8 +2070,6 @@ class SliceBrowser(QMainWindow):
         self.plot.getAxis('left').setStyle(tickFont=pg.QtGui.QFont("Arial", 18))
         self.plot.scene().sigMouseMoved.connect(self.on_mouse_moved)
 
-        # 建立 QMenuBar 並放在 plot 上方
-        # plot_menu_layout = QVBoxLayout()
         pbar.increaseProgress('Setting QtWidgets')
         self.menu_bar = QMenuBar()
         self.setMenuBar(self.menu_bar)
@@ -2068,11 +2077,13 @@ class SliceBrowser(QMainWindow):
         act_quit = QAction("Quit", self)
         act_quit.setShortcut("Ctrl+Q")
         act_quit.triggered.connect(self.close)
-        act_save_zarr = QAction("Save as Zarr", self)
-        act_save_zarr.triggered.connect(self.save_as_zarr)
-        act_save_zarr_disp = QAction("Save as Zarr (for display)", self)
+        if self.mode == 'standard':
+            act_save_zarr = QAction("Save as Zarr-Standard", self)
+            act_save_zarr.triggered.connect(self.save_as_zarr)
+        act_save_zarr_disp = QAction("Save as Zarr-Display", self)
         act_save_zarr_disp.triggered.connect(self.save_as_zarr_disp)
-        file_menu.addAction(act_save_zarr)
+        if self.mode == 'standard':
+            file_menu.addAction(act_save_zarr)
         file_menu.addAction(act_save_zarr_disp)
         file_menu.addAction(act_quit)
         view_menu = self.menu_bar.addMenu("View")
@@ -2081,8 +2092,6 @@ class SliceBrowser(QMainWindow):
         act_grid.setChecked(False)
         act_grid.triggered.connect(self.toggle_grid)
         view_menu.addAction(act_grid)
-
-        # plot_menu_layout.addWidget(self.menu_bar)
         
         
         self.E_pixmap_x = self.make_axis_label("Kinetic Energy (eV)", font_size=18, vertical=False)
@@ -2318,6 +2327,11 @@ class SliceBrowser(QMainWindow):
         # 狀態列
         self.statusbar = QStatusBar(self)
         self.setStatusBar(self.statusbar)
+        right_label = QLabel(f"{self.mode.capitalize()} Mode")
+        right_label.setStyleSheet("background-color: #D7D7D7; color: #000; font-weight: bold; font-size: 30px;")
+        # right_label.setFocusPolicy(Qt.NoFocus)
+        # right_label.setTextInteractionFlags(Qt.NoTextInteraction)
+        self.statusbar.addPermanentWidget(right_label)  # 右側狀態列(有缺陷 #D7D7D7 游標殘留)
 
         # 綁定事件
         self.slider_E.valueChanged.connect(self.update_E_slice)
@@ -2484,7 +2498,10 @@ class SliceBrowser(QMainWindow):
                     self.prload = False
             elif self.mode == 'display':
                 self.raw_data_show = self.raw_data
-                self.prload = False
+                self.path_angle = zarr.open_group(self.path, mode='r+')['ang'][0]
+                self.rotate_slider.setValue(int(self.path_angle*10))
+                self.rotate_edit.setText(f"{self.path_angle:.1f}")
+                self.prload = True
             self.data_show = self.raw_data_show
             del self.raw_data
         elif not save:
@@ -2526,8 +2543,10 @@ class SliceBrowser(QMainWindow):
             return
 
     def on_bin_change(self):
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
         self.update_binned_data()
         self.refresh_slice()
+        QApplication.restoreOverrideCursor()
     
     # def bin_data(self, arr, axis, bin_size):
     #     if bin_size <= 1:
@@ -2844,7 +2863,7 @@ class SliceBrowser(QMainWindow):
         attr_array[2, 1, 0] = ymin
         attr_array[3, 1, 0] = ymax
         pr_bar.increaseProgress('Combining Data Cube')
-        data = np.append(data, attr_array, axis=2)
+        zdata = np.append(data, attr_array, axis=2)
         pr_bar.increaseProgress('Done')
         os.chdir(os.path.dirname(self.path))
         QApplication.restoreOverrideCursor()
@@ -2857,8 +2876,18 @@ class SliceBrowser(QMainWindow):
         pr_bar.resize(self.w//3, self.h//4)
         pr_bar.show()
         pr_bar.increaseProgress('Saving data')
-        zarr.save(path, data)
+        zarr.save(path, zdata)
         pr_bar.increaseProgress('Setting file attributes')
+        for name in os.listdir(path):
+            item_path = os.path.join(path, name)
+            if os.path.isfile(item_path):
+                os.system(f'attrib +h +s "{item_path}"')
+            elif os.path.isdir(item_path):
+                os.system(f'attrib +h +s "{item_path}"')
+        path = os.path.join(path, '__disp__.zarr')
+        zdata = np.asarray(self.raw_data_show, dtype=np.uint8)
+        zarr.save_group(path, data=zdata, ang=np.array([0],dtype=np.float32))
+        os.system(f'attrib +h +s "{path}"')
         for name in os.listdir(path):
             item_path = os.path.join(path, name)
             if os.path.isfile(item_path):
@@ -2902,7 +2931,7 @@ class SliceBrowser(QMainWindow):
         pr_bar.resize(self.w//3, self.h//4)
         pr_bar.show()
         pr_bar.increaseProgress('Saving data')
-        zarr.save_group(path, data=data, attr_array=attr_array)
+        zarr.save_group(path, data=data, attr_array=attr_array, ang=np.array([0], dtype=np.float32))
         pr_bar.increaseProgress('Setting file attributes')
         for name in os.listdir(path):
             item_path = os.path.join(path, name)
@@ -2995,7 +3024,10 @@ class SliceBrowser(QMainWindow):
         self.prload = False
     
     def rot_raw_data_show(self, pr_bar):
-        path = os.path.join(self.path, '__disp__.zarr')
+        if self.mode == 'standard':
+            path = os.path.join(self.path, '__disp__.zarr')
+        elif self.mode == 'display':
+            path = self.path
         raw_data_show = np.asarray(zarr.open_group(path, mode='r')['data'], dtype=np.uint8)
         for i in range(self.raw_data_show.shape[0]):
             surface = raw_data_show[i, :, :]
@@ -3004,11 +3036,34 @@ class SliceBrowser(QMainWindow):
             pr_bar.increaseProgress()
         pr_bar.increaseProgress('Updating Cube')
         os.chdir(self.path)
-        if os.path.exists('__disp__.zarr'):
-            shutil.rmtree('__disp__.zarr')
+        if self.mode == 'standard':
+            if os.path.exists('__disp__.zarr'):
+                shutil.rmtree('__disp__.zarr')
+        elif self.mode == 'display':
+            os.chdir(os.path.dirname(self.path))
+            for filename in os.listdir(path):
+                file_path = os.path.join(path, filename)
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)  # 刪除檔案或符號連結
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)  # 刪除子資料夾
         zdata = np.asarray(raw_data_show, dtype=np.uint8)
-        zarr.save_group(path, data=zdata, ang=np.array([self.path_angle], dtype=np.float32))
-        os.system(f'attrib +h +s "{path}"')
+        if self.mode == 'standard':
+            zarr.save_group(path, data=zdata, ang=np.array([self.path_angle], dtype=np.float32))
+            os.system(f'attrib +h +s "{path}"')
+        elif self.mode == 'display':
+            xmin, xmax = self.raw_kx[0], self.raw_kx[-1]
+            ymin, ymax = self.raw_ky[0], self.raw_ky[-1]
+            ty = self.raw_E
+            
+            attr_array = np.zeros((zdata.shape[0], 2))
+            attr_array[:, 0] = ty
+            attr_array[0, 1] = xmin
+            attr_array[1, 1] = xmax
+            attr_array[2, 1] = ymin
+            attr_array[3, 1] = ymax
+            zarr.save_group(path, data=zdata, attr_array=attr_array, ang=np.array([self.path_angle], dtype=np.float32))
+        os.chdir(self.path)
         for name in os.listdir(path):
             item_path = os.path.join(path, name)
             if os.path.isfile(item_path):
