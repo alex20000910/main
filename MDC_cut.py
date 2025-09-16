@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.4"
-__release_date__ = "2025-08-25"
+__version__ = "7.4.1"
+__release_date__ = "2025-09-16"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6
@@ -75,6 +75,7 @@ import copy
 from datetime import datetime
 import gc
 from tkinter import messagebox, colorchooser, ttk
+# import ttkbootstrap as ttk
 from multiprocessing import Pool, shared_memory
 import time, subprocess
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -292,7 +293,16 @@ m=9.10938356*10**-31
 mp, ep, mf, ef = 1, 1, 1, 1
 fk = []
 fev = []
-    
+
+def find_window():
+    # Windows系統中 可能的終端機視窗名稱
+    hwnd = windll.user32.FindWindowW(None, "命令提示字元")
+    if not hwnd:
+        hwnd = windll.user32.FindWindowW(None, "Command Prompt")
+    if not hwnd:
+        hwnd = windll.user32.FindWindowW(None, "cmd")
+    return hwnd
+
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
     """
@@ -358,24 +368,30 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
     # data[0:,0:,0]=d
     data = np.arange(float(len(e)*len(a))).reshape(len(e), len(a))
     data[0:, 0:] = d
-    data = xr.DataArray(data,
-                        coords={'eV': e, 'phi': a},
-                        attrs={'Name': name,
-                            'Acquisition': aq,
-                            'EnergyMode': e_mode,
-                            'ExcitationEnergy': str(e_photon)+' eV',
-                            'CenterEnergy': CenterEnergy,
-                            'HighEnergy': e_high,
-                            'LowEnergy': e_low,
-                            'Step': str(Step)+' eV',
-                            'LensMode': LensMode,
-                            'PassEnergy': str(PassEnergy)+' meV',
-                            'Slit': Slit,
-                            'Dwell': str(Dwell)+' s',
-                            'Iterations': Iterations,
-                            'Description': 'BiSe',
-                            'Path': path_to_file
-                            })
+    data = xr.DataArray(
+        data=data,
+        coords={
+            "Kinetic Energy (eV)": e,
+            "Angle (deg)": a
+        },
+        attrs={
+            'Name': name,
+            'Acquisition': aq,
+            'EnergyMode': e_mode,
+            'ExcitationEnergy': str(e_photon)+' eV',
+            'CenterEnergy': CenterEnergy,
+            'HighEnergy': e_high,
+            'LowEnergy': e_low,
+            'Step': str(Step)+' eV',
+            'LensMode': LensMode,
+            'PassEnergy': str(PassEnergy)+' meV',
+            'Slit': Slit,
+            'Dwell': str(Dwell)+' s',
+            'Iterations': Iterations,
+            'Description': 'BiSe',
+            'Path': path_to_file
+        }
+    )
     return data
 
 def load_txt_sk(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
@@ -387,9 +403,9 @@ def load_txt_sk(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
         xr.DataArray: shape=(len(eV), len(phi))
     """
     name = os.path.basename(path_to_file).removesuffix('.txt')
-    e = np.linspace(21.2-1,21.2+0.2,659)    #fix BE 1~-0.2
-    # e = np.linspace(21.2-2,21.2+1,284)     #scan BE 2~-1
-    a = np.linspace(-10,10,494)     #A20
+    e = np.linspace(21.2-1, 21.2+0.2, 659)    #fix BE 1~-0.2
+    # e = np.linspace(21.2-2, 21.2+1, 284)     #scan BE 2~-1
+    a = np.linspace(-10, 10, 494)     #A20
     description='SKNET'
     e_low = str(np.min(np.float64(e)))+ ' eV (K.E.)'
     e_high = str(np.max(np.float64(e)))+ ' eV (K.E.)'
@@ -405,24 +421,30 @@ def load_txt_sk(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
     Slit = 'Unknown'
     aq = 'SRNET'
     data = np.loadtxt(path_to_file).transpose()*100
-    data = xr.DataArray(data,
-                        coords={'eV': e, 'phi': a},
-                        attrs={'Name': name,
-                            'Acquisition': aq,
-                            'EnergyMode': e_mode,
-                            'ExcitationEnergy': str(e_photon)+' eV',
-                            'CenterEnergy': CenterEnergy,
-                            'HighEnergy': e_high,
-                            'LowEnergy': e_low,
-                            'Step': str(Step)+' eV',
-                            'LensMode': LensMode,
-                            'PassEnergy': str(PassEnergy)+' eV',
-                            'Slit': Slit,
-                            'Dwell': Dwell,
-                            'Iterations': Iterations,
-                            'Description': description,
-                            'Path': path_to_file
-                            })
+    data = xr.DataArray(
+        data=data,
+        coords={
+            "Kinetic Energy (eV)": e,
+            "Angle (deg)": a
+        },
+        attrs={
+            'Name': name,
+            'Acquisition': aq,
+            'EnergyMode': e_mode,
+            'ExcitationEnergy': str(e_photon)+' eV',
+            'CenterEnergy': CenterEnergy,
+            'HighEnergy': e_high,
+            'LowEnergy': e_low,
+            'Step': str(Step)+' eV',
+            'LensMode': LensMode,
+            'PassEnergy': str(PassEnergy)+' eV',
+            'Slit': Slit,
+            'Dwell': Dwell,
+            'Iterations': Iterations,
+            'Description': description,
+            'Path': path_to_file
+        }
+    )
     return data
 
 def load_json(path_to_file: str) -> xr.DataArray:
@@ -472,24 +494,30 @@ def load_json(path_to_file: str) -> xr.DataArray:
     # data[0:,0:,0]=d
     data = np.arange(float(len(e)*len(a))).reshape(len(e), len(a))
     data[0:, 0:] = d
-    data = xr.DataArray(data,
-                        coords={'eV': e, 'phi': a},
-                        attrs={'Name': name,
-                            'Acquisition': aq,
-                            'EnergyMode': e_mode,
-                            'ExcitationEnergy': str(e_photon)+' eV',
-                            'CenterEnergy': CenterEnergy,
-                            'HighEnergy': e_high,
-                            'LowEnergy': e_low,
-                            'Step': str(Step)+' eV',
-                            'LensMode': LensMode,
-                            'PassEnergy': str(PassEnergy)+' eV',
-                            'Slit': Slit,
-                            'Dwell': str(Dwell)+' s',
-                            'Iterations': Iterations,
-                            'Description': description,
-                            'Path': path_to_file
-                            })
+    data = xr.DataArray(
+        data=data,
+        coords={
+            "Kinetic Energy (eV)": e,
+            "Angle (deg)": a
+        },
+        attrs={
+            'Name': name,
+            'Acquisition': aq,
+            'EnergyMode': e_mode,
+            'ExcitationEnergy': str(e_photon)+' eV',
+            'CenterEnergy': CenterEnergy,
+            'HighEnergy': e_high,
+            'LowEnergy': e_low,
+            'Step': str(Step)+' eV',
+            'LensMode': LensMode,
+            'PassEnergy': str(PassEnergy)+' eV',
+            'Slit': Slit,
+            'Dwell': str(Dwell)+' s',
+            'Iterations': Iterations,
+            'Description': description,
+            'Path': path_to_file
+        }
+    )
     return data
 
 cec = None
@@ -657,8 +685,9 @@ def load_h5(path_to_file: str) -> xr.DataArray:
             if __name__ == '__main__':
                 if f_npz==0:
                     f_npz+=1
-                    hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+                    hwnd = find_window()
                     if hwnd:
+                        windll.user32.ShowWindow(hwnd, 9)
                         windll.user32.SetForegroundWindow(hwnd)
                     print(f"An error occurred: {ecp}")
                     print('\033[31mPath not found:\033[34m')
@@ -678,24 +707,36 @@ def load_h5(path_to_file: str) -> xr.DataArray:
         Dwell = Dwell.removesuffix(' s')
         PassEnergy = PassEnergy.removesuffix(' eV')
         data[0:, 0:] = d.T
-    data = xr.DataArray(data,
-                        coords={'eV': e, 'phi': a},
-                        attrs={'Name': name,
-                            'Acquisition': aq,
-                            'EnergyMode': e_mode,
-                            'ExcitationEnergy': str(e_photon)+' eV',
-                            'CenterEnergy': CenterEnergy,
-                            'HighEnergy': e_high,
-                            'LowEnergy': e_low,
-                            'Step': str(Step)+' eV',
-                            'LensMode': LensMode,
-                            'PassEnergy': str(PassEnergy)+' eV',
-                            'Slit': Slit,
-                            'Dwell': str(Dwell)+' s',
-                            'Iterations': Iterations,
-                            'Description': description,
-                            'Path': path_to_file
-                            })
+    if (aq=='Scan' or aq=='Fixed'):
+        x_name = 'Angle'
+        x_unit = 'deg'
+    else:
+        x_name = 'k'
+        x_unit = '2π/Å'
+    data = xr.DataArray(
+        data=data,
+        coords={
+            "Kinetic Energy (eV)": e,
+            f"{x_name} ({x_unit})": a
+        },
+        attrs={
+            'Name': name,
+            'Acquisition': aq,
+            'EnergyMode': e_mode,
+            'ExcitationEnergy': str(e_photon)+' eV',
+            'CenterEnergy': CenterEnergy,
+            'HighEnergy': e_high,
+            'LowEnergy': e_low,
+            'Step': str(Step)+' eV',
+            'LensMode': LensMode,
+            'PassEnergy': str(PassEnergy)+' eV',
+            'Slit': Slit,
+            'Dwell': str(Dwell)+' s',
+            'Iterations': Iterations,
+            'Description': description,
+            'Path': path_to_file
+        }
+    )
     return data
 
 def load_npz(path_to_file: str) -> xr.DataArray:
@@ -773,8 +814,9 @@ def load_npz(path_to_file: str) -> xr.DataArray:
         if __name__ == '__main__':
             if f_npz==0:
                 f_npz+=1
-                hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+                hwnd = find_window()
                 if hwnd:
+                    windll.user32.ShowWindow(hwnd, 9)
                     windll.user32.SetForegroundWindow(hwnd)
                 print(f"An error occurred: {e}")
                 print('\033[31mPath not found:\033[34m')
@@ -787,28 +829,34 @@ def load_npz(path_to_file: str) -> xr.DataArray:
         Iterations = 'Unknown'
         Slit = 'Unknown'
     data = f['data']
-    phi = f['x']
+    k = f['x']
     ev = f['y']
     ExcitationEnergy = f['e_photon']
     desc = f['desc'][0]
-    data = xr.DataArray(data,
-                        coords={'eV': ev, 'phi': phi},
-                        attrs={'Name': Name,
-                            'Acquisition': 'VolumeSlicer',
-                            'EnergyMode': 'Kinetic',
-                            'ExcitationEnergy': str(ExcitationEnergy)+' eV',
-                            'CenterEnergy': '%.3f'%((ev[0]+ev[-1])/2)+' eV',
-                            'HighEnergy': str(ev[-1])+' eV (K.E.)',
-                            'LowEnergy': str(ev[0])+' eV (K.E.)',
-                            'Step': str(ev[1]-ev[0])+' eV',
-                            'LensMode': 'Angular',
-                            'PassEnergy': PassEnergy,
-                            'Slit': Slit,
-                            'Dwell': Dwell,
-                            'Iterations': Iterations,
-                            'Description': desc,
-                            'Path': path_to_file
-                            })
+    data = xr.DataArray(
+        data=data,
+        coords={
+            "Kinetic Energy (eV)": ev,
+            "k (2π/Å)": k
+        },
+        attrs={
+            'Name': Name,
+            'Acquisition': 'VolumeSlicer',
+            'EnergyMode': 'Kinetic',
+            'ExcitationEnergy': str(ExcitationEnergy)+' eV',
+            'CenterEnergy': '%.3f'%((ev[0]+ev[-1])/2)+' eV',
+            'HighEnergy': str(ev[-1])+' eV (K.E.)',
+            'LowEnergy': str(ev[0])+' eV (K.E.)',
+            'Step': str(ev[1]-ev[0])+' eV',
+            'LensMode': 'Angular',
+            'PassEnergy': PassEnergy,
+            'Slit': Slit,
+            'Dwell': Dwell,
+            'Iterations': Iterations,
+            'Description': desc,
+            'Path': path_to_file
+        }
+    )
     return data
 
 def g_emode():
@@ -1857,6 +1905,15 @@ import h5py, time, zarr
 from ctypes import windll
 import gc, multiprocessing, shutil
 
+def find_window():
+    # Windows系統中 可能的終端機視窗名稱
+    hwnd = windll.user32.FindWindowW(None, "命令提示字元")
+    if not hwnd:
+        hwnd = windll.user32.FindWindowW(None, "Command Prompt")
+    if not hwnd:
+        hwnd = windll.user32.FindWindowW(None, "cmd")
+    return hwnd
+
 def rotate(data, angle, size):
     """
     for square data
@@ -1921,8 +1978,9 @@ class SliceBrowser(QMainWindow):
         pbar.increaseProgress('Loading Zarr Data Cube')
         print(f"Loading Zarr Data Cube from {path}")
         print('Please wait...')
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         t=time.time()
         try:
@@ -1948,7 +2006,7 @@ class SliceBrowser(QMainWindow):
                 self.mode = 'display'
             except Exception as e:
                 print(f"Error loading data from {path}: {e}")
-                return
+                quit()
         
         pbar.increaseProgress('Loading Zarr Data Cube')
         e_size, ky_size, kx_size = data.shape
@@ -2319,6 +2377,15 @@ class SliceBrowser(QMainWindow):
 
         # 存檔按鈕
         self.export_btn = QPushButton("Export to HDF5 File")
+        # self.export_btn.setStyleSheet("""
+        #     QToolTip {
+        #         background-color: #222;
+        #         color: #EEE;
+        #         border: 1px solid black;
+        #         font-size: 18pt;
+        #     }
+        # """)
+        # self.export_btn.setToolTip("Export the current slice to an HDF5 file")
         right_layout.addWidget(self.export_btn)
 
         right_layout.addStretch()
@@ -2438,6 +2505,7 @@ class SliceBrowser(QMainWindow):
         vb = self.plot.getViewBox()
         if vb.sceneBoundingRect().contains(pos):
             mouse_point = vb.mapSceneToView(pos)
+            self.statusbar.setStyleSheet("font-size: 30px;")
             self.statusbar.showMessage(f"x={mouse_point.x():.2f}  y={mouse_point.y():.2f}")
 
     def rescale(self, x, y):
@@ -2660,6 +2728,7 @@ class SliceBrowser(QMainWindow):
         self.plot.addItem(img_item)
         self.xlabel.setPixmap(self.ky_pixmap_x)
         self.ylabel.setPixmap(self.E_pixmap_y)
+        self.statusbar.setStyleSheet("font-size: 30px;")
         self.statusbar.showMessage(f"kx index: {idx} (kx={self.kx[idx]:.3f})")
         self.label_kx.setText(f'kx Slice (E-ky) Index: {idx} (kx={self.kx[idx]:.3f})')
 
@@ -2705,6 +2774,7 @@ class SliceBrowser(QMainWindow):
         self.plot.addItem(img_item)
         self.xlabel.setPixmap(self.kx_pixmap_x)
         self.ylabel.setPixmap(self.E_pixmap_y)
+        self.statusbar.setStyleSheet("font-size: 30px;")
         self.statusbar.showMessage(f"ky index: {idx} (ky={self.ky[idx]:.3f})")
         self.label_ky.setText(f'ky Slice (E-kx) Index: {idx} (ky={self.ky[idx]:.3f})')
 
@@ -2724,8 +2794,9 @@ class SliceBrowser(QMainWindow):
             self.gen_E_kx()
     
     def gen_E_kx(self, event=None):
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         self.__md(axis="E_kx")
         v = self.ky[self.slider_ky.value()]
@@ -2733,11 +2804,13 @@ class SliceBrowser(QMainWindow):
         self.file = os.path.join(self.dir, f"{self.name}.h5")
         self.gen_h5(axis='kx')
         print(f"Save to {self.file}")
+        self.statusbar.setStyleSheet("font-size: 15px;")
         self.statusbar.showMessage(f"Exported to {self.file}")
 
     def gen_E_ky(self, event=None):
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         self.__md(axis="E_ky")
         v = self.kx[self.slider_kx.value()]
@@ -2745,6 +2818,7 @@ class SliceBrowser(QMainWindow):
         self.file = os.path.join(self.dir, f"{self.name}.h5")
         self.gen_h5(axis='ky')
         print(f"Save to {self.file}")
+        self.statusbar.setStyleSheet("font-size: 15px;")
         self.statusbar.showMessage(f"Exported to {self.file}")
     
     def gen_h5(self, axis='kx'):
@@ -2833,8 +2907,9 @@ class SliceBrowser(QMainWindow):
             self.path_angle -= 360
     
     def __md(self, axis="E_kx"):
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         self.dirname = os.path.basename(self.path).removesuffix(".zarr")
         self.__path_angle()
@@ -2961,6 +3036,7 @@ class SliceBrowser(QMainWindow):
         self.xlabel.setPixmap(self.kx_pixmap_x)
         self.ylabel.setPixmap(self.ky_pixmap_y)
         idx = self.slider_E.value()
+        self.statusbar.setStyleSheet("font-size: 30px;")
         self.statusbar.showMessage(f"E index: {idx} (E={self.E[idx]:.3f}), angle={self.angle:.1f}")
         self.label_E.setText(f'E Slice (ky-kx) Index: {idx} (E={self.E[idx]:.3f})')
 
@@ -3128,6 +3204,10 @@ if __name__ == "__main__":
     f.close()
     def j():
         temp=os.sep+"DataViewer_temp.py"
+        hwnd = find_window()
+        if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
+            windll.user32.SetForegroundWindow(hwnd)
         os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{cdir+temp}"')
         os.system(f'del "{cdir+temp}"')
     threading.Thread(target=j,daemon=True).start()
@@ -3141,8 +3221,9 @@ class DataViewer(tk.Toplevel):
             return
         print(f"Loading Zarr Data Cube from {path}")
         print('Please wait...')
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         t=time.time()
         try:
@@ -3515,8 +3596,9 @@ class DataViewer(tk.Toplevel):
             self.ecanvas.draw()
         
     def gen_E_kx(self, event=None):
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         self.__md(axis="E_kx")
         v = self.ky[int(self.idx.get())]
@@ -3526,8 +3608,9 @@ class DataViewer(tk.Toplevel):
         print(f"Save to {self.file}")
 
     def gen_E_ky(self, event=None):
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         self.__md(axis="E_ky")
         v = self.kx[int(self.idx.get())]
@@ -3634,8 +3717,9 @@ class DataViewer(tk.Toplevel):
                 f.create_dataset("Spectrum", data=np.array(self.data[:, li:hi+1, int(self.idx.get())]))
     
     def __md(self, axis="E_kx"):
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         self.dirname = os.path.basename(self.path).removesuffix(".zarr")
         self.dir = os.path.join(self.path, f"Ang_{self.angle:.1f}_bin_{max(1, self.bin_e.get())}_{max(1, self.bin_kx.get())}_{max(1, self.bin_ky.get())}", axis)
@@ -6103,7 +6187,7 @@ class loadfiles():
     
     Parameters
     ----------
-        files (list) : List of file paths to be loaded. Can include h5, json, txt, and npz files.
+        files (list, tuple or string) : File paths to be loaded. It can include h5, json, txt, and npz files.
     
     Attributes
     ----------
@@ -6115,7 +6199,9 @@ class loadfiles():
         f_npz (list): Boolean list indicating if the corresponding file is a npz file
         n (list): Indices of files that are npz or VolumeSlicer h5 files.
     """
-    def __init__(self, files):
+    def __init__(self, files: list[str] | tuple[str, ...] | str):
+        if isinstance(files, str):
+            files = [files] # Convert string to list ensuring compatibility
         self.f_npz = [False for i in files]
         self.n = []
         for i, v in enumerate(files):
@@ -6224,18 +6310,21 @@ class loadfiles():
             if f:   # r1 and r2 exist
                 __sort_r1_r2()
                 self.sort = 'r1r2'
-                print('Sort by r1 and r2\n')
+                if __name__ == '__main__':
+                    print('Sort by r1 and r2\n')
             elif len(self.oname[0].split(self.r1_splitter[0]))>1:   # only r1 exist
                 __sort_r1()
                 self.sort = 'r1'
-                print('Sort by r1\n') 
+                if __name__ == '__main__':
+                    print('Sort by r1\n') 
             else:   # no r1 and r2
                 if self.r1s[0] == 'X_':
                     self.r1s, self.r2s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1'], ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
                     self.path = self.opath
                     self.name = self.check_repeat(self.oname)
                     self.sort = 'no'
-                    print('No Sort\n')
+                    if __name__ == '__main__':
+                        print('No Sort\n')
                 else:
                     self.r1s, self.r2s = ['X_', 'X ', 'X', 'x_', 'x ', 'x'], ['Z_', 'Z ', 'Z', 'z_', 'z ', 'z']
                     self.__set_r1_r2()
@@ -6244,7 +6333,8 @@ class loadfiles():
             self.path = self.opath
             self.name = self.check_repeat(self.oname)
             self.sort = 'no'
-            print('No Sort (Exception)\n')
+            if __name__ == '__main__':
+                print('No Sort (Exception)\n')
         
     def check_repeat(self, name):
         fl = False
@@ -7443,8 +7533,9 @@ class VolumeSlicer(tk.Frame):
         print('\033[33mUsing \033[36m%d \033[33mcores\033[0m'%self.pool_size)
     
     def cut_plot(self):
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         self.stop_event = threading.Event()
         t1 = threading.Thread(target=self.listen_for_stop_command, daemon=True)
@@ -8199,8 +8290,9 @@ class CEC(loadfiles):
             print(f'\033[32mky: \033[36m{self.info_cut_xy_y}\033[0m')
             print(f'\033[32mkx bin: \033[36m{self.info_cut_xy_dx}\033[0m')
             print(f'\033[32mky bin: \033[36m{self.info_cut_xy_dy}\033[0m')
-        hwnd = windll.user32.FindWindowW(None, "C:\\Windows\\system32\\cmd.exe")
+        hwnd = find_window()
         if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
     
     def __set_data(self, odata=[], density=800, *args):
@@ -8600,7 +8692,7 @@ class add_lb():
                 if str(v)+' ' in ltex:
                     self.name[i] = selected_item.replace('\n', '')
         
-def pr_load(data):
+def pr_load(data: xr.DataArray):
     global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
     dvalue = [data.attrs[i] for i in data.attrs.keys()]
     dpath = dvalue[14]
@@ -17157,6 +17249,7 @@ if __name__ == '__main__':
     # w 1920 1374 (96 dpi)
     # h 1080 748 (96 dpi)
     g = tk.Tk()
+    # g = ttk.Window(themename='darkly')
     odpi=g.winfo_fpixels('1i')
     # print('odpi:',odpi)
     # prfactor = 1 if ScaleFactor <= 150 else 1.03
@@ -17176,6 +17269,18 @@ if __name__ == '__main__':
     plt.rcParams['lines.linewidth'] = plt.rcParams['lines.linewidth'] * scale
     plt.rcParams['lines.markersize'] = plt.rcParams['lines.markersize'] * scale
     plt.rcParams['figure.figsize'] = (plt.rcParams['figure.figsize'][0] * scale, plt.rcParams['figure.figsize'][1] * scale)
+    # plt.rcParams['figure.facecolor'] = '#222222'
+    # plt.rcParams['axes.facecolor'] = '#333'
+    # plt.rcParams['axes.titlecolor'] = 'white'
+    # plt.rcParams['axes.edgecolor'] = 'white'
+    # plt.rcParams['axes.labelcolor'] = 'white'
+    # plt.rcParams['axes.titlecolor'] = 'white'
+    # plt.rcParams['xtick.color'] = 'white'
+    # plt.rcParams['ytick.color'] = 'white'
+    # plt.rcParams['lines.color'] = 'white'
+    # plt.rcParams['lines.markeredgecolor'] = 'white'
+    # plt.rcParams['lines.markerfacecolor'] = 'white'
+    # plt.rcParams['scatter.edgecolors'] = 'white'
     # print('scale:', scale)
         
     # 設定預設字體
@@ -17213,7 +17318,7 @@ if __name__ == '__main__':
     filemenu.add_cascade(label="Export Data", menu=filemenu2)
     filemenu.add_command(label="Exit", command=g.quit)
     
-    filemenu.entryconfig("Load Raw Data", state='disabled')
+    # filemenu.entryconfig("Load Raw Data", state='disabled')
     
     # 建立「編輯」選單
     plotmenu = tk.Menu(menubar, tearoff=0, bg="white")
