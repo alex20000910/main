@@ -371,9 +371,10 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
     data = xr.DataArray(
         data=data,
         coords={
-            "Kinetic Energy (eV)": e,
-            "Angle (deg)": a
+            'eV': e,
+            'phi': a
         },
+        name='Spectrum',
         attrs={
             'Name': name,
             'Acquisition': aq,
@@ -424,9 +425,10 @@ def load_txt_sk(path_to_file: str) -> xr.DataArray:    #for sklearn txt files
     data = xr.DataArray(
         data=data,
         coords={
-            "Kinetic Energy (eV)": e,
-            "Angle (deg)": a
+            'eV': e,
+            'phi': a
         },
+        name='Spectrum',
         attrs={
             'Name': name,
             'Acquisition': aq,
@@ -497,9 +499,10 @@ def load_json(path_to_file: str) -> xr.DataArray:
     data = xr.DataArray(
         data=data,
         coords={
-            "Kinetic Energy (eV)": e,
-            "Angle (deg)": a
+            'eV': e,
+            'phi': a
         },
+        name='Spectrum',
         attrs={
             'Name': name,
             'Acquisition': aq,
@@ -707,18 +710,13 @@ def load_h5(path_to_file: str) -> xr.DataArray:
         Dwell = Dwell.removesuffix(' s')
         PassEnergy = PassEnergy.removesuffix(' eV')
         data[0:, 0:] = d.T
-    if (aq=='Scan' or aq=='Fixed'):
-        x_name = 'Angle'
-        x_unit = 'deg'
-    else:
-        x_name = 'k'
-        x_unit = '2π/Å'
     data = xr.DataArray(
         data=data,
         coords={
-            "Kinetic Energy (eV)": e,
-            f"{x_name} ({x_unit})": a
+            'eV': e,
+            'phi': a
         },
+        name='Spectrum',
         attrs={
             'Name': name,
             'Acquisition': aq,
@@ -836,9 +834,10 @@ def load_npz(path_to_file: str) -> xr.DataArray:
     data = xr.DataArray(
         data=data,
         coords={
-            "Kinetic Energy (eV)": ev,
-            "k (2π/Å)": k
+            'eV': ev,
+            'phi': k
         },
+        name='Spectrum',
         attrs={
             'Name': Name,
             'Acquisition': 'VolumeSlicer',
@@ -1248,8 +1247,8 @@ data = load_npz(dpath)
 '''
     origin_temp_var += tload
     origin_temp_var += f'''
-dvalue = [data.attrs[i] for i in data.attrs.keys()]
-dkey = [i for i in data.attrs.keys()]
+dvalue = list(data.attrs.values())
+dkey = list(data.attrs.keys())
 ev, phi = data.indexes.values()
 ev, phi = np.float64(ev), np.float64(phi)
 
@@ -1299,8 +1298,8 @@ def new():
     global le_mode
     op.new()
     op.set_show(True)
-    dvalue = [data.attrs[i] for i in data.attrs.keys()]
-    dkey = [i for i in data.attrs.keys()]
+    dvalue = list(data.attrs.values())
+    dkey = list(data.attrs.keys())
 
     if emf=='KE':
         le_mode='Kinetic Energy'
@@ -4183,7 +4182,7 @@ class spectrogram:
         """
         self.data = data
         self.tp_cf = True
-        dvalue = [self.data.attrs[i] for i in self.data.attrs.keys()]
+        dvalue = list(self.data.attrs.values())
         self.dvalue = dvalue
         st=''
         lst=[]
@@ -8694,7 +8693,7 @@ class add_lb():
         
 def pr_load(data: xr.DataArray):
     global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
-    dvalue = [data.attrs[i] for i in data.attrs.keys()]
+    dvalue = list(data.attrs.values())
     dpath = dvalue[14]
     st=''
     lst=[]
@@ -17505,7 +17504,7 @@ if __name__ == '__main__':
                     print(_,':', data.attrs[_])
                 else:
                     print(_,':', data.attrs[_].replace('\n','\n              '))
-            dvalue = [data.attrs[i] for i in data.attrs.keys()]
+            dvalue = list(data.attrs.values())
             lensmode = dvalue[8]
             rdd = path  # old version data path
             dpath = path    # new version data path
