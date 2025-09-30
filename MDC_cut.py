@@ -7920,7 +7920,15 @@ class VolumeSlicer(tk.Frame):
             self.xmin, self.xmax = self.phi_offset-r, self.phi_offset+r
             self.ymin, self.ymax = self.r1_offset-r, self.r1_offset+r
         elif self.type == 'reciprocal':
-            r1_offset, phi_offset = self.cal_r1_phi_offset()
+            if self.z is None: # for 1 cube
+                r1_offset, phi_offset = self.cal_r1_phi_offset()
+            elif self.z is not None: # for multiple cubes
+                tr11o, tphi1o = 0, 0
+                for r2 in self.z:
+                    r1_offset, phi_offset = self.cal_r1_phi_offset(r2)
+                    if abs(r1_offset) > abs(tr11o):
+                        tr11o, tphi1o = r1_offset, phi_offset
+                r1_offset, phi_offset = tr11o, tphi1o
             r1 = self.y - r1_offset
             phi = self.x - phi_offset
             tr1 = np.array([np.min(r1), np.max(r1), np.max(r1), np.min(r1)])
