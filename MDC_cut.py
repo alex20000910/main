@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.4.2"
-__release_date__ = "2025-09-30"
+__version__ = "7.5"
+__release_date__ = "2025-10-01"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6
@@ -1417,7 +1417,7 @@ def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)
     try:
         if title!='E-Phi (Raw Data)':
             if not npzf:
-                x = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
+                x = np.sqrt(2*m*tev*1.602176634*10**-19)*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
             xlabel='k'
         else:   # title == E-Phi (Raw Data)
             if npzf:
@@ -5811,8 +5811,8 @@ def o_cal(*e):
     if '' == cale.get():
         cale.set('0')
         caleen.select_range(0, 1)
-    ans = np.arcsin(np.float64(calk.get())/(2*m*np.float64(cale.get())
-                    * 1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    ans = np.arcsin(np.float64(calk.get())/np.sqrt(2*m*np.float64(cale.get())
+                    * 1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
     caldeg.config(text='Deg = '+'%.5f' % ans)
 
 def cal(*e):
@@ -7178,7 +7178,15 @@ class VolumeSlicer(tk.Frame):
         Input: self.x, self.y, self.r1_offset, self.phi_offset, self.e_photon
         Return: self.xmin, self.xmax, self.ymin, self.ymax
         '''
-        r1_offset, phi_offset = self.cal_r1_phi_offset()
+        if self.z is None: # for 1 cube
+            r1_offset, phi_offset = self.cal_r1_phi_offset()
+        elif self.z is not None: # for multiple cubes
+            tr11o, tphi1o = 0, 0
+            for r2 in self.z:
+                r1_offset, phi_offset = self.cal_r1_phi_offset(r2)
+                if abs(r1_offset) > abs(tr11o):
+                    tr11o, tphi1o = r1_offset, phi_offset
+            r1_offset, phi_offset = tr11o, tphi1o
         r1 = self.y - r1_offset
         phi = self.x - phi_offset
         tr1 = np.array([np.min(r1), np.max(r1), np.max(r1), np.min(r1)])
@@ -7219,10 +7227,11 @@ class VolumeSlicer(tk.Frame):
         kx_grid, ky_grid = np.meshgrid(
         np.linspace(kxlim[0], kxlim[1], int(density/180*(xlim[1]-xlim[0]))*4),
         np.linspace(kylim[0], kylim[1], int(density/180*(xlim[1]-xlim[0]))*4))
-        Phi_target = np.arcsin(np.clip(ky_grid / (np.sqrt(2*self.m*self.e*ev)/self.hbar*1e-10), -1, 1)) * 180 / np.pi
+        k = np.sqrt(2*self.m*self.e*ev)/self.hbar*1e-10
+        Phi_target = np.arcsin(np.clip(ky_grid.astype(np.float32) / k, -1, 1)) * 180 / np.pi
         cos_phi = np.cos(np.deg2rad(Phi_target))
         cos_phi[cos_phi == 0] = 1e-8
-        R1_target = np.arcsin(np.clip(kx_grid / (np.sqrt(2*self.m*self.e*ev)/self.hbar*1e-10 * cos_phi), -1, 1)) * 180 / np.pi
+        R1_target = np.arcsin(np.clip(kx_grid.astype(np.float32) / (k * cos_phi), -1, 1)) * 180 / np.pi
         map_x = (R1_target - xlim[0]) / (xlim[1] - xlim[0]) * (data.shape[0] - 1)
         map_y = (Phi_target - ylim[0]) / (ylim[1] - ylim[0]) * (data.shape[1] - 1)
         valid_mask = (
@@ -7232,8 +7241,8 @@ class VolumeSlicer(tk.Frame):
         )
         map_x[~np.isfinite(map_x)] = 0
         map_y[~np.isfinite(map_y)] = 0
-        map_x = np.clip(map_x, 0, data.shape[0] - 1).astype(np.float32)
-        map_y = np.clip(map_y, 0, data.shape[1] - 1).astype(np.float32)
+        map_x = np.clip(map_x, 0, data.shape[0] - 1)
+        map_y = np.clip(map_y, 0, data.shape[1] - 1)
         data = cv2.remap(data.T.astype(np.float32), map_x, map_y, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
         data[~valid_mask] = 0
         data = cv2.resize(data, (int(density/(self.xmax-self.xmin)*(kxlim[1]-kxlim[0])), int(density/(self.ymax-self.ymin)*(kylim[1]-kylim[0]))), interpolation=cv2.INTER_CUBIC)
@@ -7544,6 +7553,7 @@ class VolumeSlicer(tk.Frame):
         self.stop_event = threading.Event()
         t1 = threading.Thread(target=self.listen_for_stop_command, daemon=True)
         t1.start()
+        self.set_xy_lim()
         self.cdensity = int((self.xmax-self.xmin)//2e-3)
         print('\nSampling Density: \033[31m500 per 2pi/Angstrom')
         print('\033[0mProcessing \033[32m%d x %d x %d \033[0msize data cube'%(self.cdensity, self.cdensity, len(self.ev)))
@@ -7916,7 +7926,7 @@ class VolumeSlicer(tk.Frame):
                 self.ymin = self.r1_offset-(self.ymax-self.r1_offset)
             elif self.ymax+self.ymin < 2*self.r1_offset:
                 self.ymax = self.r1_offset-(self.ymin-self.r1_offset)
-            r = (((self.xmax-self.xmin)/2)**2+((self.ymax-self.ymin)/2)**2)**0.5
+            r = np.sqrt(((self.xmax-self.xmin)/2)**2+((self.ymax-self.ymin)/2)**2)
             self.xmin, self.xmax = self.phi_offset-r, self.phi_offset+r
             self.ymin, self.ymax = self.r1_offset-r, self.r1_offset+r
         elif self.type == 'reciprocal':
@@ -8039,11 +8049,12 @@ class VolumeSlicer(tk.Frame):
         '''
         rotate the image with the given angle under the offset
         '''
-        angle = np.deg2rad(angle)
+        angle = angle / 180 * np.pi
+        c, s = np.cos(angle), np.sin(angle)
         x = x - r1_offset   # ndimage.shift in the process
         y = y - phi_offset
-        x_rot = x * np.cos(angle) - y * np.sin(angle)   # ndimage.rotate in the process
-        y_rot = x * np.sin(angle) + y * np.cos(angle)
+        x_rot = x * c - y * s   # ndimage.rotate in the process
+        y_rot = x * s + y * c
         return x_rot, y_rot
 
 
@@ -12122,7 +12133,7 @@ def fmimse():
     fev = np.float64(fev)
     rpos = np.float64(pos)
     
-    ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    ophi = np.arcsin(rpos/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
     pos = (2*m*fev*1.602176634*10**-19)**0.5 * np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
     
     rpos = res(fev, rpos)
@@ -13963,24 +13974,24 @@ def o_reload(*e):
         k_offset.set('0')
         koffset.select_range(0, 1)
     try:
-        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+        ophi = np.arcsin(rpos/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
     except NameError:
         return
     except TypeError:
         return
-    pos = (2*m*fev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-    ophimin = np.arcsin((rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-    ophimax = np.arcsin((rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-    kmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-    kmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-    # okmphi = np.arcsin(kmin/(2*m*fev*1.602176634*10**-19)**0.5 /
+    pos = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+    ophimin = np.arcsin((rpos-fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+    ophimax = np.arcsin((rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+    kmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin((np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
+    kmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin((np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
+    # okmphi = np.arcsin(kmin/np.sqrt(2*m*fev*1.602176634*10**-19) /
     #                    10**-10*(h/2/np.pi))*180/np.pi
-    # kmin = (2*m*fev*1.602176634*10**-19)**0.5 * \
+    # kmin = np.sqrt(2*m*fev*1.602176634*10**-19) * \
     #     np.sin((np.float64(k_offset.get())+okmphi) /
     #            180*np.pi)*10**-10/(h/2/np.pi)
-    # okMphi = np.arcsin(kmax/(2*m*fev*1.602176634*10**-19)**0.5 /
+    # okMphi = np.arcsin(kmax/np.sqrt(2*m*fev*1.602176634*10**-19) /
     #                    10**-10*(h/2/np.pi))*180/np.pi
-    # kmax = (2*m*fev*1.602176634*10**-19)**0.5 * \
+    # kmax = np.sqrt(2*m*fev*1.602176634*10**-19) * \
     #     np.sin((np.float64(k_offset.get())+okMphi) /
     #            180*np.pi)*10**-10/(h/2/np.pi)
     os.chdir(cdir)
@@ -15066,12 +15077,12 @@ def o_plot3(*e):
                         tb0 = bo.scatter(pos, vfe-fev, marker='.', s=scale*scale*0.3, c='black')
                 if mf == 1:
                     ophimin = np.arcsin(
-                        (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                        (rpos-fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
                     ophimax = np.arcsin(
-                        (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                    posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
+                        (rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                    posmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                    posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
+                    posmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                     if emf=='KE':
                         tb0_ = bo.scatter([posmin, posmax], [
@@ -16645,12 +16656,12 @@ def press(event):
                 if mf == 1:
                     tb0_.remove()
                     ophimin = np.arcsin(
-                        (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                        (rpos-fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
                     ophimax = np.arcsin(
-                        (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                    posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
+                        (rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                    posmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
                         (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                    posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
+                    posmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
                         (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                     if emf=='KE':
                         tb0_ = bo.scatter([posmin, posmax], [
@@ -16748,12 +16759,12 @@ def release(event):
                                     pos, vfe-fev, marker='.', s=scale*scale*30, c='black')
                         if mf == 1:
                             ophimin = np.arcsin(
-                                (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                                (rpos-fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
                             ophimax = np.arcsin(
-                                (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                            posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
+                                (rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                            posmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
                                 (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                            posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
+                            posmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
                                 (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                             if emf=='KE':
                                 tb0_ = bo.scatter([posmin, posmax], [
@@ -16802,12 +16813,12 @@ def release(event):
                     if mf == 1:
                         tb0_.remove()
                         ophimin = np.arcsin(
-                            (rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+                            (rpos-fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
                         ophimax = np.arcsin(
-                            (rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
-                        posmin = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
+                            (rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                        posmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
                             (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                        posmax = (2*m*fev*1.602176634*10**-19)**0.5*np.sin(
+                        posmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
                             (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
                         if emf=='KE':
                             tb0_ = bo.scatter([posmin, posmax], [
