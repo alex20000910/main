@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.4.1"
-__release_date__ = "2025-09-16"
+__version__ = "7.4.2"
+__release_date__ = "2025-09-30"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6
@@ -688,7 +688,7 @@ def load_h5(path_to_file: str) -> xr.DataArray:
             if __name__ == '__main__':
                 if f_npz==0:
                     f_npz+=1
-                    hwnd = find_window()
+                    # hwnd = find_window()
                     if hwnd:
                         windll.user32.ShowWindow(hwnd, 9)
                         windll.user32.SetForegroundWindow(hwnd)
@@ -812,7 +812,7 @@ def load_npz(path_to_file: str) -> xr.DataArray:
         if __name__ == '__main__':
             if f_npz==0:
                 f_npz+=1
-                hwnd = find_window()
+                # hwnd = find_window()
                 if hwnd:
                     windll.user32.ShowWindow(hwnd, 9)
                     windll.user32.SetForegroundWindow(hwnd)
@@ -1888,7 +1888,7 @@ def bin_data(data, axis, bin_size):
     return data.mean(axis=axis + 1)
 
 def DataViewer_PyQt5(*e):
-    code = r'''import sys
+    code = f'''import sys
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QSlider, QLabel, QStatusBar,
@@ -1903,7 +1903,9 @@ import cv2, os, inspect
 import h5py, time, zarr
 from ctypes import windll
 import gc, multiprocessing, shutil
-
+hwnd = {hwnd}
+'''
+    code+=r'''
 def find_window():
     # Windows系統中 可能的終端機視窗名稱
     hwnd = windll.user32.FindWindowW(None, "命令提示字元")
@@ -1977,7 +1979,7 @@ class SliceBrowser(QMainWindow):
         pbar.increaseProgress('Loading Zarr Data Cube')
         print(f"Loading Zarr Data Cube from {path}")
         print('Please wait...')
-        hwnd = find_window()
+        # hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -2793,7 +2795,7 @@ class SliceBrowser(QMainWindow):
             self.gen_E_kx()
     
     def gen_E_kx(self, event=None):
-        hwnd = find_window()
+        # hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -2807,7 +2809,7 @@ class SliceBrowser(QMainWindow):
         self.statusbar.showMessage(f"Exported to {self.file}")
 
     def gen_E_ky(self, event=None):
-        hwnd = find_window()
+        # hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -2906,7 +2908,7 @@ class SliceBrowser(QMainWindow):
             self.path_angle -= 360
     
     def __md(self, axis="E_kx"):
-        hwnd = find_window()
+        # hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -3203,7 +3205,6 @@ if __name__ == "__main__":
     f.close()
     def j():
         temp=os.sep+"DataViewer_temp.py"
-        hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -3216,11 +3217,13 @@ class DataViewer(tk.Toplevel):
     def __init__(self, master=None, path=""):
         if master is None:
             master = tk.Tk()
+            global hwnd
+            hwnd = None
         if len(path) == 0:
             return
         print(f"Loading Zarr Data Cube from {path}")
         print('Please wait...')
-        hwnd = find_window()
+        # hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -3595,7 +3598,7 @@ class DataViewer(tk.Toplevel):
             self.ecanvas.draw()
         
     def gen_E_kx(self, event=None):
-        hwnd = find_window()
+        # hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -3607,7 +3610,7 @@ class DataViewer(tk.Toplevel):
         print(f"Save to {self.file}")
 
     def gen_E_ky(self, event=None):
-        hwnd = find_window()
+        # hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -3716,7 +3719,7 @@ class DataViewer(tk.Toplevel):
                 f.create_dataset("Spectrum", data=np.array(self.data[:, li:hi+1, int(self.idx.get())]))
     
     def __md(self, axis="E_kx"):
-        hwnd = find_window()
+        # hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -6870,6 +6873,9 @@ class VolumeSlicer(tk.Frame):
         self.g = g
         
         if x is not None and y is not None:
+            if __name__ != '__main__':
+                global hwnd
+                hwnd = None
             self.ox = np.float64(x)
             self.y = np.float64(y)
             if z is not None:
@@ -7532,7 +7538,6 @@ class VolumeSlicer(tk.Frame):
         print('\033[33mUsing \033[36m%d \033[33mcores\033[0m'%self.pool_size)
     
     def cut_plot(self):
-        hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -8055,7 +8060,8 @@ class VolumeSlicer(tk.Frame):
                 r1 = self.y[:, None]
                 phi = np.linspace(min(self.x), max(self.x), int(max(self.x)-min(self.x)))[None, :]
                 r1, phi = np.broadcast_arrays(r1, phi)
-                r1, phi = self.rot(r1, phi, self.r1_offset, self.phi_offset, self.angle)
+                r1_offset, phi_offset = self.cal_r1_phi_offset()
+                r1, phi = self.rot(r1, phi, r1_offset, phi_offset, self.angle)
                 r1, phi, r1_, phi_ = mesh(r1, phi)
                 self.reg_l1[0][0].set_data(r1, phi)
                 self.reg_l2[0][0].set_data(r1_, phi_)
@@ -8077,7 +8083,8 @@ class VolumeSlicer(tk.Frame):
                         r1 = np.linspace(self.y[ind]-0.25, self.y[ind]+0.25, 2)[:, None]
                     phi = np.linspace(min(self.x), max(self.x), int(max(self.x)-min(self.x)))[None, :]
                     r1, phi = np.broadcast_arrays(r1, phi)
-                    r1, phi = self.rot(r1, phi, self.r1_offset, self.phi_offset, self.angle-(z-r2[0]))
+                    r1_offset, phi_offset = self.cal_r1_phi_offset(z)
+                    r1, phi = self.rot(r1, phi, r1_offset, phi_offset, self.angle-(z-r2[0]))
                     r1, phi, r1_, phi_ = mesh(r1, phi)
                     self.reg_l1[i][0].set_data(r1, phi)
                     self.reg_l2[i][0].set_data(r1_, phi_)
@@ -8210,6 +8217,9 @@ class CEC(loadfiles):
         self.frame1 = tk.Frame(self.tlg, bg='white')
         self.frame1.grid(row=0, column=1)
         self.__check_re()
+        if __name__ != '__main__':
+            global hwnd
+            hwnd = None
     
     def on_closing(self):
         try:
@@ -8289,7 +8299,6 @@ class CEC(loadfiles):
             print(f'\033[32mky: \033[36m{self.info_cut_xy_y}\033[0m')
             print(f'\033[32mkx bin: \033[36m{self.info_cut_xy_dx}\033[0m')
             print(f'\033[32mky bin: \033[36m{self.info_cut_xy_dy}\033[0m')
-        hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -13945,7 +13954,12 @@ def o_reload(*e):
     if '' == k_offset.get():
         k_offset.set('0')
         koffset.select_range(0, 1)
-    ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    try:
+        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
+    except NameError:
+        return
+    except TypeError:
+        return
     pos = (2*m*fev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
     ophimin = np.arcsin((rpos-fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
     ophimax = np.arcsin((rpos+fwhm/2)/(2*m*fev*1.602176634*10**-19)**0.5/10**-10*(h/2/np.pi))*180/np.pi
@@ -15480,6 +15494,13 @@ def exp(*e):
     h2 = []
     f = []
     f0 = []
+    try:
+        if pflag:
+            pass
+    except NameError:
+        print('Choose a plot type first')
+        st.put('Choose a plot type first')
+        return
     if pflag == 1:
         if 'MDC Curves' not in value.get():
             mz = data.to_numpy()
@@ -17235,7 +17256,8 @@ if __name__ == '__main__':
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')
-    
+        
+    hwnd = find_window()
     ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
     osf = windll.shcore.GetScaleFactorForDevice(0)
     # print('ScaleFactor:',ScaleFactor)
@@ -17820,7 +17842,7 @@ if __name__ == '__main__':
 
     st = queue.Queue(maxsize=0)
     state = tk.Label(fr_state, text=f"Version: {__version__}", font=(
-        "Arial", size(14), "bold"), bg="white", fg="black")
+        "Arial", size(14), "bold"), bg="white", fg="black", wraplength=250, justify='center')
     state.grid(row=0, column=0)
 
     Icon = [icon1, icon2, icon3, icon4, icon5, icon6, icon7, icon8, icon9, icon10, icon11, icon12, icon13, icon14, icon15, icon16, icon17, icon18, icon19, icon20]
