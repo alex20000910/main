@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.5"
-__release_date__ = "2025-10-01"
+__version__ = "7.6"
+__release_date__ = "2025-10-16"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6
@@ -60,6 +60,7 @@ __release_date__ = "2025-10-01"
 # xz                        5.6.4                h4754444_1
 # zarr                      3.1.1                    pypi_0    pypi
 # zlib                      1.2.13               h8cc25b3_1
+
 import os, inspect
 import json
 import tkinter as tk
@@ -78,6 +79,47 @@ from tkinter import messagebox, colorchooser, ttk
 # import ttkbootstrap as ttk
 from multiprocessing import Pool, shared_memory
 import time, subprocess
+
+VERSION = sys.version.split()[0]
+VERSION = int(''.join(VERSION.split('.')))
+if VERSION < 3130:
+    # Python 3.12.X has better performance for supporting numpy 1.xx.x
+    REQUIREMENTS = ["numpy==1.26.4",
+    "opencv-python==4.10.0.84",
+    "matplotlib==3.10.5",
+    "xarray==2025.7.1",
+    "h5py==3.14.0",
+    "Pillow==11.3.0",
+    "scipy==1.16.1",
+    "lmfit==1.3.4",
+    "tqdm==4.67.1",
+    "pywin32==311",
+    "originpro==1.1.13",
+    "py-cpuinfo==9.0.0",
+    "psutil==7.0.0",
+    "zarr==3.1.1",
+    "PyQt5==5.15.11",
+    "pyqtgraph==0.13.7"
+    ]
+else:
+    REQUIREMENTS = ["numpy==2.2.6",
+    "opencv-python==4.12.0.88",
+    "matplotlib==3.10.5",
+    "xarray==2025.7.1",
+    "h5py==3.14.0",
+    "Pillow==11.3.0",
+    "scipy==1.16.1",
+    "lmfit==1.3.4",
+    "tqdm==4.67.1",
+    "pywin32==311",
+    "originpro==1.1.13",
+    "py-cpuinfo==9.0.0",
+    "psutil==7.0.0",
+    "zarr==3.1.1",
+    "PyQt5==5.15.11",
+    "pyqtgraph==0.13.7"
+    ]
+
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 app_name = os.path.basename(inspect.stack()[0].filename).removesuffix('.py')
 if os.name == 'nt':  # only execute on Windows OS
@@ -165,53 +207,36 @@ def restart():
             os.system('python3 -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
         except:
             os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
-def install(s: str):
-    print('\n\n"'+s+'" Module Not Found')
-    a = input('pip install '+s+' ???\nProceed (Y/n)? ')
+
+def install(s: str = ''):
+    print('Some Modules Not Found')
+    a = input('pip install all the missing modules ???\nProceed (Y/n)? ')
     if a.lower() == 'y':
         try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", s])
+            for i in REQUIREMENTS:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", i])
         except subprocess.CalledProcessError:
-            subprocess.check_call([sys.executable, "-m", "pip3", "install", s])
+            for i in REQUIREMENTS:
+                subprocess.check_call([sys.executable, "-m", "pip3", "install", i])
     else:
         quit()
+
 try:
     import matplotlib
-except ModuleNotFoundError:
-    install('matplotlib')
-    import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.widgets import SpanSelector
-from matplotlib.widgets import RectangleSelector
-import matplotlib as mpl
-from matplotlib.widgets import Cursor
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
-try:
+    matplotlib.use('TkAgg')
+    from matplotlib.colors import LinearSegmentedColormap
+    from matplotlib.widgets import SpanSelector
+    from matplotlib.widgets import RectangleSelector
+    import matplotlib as mpl
+    from matplotlib.widgets import Cursor
+    from matplotlib.figure import Figure
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+    import matplotlib.pyplot as plt
+    from matplotlib.widgets import Slider
     import numpy as np
-except ModuleNotFoundError:
-    install('numpy')
-    import numpy as np
-try:
     import xarray as xr
-except ModuleNotFoundError:
-    install('xarray')
-    import xarray as xr
-try:
     import h5py
-except ModuleNotFoundError:
-    install('h5py')
-    import h5py
-try:
     from PIL import Image, ImageTk
-except ModuleNotFoundError:
-    install('Pillow')
-    restart()
-    quit()
-try:
     from scipy.optimize import curve_fit
     from scipy.ndimage import gaussian_filter1d
     from scipy.signal import hilbert
@@ -219,68 +244,20 @@ try:
     from scipy.stats import mode
     from scipy.interpolate import griddata
     from scipy import special
-except ModuleNotFoundError:
-    install('scipy')
-    from scipy.optimize import curve_fit
-    from scipy.ndimage import gaussian_filter1d
-    from scipy.signal import hilbert
-    from scipy.signal import savgol_filter
-    from scipy.stats import mode
-    from scipy.interpolate import griddata
-    from scipy import special
-try:
     from lmfit import Parameters, Minimizer, report_fit
-except ModuleNotFoundError:
-    install('lmfit')
-    from lmfit import Parameters, Minimizer, report_fit
-from lmfit.printfuncs import *
-try:
     import tqdm
-except ModuleNotFoundError:
-    install('tqdm')
-    import tqdm
-try:
     import win32clipboard
-except ModuleNotFoundError:
-    install('pywin32')
-    restart()
-    quit()
-try:
     import originpro as op
-except ModuleNotFoundError:
-    install('originpro')
-    import originpro as op
-try:
     import cv2
+    import cpuinfo
+    import psutil
+    import zarr
+    import PyQt5
+    import pyqtgraph
 except ModuleNotFoundError:
-    install('opencv-python')
+    install()
     restart()
     quit()
-try:
-    import cpuinfo
-except ModuleNotFoundError:
-    install('py-cpuinfo')
-    import cpuinfo
-try:
-    import psutil
-except ModuleNotFoundError:
-    install('psutil')
-    import psutil
-try:
-    import zarr
-except ModuleNotFoundError:
-    install('zarr')
-    import zarr
-try:
-    import PyQt5
-except ModuleNotFoundError:
-    install('PyQt5')
-    import PyQt5
-try:
-    import pyqtgraph
-except ModuleNotFoundError:
-    install('pyqtgraph')
-    import pyqtgraph
 
 if __name__ == '__main__':
     g_mem = psutil.virtual_memory().available
@@ -1983,7 +1960,7 @@ class SliceBrowser(QMainWindow):
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
-        t=time.time()
+        t=time.perf_counter()
         try:
             data = zarr.open_array(path)
             xmin,xmax = data[0, 1, -1], data[1, 1, -1]
@@ -2020,7 +1997,7 @@ class SliceBrowser(QMainWindow):
             self.path = path
         pbar.increaseProgress('Loading Zarr Data Cube')
         self.raw_data = data
-        print(f"Elapse time: {time.time()-t:.2f} s")
+        print(f"Elapse time: {time.perf_counter()-t:.2f} s")
         pbar.increaseProgress('Setting QtWidgets')
 
         self.raw_E = E
@@ -3227,7 +3204,7 @@ class DataViewer(tk.Toplevel):
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
-        t=time.time()
+        t=time.perf_counter()
         try:
             data = zarr.open(path, mode='r')
         except Exception as e:
@@ -3246,7 +3223,7 @@ class DataViewer(tk.Toplevel):
         self.title("3D Data Viewer")
         self.path = path
         self.raw_data = data    #Axis: 0: E, 1: ky, 2: kx
-        print(f"Elapse time: {time.time()-t:.2f} s")
+        print(f"Elapse time: {time.perf_counter()-t:.2f} s")
         self.raw_kx = kx
         self.raw_ky = ky
         self.raw_E = E
@@ -6800,7 +6777,7 @@ def set_center(parent, child, w_extend=None, h_extend=None):
     px = parent.winfo_x() + w_parent // 2 - w_child // 2
     py = parent.winfo_y() + h_parent // 2 - h_child // 2
     child.geometry(f'{w_child+w_extend}x{h_child+h_extend}+{px}+{py}')
- 
+
 class wait(tk.Toplevel):
     def __init__(self, master):
         self.g = master
@@ -6825,7 +6802,7 @@ class wait(tk.Toplevel):
         gc.collect()
 
 class VolumeSlicer(tk.Frame):
-    def __init__(self, parent=None, path=None, volume=np.zeros((5,5,5), dtype=np.float64), cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=600, g=None):
+    def __init__(self, parent=None, path=None, volume=np.empty((5,5,5), dtype=np.float32), cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=600, g=None):
         '''
         Args
         ------
@@ -6864,9 +6841,9 @@ class VolumeSlicer(tk.Frame):
         # base dimensions
         
         # temperaly window range set
-        self.m=9.10938356e-31
-        self.hbar=1.0545718e-34
-        self.e=1.60217662e-19
+        self.m = 9.10938356e-31
+        self.hbar = 1.0545718e-34
+        self.e = 1.60217662e-19
         self.type = 'real'   # directly stack  'real', 'reciprocal'
         self.mode = 'normal'
         self.sym = 1
@@ -6876,10 +6853,10 @@ class VolumeSlicer(tk.Frame):
             if __name__ != '__main__':
                 global hwnd
                 hwnd = None
-            self.ox = np.float64(x)
-            self.y = np.float64(y)
+            self.ox = np.float32(x)
+            self.y = np.float32(y)
             if z is not None:
-                self.z = np.float64(z)
+                self.z = np.float32(z)
             self.ev = np.float64(ev)
             self.slim = [0, 493]    # init phi slice range -10~10 degree or -2.5~2.5 mm
             # Create a figure and axis
@@ -7129,8 +7106,8 @@ class VolumeSlicer(tk.Frame):
             r11_offset, phi1_offset = self.rot(self.r11_offset, self.phi1_offset, angle=-(r2-self.z[0]))
         else:
             r11_offset, phi1_offset = self.rot(self.r11_offset, self.phi1_offset)
-        r1_offset = self.r1_offset + r11_offset
-        phi_offset = self.phi_offset + phi1_offset
+        r1_offset = self.r1_offset + r11_offset.astype(np.float32)
+        phi_offset = self.phi_offset + phi1_offset.astype(np.float32)
         return r1_offset, phi_offset
     
     def symmetry(self):
@@ -7225,13 +7202,13 @@ class VolumeSlicer(tk.Frame):
     
     def k_map(self, data, density, xlim, ylim, kxlim, kylim, ev):
         kx_grid, ky_grid = np.meshgrid(
-        np.linspace(kxlim[0], kxlim[1], int(density/180*(xlim[1]-xlim[0]))*4),
-        np.linspace(kylim[0], kylim[1], int(density/180*(xlim[1]-xlim[0]))*4))
-        k = np.sqrt(2*self.m*self.e*ev)/self.hbar*1e-10
-        Phi_target = np.arcsin(np.clip(ky_grid.astype(np.float32) / k, -1, 1)) * 180 / np.pi
+        np.linspace(kxlim[0], kxlim[1], int(density/180*(xlim[1]-xlim[0]))*4, dtype=np.float32),
+        np.linspace(kylim[0], kylim[1], int(density/180*(xlim[1]-xlim[0]))*4, dtype=np.float32))
+        k = np.float32(np.sqrt(2*self.m*self.e*ev)/self.hbar*1e-10)
+        Phi_target = np.arcsin(np.clip(ky_grid / k, -1, 1)) * 180 / np.pi
         cos_phi = np.cos(np.deg2rad(Phi_target))
-        cos_phi[cos_phi == 0] = 1e-8
-        R1_target = np.arcsin(np.clip(kx_grid.astype(np.float32) / (k * cos_phi), -1, 1)) * 180 / np.pi
+        cos_phi[cos_phi == 0] = np.float32(1e-8)
+        R1_target = np.arcsin(np.clip(kx_grid / (k * cos_phi), -1, 1)) * 180 / np.pi
         map_x = (R1_target - xlim[0]) / (xlim[1] - xlim[0]) * (data.shape[0] - 1)
         map_y = (Phi_target - ylim[0]) / (ylim[1] - ylim[0]) * (data.shape[1] - 1)
         valid_mask = (
@@ -7243,7 +7220,7 @@ class VolumeSlicer(tk.Frame):
         map_y[~np.isfinite(map_y)] = 0
         map_x = np.clip(map_x, 0, data.shape[0] - 1)
         map_y = np.clip(map_y, 0, data.shape[1] - 1)
-        data = cv2.remap(data.T.astype(np.float32), map_x, map_y, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+        data = cv2.remap(data.T, map_x, map_y, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
         data[~valid_mask] = 0
         data = cv2.resize(data, (int(density/(self.xmax-self.xmin)*(kxlim[1]-kxlim[0])), int(density/(self.ymax-self.ymin)*(kylim[1]-kylim[0]))), interpolation=cv2.INTER_CUBIC)
         return data
@@ -7880,10 +7857,10 @@ class VolumeSlicer(tk.Frame):
     def interpolate_slice(self, i):
         # self.xmin, self.xmax range should be larger than txlim, tylim in combine, and so as y
         try:
-            self.phi_offset = float(self.entry_phi_offset.get())
-            self.r1_offset = float(self.entry_r1_offset.get())
-            self.phi1_offset = float(self.entry_phi1_offset.get())
-            self.r11_offset = float(self.entry_r11_offset.get())
+            self.phi_offset = np.float32(self.entry_phi_offset.get())
+            self.r1_offset = np.float32(self.entry_r1_offset.get())
+            self.phi1_offset = np.float32(self.entry_phi1_offset.get())
+            self.r11_offset = np.float32(self.entry_r11_offset.get())
         except:pass
         self.x = self.ox[self.slim[0]:self.slim[1]+1]
         self.volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
@@ -7943,8 +7920,8 @@ class VolumeSlicer(tk.Frame):
             phi = self.x - phi_offset
             tr1 = np.array([np.min(r1), np.max(r1), np.max(r1), np.min(r1)])
             tphi = np.array([np.min(phi), np.min(phi), np.max(phi), np.max(phi)])
-            tx = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(tr1/180*np.pi) * np.cos(tphi/180*np.pi)
-            ty = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(tphi/180*np.pi)
+            tx = np.float32(np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(tr1/180*np.pi) * np.cos(tphi/180*np.pi))
+            ty = np.float32(np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(tphi/180*np.pi))
             # tx = np.sqrt(2*self.m*self.e*self.e_photon)/self.hbar*10**-10*np.sin(tr1/180*np.pi) * np.cos(tphi/180*np.pi)
             # ty = np.sqrt(2*self.m*self.e*self.e_photon)/self.hbar*10**-10*np.sin(tphi/180*np.pi)
             r = np.max(np.sqrt(tx**2 + ty**2))
@@ -7966,17 +7943,17 @@ class VolumeSlicer(tk.Frame):
                 if self.type == 'real':
                     tt=0
                     for z in r2:
-                        t1=time.time()
+                        t1=time.perf_counter()
                         ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
                         self.surface = np.nanmean([self.surface, self.combine(data = self.volume[ind, :, i], xlim = [min(self.y[ind]), max(self.y[ind])], ylim = [min(self.x)+z, max(self.x)+z])], axis=0)
                         if self.fl_show:
                             tt+=1
-                            self.wait.text(f'R2 = {z}: {time.time()-t1:.3f}s ({tt}/{len(r2)})')
+                            self.wait.text(f'R2 = {z}: {time.perf_counter()-t1:.3f}s ({tt}/{len(r2)})')
                     self.surface = np.nan_to_num(self.surface)
                 elif self.type == 'reciprocal':
                     tt=0
                     for z in r2:
-                        t1=time.time()
+                        t1=time.perf_counter()
                         ind = np.array(np.argwhere(self.z==z), dtype=np.int64).flatten()
                         # ind = filter(ind, i, r2=z)
                         # if len(ind) != 0:
@@ -7984,7 +7961,7 @@ class VolumeSlicer(tk.Frame):
                         self.surface = np.nanmean([self.surface, self.combine(self.volume[ind, :, i], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self.x)-phi_offset, max(self.x)-phi_offset], r2=z, ev=self.ev[i])], axis=0)
                         if self.fl_show:
                             tt+=1
-                            self.wait.text(f'R2 = {z}: {time.time()-t1:.3f}s ({tt}/{len(r2)})')
+                            self.wait.text(f'R2 = {z}: {time.perf_counter()-t1:.3f}s ({tt}/{len(r2)})')
                     self.surface = np.nan_to_num(self.surface)
             except:
                 self.surface = np.zeros((self.density, self.density), dtype=np.float32)
@@ -8049,7 +8026,7 @@ class VolumeSlicer(tk.Frame):
         '''
         rotate the image with the given angle under the offset
         '''
-        angle = angle / 180 * np.pi
+        angle *= np.pi / 180
         c, s = np.cos(angle), np.sin(angle)
         x = x - r1_offset   # ndimage.shift in the process
         y = y - phi_offset
@@ -8169,7 +8146,7 @@ class VolumeSlicer(tk.Frame):
             y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi[None, :]/180*np.pi)
             txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
             ####### new method start
-            # t=time.time()
+            # t=time.perf_counter()
             data = self.k_map(data, self.density, xlim, ylim, txlim, tylim, ev)
             ####################### new method end
             
@@ -8191,21 +8168,21 @@ class VolumeSlicer(tk.Frame):
             # image_gray = cv2.resize(image_gray[::-1,:], (data.shape[1],data.shape[0]), interpolation=cv2.INTER_CUBIC)
             # data = cv2.resize(image_gray, (int(self.density/(self.xmax-self.xmin)*(txlim[1]-txlim[0])), int(self.density/(self.ymax-self.ymin)*(tylim[1]-tylim[0]))), interpolation=cv2.INTER_CUBIC)
             ########################### original plot end
-            # print('1, resize+draw:', time.time()-t)
-            # t = time.time()
-            # print('2, resize*2:', time.time()-t)
-            # t = time.time()
+            # print('1, resize+draw:', time.perf_counter()-t)
+            # t = time.perf_counter()
+            # print('2, resize*2:', time.perf_counter()-t)
+            # t = time.perf_counter()
             base[0:data.shape[0], 0:data.shape[1]] = data
             # del data, image_gray, image_from_plot
             del data
             data = np.roll(base, (int((tylim[0]-self.ymin)/(self.ymax-self.ymin)*self.density), int((txlim[0]-self.xmin)/(self.xmax-self.xmin)*self.density)), axis=(0, 1))
-            # print('3, shift:', time.time()-t)
+            # print('3, shift:', time.perf_counter()-t)
             # data = data[::-1, :]
             del base
             gc.collect()
-            # t = time.time()
+            # t = time.perf_counter()
             data = rotate(data, r2-self.z[0], data.shape)
-            # print('4, rotate:', time.time()-t)
+            # print('4, rotate:', time.perf_counter()-t)
             if not fr2:
                 self.z = None
         if self.z is not None and fr2==True:  # for multiple cubes need np.nanmean
@@ -8330,7 +8307,7 @@ class CEC(loadfiles):
             for i in self.path:
                 self.size += os.path.getsize(i)
             if self.sort == 'r1':
-                odataframe = np.stack([i.to_numpy().transpose() for i in odata], axis=0)
+                odataframe = np.stack([i.to_numpy().transpose() for i in odata], axis=0, dtype=np.float32)
                 print('Input Data Shape: '+str(odataframe.shape))   # shape: (r1, phi, ev)
                 
                 r1 = self.r1
@@ -8340,7 +8317,7 @@ class CEC(loadfiles):
             elif self.sort == 'r1r2':
                 r1 = self.r1
                 r2 = self.r2
-                odataframe = np.stack([i.to_numpy().transpose() for i in odata], axis=0)
+                odataframe = np.stack([i.to_numpy().transpose() for i in odata], axis=0, dtype=np.float32)
                 print('Input Data Shape: '+str(odataframe.shape))
                 
                 ev, phi = odata[0].indexes.values()
@@ -8841,7 +8818,9 @@ def o_load():
         b_excitation.config(state='disable')
         b_desc.config(state='disable')
         rdd = path
-        
+        st.put('')
+        return
+    
     limg.config(image=img[np.random.randint(len(img))])
     tbasename = os.path.basename(tpath)
     if '.h5' in tbasename:
