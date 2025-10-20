@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.6"
-__release_date__ = "2025-10-16"
+__version__ = "7.7"
+__release_date__ = "2025-10-20"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6
@@ -99,6 +99,7 @@ if VERSION < 3130:
     "psutil==7.0.0",
     "zarr==3.1.1",
     "PyQt5==5.15.11",
+    "tkinterdnd2==0.4.3",
     "pyqtgraph==0.13.7"
     ]
 else:
@@ -117,7 +118,8 @@ else:
     "psutil==7.0.0",
     "zarr==3.1.1",
     "PyQt5==5.15.11",
-    "pyqtgraph==0.13.7"
+    "pyqtgraph==0.13.7",
+    "tkinterdnd2==0.4.3"
     ]
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -254,6 +256,7 @@ try:
     import zarr
     import PyQt5
     import pyqtgraph
+    from tkinterdnd2 import DND_FILES, TkinterDnD
 except ModuleNotFoundError:
     install()
     restart()
@@ -270,6 +273,89 @@ m=9.10938356*10**-31
 mp, ep, mf, ef = 1, 1, 1, 1
 fk = []
 fev = []
+
+def file_walk(path=[], file_type='.h5'):
+    out = []
+    if path != []:
+        if os.path.isdir(path):
+            for dirpath, dirnames, filenames in os.walk(path):
+                for filename in filenames:
+                    if filename.endswith(file_type) or filename.endswith(file_type.upper()):
+                        full_path = os.path.join(dirpath, filename)
+                        out.append(full_path)
+        elif os.path.isfile(path):
+            if path.endswith(file_type) or path.endswith(file_type.upper()):
+                out.append(path)
+    return out
+
+class tkDnD:
+    """
+    A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
+    
+    Attributes:
+        root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
+    """
+    def __init__(self, root):
+        self.root = root
+        root.drop_target_register(DND_FILES)
+        root.dnd_bind('<<Drop>>', self.on_drop)
+        
+    def on_drop(self, event):
+        # files = self.root.tk.splitlist(event.data)    #路徑格式有問題棄用
+        files = event.data.split()
+        if files:
+            files = self.load_raw(files)
+            o_load(drop=True, files=files)
+    
+    def check_h5(self, file):
+        path_h5 = []
+        t_path_h5 = file_walk(path=file, file_type='.h5')
+        for path in t_path_h5:
+            with h5py.File(path, 'r') as f:
+                keys = list(f.keys())
+                if 'Data' in keys and 'Detector' in keys and 'Manipulator' in keys and 'Region' in keys and 'Spectrum' in keys:
+                    path_h5.append(path)
+        return path_h5
+
+    def check_json(self, file):
+        path_json = []
+        t_path_json = file_walk(path=file, file_type='.json')
+        for path in t_path_json:
+            with open(path, 'r') as f:
+                data = json.load(f)
+                keys = list(data.keys())
+                if 'Region' in keys and 'Detector' in keys and 'Data' in keys and 'Manipulator' in keys and 'Spectrum' in keys:
+                    path_json.append(path)
+        return path_json
+    
+    def check_npz(self, file):
+        path_npz = []
+        t_path_npz = file_walk(path=file, file_type='.npz')
+        for path in t_path_npz:
+            f = np.load(path)
+            keys = list(f.keys())
+            if 'cx' in keys and 'cy' in keys and 'cdx' in keys and 'cdy' in keys and 'desc' in keys:
+                path_npz.append(path)
+        return path_npz
+                
+    def load_raw(self, files):
+        out = []
+        if files:
+            for file in files:
+                file = os.path.normpath(file).removeprefix('{').removesuffix('}')   #有機會因模組版本有所差異 控制好固定格式
+                path_h5 = self.check_h5(file=file)
+                path_json = self.check_json(file=file)
+                path_npz = self.check_npz(file=file)
+                
+                for i in [path_h5, path_json, path_npz]:
+                    if len(i) > 0:
+                        out += i
+                        
+            if out != []:
+                return out
+            
+        return ''
+        
 
 def find_window():
     # Windows系統中 可能的終端機視窗名稱
@@ -8764,9 +8850,10 @@ def pr_load(data: xr.DataArray):
 
 fpr = 0
 
-def o_load():
+def o_load(drop=False, files=''):
     global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist, b_tools, f_npz, npzf
-    files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
+    if not drop:
+        files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     if len(files) > 0:
@@ -17267,7 +17354,8 @@ if __name__ == '__main__':
         sc_y = 0
     # w 1920 1374 (96 dpi)
     # h 1080 748 (96 dpi)
-    g = tk.Tk()
+    g = TkinterDnD.Tk()
+    dnd = tkDnD(g)
     # g = ttk.Window(themename='darkly')
     odpi=g.winfo_fpixels('1i')
     # print('odpi:',odpi)
