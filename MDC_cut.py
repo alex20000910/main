@@ -1,10 +1,10 @@
 # MDC cut GUI
-__version__ = "7.7"
-__release_date__ = "2025-10-20"
+__version__ = "7.7.1"
+__release_date__ = "2025-10-21"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
-# bzip2                     1.0.8                h2bbff1b_6
-# ca-certificates           2025.7.15            haa95532_0
+# bzip2                     1.0.8                h2bbff1b_6  
+# ca-certificates           2025.9.9             haa95532_0  
 # colorama                  0.4.6                    pypi_0    pypi
 # contourpy                 1.3.3                    pypi_0    pypi
 # crc32c                    2.7.1                    pypi_0    pypi
@@ -12,43 +12,45 @@ __release_date__ = "2025-10-20"
 # dill                      0.4.0                    pypi_0    pypi
 # donfig                    0.8.1.post1              pypi_0    pypi
 # expat                     2.7.1                h8ddb27b_0
-# fonttools                 4.59.0                   pypi_0    pypi
+# fonttools                 4.60.1                   pypi_0    pypi
 # h5py                      3.14.0                   pypi_0    pypi
 # kiwisolver                1.4.9                    pypi_0    pypi
 # libffi                    3.4.4                hd77b12b_1
 # libmpdec                  4.0.0                h827c3e9_0
+# libzlib                   1.3.1                h02ab6af_0
 # lmfit                     1.3.4                    pypi_0    pypi
 # matplotlib                3.10.5                   pypi_0    pypi
-# numcodecs                 0.16.1                   pypi_0    pypi
+# numcodecs                 0.16.3                   pypi_0    pypi
 # numpy                     2.2.6                    pypi_0    pypi
 # opencv-python             4.12.0.88                pypi_0    pypi
-# openssl                   3.0.17               h35632f6_0
+# openssl                   3.0.18               h543e019_0
 # originext                 1.2.4                    pypi_0    pypi
 # originpro                 1.1.13                   pypi_0    pypi
 # packaging                 25.0                     pypi_0    pypi
-# pandas                    2.3.1                    pypi_0    pypi
+# pandas                    2.3.3                    pypi_0    pypi
 # pillow                    11.3.0                   pypi_0    pypi
-# pip                       25.1               pyhc872135_2
+# pip                       25.2               pyhc872135_0
 # psutil                    7.0.0                    pypi_0    pypi
 # py-cpuinfo                9.0.0                    pypi_0    pypi
-# pyparsing                 3.2.3                    pypi_0    pypi
+# pyparsing                 3.2.5                    pypi_0    pypi
 # pyqt5                     5.15.11                  pypi_0    pypi
 # pyqt5-qt5                 5.15.2                   pypi_0    pypi
-# pyqt5-sip                 12.17.0                  pypi_0    pypi
+# pyqt5-sip                 12.17.1                  pypi_0    pypi
 # pyqtgraph                 0.13.7                   pypi_0    pypi
 # python                    3.13.5          h286a616_100_cp313
 # python-dateutil           2.9.0.post0              pypi_0    pypi
-# python_abi                3.13                    0_cp313
+# python_abi                3.13                    1_cp313
 # pytz                      2025.2                   pypi_0    pypi
 # pywin32                   311                      pypi_0    pypi
-# pyyaml                    6.0.2                    pypi_0    pypi
+# pyyaml                    6.0.3                    pypi_0    pypi
 # scipy                     1.16.1                   pypi_0    pypi
 # setuptools                78.1.1          py313haa95532_0
 # six                       1.17.0                   pypi_0    pypi
 # sqlite                    3.50.2               hda9a48d_1
-# tk                        8.6.14               h5e9d12e_1
+# tk                        8.6.15               hf199647_0
+# tkinterdnd2               0.4.3                    pypi_0    pypi
 # tqdm                      4.67.1                   pypi_0    pypi
-# typing-extensions         4.14.1                   pypi_0    pypi
+# typing-extensions         4.15.0                   pypi_0    pypi
 # tzdata                    2025.2                   pypi_0    pypi
 # ucrt                      10.0.22621.0         haa95532_0
 # uncertainties             3.2.3                    pypi_0    pypi
@@ -59,7 +61,7 @@ __release_date__ = "2025-10-20"
 # xarray                    2025.7.1                 pypi_0    pypi
 # xz                        5.6.4                h4754444_1
 # zarr                      3.1.1                    pypi_0    pypi
-# zlib                      1.2.13               h8cc25b3_1
+# zlib                      1.3.1                h02ab6af_0
 
 import os, inspect
 import json
@@ -273,6 +275,7 @@ m=9.10938356*10**-31
 mp, ep, mf, ef = 1, 1, 1, 1
 fk = []
 fev = []
+lfs = None
 
 def file_walk(path=[], file_type='.h5'):
     out = []
@@ -295,29 +298,54 @@ class tkDnD:
     Attributes:
         root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
     """
-    def __init__(self, root):
-        self.root = root
-        root.drop_target_register(DND_FILES)
-        root.dnd_bind('<<Drop>>', self.on_drop)
+    def __init__(self, root=None):
+        if root is not None:
+            self.root = root
+            root.drop_target_register(DND_FILES)
+            root.dnd_bind('<<Drop>>', self.on_drop)
         
     def on_drop(self, event):
-        # files = self.root.tk.splitlist(event.data)    #路徑格式有問題棄用
-        files = event.data.split()
+        raw_str = event.data.split()
+        if len(raw_str) > 1:
+            files = []
+            flag = False
+            t_str = ''
+            for i in raw_str:
+                if '{' in i:
+                    flag = True
+                    t_str += ' ' + i
+                if '}' in i:
+                    flag = False
+                    t_str += ' ' + i
+                    files.append(t_str.split('{')[1].split('}')[0])
+                    t_str = ''
+                if '{' not in i and '}' not in i:
+                    if flag:
+                        t_str += ' ' + i
+                    else:
+                        files.append(i)
+        else:
+            if raw_str[0].startswith('{') and raw_str[0].endswith('}'):
+                files = [raw_str[0].split('{')[1].split('}')[0]]
+            else:
+                files = raw_str
         if files:
-            files = self.load_raw(files)
-            o_load(drop=True, files=files)
+            # files = self.load_raw(files)
+            load(drop=True, files=files)
     
-    def check_h5(self, file):
+    @staticmethod
+    def check_h5(file):
         path_h5 = []
         t_path_h5 = file_walk(path=file, file_type='.h5')
         for path in t_path_h5:
             with h5py.File(path, 'r') as f:
                 keys = list(f.keys())
-                if 'Data' in keys and 'Detector' in keys and 'Manipulator' in keys and 'Region' in keys and 'Spectrum' in keys:
+                if 'Data' in keys and 'Region' in keys and 'Spectrum' in keys:
                     path_h5.append(path)
         return path_h5
 
-    def check_json(self, file):
+    @staticmethod
+    def check_json(file):
         path_json = []
         t_path_json = file_walk(path=file, file_type='.json')
         for path in t_path_json:
@@ -328,7 +356,8 @@ class tkDnD:
                     path_json.append(path)
         return path_json
     
-    def check_npz(self, file):
+    @staticmethod
+    def check_npz(file):
         path_npz = []
         t_path_npz = file_walk(path=file, file_type='.npz')
         for path in t_path_npz:
@@ -337,17 +366,31 @@ class tkDnD:
             if 'cx' in keys and 'cy' in keys and 'cdx' in keys and 'cdy' in keys and 'desc' in keys:
                 path_npz.append(path)
         return path_npz
-                
-    def load_raw(self, files):
+    
+    @staticmethod
+    def check_txt(file):
+        path_txt = []
+        t_path_txt = file_walk(path=file, file_type='.txt')
+        for path in t_path_txt:
+            try:
+                load_txt(path)
+                path_txt.append(path)
+            except:
+                pass
+        return path_txt
+
+    @staticmethod
+    def load_raw(files):
         out = []
         if files:
             for file in files:
-                file = os.path.normpath(file).removeprefix('{').removesuffix('}')   #有機會因模組版本有所差異 控制好固定格式
-                path_h5 = self.check_h5(file=file)
-                path_json = self.check_json(file=file)
-                path_npz = self.check_npz(file=file)
-                
-                for i in [path_h5, path_json, path_npz]:
+                file = os.path.normpath(file)   #有機會因模組版本有所差異 控制好固定格式
+                path_h5 = tkDnD.check_h5(file=file)
+                path_json = tkDnD.check_json(file=file)
+                path_npz = tkDnD.check_npz(file=file)
+                path_txt = tkDnD.check_txt(file=file)
+
+                for i in [path_h5, path_json, path_npz, path_txt]:
                     if len(i) > 0:
                         out += i
                         
@@ -377,7 +420,6 @@ def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files
     Returns:
         xr.DataArray: The data loaded from the text file as an xarray DataArray.
     """
-    print(path_to_file)
     with open(path_to_file, 'r') as file:
         i = 0
         a = []
@@ -729,8 +771,13 @@ def load_h5(path_to_file: str) -> xr.DataArray:
                     cdy = np.array(f.get('VolumeSlicer').get('cdy'))[0]
                     phi_offset = np.array(f.get('VolumeSlicer').get('phi_offset'))[0]
                     r1_offset = np.array(f.get('VolumeSlicer').get('r1_offset'))[0]
-                    phi1_offset = np.array(f.get('VolumeSlicer').get('phi1_offset'))[0]
-                    r11_offset = np.array(f.get('VolumeSlicer').get('r11_offset'))[0]
+                    try:
+                        phi1_offset = np.array(f.get('VolumeSlicer').get('phi1_offset'))[0]
+                        r11_offset = np.array(f.get('VolumeSlicer').get('r11_offset'))[0]
+                    except:
+                        phi1_offset = 0
+                        r11_offset = 0
+                        print('\033[31mNo sample offset info found in the h5 file, set to zero.\033[0m')
                     slim = np.array(f.get('VolumeSlicer').get('slim'))[0]
                     try:
                         '''
@@ -853,8 +900,13 @@ def load_npz(path_to_file: str) -> xr.DataArray:
                 cdy = f['cdy']
                 phi_offset = f['phi_offset']
                 r1_offset = f['r1_offset']
-                phi1_offset = f['phi1_offset']
-                r11_offset = f['r11_offset']
+                try:
+                    phi1_offset = f['phi1_offset']
+                    r11_offset = f['r11_offset']
+                except:
+                    phi1_offset = 0
+                    r11_offset = 0
+                    print('\033[31mNo sample offset info found in the h5 file, set to zero.\033[0m')
                 slim = f['slim']
                 try:
                     '''
@@ -8853,9 +8905,10 @@ fpr = 0
 def o_load(drop=False, files=''):
     global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist, b_tools, f_npz, npzf
     if not drop:
-        files=fd.askopenfilenames(title="Select Raw Data", filetypes=(
+        files = fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
+    files = tkDnD.load_raw(files)
     if len(files) > 0:
         f_npz = 0   # initial value to determine if CEC when loaded npz
         lfs = loadfiles(files)
@@ -8901,10 +8954,12 @@ def o_load(drop=False, files=''):
             except:
                 k_offset.set('0')
     else:
-        b_name.config(state='disable')
-        b_excitation.config(state='disable')
-        b_desc.config(state='disable')
-        rdd = path
+        if lfs is None:
+            b_name.config(state='disable')
+            b_excitation.config(state='disable')
+            b_desc.config(state='disable')
+        else:
+            rdd = path
         st.put('')
         return
     
@@ -17234,8 +17289,8 @@ def plot3(*e):
         t10.start()
 
 
-def load(*e):
-    t11 = threading.Thread(target=o_load)
+def load(drop=False, files='', *args):
+    t11 = threading.Thread(target=o_load, args=(drop, files))
     t11.daemon = True
     t11.start()
 
@@ -17355,7 +17410,7 @@ if __name__ == '__main__':
     # w 1920 1374 (96 dpi)
     # h 1080 748 (96 dpi)
     g = TkinterDnD.Tk()
-    dnd = tkDnD(g)
+    tkDnD(g)    #bind whole window to Drag-and-drop function
     # g = ttk.Window(themename='darkly')
     odpi=g.winfo_fpixels('1i')
     # print('odpi:',odpi)
@@ -18139,6 +18194,10 @@ if __name__ == '__main__':
     tt = threading.Thread(target=tstate)
     tt.daemon = True
     tt.start()
+    if lfs is None:
+        b_name.config(state='disable')
+        b_excitation.config(state='disable')
+        b_desc.config(state='disable')
     try:
         info.config(state='normal')
         pr_load(data)
