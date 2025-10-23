@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.7.1"
-__release_date__ = "2025-10-21"
+__version__ = "7.7.2"
+__release_date__ = "2025-10-23"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -248,7 +248,8 @@ try:
     from scipy.stats import mode
     from scipy.interpolate import griddata
     from scipy import special
-    from lmfit import Parameters, Minimizer, report_fit
+    from lmfit import Parameters, Minimizer
+    from lmfit.printfuncs import alphanumeric_sort, gformat
     import tqdm
     import win32clipboard
     import originpro as op
@@ -330,7 +331,6 @@ class tkDnD:
             else:
                 files = raw_str
         if files:
-            # files = self.load_raw(files)
             load(drop=True, files=files)
     
     @staticmethod
@@ -10339,7 +10339,6 @@ def checkfit():
 
 def putfitpar(inpars, modelpars=None, show_correl=True, min_correl=0.1,
               sort_pars=False, correl_mode='list'):
-    from lmfit.parameter import Parameters
     if isinstance(inpars, Parameters):
         result, params = None, inpars
     if hasattr(inpars, 'params'):
