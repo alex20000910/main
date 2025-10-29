@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.8"
-__release_date__ = "2025-10-28"
+__version__ = "7.8.1"
+__release_date__ = "2025-10-29"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -1955,6 +1955,10 @@ def desc():
 class SO_Fitter(tk.Toplevel):
     def __init__(self, master):
         super().__init__(master, background='white')
+        plt.rcParams['font.family'] = 'Arial'
+        plt.rcParams['font.size'] = int(plt.rcParams['font.size'] * scale)
+        plt.rcParams['lines.linewidth'] = plt.rcParams['lines.linewidth'] * scale
+        plt.rcParams['lines.markersize'] = plt.rcParams['lines.markersize'] * scale
         plt.rcParams['legend.fontsize'] = size(14)
         self.title('Sample Offset Fitter')
         self.ev=1.602176634e-19  # eV=1.602176634e-19 J
@@ -1969,13 +1973,13 @@ class SO_Fitter(tk.Toplevel):
         
         
         self.p_list = []    # R2 orderd list
+        # Trial data points
         # p1 = [20.2-20.2, 20, 0]
         # p2 = [80.2-20.2, 22.5, -0.2]
         # p3 = [206-20.2, 19.5, 0]
         # p1 = [20.2, 20, 0]
         # p2 = [80.2, 22.5, -0.2]
         # p3 = [206, 19.5, 0]
-        # self.p_list = []
         # self.p_list.append(p1)
         # self.p_list.append(p2)
         # self.p_list.append(p3)
@@ -2031,33 +2035,31 @@ class SO_Fitter(tk.Toplevel):
                     tphi2 = p2
         return min_r, r12[r12==tr12], phi2[phi2==tphi2]
     
-    def check_circ(self, rdot=[0.5, 0.5, -0.5], case='before'):
+    def check_circ(self, p_list, rdot, case='before'):
+        ax, figout = (self.ax0, self.figout0) if case=='before' else (self.ax1, self.figout1)
+        
         tx, ty = [], []
-        for i, p in enumerate(self.p_list):
+        for i, p in enumerate(p_list):
             kx, ky = self.kxy(*p, r10=self.r10, phi0=self.phi0, r11=self.r11, phi1=self.phi1)
             tx.append(kx)
             ty.append(ky)
-            if case=='before':
-                s = self.ax0.scatter(kx, ky, label=f'R2={p[0]+self.r2_min}, R1={p[1]}, phi={p[2]}')
-                s.set_zorder(10)
-            else:
-                s = self.ax1.scatter(kx, ky, label=f'R2={p[0]+self.r2_min}, R1={p[1]}, phi={p[2]}')
-                s.set_zorder(10)
+            s = ax.scatter(kx, ky, label=f'R2={p[0]+self.r2_min}, R1={p[1]}, phi={p[2]}')
+            s.set_zorder(10)
         tr = SO_Fitter.cal_r(tx, ty)
+        
         dot = []
-        for i in range(len(self.p_list)):
-            dot.append(SO_Fitter.cal_dot(tx[i], ty[i], tx[(i+1)%len(self.p_list)], ty[(i+1)%len(self.p_list)]))
+        for i in range(len(p_list)):
+            dot.append(SO_Fitter.cal_dot(tx[i], ty[i], tx[(i+1)%len(p_list)], ty[(i+1)%len(p_list)]))
+            
         circle = plt.Circle((0, 0), radius=(kx**2 + ky**2)**0.5, color='gray', linestyle='--', fill=False, label='circle')
-        if case=='before':
-            self.ax0.scatter(0, 0, color='red', label='origin')
-            self.ax0.add_patch(circle)
-        else:
-            self.ax1.scatter(0, 0, color='red', label='origin')
-            self.ax1.add_patch(circle)
+        s = ax.scatter(0, 0, color='red', label='origin')
+        s.set_zorder(11)
+        ax.add_patch(circle)
+        
         ### Check
         f=False
         kx, ky = [], []
-        for r in self.p_list[1:]:
+        for r in p_list[1:]:
             kx_, ky_ = self.kxy(*r, r10=self.r10, phi0=self.phi0, r11=self.r11, phi1=self.phi1)
             kx.append(kx_)
             ky.append(ky_)
@@ -2067,7 +2069,7 @@ class SO_Fitter(tk.Toplevel):
         except IndexError:
             pass
         kx0, ky0 = [kx[0]], [ky[0]]
-        tx, ty = self.kxy(*self.p_list[0], r10=self.r10, phi0=self.phi0, r11=self.r11, phi1=self.phi1)
+        tx, ty = self.kxy(*p_list[0], r10=self.r10, phi0=self.phi0, r11=self.r11, phi1=self.phi1)
         kx0.append(tx)
         ky0.append(ty)
         kx0.append(0)
@@ -2079,49 +2081,36 @@ class SO_Fitter(tk.Toplevel):
             if abs(dot[i]-rdot[i]) > self.tolerance:
                 f=False
                 break
-        if f:
-            try:
-                kx.remove(kx[1]-kx[0])
-                ky.remove(ky[1]-ky[0])
-            except IndexError:
-                pass
-            kx.append(0)
-            ky.append(0)
-            kx.append(kx[0])
-            ky.append(ky[0])
-            for i in range(len(kx)):
-                kx.append(0)
-                ky.append(0)
-                kx.append(kx[i])
-                ky.append(ky[i])
             
-            if case=='after':
-                self.ax1.plot(kx0, ky0, 'r')
-                self.ax1.plot(kx, ky, 'g')
+        if case=='before':
+            print('Before fitting:')
+            print('difference abs r values: ', [i-j for i,j in zip(tr, np.roll(tr, -1))])
+            print('difference abs dot values: ', [i-j for i,j in zip(dot, rdot)])
+        else:
+            if f:
+                try:
+                    kx.remove(kx[1]-kx[0])
+                    ky.remove(ky[1]-ky[0])
+                except IndexError:
+                    pass
+                kx.insert(0, tx)
+                ky.insert(0, ty)
+                for i in range(len(kx)):
+                    ax.plot([0, kx[i]], [0, ky[i]], 'g-')
+                    if i<len(kx)-1:
+                        ax.plot([kx[i], kx[i+1]], [ky[i], ky[i+1]], 'g-')
                 print('\033[32mPass degree test, tolerance:', self.tolerance,'\033[0m')
                 print('difference abs r values: ', [i-j for i,j in zip(tr, np.roll(tr, -1))])
                 print('difference abs dot values: ', [i-j for i,j in zip(dot, rdot)])
             else:
-                print('Before fitting:')
-                print('difference abs r values: ', [i-j for i,j in zip(tr, np.roll(tr, -1))])
-                print('difference abs dot values: ', [i-j for i,j in zip(dot, rdot)])
-        else:
-            if case=='after':
                 print('\033[31mFail', f'(tolerance: {self.tolerance}(for dot values))\033[0m')
                 print('difference abs r values: ', [i-j for i,j in zip(tr, np.roll(tr, -1))])
                 print('difference abs dot values: ', [i-j for i,j in zip(dot, rdot)])
-            else:
-                print('Before fitting:')
-                print('difference abs r values: ', [i-j for i,j in zip(tr, np.roll(tr, -1))])
-                print('difference abs dot values: ', [i-j for i,j in zip(dot, rdot)])
-        if case=='before':
-            l = self.ax0.legend()
-            l.set_draggable(True)
-            self.figout0.draw()
-        else:
-            l = self.ax1.legend()
-            l.set_draggable(True)
-            self.figout1.draw()
+                
+        l = ax.legend()
+        l.set_zorder(12)
+        l.set_draggable(True)
+        figout.draw()
         return dot, tr
     
     @property
@@ -2135,7 +2124,6 @@ class SO_Fitter(tk.Toplevel):
         d = np.abs(d_ang-d_ang_t)
         idx = d.argmin()
         ang -= np.roll(ang, -1)
-        print(ang)
         if d_ang[idx]==30:
             rdot = np.cos(np.round(ang/30)*30/180*np.pi)
             ang = np.round(ang/30)*30
@@ -2155,22 +2143,23 @@ class SO_Fitter(tk.Toplevel):
 
     def _fit(self):
         self.r2_min = min([i[0] for i in self.p_list])
-        for i, v in enumerate(self.p_list):
-            self.p_list[i][0] = v[0] - self.r2_min
+        p_list = copy.deepcopy(self.p_list)
+        for i, v in enumerate(p_list):
+            p_list[i][0] = v[0] - self.r2_min
         self.clf()
         self.r11, self.phi1 = 0, 0
-        self.check_circ(rdot=self.rdot, case='before')
-        r11 = np.linspace(-7.5, 7.5, 750)   # entry
-        phi1 = np.linspace(-7.5, 7.5, 750)  # entry
+        self.check_circ(p_list=p_list, rdot=self.rdot, case='before')
+        r11 = np.linspace(-7.5, 7.5, 751)   # entry
+        phi1 = np.linspace(-7.5, 7.5, 751)  # entry
         r11, phi1 = np.meshgrid(r11, phi1)
         kx, ky = [], []
-        for p in self.p_list:
+        for p in p_list:
             kx_, ky_ = self.kxy(*p, r10=self.r10, phi0=self.phi0, r11=r11, phi1=phi1)
             kx.append(kx_)
             ky.append(ky_)
         r, dot = np.zeros(kx[0].shape), np.zeros(kx[0].shape)
         r_avg = []
-        for i in range(len(self.p_list)-1):
+        for i in range(len(p_list)-1):
             t_r = SO_Fitter.cal_r(kx[i], ky[i])
             r_avg.append(t_r)
             r+=np.abs(t_r-SO_Fitter.cal_r(kx[i+1], ky[i+1]))
@@ -2187,7 +2176,7 @@ class SO_Fitter(tk.Toplevel):
         self.info.config(state='disabled')
         r11, phi1 = r11.flatten()[mask_min], phi1.flatten()[mask_min]
         self.r11, self.phi1 = r11, phi1
-        self.check_circ(rdot=self.rdot, case='after')
+        self.check_circ(p_list=p_list, rdot=self.rdot, case='after')
         hwnd = find_window()
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
@@ -2205,6 +2194,9 @@ class SO_Fitter(tk.Toplevel):
         self.ax1.set_xlabel(r'$k_x$ (2$\pi$/Å)')
         self.ax1.set_ylabel(r'$k_y$ (2$\pi$/Å)')
         self.ax1.set_aspect('equal')
+    
+    def entry_select_all(self, event):
+        event.widget.select_range(0, tk.END)
     
     def clear_points(self):
         self.clf()
@@ -2234,6 +2226,7 @@ class SO_Fitter(tk.Toplevel):
         self.v_r2.set(0)
         self.v_r1.set(0)
         self.v_phi.set(0)
+        self.r2_entry.focus_set()
 
     def set_tolerance(self):
         self.tolerance = self.v_tol.get()
@@ -2252,7 +2245,7 @@ class SO_Fitter(tk.Toplevel):
         xscroll.pack(side='bottom', fill='x')
         yscroll = tk.Scrollbar(fr_info, orient='vertical', bg='white')
         yscroll.pack(side='right', fill='y')
-        self.info = tk.Text(fr_info, width=40, height=20, background='white', borderwidth=0, state='disabled', xscrollcommand=xscroll.set, yscrollcommand=yscroll.set, font=('Arial', size(16), 'bold'))
+        self.info = tk.Text(fr_info, width=40, height=20, background='white', borderwidth=5, state='disabled', xscrollcommand=xscroll.set, yscrollcommand=yscroll.set, font=('Arial', size(16), 'bold'))
         self.info.pack()
         xscroll.config(command=self.info.xview)
         yscroll.config(command=self.info.yview)
@@ -2323,6 +2316,10 @@ class SO_Fitter(tk.Toplevel):
         self.ax1.set_aspect('equal')
         
         self.bind('<Return>', lambda event: self.add_point())
+        for entry in [self.e_entry, self.r2_entry, self.r1_entry, self.phi_entry]:
+            entry.bind('<FocusIn>', self.entry_select_all)
+        
+        self.e_entry.focus_set()
 
 def view_3d(*e):
     # path = fd.askdirectory(title="Select Zarr Folder")
