@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.8.2"
-__release_date__ = "2025-10-30"
+__version__ = "7.9"
+__release_date__ = "2025-11-06"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -63,6 +63,8 @@ __release_date__ = "2025-10-30"
 # zarr                      3.1.1                    pypi_0    pypi
 # zlib                      1.3.1                h02ab6af_0
 
+# import tracemalloc
+# tracemalloc.start()
 import os, inspect
 import json
 import tkinter as tk
@@ -81,12 +83,13 @@ from tkinter import messagebox, colorchooser, ttk
 # import ttkbootstrap as ttk
 from multiprocessing import Pool, shared_memory
 import time, subprocess
+from typing import Literal, Any, Self
+from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-
+    
 VERSION = sys.version.split()[0]
 VERSION = int(''.join(VERSION.split('.')))
 if VERSION < 3130:
-    # Python 3.12.X has better performance for supporting numpy 1.xx.x
     REQUIREMENTS = ["numpy==1.26.4",
     "opencv-python==4.10.0.84",
     "matplotlib==3.10.5",
@@ -280,12 +283,55 @@ fev = []
 lfs = None
 fit_so = None   # for SO_Fitter instance checking
 
+class CEC_Object(ABC):
+    @abstractmethod
+    def info(self):
+        pass
+    @abstractmethod
+    def load(self):
+        pass
+    @abstractmethod
+    def on_closing(self):
+        pass
+
+class FileSequence(ABC):
+    @abstractmethod
+    def get(self):
+        pass
+    @abstractmethod
+    def check_repeat(self):
+        pass
+    @abstractmethod
+    def gen_r1(self):
+        pass
+    @abstractmethod
+    def gen_r2(self):
+        pass
+    @abstractmethod
+    def export_casa(self):
+        pass
+
 def fit_so_app(*args):
     global fit_so
     if fit_so is None:
         fit_so = SO_Fitter(g)
     else:
         fit_so.lift()
+
+def hidden_job(path):
+    os.system(f'attrib +h +s "{path}"')
+    for dirpath, dirnames, filenames in os.walk(path):
+        for filename in filenames:
+            file_path = os.path.join(dirpath, filename)
+            os.system(f'attrib +h +s "{file_path}"')
+        for dirname in dirnames:
+            dir_path = os.path.join(dirpath, dirname)
+            os.system(f'attrib +h +s "{dir_path}"')
+            
+def set_hidden(path):
+    t = threading.Thread(target=hidden_job, args=(path,))
+    t.daemon = True
+    t.start()
 
 def file_walk(path=[], file_type='.h5'):
     out = []
@@ -605,7 +651,7 @@ def load_json(path_to_file: str) -> xr.DataArray:
         e_high = str(e_high)+' eV (B.E.)'
 
     a = np.linspace(a_low, a_high, a_num)
-    d = np.array(f['Spectrum']).transpose()
+    d = np.asarray(f['Spectrum']).transpose()
     # data=np.arange(float(len(e)*len(a))).reshape(len(e),len(a),1)
     # data[0:,0:,0]=d
     data = np.arange(float(len(e)*len(a))).reshape(len(e), len(a))
@@ -637,238 +683,90 @@ def load_json(path_to_file: str) -> xr.DataArray:
     )
     return data
 
-cec = None
-f_npz = 0
-def load_h5(path_to_file: str) -> xr.DataArray:
-    """
-    Load data from an HDF5 file and return it as a DataArray.
+def get_cec_params(f: h5py.File | Any) -> tuple:
+    '''
+    Get CEC parameters from the file.
+    
+    Parameters:
+        f (Any): The file object opened using h5py.File() or numpy.load().
+        
+    Returns:
+        (angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym) (tuple) : A tuple containing the CEC parameters.
+    
+    '''
+    if isinstance(f, h5py.File):
+        angle = np.array(f.get('VolumeSlicer').get('angle'))[0]
+        cx = np.array(f.get('VolumeSlicer').get('cx'))[0]
+        cy = np.array(f.get('VolumeSlicer').get('cy'))[0]
+        cdx = np.array(f.get('VolumeSlicer').get('cdx'))[0]
+        cdy = np.array(f.get('VolumeSlicer').get('cdy'))[0]
+        phi_offset = np.array(f.get('VolumeSlicer').get('phi_offset'))[0]
+        r1_offset = np.array(f.get('VolumeSlicer').get('r1_offset'))[0]
+        try:
+            phi1_offset = np.array(f.get('VolumeSlicer').get('phi1_offset'))[0]
+            r11_offset = np.array(f.get('VolumeSlicer').get('r11_offset'))[0]
+        except:
+            phi1_offset = 0
+            r11_offset = 0
+            print('\033[31mNo sample offset info found in the h5 file, set to zero.\033[0m')
+        slim = np.array(f.get('VolumeSlicer').get('slim'))[0]
+        try:
+            '''
+            After 6.0 version, the symmetry information is added to attributes
+            '''
+            sym = np.array(f.get('VolumeSlicer').get('sym'))[0]
+        except:
+            sym = 1
+    else:
+        angle = f['angle']
+        cx = f['cx']
+        cy = f['cy']
+        cdx = f['cdx']
+        cdy = f['cdy']
+        phi_offset = f['phi_offset']
+        r1_offset = f['r1_offset']
+        try:
+            phi1_offset = f['phi1_offset']
+            r11_offset = f['r11_offset']
+        except:
+            phi1_offset = 0
+            r11_offset = 0
+            print('\033[31mNo sample offset info found in the npz file, set to zero.\033[0m')
+        slim = f['slim']
+        try:
+            '''
+            After 6.0 version, the symmetry information is added to attributes
+            '''
+            sym = f['sym']
+        except:
+            sym = 1
+    return angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym
+
+def call_cec(path_to_file: str, f: h5py.File | Any, cec: CEC_Object, f_npz: int) -> tuple[CEC_Object, int, str, str, str, str]:
+    '''
+    Call the CEC window.
 
     Parameters:
-        path_to_file (str): The path to the HDF5 file.
-
+        path_to_file (str): The path to the HDF5 or NPZ file.
+        f (Any): The file object opened using h5py.File() or numpy.load().
+        cec (CEC_Object): An instance of the CEC class. Store the window and focus it when all the loading processes are done.
+        f_npz (int): An indicator determining whether the app should operate the CEC process
+    
     Returns:
-        xr.DataArray: The loaded data as a DataArray.
+        (cec, f_npz, PassEnergy, Dwell, Iterations, Slit) (tuple): A tuple containing the CEC indicators and info parameters.
+        - cec (CEC_Object): An instance of the CEC class loaded with slicing geometry.
+        - f_npz (int): An indicator determining whether the app should operate the CEC process.
+        - PassEnergy (str): Attributes string.
+        - Dwell (str): Attributes string.
+        - Iterations (str): Attributes string.
+        - Slit (str): Attributes string.
 
-    """
-    f = h5py.File(path_to_file, 'r')
-    e_low = np.array(f.get('Region').get('LowEnergy').get('Value'))[0]
-    e_high = np.array(f.get('Region').get('HighEnergy').get('Value'))[0]
-    e_num = np.array(f.get('Data').get('XSize').get('Value'))[0]
-    e_photon = np.array(f.get('Region').get(
-        'ExcitationEnergy').get('Value'))[0]
-    a_low = np.array(f.get('Region').get('YScaleMin').get('Value'))[0]
-    a_high = np.array(f.get('Region').get('YScaleMax').get('Value'))[0]
-    a_num = np.array(f.get('Data').get('YSize').get('Value'))[0]
-    #   attrs
-    t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype=str)
-    t_LensMode = np.array(f.get('Region').get('LensMode'), dtype=str)
-    PassEnergy = np.array(f.get('Region').get(
-        'PassEnergy').get('Value'), dtype=str)[0]
-    Dwell = np.array(f.get('Region').get('Dwell').get('Value'), dtype=str)[0]
-    CenterEnergy = np.array(f.get('Region').get(
-        'CenterEnergy').get('Value'), dtype=str)[0]
-    Iterations = np.array(f.get('Region').get(
-        'Iterations').get('Value'), dtype=str)[0]
-    Step = np.array(f.get('Region').get('Step').get('Value'), dtype=str)[0]
-    t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
-    t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
-    try:
-        flag = np.array(f.get('Region').get('Name'), dtype=str)[1]
-        t_name = np.array(f.get('Region').get('Name'), dtype=str)
-    except:        
-        t_name = np.array(f.get('Region').get('Name'), dtype='S')  # Read as bytes
-        t_name = t_name.tobytes().decode('utf-8')   # Convert to string
-    try:
-        flag = np.array(f.get('Region').get('Description'), dtype=str)[1]
-        t_description = np.array(f.get('Region').get('Description'), dtype=str)
-    except:
-        t_description = np.array(f.get('Region').get('Description'), dtype='S')  # Read as bytes
-        t_description = t_description.tobytes().decode('utf-8')   # Convert to string
-    try:
-        flag = np.array(f.get('Region').get('EnergyMode'), dtype=str)[1]
-        t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype=str)
-        t_LensMode = np.array(f.get('Region').get('LensMode'), dtype=str)
-        t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
-        t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
-    except:
-        flag = 'pass_byte'
-        t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype='S')  # Read as bytes
-        t_e_mode = t_e_mode.tobytes().decode('utf-8')   # Convert to string
-        t_LensMode = np.array(f.get('Region').get('LensMode'), dtype='S')  # Read as bytes
-        t_LensMode = t_LensMode.tobytes().decode('utf-8')   # Convert to string
-        t_Slit = np.array(f.get('Region').get('Slit'), dtype='S')  # Read as bytes
-        t_Slit = t_Slit.tobytes().decode('utf-8')   # Convert to string
-        t_aq = np.array(f.get('Region').get('Acquisition'), dtype='S')  # Read as bytes
-        t_aq = t_aq.tobytes().decode('utf-8')   # Convert to string        
-        
-    e_mode = ''
-    LensMode = ''
-    Slit = ''
-    aq = ''
-    name = ''
-    description = ''
-    if flag != 'pass_byte':
-        for i in range(60):  # proper length long enough
-            e_mode += t_e_mode[i]
-            LensMode += t_LensMode[i]
-            Slit += t_Slit[i]
-            aq += t_aq[i]
-    else:
-        e_mode = t_e_mode
-        LensMode = t_LensMode
-        Slit = t_Slit
-        aq = t_aq
-    for i in range(600):
-        try:
-            name += t_name[i]
-        except:
-            pass
-        try:
-            description += t_description[i]
-        except:
-            pass
-    if e_mode == 'Kinetic':
-        e = np.linspace(e_low, e_high, e_num)
-        CenterEnergy = str(CenterEnergy)+' eV'
-        e_low = str(e_low)+' eV (K.E.)'
-        e_high = str(e_high)+' eV (K.E.)'
-    else:
-        e = np.linspace(e_photon-e_high, e_photon-e_low, e_num)
-        CenterEnergy = str(CenterEnergy)+' eV'
-        e_low = str(e_low)+' eV (B.E.)'
-        e_high = str(e_high)+' eV (B.E.)'
-    if aq == 'VolumeSlicer':
-        global f_npz
+    '''
+    if isinstance(f, h5py.File):
         tlf_path = np.array(f.get('VolumeSlicer').get('path'), dtype='S')
         lf_path = [i.tobytes().decode('utf-8') for i in tlf_path]
-        try:
-            try:    #load path that saved in npz
-                tbasename = os.path.basename(lf_path[0])
-                if '.h5' in tbasename:
-                    td=load_h5(lf_path[0])
-                elif '.json' in tbasename:
-                    td=load_json(lf_path[0])
-                elif '.txt' in tbasename:
-                    td=load_txt(lf_path[0])
-            except: #try load file in the same folder as npz
-                td = None
-                tlfpath = []
-                for i in lf_path:
-                    tbasename = os.path.basename(i)
-                    tpath = os.path.normpath(os.path.join(os.path.dirname(path_to_file), tbasename))
-                    tlfpath.append(tpath)
-                    try:
-                        if '.h5' in tbasename:
-                            td=load_h5(tpath)
-                        elif '.json' in tbasename:
-                            td=load_json(tpath)
-                        elif '.txt' in tbasename:
-                            td=load_txt(tpath)
-                    except:
-                        pass
-            PassEnergy = td.attrs['PassEnergy']
-            Dwell = td.attrs['Dwell']
-            Iterations = td.attrs['Iterations']
-            Slit = td.attrs['Slit']
-            if __name__ == '__main__':
-                if f_npz==0:
-                    f_npz+=1
-                    angle = np.array(f.get('VolumeSlicer').get('angle'))[0]
-                    cx = np.array(f.get('VolumeSlicer').get('cx'))[0]
-                    cy = np.array(f.get('VolumeSlicer').get('cy'))[0]
-                    cdx = np.array(f.get('VolumeSlicer').get('cdx'))[0]
-                    cdy = np.array(f.get('VolumeSlicer').get('cdy'))[0]
-                    phi_offset = np.array(f.get('VolumeSlicer').get('phi_offset'))[0]
-                    r1_offset = np.array(f.get('VolumeSlicer').get('r1_offset'))[0]
-                    try:
-                        phi1_offset = np.array(f.get('VolumeSlicer').get('phi1_offset'))[0]
-                        r11_offset = np.array(f.get('VolumeSlicer').get('r11_offset'))[0]
-                    except:
-                        phi1_offset = 0
-                        r11_offset = 0
-                        print('\033[31mNo sample offset info found in the h5 file, set to zero.\033[0m')
-                    slim = np.array(f.get('VolumeSlicer').get('slim'))[0]
-                    try:
-                        '''
-                        After 6.0 version, the symmetry information is added to attributes
-                        '''
-                        sym = np.array(f.get('VolumeSlicer').get('sym'))[0]
-                    except:
-                        sym = 1
-                        pass
-                    global cec
-                    try:
-                        cec=CEC(g, lf_path, mode='load')
-                        cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym, name, path_to_file)
-                    except:
-                        cec=CEC(g, tlfpath, mode='load')
-                        cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym, name, path_to_file)
-        except Exception as ecp:
-            if __name__ == '__main__':
-                if f_npz==0:
-                    f_npz+=1
-                    # hwnd = find_window()
-                    if hwnd:
-                        windll.user32.ShowWindow(hwnd, 9)
-                        windll.user32.SetForegroundWindow(hwnd)
-                    print(f"An error occurred: {ecp}")
-                    print('\033[31mPath not found:\033[34m')
-                    print(lf_path)
-                    print('\033[31mPlace all the raw data files listed above in the same folder as the NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
-                    message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
-                    messagebox.showwarning("Warning", message)
-    
-    a = np.linspace(a_low, a_high, a_num)
-    d = np.array(f.get('Spectrum')).transpose()
-    # data=np.arange(float(len(e)*len(a))).reshape(len(e),len(a),1)
-    # data[0:,0:,0]=d
-    data = np.arange(float(len(e)*len(a))).reshape(len(e), len(a))
-    if flag != 'pass_byte':
-        data[0:, 0:] = d
-    else:
-        Dwell = Dwell.removesuffix(' s')
-        PassEnergy = PassEnergy.removesuffix(' eV')
-        data[0:, 0:] = d.T
-    data = xr.DataArray(
-        data=data,
-        coords={
-            'eV': e,
-            'phi': a
-        },
-        name='Spectrum',
-        attrs={
-            'Name': name,
-            'Acquisition': aq,
-            'EnergyMode': e_mode,
-            'ExcitationEnergy': str(e_photon)+' eV',
-            'CenterEnergy': CenterEnergy,
-            'HighEnergy': e_high,
-            'LowEnergy': e_low,
-            'Step': str(Step)+' eV',
-            'LensMode': LensMode,
-            'PassEnergy': str(PassEnergy)+' eV',
-            'Slit': Slit,
-            'Dwell': str(Dwell)+' s',
-            'Iterations': Iterations,
-            'Description': description,
-            'Path': path_to_file
-        }
-    )
-    return data
-
-def load_npz(path_to_file: str) -> xr.DataArray:
-    """
-    Load data from a NumPy NPZ file and convert it into an xarray DataArray.
-    
-    Parameters:
-        path_to_file (str): The path to the NPZ file.
-        
-    Returns:
-        xr.DataArray: The data loaded from the NPZ file as an xarray DataArray.
-    """
-    global f_npz
-    f = np.load(path_to_file)
-    lf_path = f['path']
+    else:   # np.load
+        lf_path = f['path']
     try:
         try:    #load path that saved in npz
             tbasename = os.path.basename(lf_path[0])
@@ -894,62 +792,192 @@ def load_npz(path_to_file: str) -> xr.DataArray:
                         td=load_txt(tpath)
                 except:
                     pass
-        Name = os.path.basename(path_to_file).split('.npz')[0]
         PassEnergy = td.attrs['PassEnergy']
         Dwell = td.attrs['Dwell']
         Iterations = td.attrs['Iterations']
         Slit = td.attrs['Slit']
         if __name__ == '__main__':
-            if f_npz==0:
-                f_npz+=1
-                angle = f['angle']
-                cx = f['cx']
-                cy = f['cy']
-                cdx = f['cdx']
-                cdy = f['cdy']
-                phi_offset = f['phi_offset']
-                r1_offset = f['r1_offset']
-                try:
-                    phi1_offset = f['phi1_offset']
-                    r11_offset = f['r11_offset']
-                except:
-                    phi1_offset = 0
-                    r11_offset = 0
-                    print('\033[31mNo sample offset info found in the h5 file, set to zero.\033[0m')
-                slim = f['slim']
-                try:
-                    '''
-                    After 6.0 version, the symmetry information is added to attributes
-                    '''
-                    sym = f['sym']
-                except:
-                    sym = 1
-                    pass
-                global cec
+            if f_npz is False:
+                f_npz = True
+                args = get_cec_params(f)
                 try:
                     cec=CEC(g, lf_path, mode='load')
-                    cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym, Name, path_to_file)
+                    cec.load(*args, name, path_to_file)
                 except:
                     cec=CEC(g, tlfpath, mode='load')
-                    cec.load(angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym, Name, path_to_file)
-    except Exception as e:
+                    cec.load(*args, name, path_to_file)
+    except Exception as ecp:
         if __name__ == '__main__':
-            if f_npz==0:
-                f_npz+=1
+            if f_npz is False:
+                f_npz = True
                 # hwnd = find_window()
                 if hwnd:
                     windll.user32.ShowWindow(hwnd, 9)
                     windll.user32.SetForegroundWindow(hwnd)
-                print(f"An error occurred: {e}")
+                print(f"An error occurred: {ecp}")
                 print('\033[31mPath not found:\033[34m')
                 print(lf_path)
-                print('\033[31mPlace all the raw data files listed above in the same folder as the NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
-                message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
+                print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
+                message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
                 messagebox.showwarning("Warning", message)
-        PassEnergy = 'Unknown'
-        Dwell = 'Unknown'
-        Iterations = 'Unknown'
-        Slit = 'Unknown'
+    return cec, f_npz, PassEnergy, Dwell, Iterations, Slit
+
+cec = None
+f_npz = False
+
+def load_h5(path_to_file: str) -> xr.DataArray:
+    """
+    Load data from an HDF5 file and return it as a DataArray.
+
+    Parameters:
+        path_to_file (str): The path to the HDF5 file.
+
+    Returns:
+        xr.DataArray: The loaded data as a DataArray.
+
+    """
+    with h5py.File(path_to_file, 'r') as f:
+        # f = h5py.File(path_to_file, 'r')
+        e_low = np.array(f.get('Region').get('LowEnergy').get('Value'))[0]
+        e_high = np.array(f.get('Region').get('HighEnergy').get('Value'))[0]
+        e_num = np.array(f.get('Data').get('XSize').get('Value'))[0]
+        e_photon = np.array(f.get('Region').get(
+            'ExcitationEnergy').get('Value'))[0]
+        a_low = np.array(f.get('Region').get('YScaleMin').get('Value'))[0]
+        a_high = np.array(f.get('Region').get('YScaleMax').get('Value'))[0]
+        a_num = np.array(f.get('Data').get('YSize').get('Value'))[0]
+        #   attrs
+        t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype=str)
+        t_LensMode = np.array(f.get('Region').get('LensMode'), dtype=str)
+        PassEnergy = np.array(f.get('Region').get(
+            'PassEnergy').get('Value'), dtype=str)[0]
+        Dwell = np.array(f.get('Region').get('Dwell').get('Value'), dtype=str)[0]
+        CenterEnergy = np.array(f.get('Region').get(
+            'CenterEnergy').get('Value'), dtype=str)[0]
+        Iterations = np.array(f.get('Region').get(
+            'Iterations').get('Value'), dtype=str)[0]
+        Step = np.array(f.get('Region').get('Step').get('Value'), dtype=str)[0]
+        t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
+        t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
+        try:
+            flag = np.array(f.get('Region').get('Name'), dtype=str)[1]
+            t_name = np.array(f.get('Region').get('Name'), dtype=str)
+        except:        
+            t_name = np.array(f.get('Region').get('Name'), dtype='S')  # Read as bytes
+            t_name = t_name.tobytes().decode('utf-8')   # Convert to string
+        try:
+            flag = np.array(f.get('Region').get('Description'), dtype=str)[1]
+            t_description = np.array(f.get('Region').get('Description'), dtype=str)
+        except:
+            t_description = np.array(f.get('Region').get('Description'), dtype='S')  # Read as bytes
+            t_description = t_description.tobytes().decode('utf-8')   # Convert to string
+        try:
+            flag = np.array(f.get('Region').get('EnergyMode'), dtype=str)[1]
+            t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype=str)
+            t_LensMode = np.array(f.get('Region').get('LensMode'), dtype=str)
+            t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
+            t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
+        except:
+            flag = 'pass_byte'
+            t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype='S')  # Read as bytes
+            t_e_mode = t_e_mode.tobytes().decode('utf-8')   # Convert to string
+            t_LensMode = np.array(f.get('Region').get('LensMode'), dtype='S')  # Read as bytes
+            t_LensMode = t_LensMode.tobytes().decode('utf-8')   # Convert to string
+            t_Slit = np.array(f.get('Region').get('Slit'), dtype='S')  # Read as bytes
+            t_Slit = t_Slit.tobytes().decode('utf-8')   # Convert to string
+            t_aq = np.array(f.get('Region').get('Acquisition'), dtype='S')  # Read as bytes
+            t_aq = t_aq.tobytes().decode('utf-8')   # Convert to string        
+            
+        e_mode = ''
+        LensMode = ''
+        Slit = ''
+        aq = ''
+        name = ''
+        description = ''
+        if flag != 'pass_byte':
+            for i in range(60):  # proper length long enough
+                e_mode += t_e_mode[i]
+                LensMode += t_LensMode[i]
+                Slit += t_Slit[i]
+                aq += t_aq[i]
+        else:
+            e_mode = t_e_mode
+            LensMode = t_LensMode
+            Slit = t_Slit
+            aq = t_aq
+        for i in range(600):
+            try:
+                name += t_name[i]
+            except:
+                pass
+            try:
+                description += t_description[i]
+            except:
+                pass
+        if e_mode == 'Kinetic':
+            e = np.linspace(e_low, e_high, e_num)
+            CenterEnergy = str(CenterEnergy)+' eV'
+            e_low = str(e_low)+' eV (K.E.)'
+            e_high = str(e_high)+' eV (K.E.)'
+        else:
+            e = np.linspace(e_photon-e_high, e_photon-e_low, e_num)
+            CenterEnergy = str(CenterEnergy)+' eV'
+            e_low = str(e_low)+' eV (B.E.)'
+            e_high = str(e_high)+' eV (B.E.)'
+        if aq == 'VolumeSlicer':
+            global cec, f_npz
+            cec, f_npz, PassEnergy, Dwell, Iterations, Slit = call_cec(path_to_file, f, cec, f_npz)
+            
+        a = np.linspace(a_low, a_high, a_num)
+        d = np.asarray(f.get('Spectrum')).transpose()
+        if flag != 'pass_byte':
+            pass
+        else:
+            Dwell = Dwell.removesuffix(' s')
+            PassEnergy = PassEnergy.removesuffix(' eV')
+            d = d.T
+        data = xr.DataArray(
+            data=d,
+            coords={
+                'eV': e,
+                'phi': a
+            },
+            name='Spectrum',
+            attrs={
+                'Name': name,
+                'Acquisition': aq,
+                'EnergyMode': e_mode,
+                'ExcitationEnergy': str(e_photon)+' eV',
+                'CenterEnergy': CenterEnergy,
+                'HighEnergy': e_high,
+                'LowEnergy': e_low,
+                'Step': str(Step)+' eV',
+                'LensMode': LensMode,
+                'PassEnergy': str(PassEnergy)+' eV',
+                'Slit': Slit,
+                'Dwell': str(Dwell)+' s',
+                'Iterations': Iterations,
+                'Description': description,
+                'Path': path_to_file
+            }
+        )
+    return data
+
+def load_npz(path_to_file: str) -> xr.DataArray:
+    """
+    Load data from a NumPy NPZ file and convert it into an xarray DataArray.
+    
+    Parameters:
+        path_to_file (str): The path to the NPZ file.
+        
+    Returns:
+        xr.DataArray: The data loaded from the NPZ file as an xarray DataArray.
+    """
+    Name = os.path.basename(path_to_file).split('.npz')[0]
+    global cec, f_npz
+    f = np.load(path_to_file)
+    cec, f_npz, PassEnergy, Dwell, Iterations, Slit = call_cec(path_to_file, f, cec, f_npz)
+    
     data = f['data']
     k = f['x']
     ev = f['y']
@@ -1996,6 +2024,8 @@ class SO_Fitter(tk.Toplevel):
         global fit_so
         fit_so = None
         self.destroy()
+        clear(self)
+        gc.collect()
         
     
     @staticmethod
@@ -2435,10 +2465,49 @@ from base64 import b64decode
 import cv2, os, inspect
 import h5py, time, zarr
 from ctypes import windll
-import gc, multiprocessing, shutil
-hwnd = {hwnd}
+import gc, multiprocessing, shutil, psutil
+import tracemalloc
+hwnd = {hwnd} #origin
+# hwnd = None
+cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+os.chdir(cdir)
+if os.path.exists('.MDC_cut_DataViewer'):
+    shutil.rmtree('.MDC_cut_DataViewer')
+os.mkdir('.MDC_cut_DataViewer')
+os.system(f'attrib +h +s ".MDC_cut_DataViewer"')
 '''
     code+=r'''
+def det_chunk(density, density2=0, dtype=np.float32):
+    if density2 == 0:
+        density2 = density
+    current_mem = psutil.virtual_memory().available/1024**3
+    use_mem = current_mem*0.8  # 80%
+    print(f"Memory available: {current_mem:.2f} GB, 80% Upper Limit: {use_mem:.2f} GB")
+    mem = np.empty((density, density2), dtype=dtype).nbytes/1024**3
+    chunk_size = int(use_mem / mem)
+    mem = None
+    return chunk_size
+
+def disp_zarr_save(input_path, output_path, shape, max_val):
+    zarr.save_group(output_path, ang=np.array([0, 1], dtype=np.float32))
+    end = shape[0]
+    size = det_chunk(shape[1], dtype=np.uint8)
+    path = os.path.join(output_path, 'data')
+    if size/end <1.2:   # threshold: more than 1.2 times memory available
+        # partial load data into memory (light weight RAM usage)
+        step = int(min(size, end//1.5))   #fix step
+        savez = zarr.open(path, mode='w', shape=shape, dtype=np.uint8)
+        for i in range(0, end, step):
+            ind = slice(i, min(i + step, end))
+            savez[ind,...] = np.asarray(zarr.open(input_path, mode='r')[ind, :, :-1]/max_val*255, dtype=np.uint8)
+            print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+    else:
+        # load all data into memory (heavy RAM usage)
+        zdata = np.asarray(zarr.open(input_path, mode='r')[..., :-1]/max_val*255, dtype=np.uint8)
+        zarr.open(path, mode='w', shape=shape, dtype=np.uint8)[:] = zdata
+    ang = zarr.open(os.path.join(output_path, 'ang'), mode='r+')
+    ang[1] = 0
+
 def find_window():
     # Windows系統中 可能的終端機視窗名稱
     hwnd = windll.user32.FindWindowW(None, "命令提示字元")
@@ -2518,17 +2587,24 @@ class SliceBrowser(QMainWindow):
             windll.user32.SetForegroundWindow(hwnd)
         t=time.perf_counter()
         try:
-            data = zarr.open_array(path)
+            data = zarr.open(path, mode='r+', dtype=np.float32)
             xmin,xmax = data[0, 1, -1], data[1, 1, -1]
             ymin,ymax = data[2, 1, -1], data[3, 1, -1]
             E = data[:, 0, -1]
-            zpath = os.path.join(path, '__disp__.zarr')
-            if not os.path.exists(zpath):
-                data = data[:,:,:data.shape[2]-1]  # Remove the last attribute dimension
-            else:
-                shape = list(data.shape)
-                shape[2] -= 1
-                data = np.zeros(tuple(shape))
+            self.shape = data.shape[:-1] + (data.shape[2]-1,)
+            ang_path = os.path.join(path, '__disp__.zarr', 'ang')
+            if os.path.exists(ang_path):
+                ang = zarr.open(ang_path, mode='r')
+                if ang[0] != ang[-1]:
+                    os.chdir(path)
+                    shutil.rmtree('__disp__.zarr')
+            # zpath = os.path.join(path, '__disp__.zarr')
+            # if not os.path.exists(zpath):
+            #     # data = zarr.open(path, mode='r+', dtype=np.float32)[:,:,:data.shape[2]-1]  # Remove the last attribute dimension
+            # else:
+            #     shape = list(data.shape)
+            #     shape[2] -= 1
+            #     data = np.zeros(tuple(shape))
             self.mode = 'standard'
         except:
             try:
@@ -2537,22 +2613,26 @@ class SliceBrowser(QMainWindow):
                 ymin,ymax = data['attr_array'][2, 1], data['attr_array'][3, 1]
                 E = data['attr_array'][:, 0]
                 data = data['data']
+                self.shape = data.shape
                 self.mode = 'display'
             except Exception as e:
                 print(f"Error loading data from {path}: {e}")
                 quit()
-        
-        pbar.increaseProgress('Loading Zarr Data Cube')
-        e_size, ky_size, kx_size = data.shape
-        kx = np.linspace(xmin, xmax, kx_size)
-        ky = np.linspace(ymin, ymax, ky_size)
-        print(data.shape)
+                
         if path is None:
             self.path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         else:
             self.path = path
+            
+        self.max_value_flag = False
+        
         pbar.increaseProgress('Loading Zarr Data Cube')
-        self.raw_data = data
+        e_size, ky_size, kx_size = self.shape
+        kx = np.linspace(xmin, xmax, kx_size)
+        ky = np.linspace(ymin, ymax, ky_size)
+        print(self.shape)
+        
+        pbar.increaseProgress('Loading Zarr Data Cube')
         print(f"Elapse time: {time.perf_counter()-t:.2f} s")
         pbar.increaseProgress('Setting QtWidgets')
 
@@ -2951,12 +3031,52 @@ class SliceBrowser(QMainWindow):
         self.showMaximized()
         self.w, self.h = self.width(), self.height()
 
-    def get_raw_data(self):
+    @property
+    def dtype(self):
         if self.mode == 'standard':
-            data = zarr.open_array(self.path)
-            self.raw_data = data[:,:,:data.shape[2]-1]
+            return np.float32
         elif self.mode == 'display':
-            self.raw_data = zarr.open_group(self.path, mode='r+')['data']
+            return np.uint8
+    
+    def data(self, ind: slice):
+        if self.mode == 'standard':
+            data = zarr.open(self.path, mode='r')[ind, :, :-1]
+        elif self.mode == 'display':
+            data = zarr.open(os.path.join(self.path, 'data'), mode='r')[ind]
+        return data
+
+    @property
+    def max_value(self):
+        if self.max_value_flag:
+            return self.max_value_val
+        shape = self.shape
+        end = shape[0]
+        size = det_chunk(shape[1], dtype=self.dtype)
+        if size/end <1.2:   # threshold: more than 1.2 times memory available
+            step = int(min(size, end//1.5))   #fix step
+            max_value = 1.0
+            for i in range(0, end, step):
+                ind = slice(i, min(i + step, end))
+                max_value = max(max_value, np.max(self.data(ind)))
+            self.max_value_flag = True
+            self.max_value_val = max_value
+        else:
+            max_value = np.max(self.data(slice(None)))
+        return max_value
+    
+    def get_raw_data(self, save=False):
+        if self.mode == 'standard':
+            size = det_chunk(self.shape[1], dtype=np.float32)
+            end = self.shape[0]
+            if not save:
+                if size/end <1.2:
+                    self.raw_data = None
+                else:
+                    self.raw_data = zarr.open(self.path, mode='r')[:, :, :-1] #origin
+            else:
+                self.raw_data = zarr.open(self.path, mode='r')
+        elif self.mode == 'display':
+            self.raw_data = zarr.open(os.path.join(self.path, 'data'), mode='r+')
 
     def toggle_grid(self, checked):
         if checked:
@@ -3066,7 +3186,7 @@ class SliceBrowser(QMainWindow):
         # self.imrect = pg.QtCore.QRectF(self.px, self.py, self.dx, self.dy)
         return
 
-    def update_binned_data(self, save = False, indky=None, indkx=None, init=False):
+    def update_binned_data(self, save=False, indky=None, indkx=None, init=False):
         # 對整個三維資料 binning
         bin_e = self.bin_e_spin.value()
         bin_kx = self.bin_kx_spin.value()
@@ -3083,8 +3203,9 @@ class SliceBrowser(QMainWindow):
                         self.rotate_edit.setText(f"{self.path_angle:.1f}")
                         self.prload = True
                     else:
-                        zdata = np.asarray(self.raw_data/np.max(self.raw_data)*255, dtype=np.uint8)
-                        zarr.save_group(path, data=zdata, ang=np.array([0],dtype=np.float32))
+                        input_path = self.path
+                        output_path = path
+                        disp_zarr_save(input_path, output_path, self.shape, self.max_value)
                         os.system(f'attrib +h +s "{path}"')
                         for name in os.listdir(path):
                             item_path = os.path.join(path, name)
@@ -3096,16 +3217,15 @@ class SliceBrowser(QMainWindow):
                         self.prload = False
                 except Exception as e:
                     print(e)
-                    self.raw_data_show = np.asarray(self.raw_data/np.max(self.raw_data)*255, dtype=np.uint8)
+                    self.raw_data_show = np.asarray(self.data(slice(None))/self.max_value*255, dtype=np.uint8)
                     self.prload = False
             elif self.mode == 'display':
-                self.raw_data_show = self.raw_data
+                self.raw_data_show = zarr.open(os.path.join(self.path, 'data'), mode='r')
                 self.path_angle = zarr.open_group(self.path, mode='r+')['ang'][0]
                 self.rotate_slider.setValue(int(self.path_angle*10))
                 self.rotate_edit.setText(f"{self.path_angle:.1f}")
                 self.prload = True
             self.data_show = self.raw_data_show
-            del self.raw_data
         elif not save:
             if bin_e == 1 and bin_kx == 1 and bin_ky == 1:
                 self.data_show = self.raw_data_show
@@ -3114,15 +3234,18 @@ class SliceBrowser(QMainWindow):
                 self.data_show = self.bin_data(self.data_show, axis=1, bin_size=bin_ky)
                 self.data_show = self.bin_data(self.data_show, axis=2, bin_size=bin_kx)
         else:   #save
-            self.get_raw_data()
+            self.get_raw_data(save=True)
             if bin_e == 1 and bin_kx == 1 and bin_ky == 1:
-                arr = self.raw_data
-                self.data_show = arr
+                arr = self.raw_data[:, indky, indkx]     #fix
+                self.raw_data = None
+                # self.data_show = arr
             else:
-                arr = self.bin_data(self.raw_data, axis=0, bin_size=bin_e)
-                arr = self.bin_data(arr, axis=1, bin_size=bin_ky)
-                arr = self.bin_data(arr, axis=2, bin_size=bin_kx)
-                self.data_show = arr
+                arr = self.bin_data(self.raw_data, axis=0, bin_size=bin_e, save=save)     #fix
+                self.raw_data = None
+                arr = self.bin_data(arr, axis=1, bin_size=bin_ky, save=save)
+                arr = self.bin_data(arr, axis=2, bin_size=bin_kx, save=save)
+                arr = arr[:, indky, indkx]
+                # self.data_show = arr
             
         
         self.E = self.raw_E[:self.data_show.shape[0]*bin_e].reshape(-1, bin_e).mean(axis=1) if bin_e > 1 else self.raw_E
@@ -3140,13 +3263,13 @@ class SliceBrowser(QMainWindow):
         self.bin_kx = bin_kx
         self.bin_ky = bin_ky
         if save:
-            return arr[:, indky, indkx]
+            return arr
         else:
             return
 
     def on_bin_change(self):
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
-        self.update_binned_data()
+        self.apply_rotation(bin=True)
         self.refresh_slice()
         QApplication.restoreOverrideCursor()
     
@@ -3161,20 +3284,58 @@ class SliceBrowser(QMainWindow):
     #     arr = arr.mean(axis=axis+1)
     #     return arr
     
-    def bin_data(self, data, axis, bin_size):
+    def bin_data(self, odata, axis, bin_size, save=False):
         if bin_size <= 1:
-            return data
+            return odata
         # 計算可整除的長度
-        length = (data.shape[axis] // bin_size) * bin_size
-        slicer = [slice(None)] * data.ndim
+        length = (odata.shape[axis] // bin_size) * bin_size
+        slicer = [slice(None)] * odata.ndim
         slicer[axis] = slice(0, length)
-        data = data[tuple(slicer)]
+        data = odata[tuple(slicer)]
+        odata = None
         # 重新 shape
         new_shape = list(data.shape)
         new_shape[axis] = length // bin_size
         new_shape.insert(axis + 1, bin_size)
-        data = data.reshape(new_shape)
-        return data.mean(axis=axis + 1, dtype=np.float32)
+        size = det_chunk(self.shape[(axis+1)%3], self.shape[(axis+2)%3], dtype=data.dtype)
+        end = length
+        if size/end > 1.2:
+            odata = data.reshape(new_shape)
+            if save:
+                output = odata.mean(axis=axis + 1)
+            else:
+                output = odata.mean(axis=axis + 1)[:].astype(np.uint8)
+            odata = None
+        else:
+            old_shape = list(data.shape)
+            old_shape[axis] = self.shape[axis]//bin_size
+            if save:
+                bin_data = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'bin'), mode='w', shape=old_shape, dtype=np.float32)
+            else:
+                bin_data = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'bin'), mode='w', shape=old_shape, dtype=np.uint8)
+            step = int(min(bin_size*size//bin_size, bin_size*(end//1.5)//bin_size))
+            step = int(min(size//bin_size*bin_size, end//bin_size*bin_size))
+            end = end-end%bin_size
+            for i in range(0, end, step):
+                ind = slice(i, min(i + step, end))
+                dslicer = [slice(None)] * data.ndim
+                dslicer[axis] = ind
+                stop = i
+                for j in range(i, min(i + step, end)):
+                    stop+=1
+                # print('dslicer: ', dslicer)
+                bin_slicer = [slice(None)] * data.ndim
+                bin_slicer[axis] = slice(i//bin_size, stop//bin_size)
+                # print('bin_slicer: ', bin_slicer)
+                mean_shape = list(data.shape)
+                mean_shape[axis] = int(abs(i - stop)/bin_size)
+                mean_shape.insert(axis + 1, bin_size)
+                # print('mean_shape: ', mean_shape)
+                bin_data[tuple(bin_slicer)] = data[tuple(dslicer)].reshape(mean_shape).mean(axis=axis+1)[:]
+                print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+            data = None
+            output = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'bin'), mode='r')
+        return output
 
     def update_E_slice(self, idx, init=False):
         self.current_mode = 'E'
@@ -3431,8 +3592,7 @@ class SliceBrowser(QMainWindow):
             else:
                 arr = self.update_binned_data(save=True, indky=slice(li,hi+1), indkx=self.slider_kx.value())
                 f.create_dataset("Spectrum", data=np.array(arr))
-            del arr
-            gc.collect()
+            arr = None
 
     def __path_angle(self):
         while self.path_angle < 0:
@@ -3459,33 +3619,57 @@ class SliceBrowser(QMainWindow):
         pr_bar.show()
         pr_bar.increaseProgress('Preparing Main Data Array')
         
-        data = self.raw_data
         xmin, xmax = self.raw_kx[0], self.raw_kx[-1]
         ymin, ymax = self.raw_ky[0], self.raw_ky[-1]
         ty = self.raw_E
         
         pr_bar.increaseProgress('Preparing Metadata for Attributes')
-        attr_array = np.zeros((data.shape[0], data.shape[1], 1))
+        pr_bar.increaseProgress('Combining Data Cube')
+        size = det_chunk(self.shape[1], dtype=np.float32)
+        end = self.shape[0]
+        attr_array = np.zeros((self.shape[0], self.shape[1], 1))
         attr_array[:, 0, 0] = ty
         attr_array[0, 1, 0] = xmin
         attr_array[1, 1, 0] = xmax
         attr_array[2, 1, 0] = ymin
         attr_array[3, 1, 0] = ymax
-        pr_bar.increaseProgress('Combining Data Cube')
-        zdata = np.append(data, attr_array, axis=2)
-        pr_bar.increaseProgress('Done')
         os.chdir(os.path.dirname(self.path))
         QApplication.restoreOverrideCursor()
         path, _ = QFileDialog.getSaveFileName(None, "Save Zarr File", f'data_cube_Ang_{self.path_angle:.1f}.zarr', "Zarr Files (*.zarr)")
         if path == "":
+            attr_array, self.raw_data = None, None
             return
 
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+        pr_bar.increaseProgress('Combining Data Cube')
+        if self.raw_data is not None:
+            zdata = np.append(self.raw_data, attr_array, axis=2)
+        pr_bar.increaseProgress('Done')
+        
         pr_bar = ProgressDialog(3, self.icon)
         pr_bar.resize(self.w//3, self.h//4)
         pr_bar.show()
         pr_bar.increaseProgress('Saving data')
-        zarr.save(path, zdata)
+        if self.raw_data is not None:
+            zarr.save(path, zdata)
+            attr_array, zdata, self.raw_data = None, None, None
+        else:
+            zdata, self.raw_data = None, None
+            rot_data = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'rot_data'), mode='r')
+            save_data = zarr.open(path, mode='w', shape=(self.shape[0], self.shape[1], self.shape[2]+1), dtype=np.float32)
+            step = int(min(size, self.shape[0]//1.5))
+            for i in range(0, end, step):
+                ind = slice(i, min(i + step, end))
+                odata = np.empty((abs(i-min(i + step, end)), self.shape[1], self.shape[2]+1), dtype=np.float32)
+                for j in range(i, min(i + step, end)):
+                    odata[j-i, :, :-1] = rot_data[j,...]
+                    odata[j-i, :, -1] = attr_array[j, :, 0]
+                    pr_bar.increaseProgress()
+                save_data[ind,...] = odata
+                odata = None
+                print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+            attr_array = None
+        
         pr_bar.increaseProgress('Setting file attributes')
         for name in os.listdir(path):
             item_path = os.path.join(path, name)
@@ -3493,19 +3677,41 @@ class SliceBrowser(QMainWindow):
                 os.system(f'attrib +h +s "{item_path}"')
             elif os.path.isdir(item_path):
                 os.system(f'attrib +h +s "{item_path}"')
+        
+        
         path = os.path.join(path, '__disp__.zarr')
-        zdata = np.asarray(self.raw_data_show, dtype=np.uint8)
-        zarr.save_group(path, data=zdata, ang=np.array([0],dtype=np.float32))
-        os.system(f'attrib +h +s "{path}"')
-        for name in os.listdir(path):
-            item_path = os.path.join(path, name)
-            if os.path.isfile(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
-            elif os.path.isdir(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
+        size = det_chunk(self.shape[1], dtype=np.uint8)
+        end = self.shape[0]
+        if size/end >= 1.2:
+            zdata = np.asarray(self.raw_data_show, dtype=np.uint8)
+            zarr.save_group(path, data=zdata, ang=np.array([0, 0],dtype=np.float32))
+            zdata = None
+            os.system(f'attrib +h +s "{path}"')
+            for name in os.listdir(path):
+                item_path = os.path.join(path, name)
+                if os.path.isfile(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
+                elif os.path.isdir(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
+        else:
+            rot_data = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'rot_data'), mode='r')
+            save_data = zarr.open(os.path.join(path, '__disp__.zarr', 'data'), mode='w', shape=self.shape, dtype=np.uint8)
+            save_ang = zarr.open(os.path.join(path, '__disp__.zarr', 'ang'), mode='w', shape=(2,), dtype=np.float32)
+            save_ang[:] = np.array([0, 1], dtype=np.float32)
+            step = int(min(size, self.shape[0]//1.5))
+            for i in range(0, end, step):
+                ind = slice(i, min(i + step, end))
+                odata = np.empty((abs(i-min(i + step, end)), self.shape[1], self.shape[2]), dtype=np.uint8)
+                for j in range(i, min(i + step, end)):
+                    odata[j-i, :, :] = np.asarray(rot_data[j,...]/self.max_value*255, dtype=np.uint8)
+                    pr_bar.increaseProgress()
+                save_data[ind,...] = odata
+                odata = None
+                print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+            save_ang[1] = 0
+            
         pr_bar.increaseProgress('Done')
         QApplication.restoreOverrideCursor()
-        del data, self.raw_data
     
     def save_as_zarr_disp(self):
         self.apply_rotation()
@@ -3516,13 +3722,16 @@ class SliceBrowser(QMainWindow):
         pr_bar.show()
         pr_bar.increaseProgress('Preparing Main Data Array')
         
-        data = np.asarray(self.raw_data_show, dtype=np.uint8)
+        size = det_chunk(self.shape[1], dtype=np.uint8)
+        end = self.shape[0]
+        if size/end >= 1.2:
+            data = np.asarray(self.raw_data_show, dtype=np.uint8)
         xmin, xmax = self.raw_kx[0], self.raw_kx[-1]
         ymin, ymax = self.raw_ky[0], self.raw_ky[-1]
         ty = self.raw_E
         
         pr_bar.increaseProgress('Preparing Metadata for Attributes')
-        attr_array = np.zeros((data.shape[0], 2))
+        attr_array = np.zeros((self.shape[0], 2))
         attr_array[:, 0] = ty
         attr_array[0, 1] = xmin
         attr_array[1, 1] = xmax
@@ -3533,6 +3742,7 @@ class SliceBrowser(QMainWindow):
         QApplication.restoreOverrideCursor()
         path, _ = QFileDialog.getSaveFileName(None, "Save Zarr File", f'data_cube_Ang_{self.path_angle:.1f}_disp.zarr', "Zarr Files (*.zarr)")
         if path == "":
+            data, attr_array = None, None
             return
 
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
@@ -3540,7 +3750,29 @@ class SliceBrowser(QMainWindow):
         pr_bar.resize(self.w//3, self.h//4)
         pr_bar.show()
         pr_bar.increaseProgress('Saving data')
-        zarr.save_group(path, data=data, attr_array=attr_array, ang=np.array([0], dtype=np.float32))
+        if size/end >= 1.2:
+            zarr.save_group(path, data=data, attr_array=attr_array, ang=np.array([0, 0], dtype=np.float32))
+            data, attr_array = None, None
+        else:
+            save_data = zarr.open(os.path.join(path, 'data'), mode='w', shape=self.shape, dtype=np.uint8)
+            save_attr = zarr.open(os.path.join(path, 'attr_array'), mode='w', shape=(self.shape[0], 2), dtype=np.float32)
+            save_attr[:] = attr_array
+            attr_array = None
+            save_ang = zarr.open(os.path.join(path, 'ang'), mode='w', shape=(2,), dtype=np.float32)
+            save_ang[:] = np.array([0, 1], dtype=np.float32)
+            step = int(min(size, self.shape[0]//1.5))
+            for i in range(0, end, step):
+                ind = slice(i, min(i + step, end))
+                odata = np.empty((abs(i-min(i + step, end)), self.shape[1], self.shape[2]), dtype=np.uint8)
+                for j in range(i, min(i + step, end)):
+                    odata[j-i, :, :] = data[j,...]
+                    pr_bar.increaseProgress()
+                save_data[ind,...] = odata
+                odata = None
+                print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+            data = None
+            save_ang[1] = 0
+            
         pr_bar.increaseProgress('Setting file attributes')
         for name in os.listdir(path):
             item_path = os.path.join(path, name)
@@ -3550,7 +3782,6 @@ class SliceBrowser(QMainWindow):
                 os.system(f'attrib +h +s "{item_path}"')
         pr_bar.increaseProgress('Done')
         QApplication.restoreOverrideCursor()
-        del data
 
     def update_E_job(self, arr):
         img_item = pg.ImageItem(arr.T)
@@ -3612,24 +3843,87 @@ class SliceBrowser(QMainWindow):
     def rot_raw_data(self, pr_bar):
         angle = self.path_angle
         path = os.path.join(self.path, '__disp__.zarr')
-        for i in range(self.raw_data_show.shape[0]):
-            surface = self.raw_data[i, :, :]
-            surface = rotate(surface, -angle, surface.shape)
-            self.raw_data[i, :, :] = surface
-            pr_bar.increaseProgress()
+        size = det_chunk(self.shape[1], dtype=np.float32)
+        end = self.shape[0]
+        if self.raw_data is None:   # reflecting lack of memory
+            #Saving raw data
+            rot_data = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'rot_data'), mode='w', shape=self.shape, dtype=np.float32)
+            step = int(min(size, self.shape[0]//1.5))
+            for i in range(0, end, step):
+                ind = slice(i, min(i + step, end))
+                odata = np.empty((abs(i-min(i + step, end)), self.shape[1], self.shape[2]), dtype=np.float32)
+                for j in range(i, min(i + step, end)):
+                    odata[j-i,...] = rotate(self.data(j), -angle, self.data(j).shape)
+                    pr_bar.increaseProgress()
+                rot_data[ind,...] = odata
+                odata = None
+                print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+            
+            
+            #Saving disp data
+            print('Saving display data...')
+            size = det_chunk(self.shape[1], dtype=np.float32)
+            end = self.shape[0]
+            if size/end <1.2:   # threshold: more than 1.2 times memory available
+                raw_data_show = zarr.open(os.path.join(path, 'data'), mode='r+')
+                angle = zarr.open(os.path.join(path, 'ang'), mode='r+')
+                angle[0] = self.path_angle
+                step = int(min(size, self.shape[0]//1.5))
+                for i in range(0, end, step):
+                    ind = slice(i, min(i + step, end))
+                    odata = np.empty((abs(i-min(i + step, end)), self.shape[1], self.shape[2]), dtype=np.uint8)
+                    for j in range(i, min(i + step, end)):
+                        odata[j-i,...] = rotate(raw_data_show[j,...], -self.angle, raw_data_show[j,...].shape)
+                        # pr_bar.increaseProgress()
+                    raw_data_show[ind,...] = odata
+                    odata = None
+                    print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+                angle[-1] = self.path_angle
+            else:
+                raw_data_show = np.asarray(zarr.open_group(path, mode='r')['data'], dtype=np.uint8)
+                for i in range(self.shape[0]):
+                    surface = raw_data_show[i, :, :]
+                    surface = rotate(surface, -self.angle, surface.shape)
+                    raw_data_show[i, :, :] = surface
+                    surface = None
+                    # pr_bar.increaseProgress()
+                os.chdir(self.path)
+                if os.path.exists('__disp__.zarr'):
+                    shutil.rmtree('__disp__.zarr')
+                
+                zarr.save_group(path, data=raw_data_show, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
+                raw_data_show = None
+                os.system(f'attrib +h +s "{path}"')
+                
+                os.chdir(self.path)
+                for name in os.listdir(path):
+                    item_path = os.path.join(path, name)
+                    if os.path.isfile(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
+                    elif os.path.isdir(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
+        ###new
+        else:
+            for i in range(self.shape[0]):
+                surface = self.raw_data[i, :, :]
+                surface = rotate(surface, -angle, surface.shape)
+                self.raw_data[i, :, :] = surface
+                surface = None
+                pr_bar.increaseProgress()
+            os.chdir(self.path)
+            if os.path.exists('__disp__.zarr'):
+                shutil.rmtree('__disp__.zarr')
+            zdata = np.asarray(self.raw_data/self.max_value*255, dtype=np.uint8)
+            zarr.save_group(path, data=zdata, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
+            zdata = None
+            os.system(f'attrib +h +s "{path}"')
+            for name in os.listdir(path):
+                item_path = os.path.join(path, name)
+                if os.path.isfile(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
+                elif os.path.isdir(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
         pr_bar.increaseProgress('Updating Cube')
-        os.chdir(self.path)
-        if os.path.exists('__disp__.zarr'):
-            shutil.rmtree('__disp__.zarr')
-        zdata = np.asarray(self.raw_data/np.max(self.raw_data)*255, dtype=np.uint8)
-        zarr.save_group(path, data=zdata, ang=np.array([self.path_angle], dtype=np.float32))
-        os.system(f'attrib +h +s "{path}"')
-        for name in os.listdir(path):
-            item_path = os.path.join(path, name)
-            if os.path.isfile(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
-            elif os.path.isdir(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
         self.raw_data_show = zarr.open_group(path, mode='r+')['data']
         self.prload = False
     
@@ -3638,58 +3932,82 @@ class SliceBrowser(QMainWindow):
             path = os.path.join(self.path, '__disp__.zarr')
         elif self.mode == 'display':
             path = self.path
-        raw_data_show = np.asarray(zarr.open_group(path, mode='r')['data'], dtype=np.uint8)
-        for i in range(self.raw_data_show.shape[0]):
-            surface = raw_data_show[i, :, :]
-            surface = rotate(surface, -self.angle, surface.shape)
-            raw_data_show[i, :, :] = surface
-            pr_bar.increaseProgress()
+        ###new
+        size = det_chunk(self.shape[1], dtype=np.uint8)
+        end = self.shape[0]
+        if size/end <1.2:   # threshold: more than 1.2 times memory available
+            raw_data_show = zarr.open(os.path.join(path, 'data'), mode='r+')
+            angle = zarr.open(os.path.join(path, 'ang'), mode='r+')
+            angle[0] = self.path_angle
+            step = int(min(size, self.shape[0]//1.5))
+            for i in range(0, end, step):
+                ind = slice(i, min(i + step, end))
+                odata = np.empty((abs(i-min(i + step, end)), self.shape[1], self.shape[2]), dtype=np.uint8)
+                for j in range(i, min(i + step, end)):
+                    odata[j-i,...] = rotate(raw_data_show[j,...], -self.angle, raw_data_show[j,...].shape)
+                    pr_bar.increaseProgress()
+                raw_data_show[ind,...] = odata
+                odata = None
+                print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+            angle[-1] = self.path_angle
+        ###new
+        else:
+            ###origin
+            # heavy memory usage method
+            raw_data_show = np.asarray(zarr.open_group(path, mode='r')['data'], dtype=np.uint8) #origin
+            for i in range(self.shape[0]):
+                surface = raw_data_show[i, :, :]
+                surface = rotate(surface, -self.angle, surface.shape)
+                raw_data_show[i, :, :] = surface
+                surface = None
+                pr_bar.increaseProgress()
+            os.chdir(self.path)
+            if self.mode == 'standard':
+                if os.path.exists('__disp__.zarr'):
+                    shutil.rmtree('__disp__.zarr')
+            elif self.mode == 'display':
+                os.chdir(os.path.dirname(self.path))
+                for filename in os.listdir(path):
+                    file_path = os.path.join(path, filename)
+                    if os.path.isfile(file_path) or os.path.islink(file_path):
+                        os.unlink(file_path)  # 刪除檔案或符號連結
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)  # 刪除子資料夾
+            zdata = np.asarray(raw_data_show, dtype=np.uint8)
+            if self.mode == 'standard':
+                zarr.save_group(path, data=zdata, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
+                os.system(f'attrib +h +s "{path}"')
+            elif self.mode == 'display':
+                xmin, xmax = self.raw_kx[0], self.raw_kx[-1]
+                ymin, ymax = self.raw_ky[0], self.raw_ky[-1]
+                ty = self.raw_E
+                
+                attr_array = np.zeros((zdata.shape[0], 2))
+                attr_array[:, 0] = ty
+                attr_array[0, 1] = xmin
+                attr_array[1, 1] = xmax
+                attr_array[2, 1] = ymin
+                attr_array[3, 1] = ymax
+                zarr.save_group(path, data=zdata, attr_array=attr_array, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
+            os.chdir(self.path)
+            for name in os.listdir(path):
+                item_path = os.path.join(path, name)
+                if os.path.isfile(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
+                elif os.path.isdir(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
+        ###origin
         pr_bar.increaseProgress('Updating Cube')
-        os.chdir(self.path)
-        if self.mode == 'standard':
-            if os.path.exists('__disp__.zarr'):
-                shutil.rmtree('__disp__.zarr')
-        elif self.mode == 'display':
-            os.chdir(os.path.dirname(self.path))
-            for filename in os.listdir(path):
-                file_path = os.path.join(path, filename)
-                if os.path.isfile(file_path) or os.path.islink(file_path):
-                    os.unlink(file_path)  # 刪除檔案或符號連結
-                elif os.path.isdir(file_path):
-                    shutil.rmtree(file_path)  # 刪除子資料夾
-        zdata = np.asarray(raw_data_show, dtype=np.uint8)
-        if self.mode == 'standard':
-            zarr.save_group(path, data=zdata, ang=np.array([self.path_angle], dtype=np.float32))
-            os.system(f'attrib +h +s "{path}"')
-        elif self.mode == 'display':
-            xmin, xmax = self.raw_kx[0], self.raw_kx[-1]
-            ymin, ymax = self.raw_ky[0], self.raw_ky[-1]
-            ty = self.raw_E
-            
-            attr_array = np.zeros((zdata.shape[0], 2))
-            attr_array[:, 0] = ty
-            attr_array[0, 1] = xmin
-            attr_array[1, 1] = xmax
-            attr_array[2, 1] = ymin
-            attr_array[3, 1] = ymax
-            zarr.save_group(path, data=zdata, attr_array=attr_array, ang=np.array([self.path_angle], dtype=np.float32))
-        os.chdir(self.path)
-        for name in os.listdir(path):
-            item_path = os.path.join(path, name)
-            if os.path.isfile(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
-            elif os.path.isdir(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
         self.raw_data_show = zarr.open_group(path, mode='r+')['data']
         self.prload = False
                 
-    def apply_rotation(self, save=False):
+    def apply_rotation(self, save=False, bin=False):
         self.sync_rotate_slider()
         
         self.path_angle += self.angle
         self.__path_angle()
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
-        pr_bar = ProgressDialog(self.raw_data_show.shape[0]+3, self.icon)
+        pr_bar = ProgressDialog(self.shape[0]+3, self.icon)
         pr_bar.resize(self.w//3, self.h//4)
         pr_bar.show()
         pr_bar.increaseProgress('Preparing Data')
@@ -3710,9 +4028,10 @@ class SliceBrowser(QMainWindow):
         self.rotate_slider.setValue(0)
         self.rotate_edit.editingFinished.connect(self.sync_rotate_slider)
         self.rotate_slider.valueChanged.connect(self.sync_rotate_edit)
-        self.bin_e_spin.setValue(1)
-        self.bin_kx_spin.setValue(1)
-        self.bin_ky_spin.setValue(1)
+        if not bin:
+            self.bin_e_spin.setValue(1)
+            self.bin_kx_spin.setValue(1)
+            self.bin_ky_spin.setValue(1)
         self.update_binned_data()
         pr_bar.increaseProgress()
         QApplication.restoreOverrideCursor()
@@ -3733,11 +4052,11 @@ if __name__ == "__main__":
     win.show()
     sys.exit(app.exec())
 '''
-    with open(cdir+os.sep+'DataViewer_temp.py', 'w', encoding='utf-8') as f:
+    with open(cdir+os.sep+'DataViewer.py', 'w', encoding='utf-8') as f:
         f.write(code)
     f.close()
     def j():
-        temp=os.sep+"DataViewer_temp.py"
+        temp=os.sep+"DataViewer.py"
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
@@ -4692,12 +5011,15 @@ class spectrogram:
         s_yl (str): The y-axis label for the exported data file.
         type (str): The type of data.
     """
-    def __init__(self, data=[], path=[]) -> None:   # should input path in main function
+    def __init__(self, data: xr.DataArray = [], path: list[str] | tuple[str, ...] | str = []) -> None:   # should input path in main function
         self.lfs = None
         self.npzf = False
         if len(path) > 0:
-            self.lfs = loadfiles(path)
-            self.data = self.lfs.data[0]
+            if __name__ == '__main__':
+                self.lfs = loadfiles(path, init=True)
+            else:
+                self.lfs = loadfiles(path)
+            self.data = self.lfs.get(0)
             if self.lfs.f_npz[0]:self.npzf = True
         else:
             self.data = data
@@ -4775,12 +5097,13 @@ class spectrogram:
         self.fx1 = False
         self.fx2 = False
         self.fx3 = False
+        dvalue, tst, lst = None, None, None
     
     def __change_file(self, *args):
         name = self.namevar.get()
         for i, j, k in zip(self.lfs.name, self.lfs.data, self.lfs.f_npz):
             if name == i:
-                self.data = j
+                self.data = self.lfs.get(j)
                 if k:self.npzf = True
                 else:self.npzf = False
         self.__preload(self.data)
@@ -5553,6 +5876,7 @@ class spectrogram:
             screen_height = self.tpg.winfo_reqheight()
             tx = int(t_sc_w*ScaleFactor/100) if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
             self.tpg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
+            self.tpg.protocol("WM_DELETE_WINDOW", self.closing)
             self.tpg.focus_force()
         else:
             self.tpg.update()
@@ -5560,6 +5884,12 @@ class spectrogram:
             screen_height = self.tpg.winfo_reqheight()
             self.tpg.geometry(f"{screen_width}x{screen_height}+{0}+{sc_y}")
             self.tpg.mainloop()
+    
+    def closing(self):
+        self.tpg.destroy()
+        clear(self.lfs)
+        clear(self)
+        gc.collect()
     
     def __export(self):
         # os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
@@ -5688,7 +6018,7 @@ pulse counting
     '''     
                 body = ''
                 for i in self.lfs.data:
-                    s=spectrogram(i)
+                    s=spectrogram(self.lfs.get(i))
                     s.rr1, s.rr2 = self.rr1, self.rr2
                     body+=s.gen_casa_body()
                 f.write(head+body+'end of experiment\n')
@@ -6206,6 +6536,7 @@ d
         # tz = griddata((x.flatten(), y.flatten()), tz.flatten(), (tx, ty), method='cubic')
         self.tr_a1.clear()
         self.tr_a1.pcolormesh(tx,ty,tz,cmap=self.cmap)
+        tx, ty, tz = None, None, None
         self.r1=self.tr_a1.axhline(self.rr1, c='r')
         self.r2=self.tr_a1.axhline(self.rr2, c='r')
         if self.lensmode=='Transmission':
@@ -6226,6 +6557,7 @@ d
         # self.tr_a1.scatter(self.ev, np.sum(tz,axis=0), c='k', marker='o', s=scale*scale*0.9)
         self.tr_a1.clear()
         self.tr_a1.pcolormesh(tx,ty,tz,cmap=self.cmap)
+        tx, ty, tz = None, None, None
         self.r1=self.tr_a1.axhline(self.rr1, c='r')
         self.r2=self.tr_a1.axhline(self.rr2, c='r')
         if self.lensmode=='Transmission':
@@ -6436,8 +6768,8 @@ def change_file(*args):
         l_name.config(font=('Arial', size(14), "bold"))
     for i, j, k, l in zip(lfs.name, lfs.data, lfs.path, lfs.f_npz):
         if name == i:
-            data = j
-            pr_load(j)
+            data = lfs.get(j)
+            pr_load(lfs.get(j))
             rdd = k
             if l:
                 npzf = True
@@ -6460,14 +6792,17 @@ def tools(*args):
         s = spectrogram(path=lfs.path)
         s.plot(g, value3.get())
         toolg.destroy()
+        return
         
     def exp_casa():
         lfs.export_casa()
         toolg.destroy()
+        return
         
     def kplane():
         CEC(g, lfs.path)
         toolg.destroy()
+        return
         
     global toolg
     if 'toolg' in globals():
@@ -6485,6 +6820,7 @@ def tools(*args):
     set_center(g, toolg, 0, 0)
     toolg.focus_set()
     toolg.limit_bind()
+    return
     
 class RestrictedToplevel(tk.Toplevel):
     def __init__(self, parent, **kwargs):
@@ -6720,7 +7056,7 @@ class ColormapEditor(tk.Toplevel):
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load: {e}")
 
-class loadfiles():
+class loadfiles(FileSequence):
     """
     A class to handle loading and organizing multiple file types for analysis.
     It supports h5, json, txt, and npz files, and organizes them based on R1 and R2 values.
@@ -6728,6 +7064,8 @@ class loadfiles():
     Parameters
     ----------
         files (list, tuple or string) : File paths to be loaded. It can include h5, json, txt, and npz files.
+        mode (str) : Loading mode, either 'lazy' or 'eager'. Default is 'lazy'.
+        init (bool) : If True, rewrite/create the zarr file if using lazy loading mode. Else, read the existing zarr file instead. Default is False.
     
     Attributes
     ----------
@@ -6738,22 +7076,36 @@ class loadfiles():
         r2 (list): List of R2 values extracted from file names.
         f_npz (list): Boolean list indicating if the corresponding file is a npz file
         n (list): Indices of files that are npz or VolumeSlicer h5 files.
+    Returns
+    ----------
+        object (FileSequence): File Sequence object.
+        
     """
-    def __init__(self, files: list[str] | tuple[str, ...] | str):
+    __slots__ = ['f_npz', 'n', 'opath', 'oname', 'r1s', 'r2s', 'sep', 'r1_splitter', 'r2_splitter', 'or2', 'or1', 'path1', 'r11', 'path', 'name', 'r1', 'r2', 'data', 'sort', 'zpath', 'xr_name', 'xr_coords', 'xr_attrs', 'load_mode']
+    def __init__(self, files: list[str] | tuple[str, ...] | str, mode: Literal['lazy', 'eager'] = 'lazy', init: bool = False):
         if isinstance(files, str):
             files = [files] # Convert string to list ensuring compatibility
         self.f_npz = [False for i in files]
         self.n = []
+        if __name__ == '__main__':
+            self.zpath = os.path.join(cdir, '.MDC_cut', 'lfs_data')
+        else:
+            self.zpath = os.path.join(cdir, '.MDC_cut', 'ext_lfs_data')
+        self.load_mode = mode
+        self.init = init
         for i, v in enumerate(files):
             tf=False
             try:
-                if load_h5(v).attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
+                data = load_h5(v)
+                if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
                     tf=True
+                clear(data)
             except: pass
             if '.npz' in os.path.basename(v) or tf:
                 self.f_npz[i] = True
                 self.n.append(i)
         self.opath = [f for f in files]
+        files = None
         self.oname = [os.path.basename(f).split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '').replace('.npz', '') for f in self.opath]
         self.r1s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1']
         self.r2s = ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
@@ -6763,7 +7115,82 @@ class loadfiles():
                     ' ','.txt','.TXT']
         self.__set_r1_r2()
         self.__set_data()
-        
+        self.__store()
+        return
+    
+    def __str__(self)-> str:
+        string = '\033[36m<MDC_cut.loadfiles File Loader>\n'
+        string += f"Loaded {len(self.name)} files:\033[32m\n"
+        for i, name in enumerate(self.name):
+            string += f"  {i + 1}. {name}\n"
+        string += f'\033[0mSize: {np.sum([self.get(i).nbytes/1024**2 for i in range(len(self.name))]):.3f} MB\n'
+        return string
+                
+    def get(self, ind: int = 0) -> xr.DataArray:
+        if self.load_mode == 'eager':
+            return self.data[ind]
+        elif self.load_mode == 'lazy':
+            path = os.path.join(self.zpath, f'lfs_{ind}.zarr')
+            tdata = zarr.open(path, mode='r')
+            data = xr.DataArray(
+                data=tdata,
+                coords=self.xr_coords[ind],
+                name=self.xr_name[ind],
+                attrs=self.xr_attrs[ind]
+            )
+            tdata, path = None, None
+        return data
+    
+    @property
+    def __check_name(self) -> bool:
+        flag = True
+        try:
+            tpath = os.path.join(self.zpath, f'lfs_name.check')
+            with open(tpath, 'r') as f:
+                string = f.read().split('__sep__')[:-1]
+            for i, v in enumerate(self.name):
+                if string[i] != v:
+                    flag = False
+        except:
+            flag = False
+        return flag
+    
+    def __store(self):
+        if self.load_mode == 'lazy':
+            exist_f = False
+            match_f = False
+            if os.path.exists(self.zpath):
+                exist_f = True
+                match_f = self.__check_name
+                if not self.init:
+                    shutil.rmtree(self.zpath)
+            if not exist_f or not self.init or not match_f:
+                try:
+                    os.makedirs(self.zpath, exist_ok=True)
+                except:
+                    pass
+                tpath = os.path.join(self.zpath, f'lfs_name.check')
+                with open(tpath, 'w') as f:
+                    for i in range(len(self.name)):
+                        data = self.data[i].data
+                        dpath = os.path.join(self.zpath, f'lfs_{i}.zarr')
+                        zarr.save(dpath, data)
+                        f.write(self.name[i]+'__sep__')
+                set_hidden(self.zpath)
+                data, dpath, tpath = None, None, None
+        self.xr_coords, self.xr_name, self.xr_attrs = [], [], []
+        if self.load_mode == 'lazy':
+            for i in self.data:
+                i.data = np.empty(i.data.shape, dtype=np.uint8)
+                self.xr_coords.append(i.coords)
+                self.xr_name.append(i.name)
+                self.xr_attrs.append(i.attrs)
+            self.data = None
+            self.data = [i for i in range(len(self.name))]
+        elif self.load_mode == 'eager':
+            for i, v in enumerate(self.data):
+                v.data = v.data.astype(np.float32)
+    
     def __set_data(self):
         self.data = []
         for i in self.path:
@@ -6822,7 +7249,7 @@ class loadfiles():
             self.r1 = res(self.or1, self.or1)
             self.name = [os.path.basename(f).split('#id#')[0].split('#d#')[0].split('id')[0].replace('.h5', '').replace('.json', '').replace('.txt', '') for f in self.path]
             self.name = self.check_repeat(self.name)
-            
+
         self.r1_splitter , self.r2_splitter= [], []
         r1s = self.r1s
         r2s = self.r2s
@@ -6839,7 +7266,7 @@ class loadfiles():
                 self.r1_splitter.append('No_r1')
             if not tk:
                 self.r2_splitter.append('No_r2')
-        
+        r1s, r2s = None, None
         try:
             f = True
             t=0
@@ -6973,7 +7400,7 @@ class loadfiles():
     '''     
             body = ''
             for i in self.data:
-                s=spectrogram(i)
+                s=spectrogram(self.get(i))
                 body+=s.gen_casa_body()
             f.write(head+body+'end of experiment\n')
             f.close()
@@ -7004,11 +7431,11 @@ def cut_job_y(args):
     g.slice_index = i
     g.sym = sym
     surface = g.slice_data(i, angle, self_x, self_volume, x, z)
+    angle, self_x, self_y, self_volume, ev = None, None, None, None, None
     td = surface[int(cdensity/(xmax-xmin)*(min(z)-xmin)):int(cdensity/(xmax-xmin)*(max(z)-xmin)), int(cdensity/(ymax-ymin)*(min(x)-ymin)):int(cdensity/(ymax-ymin)*(max(x)-ymin))]
     td = cv2.resize(td, (cdensity, td.shape[1]), interpolation=cv2.INTER_CUBIC)
     result = td.mean(axis=0)
-    del td
-    gc.collect()
+    td = None
     path_cut = os.path.join('cut_temp_save', f'cut_{i}.zarr')
     path_cube = os.path.join('cube_temp_save', f'cube_{i}.zarr')
     zarr.save(path_cut, result)
@@ -7041,11 +7468,11 @@ def cut_job_x(args):
     g.slice_index = i
     g.sym = sym
     surface = g.slice_data(i, angle, self_x, self_volume, x, z)
+    angle, self_x, self_y, self_volume, ev = None, None, None, None, None
     td = surface[int(cdensity/(xmax-xmin)*(min(z)-xmin)):int(cdensity/(xmax-xmin)*(max(z)-xmin)), int(cdensity/(ymax-ymin)*(min(x)-ymin)):int(cdensity/(ymax-ymin)*(max(x)-ymin))]
     td = cv2.resize(td, (td.shape[0], cdensity), interpolation=cv2.INTER_CUBIC)
     result = td.mean(axis=1)
-    del td
-    gc.collect()
+    td = None
     path_cut = os.path.join('cut_temp_save', f'cut_{i}.zarr')
     path_cube = os.path.join('cube_temp_save', f'cube_{i}.zarr')
     zarr.save(path_cut, result)
@@ -7090,6 +7517,7 @@ def rotate(data, angle, size):
 
 class g_cut_plot(tk.Toplevel):
     def __init__(self, master, data_cut, cx, cy, cdx, cdy, cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, stop_event, pool, path, e_photon, slim, sym, xmin, xmax, ymin, ymax, cube):
+    # def __init__(self, master, data_cut, cx, cy, cdx, cdy, cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, stop_event, pool, path, e_photon, slim, sym, xmin, xmax, ymin, ymax):
         super().__init__(master, background='white')
         self.cx_cut = cx
         self.cy_cut = cy
@@ -7149,8 +7577,7 @@ class g_cut_plot(tk.Toplevel):
         self.phi1_offset_cut = self.phi1_offset
         self.r11_offset_cut = self.r11_offset
 
-        del fig, ax
-        gc.collect()
+        fig, ax, x, y, tx = None, None, None, None, None
 
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         toolbar = NavigationToolbar2Tk(canvas, fr_fig)
@@ -7167,28 +7594,78 @@ class g_cut_plot(tk.Toplevel):
         
         self.bind("<Return>", self.save_cut)
         self.focus_set()
-
+        return
+    
+    @staticmethod
+    def zarr_chunk_save(path: str, data: np.ndarray = np.empty((10, 100, 100)), attr_array: np.ndarray = np.empty((10, 100, 1))):
+        """
+        Using zarr to save large array data in chunks to avoid memory issues.
+        Parameters:
+            path (str): The file path to save the zarr data.
+            data (np.ndarray): The large array data (3D) to be saved.
+            attr_array (np.ndarray): The attribute array (3D) to be appended to data.
+        """
+        size = det_chunk(data.shape[1])
+        step = int(min(size, data.shape[0]//1.1))
+        merged_shape = data.shape[:-1] + (data.shape[-1] + attr_array.shape[-1],)
+        # chunk_shape =  (step,) + (data.shape[1],) + (data.shape[2] + attr_array.shape[2],)
+        output_zarr = zarr.open(path, mode='w',
+                            shape=merged_shape,
+                            dtype=np.float32)
+        end = data.shape[0]
+        max_val = 0
+        for i in range(0, end, step):
+            ind = slice(i, min(i + step, end))
+            odata = np.empty((abs(i-min(i + step, end)), data.shape[1], data.shape[2]+attr_array.shape[2]), dtype=np.float32)
+            for j in range(i, min(i + step, end)):
+                odata[j-i,:,:-1] = zarr.open_array(os.path.join(cdir, '.MDC_cut', 'cube_temp_save', f'cube_{j}.zarr'))[:]
+                if np.max(odata[j-i,:,:-1]) > max_val:
+                    max_val = np.max(odata[j-i,:,:-1])
+            odata[:, :2, -1] = attr_array[ind, :2, 0]
+            output_zarr[ind,...] = odata
+            odata = None
+            print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+            
+        return max_val.astype(np.float16)
+    
+    @staticmethod
+    def disp_zarr_save(input_path, output_path, data, max_val):
+        zarr.save_group(output_path, ang=np.array([0, 0], dtype=np.float32))
+        end = data.shape[0]
+        size = det_chunk(data.shape[1], dtype=np.uint8)
+        step = int(min(size, end//1.1))
+        path = os.path.join(output_path, 'data')
+        savez = zarr.open(path, mode='w', shape=data.shape, dtype=np.uint8)
+        for i in range(0, end, step):
+            ind = slice(i, min(i + step, end))
+            savez[ind,...] = np.asarray(zarr.open(input_path, mode='r')[ind, :, :-1]/max_val*255, dtype=np.uint8)
+            print('Progress: %.2f%%'%(min(i + step, end)/end*100))
+    
     def save_zarr(self, path=None, data=None, xmin=None, xmax=None, ymin=None, ymax=None, ev=None):
-        attr_array = np.zeros((data.shape[0], data.shape[1], 1))  # Example attribute array
+        attr_array = np.zeros((data.shape[0], data.shape[1], 1), dtype=np.float32)  # Example attribute array
         attr_array[:, 0, 0] = ev
         attr_array[0, 1, 0] = xmin
         attr_array[1, 1, 0] = xmax
         attr_array[2, 1, 0] = ymin
         attr_array[3, 1, 0] = ymax
-        zdata = np.append(data, attr_array, axis=2)
-        zarr.save(path, zdata)
+        # current_mem = psutil.virtual_memory().available
+        # zdata = np.append(data, attr_array, axis=2)
+        # zarr.save(path, zdata)
+        if hwnd:
+            windll.user32.ShowWindow(hwnd, 9)
+            windll.user32.SetForegroundWindow(hwnd)
+        max_val = self.zarr_chunk_save(path, data=data, attr_array=attr_array)
         for name in os.listdir(path):
             item_path = os.path.join(path, name)
             if os.path.isfile(item_path):
                 os.system(f'attrib +h +s "{item_path}"')
             elif os.path.isdir(item_path):
                 os.system(f'attrib +h +s "{item_path}"')
-        path = os.path.join(path, '__disp__.zarr')
-        zdata = np.asarray(data/np.max(data)*255, dtype=np.uint8)
-        zarr.save_group(path, data=zdata, ang=np.array([0],dtype=np.float32))
-        os.system(f'attrib +h +s "{path}"')
-        for name in os.listdir(path):
-            item_path = os.path.join(path, name)
+        disp_path = os.path.join(path, '__disp__.zarr')
+        self.disp_zarr_save(path, disp_path, data, max_val)
+        os.system(f'attrib +h +s "{disp_path}"')
+        for name in os.listdir(disp_path):
+            item_path = os.path.join(disp_path, name)
             if os.path.isfile(item_path):
                 os.system(f'attrib +h +s "{item_path}"')
             elif os.path.isdir(item_path):
@@ -7201,9 +7678,11 @@ class g_cut_plot(tk.Toplevel):
                 print('Save operation cancelled')
             else:
                 self.save_zarr(path, data=self.cube, xmin=self.xmin, xmax=self.xmax, ymin=self.ymin, ymax=self.ymax, ev=self.ty)
+                # self.save_zarr(path, xmin=self.xmin, xmax=self.xmax, ymin=self.ymin, ymax=self.ymax, ev=self.ty)
                 print(f'Data cube saved to {path}')
         except Exception as e:
             print(f"An error occurred while saving the data cube: {e}")
+        return
 
     def save_cut(self, event=None):
         try:
@@ -7218,10 +7697,10 @@ class g_cut_plot(tk.Toplevel):
             print('Data saved to %s'%path)
         except Exception as e:
             print(f"An error occurred: {e}")
+        return
 
     def on_closing(self):
-        del self.cube, self.data_cut
-        gc.collect()
+        self.cube, self.data_cut = None, None
         self.stop_event.clear()
         if self.pool:
             self.pool.terminate()
@@ -7229,6 +7708,9 @@ class g_cut_plot(tk.Toplevel):
             self.pool.join()
             print('Joined')
         self.destroy()
+        clear(self)
+        gc.collect()
+        return
     
     def saveh5(self, tpath, path, data, x, y, angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, e_photon, slim, sym, desc):
         with h5py.File(tpath, 'w') as f:
@@ -7304,6 +7786,7 @@ class g_cut_plot(tk.Toplevel):
             f.create_dataset('VolumeSlicer/sym', data=sym)
             
             f.create_dataset('Spectrum', data=np.array(data))
+        return
 
 def set_center(parent, child, w_extend=None, h_extend=None):
     """
@@ -7338,6 +7821,7 @@ def set_center(parent, child, w_extend=None, h_extend=None):
     px = parent.winfo_x() + w_parent // 2 - w_child // 2
     py = parent.winfo_y() + h_parent // 2 - h_child // 2
     child.geometry(f'{w_child+w_extend}x{h_child+h_extend}+{px}+{py}')
+    return
 
 class wait(tk.Toplevel):
     def __init__(self, master):
@@ -7359,8 +7843,26 @@ class wait(tk.Toplevel):
     def done(self):
         self.grab_release()
         self.destroy()
-        del self
-        gc.collect()
+        return
+
+def det_chunk(cdensity, dtype=np.float32):
+    current_mem = psutil.virtual_memory().available/1024**3
+    use_mem = current_mem*0.8  # 80%
+    print(f"Memory available: {current_mem:.2f} GB, 80% Upper Limit: {use_mem:.2f} GB")
+    mem = np.empty((cdensity, cdensity), dtype=dtype).nbytes/1024**3
+    chunk_size = int(use_mem / mem)
+    mem = None
+    return chunk_size
+
+def clear(obj):
+    try:
+        for i in obj.__dir__():
+            try:
+                setattr(obj, i, None)
+            except:
+                pass
+    except:
+        pass
 
 class VolumeSlicer(tk.Frame):
     def __init__(self, parent=None, path=None, volume=np.empty((5,5,5), dtype=np.float32), cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=600, g=None):
@@ -7368,7 +7870,7 @@ class VolumeSlicer(tk.Frame):
         Args
         ------
             parent (tkinker-master object or None) : If the master given, the plot will be embedded in the master window.
-            path (list) : `loadfiles.path`
+            path (list) : `FileSequence.path`
             volume (np.ndarray) : shape=(r1, phi, ev)
             cmap (str) : Colormap to be used for the plot, default is 'gray'.
             x (array-like) : 1-D array representing phi values of the raw data in reciprocal mode and z values in real mode.
@@ -7774,6 +8276,7 @@ class VolumeSlicer(tk.Frame):
         cos_phi = np.cos(np.deg2rad(Phi_target))
         cos_phi[cos_phi == 0] = np.float32(1e-8)
         R1_target = np.arcsin(np.clip(kx_grid / (k * cos_phi), -1, 1)) * 180 / np.pi
+        kx_grid, ky_grid, cos_phi = None, None, None
         map_x = (R1_target - xlim[0]) / (xlim[1] - xlim[0]) * (data.shape[0] - 1)
         map_y = (Phi_target - ylim[0]) / (ylim[1] - ylim[0]) * (data.shape[1] - 1)
         valid_mask = (
@@ -7781,13 +8284,17 @@ class VolumeSlicer(tk.Frame):
             (Phi_target >= ylim[0]) & (Phi_target <= ylim[1]) &
             np.isfinite(map_x) & np.isfinite(map_y)
         )
+        R1_target, Phi_target = None, None
         map_x[~np.isfinite(map_x)] = 0
         map_y[~np.isfinite(map_y)] = 0
         map_x = np.clip(map_x, 0, data.shape[0] - 1)
         map_y = np.clip(map_y, 0, data.shape[1] - 1)
         data = cv2.remap(data.T, map_x, map_y, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+        map_x, map_y = None, None
         data[~valid_mask] = 0
         data = cv2.resize(data, (int(density/(self.xmax-self.xmin)*(kxlim[1]-kxlim[0])), int(density/(self.ymax-self.ymin)*(kylim[1]-kylim[0]))), interpolation=cv2.INTER_CUBIC)
+        valid_mask = None
+        # kx_grid, ky_grid, R1_target, Phi_target, map_x, map_y, cos_phi, valid_mask = None, None, None, None, None, None, None, None
         return data
     
     def combine_slice(self, data, xlim, ylim, r2=None, ev=None, step=0.25):  # complete
@@ -7810,10 +8317,11 @@ class VolumeSlicer(tk.Frame):
             if int(self.cdensity/(self.ymax-self.ymin)*(xlim[1]-xlim[0])) ==0:
                 xlim[1] += step
                 xlim[0] -= step
-            base = np.zeros((self.cdensity, self.cdensity), dtype=np.float32)
             data = cv2.resize(data, (int(self.cdensity/(self.ymax-self.ymin)*(ylim[1]-ylim[0])), int(self.cdensity/(self.xmax-self.xmin)*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
+            base = np.zeros((self.cdensity, self.cdensity), dtype=np.float32)
             base[0:data.shape[0], 0:data.shape[1]] = data
             data = np.roll(base.T, (int((ylim[0]-self.xmin)/(self.xmax-self.xmin)*self.cdensity), int((xlim[0]-self.ymin)/(self.ymax-self.ymin)*self.cdensity)), axis=(0, 1))
+            base = None
             data = data
         elif self.type == 'reciprocal':
             if r2 is None:
@@ -7826,13 +8334,14 @@ class VolumeSlicer(tk.Frame):
                 if self.cut_show:
                     print(f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
                     print('in combine_slice')
-            base = np.zeros((self.cdensity, self.cdensity), dtype=np.float32)
             r1 = np.linspace(xlim[0], xlim[1], int(self.cdensity/180*(xlim[1]-xlim[0])+1))
             phi = np.linspace(ylim[0], ylim[1], int(self.cdensity/180*(ylim[1]-ylim[0])))
             # r1, phi = np.broadcast_arrays(r1, phi)
             x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1[:, None]/180*np.pi) * np.cos(phi[None, :]/180*np.pi)  # x: r1, y: phi, at r2=0
             y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi[None, :]/180*np.pi)
+            r1, phi = None, None
             txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
+            x, y = None, None
             ####### new method start
             data = self.k_map(data, self.cdensity, xlim, ylim, txlim, tylim, ev)
             ####################### new method end
@@ -7855,13 +8364,14 @@ class VolumeSlicer(tk.Frame):
             # image_gray = cv2.resize(image_gray[::-1,:], (data.shape[1],data.shape[0]), interpolation=cv2.INTER_CUBIC)
             # data = cv2.resize(image_gray, (int(self.cdensity/(self.xmax-self.xmin)*(txlim[1]-txlim[0])), int(self.cdensity/(self.ymax-self.ymin)*(tylim[1]-tylim[0]))), interpolation=cv2.INTER_CUBIC)
             ########### original method end
+            base = np.zeros((self.cdensity, self.cdensity), dtype=np.float32)
             base[0:data.shape[0], 0:data.shape[1]] = data
             # del image_from_plot, image_gray, data
-            del data
+            data = None
             data = np.roll(base, (int((tylim[0]-self.ymin)/(self.ymax-self.ymin)*self.cdensity), int((txlim[0]-self.xmin)/(self.xmax-self.xmin)*self.cdensity)), axis=(0, 1))
+            txlim, tylim = None, None
             # data = data[::-1, :]
-            del base
-            gc.collect()
+            base = None
             data = rotate(data, r2-self.z[0], data.shape)
             
             if not fr2:
@@ -7869,6 +8379,7 @@ class VolumeSlicer(tk.Frame):
         if self.z is not None and fr2==True:  # for multiple cubes need np.nanmean
             msk = data<self.tmin-self.tmin/3
             data[msk] = np.nan
+            msk = None
             
         return data
     
@@ -7915,12 +8426,12 @@ class VolumeSlicer(tk.Frame):
         if self.z is None: # for 1 cube
             # ind = filter(np.arange(len(self.y)), i)     #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
             # if len(ind) != 0:       #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
-            #     surface = self.combine_slice(self_volume[ind, :, i], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], ev=self.ev[i])       #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
+            #     surface = self.combine_slice(self_volume[ind, :], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], ev=self.ev[i])       #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
             # else:
             r1_offset, phi_offset = self.cal_r1_phi_offset()
-            surface = self.combine_slice(self_volume[:, :, i], xlim = [min(self.y)-r1_offset, max(self.y)-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], ev=self.ev[i])
+            surface = self.combine_slice(self_volume, xlim = [min(self.y)-r1_offset, max(self.y)-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], ev=self.ev[i])
         elif self.z is not None: # for multiple cubes
-            img = self_volume[:, :, i]
+            img = self_volume
             try:
                 self.tmin = np.min(img[img>0])
                 r2 = sorted(set(self.z))
@@ -7930,10 +8441,11 @@ class VolumeSlicer(tk.Frame):
                     # ind = filter(ind, i, r2=z)        #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
                     # if len(ind) != 0:     #取消filter 篩選加速功能 一律算全範圍 保留完整Data Cube
                     r1_offset, phi_offset = self.cal_r1_phi_offset(r2=z)
-                    surface = np.nanmean([surface, self.combine_slice(self_volume[ind, :, i], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], r2=z, ev=self.ev[i])], axis=0)
+                    surface = np.nanmean([surface, self.combine_slice(self_volume[ind, :], xlim = [min(self.y[ind])-r1_offset, max(self.y[ind])-r1_offset], ylim = [min(self_x)-phi_offset, max(self_x)-phi_offset], r2=z, ev=self.ev[i])], axis=0)
                 surface = np.nan_to_num(surface)
             except:
                 surface = np.zeros((self.cdensity, self.cdensity), dtype=np.float32)
+        img, self_volume, self_x = None, None, None
         surface = rotate(surface, -angle, surface.shape)
         osurface = surface.copy()
         try:
@@ -7943,14 +8455,13 @@ class VolumeSlicer(tk.Frame):
                 rotated_surface = rotate(surface, 360//self.sym*(ii+1), surface.shape)
                 rotated_surface[rotated_surface < tmin-tmin/3] = np.nan
                 osurface = np.nanmean([osurface, rotated_surface], axis=0)
-                del rotated_surface
-                gc.collect()
-            del surface
-            gc.collect()
+                rotated_surface = None
+            surface = None
             osurface[osurface < tmin-tmin/3] = np.nan
             surface = np.nan_to_num(osurface)
         except:
             surface = np.zeros((self.cdensity, self.cdensity), dtype=np.float32)
+        osurface = None
         return surface
     
     def listen_for_stop_command(self):
@@ -7987,7 +8498,7 @@ class VolumeSlicer(tk.Frame):
                 shutil.rmtree('cube_temp_save')
             os.mkdir('cube_temp_save')
             with Pool(self.pool_size) as self.pool:
-                args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
+                args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume[:, :, i], self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
                 for i, result in enumerate(tqdm.tqdm(self.pool.imap(cut_job_y, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
                     if self.stop_event.is_set():
                         # shm.close()
@@ -7998,7 +8509,9 @@ class VolumeSlicer(tk.Frame):
                     pass
                 if not self.stop_event.is_set():
                     print("\n\033[32mPress \033[31m'Enter' \033[32mto coninue...\033[0m")
+                args = None
         except Exception as e:
+            args = None
             print('t_cut_job_y')
             print(f"An error occurred: {e}")
         # finally:
@@ -8030,7 +8543,7 @@ class VolumeSlicer(tk.Frame):
                 shutil.rmtree('cube_temp_save')
             os.mkdir('cube_temp_save')
             with Pool(self.pool_size) as self.pool:
-                args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
+                args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume[:, :, i], self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
                 for i, result in enumerate(tqdm.tqdm(self.pool.imap(cut_job_x, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
                     if self.stop_event.is_set():
                         # shm.close()
@@ -8041,7 +8554,9 @@ class VolumeSlicer(tk.Frame):
                     pass
                 if not self.stop_event.is_set():
                     print("\n\033[32mPress \033[31m'Enter' \033[32mto coninue...\033[0m")
+                args = None
         except Exception as e:
+            args = None
             print('t_cut_job_x')
             print(f"An error occurred: {e}")
         # finally:
@@ -8139,7 +8654,7 @@ class VolumeSlicer(tk.Frame):
             self.cut_plot()
             
     
-    def decide_core_num(self):
+    def det_core_num(self):
         '''
         Memory is used to calculate a safe amount of cores by concering the least used memory size per worker.
         The actual memory size that the pool would use may be a little bit larger (1x ~ 1.4x).
@@ -8173,7 +8688,7 @@ class VolumeSlicer(tk.Frame):
         print('\033[0mProcessing \033[32m%d x %d x %d \033[0msize data cube'%(self.cdensity, self.cdensity, len(self.ev)))
         print('\n\033[33mProcessor:\033[36m',cpuinfo.get_cpu_info()['brand_raw'])
         print('\033[33mPhysical CPU cores:\033[36m', psutil.cpu_count(logical=False))
-        self.decide_core_num()
+        self.det_core_num()
         print('\033[0mPlease wait...\n')
         print('\033[32mIf you want to stop the process, wait for 20 seconds and try.\nBut sometimes it may not work.\033[0m')
         print('\nThe following shows the progress bar and the estimation of the processing time')
@@ -8186,7 +8701,8 @@ class VolumeSlicer(tk.Frame):
         z = [self.cy-self.cdy/2, self.cy+self.cdy/2]
         ty = self.ev
         self.data_cut = np.zeros((len(ty), self.cdensity), dtype=np.float32)
-        self.data_cube = np.zeros((len(ty), self.cdensity, self.cdensity), dtype=np.float32)
+        # self.data_cube = np.zeros((len(ty), self.cdensity, self.cdensity), dtype=np.float32)
+        self.data_cube = np.empty((len(ty), self.cdensity, self.cdensity), dtype=np.uint8)
         phi_offset = self.phi_offset
         r1_offset = self.r1_offset
         phi1_offset = self.phi1_offset
@@ -8204,8 +8720,7 @@ class VolumeSlicer(tk.Frame):
             #     del surface
             #     td = cv2.resize(td, (td.shape[0], self.cdensity), interpolation=cv2.INTER_CUBIC)
             #     data[i,:] = td.mean(axis=1)
-            #     del td
-            #     gc.collect()
+            #     td = None
             # -----stable version no multiprocessing-----
             
             self.t = threading.Thread(target=self.t_cut_job_x, daemon=True)
@@ -8213,7 +8728,7 @@ class VolumeSlicer(tk.Frame):
         else:   # cut along kx
             self.t = threading.Thread(target=self.t_cut_job_y, daemon=True)
             self.t.start()
-        time.sleep(20)
+        time.sleep(5)
         print("\n\033[32m-----Press \033[31m'Enter' \033[32mto terminate the pool-----\033[0m\n")
         t1.join()
         self.t.join()
@@ -8221,15 +8736,20 @@ class VolumeSlicer(tk.Frame):
         for i in range(len(ty)):
             try:
                 self.data_cut[i] = zarr.open_array(os.path.join(cdir, '.MDC_cut', 'cut_temp_save', f'cut_{i}.zarr'))
-                self.data_cube[i] = zarr.open_array(os.path.join(cdir, '.MDC_cut', 'cube_temp_save', f'cube_{i}.zarr'))
+                # self.data_cube[i] = zarr.open_array(os.path.join(cdir, '.MDC_cut', 'cube_temp_save', f'cube_{i}.zarr'))
+                # self.data_cube[i] = od
             except FileNotFoundError:
                 pass
+            # self.data_cube = np.asarray(self.data_cube/np.max(self.data_cube)*255, dtype=np.uint8)
         g_cut_plot(self, self.data_cut, self.cx, self.cy, self.cdx, self.cdy, self.cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self.stop_event, self.pool, self.path, self.e_photon, self.slim_cut, self.sym_cut, self.xmin, self.xmax, self.ymin, self.ymax, self.data_cube)
-        if os.path.exists(os.path.join(cdir, '.MDC_cut', 'cut_temp_save')):
-            shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cut_temp_save'))
-        if os.path.exists(os.path.join(cdir, '.MDC_cut', 'cube_temp_save')):
-            shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cube_temp_save'))
-        del self.data_cube, self.data_cut
+        # g_cut_plot(self, self.data_cut, self.cx, self.cy, self.cdx, self.cdy, self.cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self.stop_event, self.pool, self.path, self.e_photon, self.slim_cut, self.sym_cut, self.xmin, self.xmax, self.ymin, self.ymax)
+        # if os.path.exists(os.path.join(cdir, '.MDC_cut', 'cut_temp_save')):
+        #     shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cut_temp_save'))
+        # if os.path.exists(os.path.join(cdir, '.MDC_cut', 'cube_temp_save')):
+        #     shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cube_temp_save'))
+        self.data_cube, self.data_cut = None, None
+        # self.data_cut = None
+        return
         
     def set_density(self, *args):
         try:
@@ -8615,6 +9135,7 @@ class VolumeSlicer(tk.Frame):
         copy_to_clipboard(self.fig)
         self.canvas.draw()
         self.wait.done()
+        return
 
     def set_sl(self, *args):
         try:
@@ -8684,6 +9205,7 @@ class VolumeSlicer(tk.Frame):
             for i in range(len(set(self.z))):
                 self.reg_l1.append(self.ax_region.plot([], [], color=c[i%len(c)], linewidth=scale*0.5))
                 self.reg_l2.append(self.ax_region.plot([], [], color=c[i%len(c)], linewidth=scale*0.5))
+        return
     
     def disp_region(self):
         if self.type == 'reciprocal':
@@ -8738,6 +9260,7 @@ class VolumeSlicer(tk.Frame):
             self.ax_region.set_xlabel(r'$R1$ (deg)', fontsize=size(20))
             self.ax_region.set_ylabel(r'$Phi$ (deg)', fontsize=size(20))
             self.canvas_region.draw()
+        return
 
     def combine(self, data, xlim, ylim, r2=None, ev=None, step=0.25):  # complete
         '''
@@ -8759,10 +9282,11 @@ class VolumeSlicer(tk.Frame):
             if int(self.density/(self.ymax-self.ymin)*(xlim[1]-xlim[0])) ==0:
                 xlim[1] += step
                 xlim[0] -= step
-            base = np.zeros((self.density, self.density), dtype=np.float32)
             data = cv2.resize(data, (int(self.density/(self.ymax-self.ymin)*(ylim[1]-ylim[0])), int(self.density/(self.xmax-self.xmin)*(xlim[1]-xlim[0]))), interpolation=cv2.INTER_CUBIC)
+            base = np.zeros((self.density, self.density), dtype=np.float32)
             base[0:data.shape[0], 0:data.shape[1]] = data
             data = np.roll(base.T, (int((ylim[0]-self.xmin)/(self.xmax-self.xmin)*self.density), int((xlim[0]-self.ymin)/(self.ymax-self.ymin)*self.density)), axis=(0, 1))
+            base = None
             data = data
         elif self.type == 'reciprocal':
             if r2 is None:
@@ -8775,13 +9299,14 @@ class VolumeSlicer(tk.Frame):
                 print(f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
                 tk.messagebox.showwarning("Warning",f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
                 self.focus_set()
-            base = np.zeros((self.density, self.density), dtype=np.float32)
             r1 = np.linspace(xlim[0], xlim[1], int(self.density/180*(xlim[1]-xlim[0]))*4)
             phi = np.linspace(ylim[0], ylim[1], int(self.density/180*(ylim[1]-ylim[0]))*4)
             # r1, phi = np.broadcast_arrays(r1, phi)
             x = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(r1[:, None]/180*np.pi) * np.cos(phi[None, :]/180*np.pi)  # x: r1, y: phi, at r2=0
             y = np.sqrt(2*self.m*self.e*ev)/self.hbar*10**-10*np.sin(phi[None, :]/180*np.pi)
+            r1, phi = None, None
             txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
+            x, y = None, None
             ####### new method start
             # t=time.perf_counter()
             data = self.k_map(data, self.density, xlim, ylim, txlim, tylim, ev)
@@ -8809,14 +9334,15 @@ class VolumeSlicer(tk.Frame):
             # t = time.perf_counter()
             # print('2, resize*2:', time.perf_counter()-t)
             # t = time.perf_counter()
+            base = np.zeros((self.density, self.density), dtype=np.float32)
             base[0:data.shape[0], 0:data.shape[1]] = data
             # del data, image_gray, image_from_plot
-            del data
+            data = None
             data = np.roll(base, (int((tylim[0]-self.ymin)/(self.ymax-self.ymin)*self.density), int((txlim[0]-self.xmin)/(self.xmax-self.xmin)*self.density)), axis=(0, 1))
+            txlim, tylim = None, None
             # print('3, shift:', time.perf_counter()-t)
             # data = data[::-1, :]
-            del base
-            gc.collect()
+            base = None
             # t = time.perf_counter()
             data = rotate(data, r2-self.z[0], data.shape)
             # print('4, rotate:', time.perf_counter()-t)
@@ -8825,6 +9351,7 @@ class VolumeSlicer(tk.Frame):
         if self.z is not None and fr2==True:  # for multiple cubes need np.nanmean
             msk = data<self.tmin-self.tmin/3
             data[msk] = np.nan
+            msk = None
             
         return data
 
@@ -8833,15 +9360,16 @@ class VolumeSlicer(tk.Frame):
     def show(self):
         self.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-class CEC(loadfiles):
-    def __init__(self, g, files, mode='normal'):
-        super().__init__(files)
+class CEC(loadfiles, CEC_Object):
+    def __init__(self, g: tk.Tk, files: list[str] | tuple[str, ...] | str, mode: Literal['normal', 'load']= 'normal'):
+        super().__init__(files, mode='eager')
         if self.sort == 'r1r2':
             r2 = []
             for i in self.r2:
                 for j in i:
                     r2.append(j)
             self.r2 = r2
+            r2 = None
         
         self.mode = mode
         self.g = g
@@ -8855,11 +9383,18 @@ class CEC(loadfiles):
             hwnd = None
     
     def on_closing(self):
+        global cec
         try:
-            plt.close()
+            plt.close('all')
         except:
             pass
         self.tlg.destroy()
+        clear(self.view)
+        clear(self)
+        if cec is not None:
+            cec = None
+        gc.collect()
+        return
     
     def load(self, angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym, name, path):
         vs = self.view
@@ -8935,6 +9470,7 @@ class CEC(loadfiles):
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
+        return
     
     def __set_data(self, odata=[], density=800, *args):
         if len(odata) > 0:
@@ -8944,7 +9480,8 @@ class CEC(loadfiles):
             for i in self.path:
                 self.size += os.path.getsize(i)
             if self.sort == 'r1':
-                odataframe = np.stack([i.to_numpy().transpose() for i in odata], axis=0, dtype=np.float32)
+                odataframe = np.stack([i.transpose() for i in odata], axis=0, dtype=np.float32)
+                # odataframe = np.stack([zarr.open(self.zpath, mode='r')[i, :, :].transpose() for i in range(len(self.name))], axis=0, dtype=np.float32)
                 print('Input Data Shape: '+str(odataframe.shape))   # shape: (r1, phi, ev)
                 
                 r1 = self.r1
@@ -8954,13 +9491,13 @@ class CEC(loadfiles):
             elif self.sort == 'r1r2':
                 r1 = self.r1
                 r2 = self.r2
-                odataframe = np.stack([i.to_numpy().transpose() for i in odata], axis=0, dtype=np.float32)
+                odataframe = np.stack([i.transpose() for i in odata], axis=0, dtype=np.float32)
+                # odataframe = np.stack([zarr.open(self.zpath, mode='r')[i, :, :].transpose() for i in range(len(self.name))], axis=0, dtype=np.float32)
                 print('Input Data Shape: '+str(odataframe.shape))
                 
                 ev, phi = odata[0].indexes.values()
                 e_photon = float(odata[0].attrs['ExcitationEnergy'].removesuffix(' eV'))
                 self.view = VolumeSlicer(parent=self.frame1, path=self.path, volume=odataframe, cmap='viridis', x=phi, y=r1, z=r2, ev=ev, e_photon=e_photon, density=density, g=self.tlg)
-                
             self.tlg.bind('<Return>', self.view.set_slim)
             if self.mode == 'normal':
                 self.view.set_slim()
@@ -8973,6 +9510,7 @@ class CEC(loadfiles):
             self.tlg.geometry(f'{w}x{h}+{tx}+{sc_y}')
             self.tlg.protocol("WM_DELETE_WINDOW", self.on_closing)
             self.tlg.update()
+            odataframe, odata, r1, r2, ev, phi, e_photon = None, None, None, None, None, None, None
 
     def __rlist(self):
         self.frame0 = tk.Frame(self.tlg, bg='white')
@@ -9059,6 +9597,7 @@ class CEC(loadfiles):
                     path.append(self.path[i])
                     name.append(self.name[i])
                     data.append(self.data[i])
+                    self.data[i] = None
             self.path = path
             self.name = name
             self.data = data
@@ -9066,6 +9605,13 @@ class CEC(loadfiles):
             self.gg.destroy()
         self.__prework()
         self.tlg.focus_set()
+        if isinstance(lfs, FileSequence):   # Actually always True
+            for i in lfs.__dir__():
+                if i not in ['path', 'r1']:
+                    try:
+                        setattr(self, i, None)
+                    except:
+                        pass
         
     def __check_file(self):
         self.gg = RestrictedToplevel(self.g, bg='white')
@@ -9155,6 +9701,7 @@ class CEC(loadfiles):
         set_center(self.g, self.gg, 0, 0)
         self.gg.focus_set()
         self.gg.limit_bind()
+        return
         
     def __select_file(self):
         if self.f2:
@@ -9220,6 +9767,7 @@ class CEC(loadfiles):
             self.gg.limit_bind()
         else:
             self.__check(f=True)
+        return
         
     def __prework(self):
         if self.f1:
@@ -9239,7 +9787,13 @@ class CEC(loadfiles):
             self.__select_file()
         else:
             self.__rlist()
+            # if type(self.data[0]) != xr.DataArray:
+            #     self.data = [self.get(i) for i in self.data]
+            for i in self.data:
+                i.data = i.data.astype(np.float32)
+                # i.data = np.empty(i.data.shape, dtype=np.uint8)
             self.__set_data(odata=self.data)
+        return
     
     def __gen_f1_f2(self):
         self.f1 = False
@@ -9257,10 +9811,12 @@ class CEC(loadfiles):
                 for j in range(len(self.r1)):
                     if self.r1[i] == self.r1[j] and i != j:
                         self.f2 = True
+        return
     
     def __check_re(self):
         self.__gen_f1_f2()
         self.__prework()
+        return
 
 class add_lb():
     def __init__(self, fr, sort):
@@ -9271,6 +9827,7 @@ class add_lb():
         self.r = []
         self.name = []
         self.sort = sort
+        return
         
     def add(self, s, r, r1s, r2s):    
         self.s.append(s.removesuffix('\n'))
@@ -9309,6 +9866,7 @@ class add_lb():
         if listbox.size() > 0:
             listbox.select_set(0)
             listbox.event_generate('<<ListboxSelect>>')
+        return
         
     def __on_up(self, event, lb, l):
         selected_index = lb.curselection()
@@ -9316,6 +9874,7 @@ class add_lb():
             lb.select_clear(selected_index[0])
             lb.select_set(selected_index[0] - 1)
             lb.event_generate('<<ListboxSelect>>')
+        return
     
     def __on_down(self, event, lb, l):
         selected_index = lb.curselection()
@@ -9323,6 +9882,7 @@ class add_lb():
             lb.select_clear(selected_index[0])
             lb.select_set(selected_index[0] + 1)
             lb.event_generate('<<ListboxSelect>>')
+        return
     
     def __on_select(self, event, lb, l, ltex):
         selected_index = lb.curselection()
@@ -9332,6 +9892,7 @@ class add_lb():
             for i,v in enumerate(self.r):
                 if str(v)+' ' in ltex:
                     self.name[i] = selected_item.replace('\n', '')
+        return
         
 def pr_load(data: xr.DataArray):
     global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
@@ -9339,6 +9900,7 @@ def pr_load(data: xr.DataArray):
     dpath = dvalue[14]
     st=''
     lst=[]
+    print()
     for _ in data.attrs.keys():
         if _ == 'Description':
             ts=str(data.attrs[_])
@@ -9409,7 +9971,8 @@ def o_load(drop=False, files=''):
     st.put('Loading...')
     files = tkDnD.load_raw(files)
     if len(files) > 0:
-        f_npz = 0   # initial value to determine if CEC when loaded npz
+        f_npz = False   # initial value to determine if operate CEC when loaded npz (prevent from endless calling CEC during loadfiles() process)
+        clear(lfs)
         lfs = loadfiles(files)
         tpath = lfs.path[0]
         b_name.config(state='normal')
@@ -9465,7 +10028,7 @@ def o_load(drop=False, files=''):
     limg.config(image=img[np.random.randint(len(img))])
     tbasename = os.path.basename(tpath)
     if '.h5' in tbasename:
-        data = lfs.data[0]  # data save as xarray.DataArray format
+        data = lfs.get(0)  # data save as xarray.DataArray format
         pr_load(data)
         tname = lfs.name[0]
         print(f'\n{tname}')
@@ -9477,7 +10040,7 @@ def o_load(drop=False, files=''):
             print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'H5 Name'))
         st.put('Loaded')
     elif '.json' in tbasename:
-        data = lfs.data[0]
+        data = lfs.get(0)
         pr_load(data)
         tname = lfs.name[0]
         print(f'\n{tname}')
@@ -9489,11 +10052,11 @@ def o_load(drop=False, files=''):
             print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'JSON Name'))
         st.put('Loaded')
     elif '.txt' in tbasename:
-        data = lfs.data[0]
+        data = lfs.get(0)
         pr_load(data)
         st.put('Loaded')
     elif '.npz' in tbasename:
-        data = lfs.data[0]
+        data = lfs.get(0)
         pr_load(data)
         tname = lfs.name[0]
         st.put('Loaded')
@@ -9501,6 +10064,8 @@ def o_load(drop=False, files=''):
         st.put('')
         pass
     #   print Attributes
+    tname, tbasename, tpath = None, None, None
+    return
 
 
 def o_ecut():
@@ -10645,9 +11210,12 @@ def o_loadefit():
                 pr_load(data)
         except:
             pass
-    if ".vms" in file or ".npz" in file:
+    if ".vms" in file:
         np.savez(os.path.join(cdir, '.MDC_cut', 'efit.npz'), ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
                  emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
+    elif ".npz" in file:
+        np.savez(os.path.join(cdir, '.MDC_cut', 'efit.npz'), ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
+                 emin=semin, emax=semax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
     limg.config(image=img[np.random.randint(len(img))])
     print('Done')
     st.put('Done')
@@ -11778,6 +12346,8 @@ def ejob():     # MDC Fitting GUI
     elif ScaleFactor <= 300:
         tlength = int(0.97*6*edpi)  # 300
         twidth = int(0.97*0.2*edpi)
+    tlength = int(tlength*scale)
+    twidth = int(twidth*scale)
     chi = tk.Scale(frind, label='Index', from_=0, to=len(phi)-1, orient='horizontal',
                    variable=efiti, state='active', bg='white', fg='black', length=tlength, width=twidth, resolution=1)
     chi.grid(row=0, column=1)
@@ -14299,7 +14869,14 @@ def fitm():
         if npzf:x = phi
         else:x = np.float64((2*m*v*1.602176634*10**-19)**0.5*np.sin(phi/180*np.pi)*10**-10/(h/2/np.pi))
         y = ecut.to_numpy().reshape(len(x))
-        xx, x_arg = filter(x, kmin[i], kmax[i])
+        try:
+            xx, x_arg = filter(x, kmin[i], kmax[i])
+        except IndexError:
+            print("\033[31m\nCheck the Raw Data compatible with the current MDC Fitted File\n\033[0m")
+            return
+        except Exception as e:
+            print("\nError occurred while filtering:", e, '\n')
+            return
         # tx = x[np.argwhere(x >= kmin[i])].flatten()
         # xx = tx[np.argwhere(tx <= kmax[i])].flatten()
         # ty = y[np.argwhere(x >= kmin[i])].flatten()
@@ -15135,6 +15712,7 @@ def o_plot1(*e):
             pass
         print('Done')
         st.put('Done')
+        gc.collect()
 
 
 def o_plot2(*e):
@@ -15305,6 +15883,7 @@ def o_plot2(*e):
         out.draw()
         print('Done')
         st.put('Done')
+        gc.collect()
 
 
 def o_plot3(*e):
@@ -15758,6 +16337,7 @@ def o_plot3(*e):
             pass
         print('Done')
         st.put('Done')
+        gc.collect()
 
 
 props = dict(facecolor='green', alpha=0.3)
@@ -18070,15 +18650,15 @@ if __name__ == '__main__':
     ToolTip(b_loadefit, "Select the EDC fitted file in VMS or NPZ formats. Note that the VMS file should only contain two peak information. This feature is not well-developed yet.", "F2")
     ToolTip(b_loadbb, "Import the bare band file in TXT format. Please check the user manual for detailed file format specifications.", "F3")
     ToolTip(b_spec, "View the current data using Spectrogram Interface.", "F4")
-    ToolTip(b_mfit, "Utilize the embedded MDC Fitter Interface to perform fitting operations on or to visualize the MDC slices.", "F5")
-    ToolTip(b_efit, "Utilize the embedded EDC Fitter Interface to perform fitting operations on or to visualize the EDC slices. Note that this feature is not fully implemented yet.", "F6")
+    ToolTip(b_mfit, "Utilize the embedded MDC Fitter Interface to perform fitting operations on or to visualize the MDC slices. The corresponding raw data will be automatically loaded if the file path is valid.", "F5")
+    ToolTip(b_efit, "Utilize the embedded EDC Fitter Interface to perform fitting operations on or to visualize the EDC slices. The corresponding raw data will be automatically loaded if the file path is valid. Note that this feature is not fully implemented yet.", "F6")
     ToolTip(b_mcut, "Slice the dataset along the angular axis to extract momentum distribution curves (MDCs) and export the data series to VMS format.", "F7")
     ToolTip(b_ecut, "Perform energy-axis slicing of the dataset to extract energy distribution curves (EDCs) and export the resulting data series in VMS format.", "F8")
     ToolTip(b_kcal, "A calculator tool that converts k-values at a specified energy into corresponding angle values expressed in degrees.", "F9")
     ToolTip(b_exp_graph, "Display and save the graph with Matplotlib window.", "F10")
     ToolTip(b_exp_origin, "Select the required data and import it into OriginPro to enable advanced data processing.", "F11")
     ToolTip(b_view_3d, "Open a 3D data viewer to visualize the data cube in three dimensions. Rotation and HDF5 file export are supported.", "F12")
-    ToolTip(b_so_fit, "Add points to fit the sample angle offset.", "Ctrl+P")
+    ToolTip(b_so_fit, "Add data points to correct for sample angle offset. The measured points on the Energy-Angle diagram show asymmetry instead of the expected symmetry at specific kinetic energies, indicating slight sample/sample holder misalignment that can be corrected through fitting.", "Ctrl+P")
     
     # Define your custom colors (as RGB tuples)
     # (value,(color))
@@ -18163,9 +18743,9 @@ if __name__ == '__main__':
             phi = ff['phi']
             st = str(ff['st'])
             lst = ff['lst']
-            print('\nRaw Data preloaded:\n\n')
-            lfs = loadfiles(lpath)
-            data = lfs.data[0]
+            print('\n\033[90mRaw Data preloaded:\033[0m\n\n')
+            lfs = loadfiles(lpath, init=True)
+            data = lfs.get(0)
             for _ in data.attrs.keys():
                 if _ != 'Description':
                     print(_,':', data.attrs[_])
@@ -18176,7 +18756,7 @@ if __name__ == '__main__':
             rdd = path  # old version data path
             dpath = path    # new version data path
     except:
-        print('No Raw Data preloaded')
+        print('\033[90mNo Raw Data preloaded\033[0m')
 
     try:
         with np.load(os.path.join('.MDC_cut', 'bb.npz'), 'rb') as f:
@@ -18185,25 +18765,25 @@ if __name__ == '__main__':
             k = f['k']
             bbo = f['bbo']
             bbk = f['bbk']
-            print('Bare Band file preloaded:')
-            print(bpath+'\n')
+            print('\033[90mBare Band file preloaded:')
+            print(bpath+'\n\033[0m')
     except:
         bpath = ''
-        print('No Bare Band file preloaded')
+        print('\033[90mNo Bare Band file preloaded\033[0m')
 
     try:
         with np.load(os.path.join('.MDC_cut', 'efpath.npz'), 'rb') as f:
             efpath = str(f['efpath'])
-            print('EDC Fitted path preloaded')
+            print('\033[90mEDC Fitted path preloaded\033[0m')
     except:
-        print('No EDC Fitted path preloaded')
+        print('\033[90mNo EDC Fitted path preloaded\033[0m')
 
     try:
         with np.load(os.path.join('.MDC_cut', 'mfpath.npz'), 'rb') as f:
             mfpath = str(f['mfpath'])
-            print('MDC Fitted path preloaded')
+            print('\033[90mMDC Fitted path preloaded\033[0m')
     except:
-        print('No MDC Fitted path preloaded')
+        print('\033[90mNo MDC Fitted path preloaded\033[0m')
 
     try:
         with np.load(os.path.join('.MDC_cut', 'efit.npz'), 'rb') as f:
@@ -18221,10 +18801,10 @@ if __name__ == '__main__':
             seaa2 = f['seaa2']
             sefp = f['sefp']
             sefi = f['sefi']
-            print('EDC Fitted Data preloaded (Casa)')
+            print('\033[90mEDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
-        print('No EDC fitted data preloaded (Casa)')
+        print('\033[90mNo EDC fitted data preloaded (Casa)\033[0m')
 
     try:
         with np.load(os.path.join('.MDC_cut', 'mfit.npz'), 'rb') as f:
@@ -18245,12 +18825,12 @@ if __name__ == '__main__':
             try:
                 smresult = f['smresult']
                 smcst = f['smcst']
-                print('MDC Fitted Data preloaded (lmfit)')
+                print('\033[90mMDC Fitted Data preloaded (lmfit)\033[0m')
             except:
-                print('MDC Fitted Data preloaded (Casa)')
+                print('\033[90mMDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
-        print('No MDC fitted data preloaded (Casa)')
+        print('\033[90mNo MDC fitted data preloaded (Casa)\033[0m')
 
     try:
         cdata = np.load(os.path.join('.MDC_cut', 'colormaps.npz'), allow_pickle=True)
@@ -18261,7 +18841,7 @@ if __name__ == '__main__':
         colormap_name = str(cdata["name"])
         pr_cmap = LinearSegmentedColormap.from_list(colormap_name, list(zip(scales, colors)))
         mpl.colormaps.register(pr_cmap, force=True)
-        print('Last User Defined Colormap preloaded')
+        print('\033[90mLast User Defined Colormap preloaded\033[0m')
     except:
         pr_cmap = None
         pass
@@ -18639,7 +19219,7 @@ if __name__ == '__main__':
     out.mpl_connect('button_press_event', press)
     out.mpl_connect('button_release_event', release)
     ax= fig.subplots()
-    tim = np.array(Image.open(tdata))
+    tim = np.asarray(Image.open(tdata), dtype=np.uint8)
     ax.imshow(tim, aspect='equal', alpha=0.4)
     fontdict = {
     'fontsize': size(40),
@@ -18724,8 +19304,8 @@ if __name__ == '__main__':
             koffset.config(state='disabled')
     except:
         pass
-    print(f"Version: {__version__}")
-    print(f"Release Date: {__release_date__}\n")
+    print(f"\033[36mVersion: {__version__}")
+    print(f"Release Date: {__release_date__}\n\033[0m")
     ###### hotkey ######
     g.bind('<Return>', plot)
     g.bind('<Up>', cf_up)
@@ -18757,4 +19337,10 @@ if __name__ == '__main__':
         cec.tlg.focus_force()
     g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
     # print(f"Main GUI memory usage: {g_mem:.2f} GB")
+    # snapshot = tracemalloc.take_snapshot()
+    # top_stats = snapshot.statistics('lineno')
+    
+    # print("記憶體使用量 Top 10:")
+    # for index, stat in enumerate(top_stats[:10], 1):
+    #     print(f"{index}. {stat}")
     g.mainloop()
