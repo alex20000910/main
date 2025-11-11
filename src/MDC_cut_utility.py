@@ -2887,7 +2887,7 @@ class VolumeSlicer(tk.Frame):
                 self.entry_r11_offset.pack(side=tk.LEFT)
                 self.entry_r11_offset.insert(0, str(self.r11_offset))
                 
-                self.fit_so_button = tk.Button(frame2, text="Fit Sample Offsets", command=fit_so_app, font=('Arial', self.size(14), "bold"), bg='white')    #fix
+                self.fit_so_button = tk.Button(frame2, text="Fit Sample Offsets", command=self.fit_so_app, font=('Arial', self.size(14), "bold"), bg='white')
                 self.fit_so_button.pack(side=tk.TOP)
 
                 self.fig1 = plt.Figure(figsize=(5*self.app_pars.scale, 0.5*self.app_pars.scale),constrained_layout=True)
@@ -2953,6 +2953,14 @@ class VolumeSlicer(tk.Frame):
     
     def size(self, s: int) -> int:
         return int(s * self.app_pars.scale)
+    
+    def fit_so_app(self, *args):
+        try:
+            self.fit_so.lift()
+        except TypeError:
+            self.fit_so = SO_Fitter(self.g, self.app_pars)
+        except AttributeError:
+            self.fit_so = SO_Fitter(self.g, self.app_pars)
     
     def cal_r1_phi_offset(self, r2=None):
         if self.z is not None and r2 is not None:
@@ -3321,78 +3329,6 @@ class VolumeSlicer(tk.Frame):
         except Exception as e:
             args = None
             print('t_cut_job_x')
-            print(f"An error occurred: {e}")
-    
-    def t_cut_job_x_thread(self):
-        angle = self.angle
-        x = [self.cx-self.cdx/2, self.cx+self.cdx/2]
-        z = [self.cy-self.cdy/2, self.cy+self.cdy/2]
-        phi_offset = self.phi_offset
-        r1_offset = self.r1_offset
-        phi1_offset, r11_offset = self.phi1_offset, self.r11_offset
-        self_x = self.ox[self.slim[0]:self.slim[1]+1]
-        self_volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
-        
-        self.set_xy_lim()
-        try:
-            os.chdir(os.path.join(tempdir))
-            if os.path.exists('cut_temp_save'):
-                shutil.rmtree('cut_temp_save')
-            os.mkdir('cut_temp_save')
-            if os.path.exists('cube_temp_save'):
-                shutil.rmtree('cube_temp_save')
-            os.mkdir('cube_temp_save')
-
-            max_threads = self.pool_size*3
-            with ThreadPoolExecutor(max_workers=max_threads) as self.pool:
-                args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
-                
-                # results = []
-                for i, result in enumerate(tqdm.tqdm(self.pool.map(cut_job_x, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
-                    if self.stop_event.is_set():
-                        break
-                    # results.append(result)
-                    
-                if not self.stop_event.is_set():
-                    print("\n\033[32mPress \033[31m'Enter' \033[32mto continue...\033[0m")
-        except Exception as e:
-            print('t_cut_job_x')
-            print(f"An error occurred: {e}")
-    
-    def t_cut_job_y_thread(self):
-        angle = self.angle
-        x = [self.cx-self.cdx/2, self.cx+self.cdx/2]
-        z = [self.cy-self.cdy/2, self.cy+self.cdy/2]
-        phi_offset = self.phi_offset
-        r1_offset = self.r1_offset
-        phi1_offset, r11_offset = self.phi1_offset, self.r11_offset
-        self_x = self.ox[self.slim[0]:self.slim[1]+1]
-        self_volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
-        
-        self.set_xy_lim()
-        try:
-            os.chdir(os.path.join(tempdir))
-            if os.path.exists('cut_temp_save'):
-                shutil.rmtree('cut_temp_save')
-            os.mkdir('cut_temp_save')
-            if os.path.exists('cube_temp_save'):
-                shutil.rmtree('cube_temp_save')
-            os.mkdir('cube_temp_save')
-            
-            max_threads = self.pool_size*3
-            with ThreadPoolExecutor(max_workers=max_threads) as self.pool:
-                args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume, self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
-                
-                # results = []
-                for i, result in enumerate(tqdm.tqdm(self.pool.map(cut_job_y, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
-                    if self.stop_event.is_set():
-                        break
-                    # results.append(result)
-                    
-                if not self.stop_event.is_set():
-                    print("\n\033[32mPress \033[31m'Enter' \033[32mto continue...\033[0m")
-        except Exception as e:
-            print('t_cut_job_y')
             print(f"An error occurred: {e}")
             
     def confirm_cut(self, *args):
