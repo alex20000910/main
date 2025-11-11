@@ -14027,7 +14027,6 @@ if __name__ == '__main__':
     # g_mem set to 300 MB
     g_mem = psutil.Process(pid).memory_info().rss/1024**3
     app_pars = app_param(hwnd=hwnd, ScaleFactor=ScaleFactor, scaled_font_size=scaled_font_size, scale=scale, dpi=dpi, bar_pos=bar_pos, g_mem=g_mem)
-    # init_pars(app_pars)
 
     plt.rcParams['font.family'] = 'Arial'
     plt.rcParams['font.size'] = int(plt.rcParams['font.size'] * scale)
@@ -14863,7 +14862,6 @@ if __name__ == '__main__':
     # g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
     g_mem = psutil.Process(os.getpid()).memory_info().rss / 1024**3  # Main GUI memory in GB
     app_pars.g_mem = g_mem
-    # init_pars(app_pars)
     # print(f"Main GUI memory usage: {g_mem:.2f} GB")
     # snapshot = tracemalloc.take_snapshot()
     # top_stats = snapshot.statistics('lineno')

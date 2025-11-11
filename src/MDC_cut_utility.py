@@ -76,7 +76,7 @@ class CEC_Object(ABC):
         pass
 
 class app_param:
-    def __init__(self, hwnd=None, ScaleFactor=None, scaled_font_size=None, scale=None, dpi=None, bar_pos=None, g_mem=None, g=None):
+    def __init__(self, hwnd=None, ScaleFactor=None, scaled_font_size=None, scale=None, dpi=None, bar_pos=None, g_mem=None):
         self.hwnd = hwnd
         self.ScaleFactor = ScaleFactor
         self.scaled_font_size = scaled_font_size
@@ -84,8 +84,6 @@ class app_param:
         self.dpi = dpi
         self.bar_pos = bar_pos
         self.g_mem = g_mem
-        self.g = g
-
 
 class RestrictedToplevel(tk.Toplevel):
     def __init__(self, parent, **kwargs):
