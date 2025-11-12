@@ -22,7 +22,7 @@ if __name__ == "__main__":
     os.mkdir('.MDC_cut_DataViewer')
     os.system(f'attrib +h +s ".MDC_cut_DataViewer"')
 
-def rotate(data, angle, size):
+def rotate(data: cv2.typing.MatLike, angle: float, size: tuple[int, int]) -> cv2.typing.MatLike:
     """
     for square data
     """
@@ -39,7 +39,7 @@ def find_window():
         hwnd = windll.user32.FindWindowW(None, "cmd")
     return hwnd
 
-def det_chunk(density, density2=0, dtype=np.float32):
+def det_chunk(density: int, density2: int = 0, dtype: np.dtype=np.float32):
     if density2 == 0:
         density2 = density
     current_mem = psutil.virtual_memory().available/1024**3

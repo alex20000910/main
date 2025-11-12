@@ -4,10 +4,138 @@ import threading
 from ctypes import windll
 from abc import ABC, abstractmethod
 import numpy as np
+import xarray as xr
 from PIL import Image
 import win32clipboard
 import cv2
 import psutil
+
+class CEC_Object(ABC):
+    @abstractmethod
+    def info(self):
+        pass
+    @abstractmethod
+    def load(self, angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym, name, path):
+        pass
+    @abstractmethod
+    def on_closing(self):
+        pass
+
+class FileSequence(ABC):
+    @abstractmethod
+    def get(self, index: int) -> xr.DataArray:
+        pass
+    @abstractmethod
+    def check_repeat(self, name: list[str]) -> list[str]:
+        pass
+    @abstractmethod
+    def gen_r1(self, name: list[str], r1_splitter: list[str], r2_splitter: list[str]) -> np.float64 | list[str]:
+        pass
+    @abstractmethod
+    def gen_r2(self, name: list[str], r1_splitter: list[str], r2_splitter: list[str]) -> np.float64 | list[str]:
+        pass
+
+class cec_param:
+    def __init__(self, path_to_file: str=None, name: str=None, lf_path: list[str]=None, tlfpath: list[str]=None, cmap: str=None):
+        self.path_to_file = path_to_file
+        self.name = name
+        self.lf_path = lf_path
+        self.tlfpath = tlfpath
+        self.cmap = cmap
+
+class app_param:
+    def __init__(self, hwnd=None, scale=None, dpi=None, bar_pos=None, g_mem=None):
+        self.hwnd = hwnd
+        self.scale = scale
+        self.dpi = dpi
+        self.bar_pos = bar_pos
+        self.g_mem = g_mem
+
+class RestrictedToplevel(tk.Toplevel):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+        set_center(parent, self, 0, 0)
+        self.parent = parent
+        self.width = parent.winfo_reqwidth()
+        self.height = parent.winfo_reqheight()
+        
+    def limit_bind(self):
+        # 綁定配置變化事件
+        self.bind('<Configure>', self.on_configure)
+        
+    def on_configure(self, event):
+        # 只處理視窗位置變化（不是大小變化）
+        if event.widget == self:
+            x = self.winfo_x()
+            y = self.winfo_y()
+            self.x_min = int(self.parent.geometry().split('+')[1])
+            self.y_min = int(self.parent.geometry().split('+')[2])
+            self.x_max = self.x_min + self.width or self.winfo_screenwidth()
+            self.y_max = self.y_min + self.height or self.winfo_screenheight()
+            # 限制移動範圍
+            new_x = max(self.x_min, min(x, self.x_max - self.winfo_width()))
+            new_y = max(self.y_min, min(y, self.y_max - self.winfo_height()))
+            
+            # 如果位置超出範圍，重新設定
+            if x != new_x or y != new_y:
+                self.geometry(f"+{new_x}+{new_y}")
+
+def interp(x: float | list[float] | np.ndarray, xp: list[float] | np.ndarray, fp: list[float] | np.ndarray) -> np.ndarray:
+    """
+    Interpolates a 1-D function.
+    Given the data points (xp, fp), this function returns the interpolated values at the points x.
+    If the values in x are outside the range of xp, linear extrapolation is used.
+    A more general version of np.interp, which can handle decreasing x-coordinates.
+    
+    Args
+    ----------
+        x (float): The x-coordinates at which to evaluate the interpolated values.
+        xp (float): The x-coordinates of the data points.
+        fp (float): The y-coordinates of the data points.
+
+    Returns
+    ----------
+        out (ndarray) : The interpolated values, same shape as x.
+    
+    Example
+    ----------
+        >>> interp(1.5, [1, 2], [2, 3])
+        2.5
+        >>> interp([1.5, 2.5], [1, 2], [2, 3])
+        array([2.5, 3.5])
+    """
+    if xp[1] >= xp[0]:
+        y=np.interp(x,xp,fp)
+        try:
+            if len(np.array(x))>1:
+                for i,v in enumerate(x):
+                    if v < xp[0]:
+                        y[i]=(v-xp[0])/(xp[1]-xp[0])*(fp[1]-fp[0])+fp[0]
+                    elif v > xp[-1]:
+                        y[i]=(v-xp[-1])/(xp[-2]-xp[-1])*(fp[-2]-fp[-1])+fp[-1]
+        except:
+            v=x
+            if v < xp[0]:
+                y=(v-xp[0])/(xp[1]-xp[0])*(fp[1]-fp[0])+fp[0]
+            elif v > xp[-1]:
+                y=(v-xp[-1])/(xp[-2]-xp[-1])*(fp[-2]-fp[-1])+fp[-1]
+    else:
+        xp,fp=xp[::-1],fp[::-1]
+        y=np.interp(x,xp,fp)
+        try:
+            if len(np.array(x))>1:
+                for i,v in enumerate(x):
+                    if v < xp[0]:
+                        y[i]=(v-xp[0])/(xp[1]-xp[0])*(fp[1]-fp[0])+fp[0]
+                    elif v > xp[-1]:
+                        y[i]=(v-xp[-1])/(xp[-2]-xp[-1])*(fp[-2]-fp[-1])+fp[-1]
+        except:
+            v=x
+            if v < xp[0]:
+                y=(v-xp[0])/(xp[1]-xp[0])*(fp[1]-fp[0])+fp[0]
+            elif v > xp[-1]:
+                y=(v-xp[-1])/(xp[-2]-xp[-1])*(fp[-2]-fp[-1])+fp[-1]
+    return y
 
 def copy_to_clipboard(ff) -> None:
     """
@@ -80,19 +208,19 @@ def get_bar_pos():
     return bar_pos
 
 def smooth(x,l=20,p=3):
-    from scipy.signal import savgol_filter
     """
     Using Savitzky-Golay filter to smooth the data.
     
     Parameters
     ------
-    x : 1D array
-        data to be smoothed
+    x (array_like)
+        1D array data to be smoothed
     l : int, default: 20
         window length
     p : int, default: 3
         polynomial order
     """
+    from scipy.signal import savgol_filter
     x=savgol_filter(x, l, p)
     # for i in range(len(x)):
     #     if i>=l//2 and i+1<len(x)-l//2:
@@ -112,7 +240,7 @@ def smooth(x,l=20,p=3):
 #                 det[i] = 0
 #     return np.array(b)
 
-def res(a, b):
+def res(a: np.ndarray | list[float], b: np.ndarray | list[float]) -> np.ndarray:
     return np.array([b[i] for i in np.argsort(a)])
 
 def hidden_job(path):
@@ -139,81 +267,11 @@ def find_window():
         hwnd = windll.user32.FindWindowW(None, "cmd")
     return hwnd
 
-class CEC_Object(ABC):
-    @abstractmethod
-    def info(self):
-        pass
-    @abstractmethod
-    def load(self):
-        pass
-    @abstractmethod
-    def on_closing(self):
-        pass
-
-class FileSequence(ABC):
-    @abstractmethod
-    def get(self):
-        pass
-    @abstractmethod
-    def check_repeat(self):
-        pass
-    @abstractmethod
-    def gen_r1(self):
-        pass
-    @abstractmethod
-    def gen_r2(self):
-        pass
-
-class cec_param:
-    def __init__(self, path_to_file: str=None, name: str=None, lf_path: list[str]=None, tlfpath: list[str]=None, cmap: str=None):
-        self.path_to_file = path_to_file
-        self.name = name
-        self.lf_path = lf_path
-        self.tlfpath = tlfpath
-        self.cmap = cmap
-
-class app_param:
-    def __init__(self, hwnd=None, scale=None, dpi=None, bar_pos=None, g_mem=None):
-        self.hwnd = hwnd
-        self.scale = scale
-        self.dpi = dpi
-        self.bar_pos = bar_pos
-        self.g_mem = g_mem
-
-class RestrictedToplevel(tk.Toplevel):
-    def __init__(self, parent, **kwargs):
-        super().__init__(parent, **kwargs)
-        set_center(parent, self, 0, 0)
-        self.parent = parent
-        self.width = parent.winfo_reqwidth()
-        self.height = parent.winfo_reqheight()
-        
-    def limit_bind(self):
-        # 綁定配置變化事件
-        self.bind('<Configure>', self.on_configure)
-        
-    def on_configure(self, event):
-        # 只處理視窗位置變化（不是大小變化）
-        if event.widget == self:
-            x = self.winfo_x()
-            y = self.winfo_y()
-            self.x_min = int(self.parent.geometry().split('+')[1])
-            self.y_min = int(self.parent.geometry().split('+')[2])
-            self.x_max = self.x_min + self.width or self.winfo_screenwidth()
-            self.y_max = self.y_min + self.height or self.winfo_screenheight()
-            # 限制移動範圍
-            new_x = max(self.x_min, min(x, self.x_max - self.winfo_width()))
-            new_y = max(self.y_min, min(y, self.y_max - self.winfo_height()))
-            
-            # 如果位置超出範圍，重新設定
-            if x != new_x or y != new_y:
-                self.geometry(f"+{new_x}+{new_y}")
-
-def set_entry_value(entry, value):
+def set_entry_value(entry: tk.Entry, value: str) -> None:
     entry.delete(0, tk.END)
     entry.insert(0, value)
 
-def mesh(x, y):
+def mesh(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Create a meshgrid from x and y arrays.
     
@@ -237,7 +295,7 @@ def mesh(x, y):
             y1[i] = y1[i][::-1]
     return x, y, x1, y1
 
-def rotate(data, angle, size):
+def rotate(data: cv2.typing.MatLike, angle: float, size: tuple[int, int]) -> cv2.typing.MatLike:
     """
     for square data
     """
@@ -245,7 +303,7 @@ def rotate(data, angle, size):
     data = cv2.warpAffine(data, mat, (size[1], size[0]), flags=cv2.INTER_NEAREST)
     return data
 
-def set_center(parent, child, w_extend=None, h_extend=None):
+def set_center(parent: tk.Tk, child: tk.Toplevel, w_extend: int | None = None, h_extend: int | None = None):
     """
     
     Set the position of child window to the center of parent window.
@@ -280,7 +338,7 @@ def set_center(parent, child, w_extend=None, h_extend=None):
     child.geometry(f'{w_child+w_extend}x{h_child+h_extend}+{px}+{py}')
     return
 
-def det_chunk(cdensity, dtype=np.float32):
+def det_chunk(cdensity: int, dtype: np.dtype=np.float32) -> int:
     current_mem = psutil.virtual_memory().available/1024**3
     use_mem = current_mem*0.8  # 80%
     print(f"Memory available: {current_mem:.2f} GB, 80% Upper Limit: {use_mem:.2f} GB")

@@ -7501,6 +7501,7 @@ def flowlim(*e):
     t.start()
 
 
+@pool_protect
 def o_reload(*e):
     global k_offset, fev, ophi, rpos, pos, ffphi, fwhm, fk, st, kmin, kmax, smresult, smcst, smaa1, smaa2, smfp, smfi, skmin, skmax, epos, efwhm, ffphi, fk, emin, emax, seaa1, seaa2, sefp, sefi, semin, semax
     if '' == k_offset.get():
@@ -7548,6 +7549,7 @@ def o_reload(*e):
     st.put('k_offset changed')
 
 
+@pool_protect
 def climon():
     cm.set(h0.get_clim()[0])
     cM.set(h0.get_clim()[1])
@@ -7559,6 +7561,7 @@ def climon():
     vcmax.set(cM.get())
 
 
+@pool_protect
 def climoff():
     cm.set(-10000)
     cM.set(10000)
@@ -7580,6 +7583,7 @@ def chcmp(*e):
     cmpg.draw()
 
 
+@pool_protect
 def Chcmp(*e):
     global st, f, out, h0, h1, h2, f0
     limg.config(image=img[np.random.randint(len(img))])
@@ -7608,6 +7612,7 @@ def Chcmp(*e):
         st.put('Fail to execute')
 
 
+@pool_protect
 def o_exptm():
     global name, pos, fwhm, fev, st
     print('Processing...')
@@ -7625,6 +7630,7 @@ def o_exptm():
     st.put('Done')
 
 
+@pool_protect
 def o_expte():
     global name, epos, efwhm, ffphi, st
     print('Processing...')
@@ -7642,65 +7648,7 @@ def o_expte():
     print('Done')
     st.put('Done')
 
-
-def interp(x: float, xp: float, fp: float) -> np.ndarray:
-    """
-    Interpolates a 1-D function.
-    Given the data points (xp, fp), this function returns the interpolated values at the points x.
-    If the values in x are outside the range of xp, linear extrapolation is used.
-    A more general version of np.interp, which can handle decreasing x-coordinates.
-    
-    Args
-    ----------
-        x (float): The x-coordinates at which to evaluate the interpolated values.
-        xp (float): The x-coordinates of the data points.
-        fp (float): The y-coordinates of the data points.
-
-    Returns
-    ----------
-        out (ndarray) : The interpolated values, same shape as x.
-    
-    Example
-    ----------
-        >>> interp(1.5, [1, 2], [2, 3])
-        2.5
-        >>> interp([1.5, 2.5], [1, 2], [2, 3])
-        array([2.5, 3.5])
-    """
-    if xp[1] >= xp[0]:
-        y=np.interp(x,xp,fp)
-        try:
-            if len(np.array(x))>1:
-                for i,v in enumerate(x):
-                    if v < xp[0]:
-                        y[i]=(v-xp[0])/(xp[1]-xp[0])*(fp[1]-fp[0])+fp[0]
-                    elif v > xp[-1]:
-                        y[i]=(v-xp[-1])/(xp[-2]-xp[-1])*(fp[-2]-fp[-1])+fp[-1]
-        except:
-            v=x
-            if v < xp[0]:
-                y=(v-xp[0])/(xp[1]-xp[0])*(fp[1]-fp[0])+fp[0]
-            elif v > xp[-1]:
-                y=(v-xp[-1])/(xp[-2]-xp[-1])*(fp[-2]-fp[-1])+fp[-1]
-    else:
-        xp,fp=xp[::-1],fp[::-1]
-        y=np.interp(x,xp,fp)
-        try:
-            if len(np.array(x))>1:
-                for i,v in enumerate(x):
-                    if v < xp[0]:
-                        y[i]=(v-xp[0])/(xp[1]-xp[0])*(fp[1]-fp[0])+fp[0]
-                    elif v > xp[-1]:
-                        y[i]=(v-xp[-1])/(xp[-2]-xp[-1])*(fp[-2]-fp[-1])+fp[-1]
-        except:
-            v=x
-            if v < xp[0]:
-                y=(v-xp[0])/(xp[1]-xp[0])*(fp[1]-fp[0])+fp[0]
-            elif v > xp[-1]:
-                y=(v-xp[-1])/(xp[-2]-xp[-1])*(fp[-2]-fp[-1])+fp[-1]
-    return y
-
-
+@pool_protect
 def o_bareband():
     file = fd.askopenfilename(title="Select TXT file",
                               filetypes=(("TXT files", "*.txt"),))

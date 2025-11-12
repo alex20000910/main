@@ -1,7 +1,7 @@
 from MDC_cut_utility import *
 import os, inspect
 import sys, shutil
-from typing import Literal, Any
+from typing import Literal, Any, override
 import numpy as np
 import xarray as xr
 import h5py
@@ -680,7 +680,8 @@ class loadfiles(FileSequence):
             string += f"  {i + 1}. {name}\n"
         string += f'\033[0mSize: {np.sum([self.get(i).nbytes/1024**2 for i in range(len(self.name))]):.3f} MB\n'
         return string
-                
+    
+    @override
     def get(self, ind: int = 0) -> xr.DataArray:
         if self.load_mode == 'eager':
             return self.data[ind]
@@ -883,6 +884,7 @@ class loadfiles(FileSequence):
                 t+=1
         return tname
         
+    @override
     def gen_r1(self, name, r1_splitter, r2_splitter):
             try:
                 r1 = []
@@ -904,6 +906,7 @@ class loadfiles(FileSequence):
                 print(sys.exc_info())
                 return name
     
+    @override
     def gen_r2(self, name, r1_splitter, r2_splitter):
             try:
                 r2 = []

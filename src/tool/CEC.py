@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ctypes import windll
 import gc
-from typing import Literal
+from typing import Literal, override
 
 class CEC(loadfiles, CEC_Object):
     def __init__(self, g: tk.Tk, files: list[str] | tuple[str, ...] | str, mode: Literal['normal', 'load']= 'normal', cmap: str='viridis', app_pars: app_param=None):
@@ -32,6 +32,7 @@ class CEC(loadfiles, CEC_Object):
         self.frame1.grid(row=0, column=1)
         self.__check_re()
     
+    @override
     def on_closing(self):
         try:
             plt.close('all')
@@ -43,6 +44,7 @@ class CEC(loadfiles, CEC_Object):
         gc.collect()
         return
     
+    @override
     def load(self, angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym, name, path):
         vs = self.view
         set_entry_value(vs.entry_min, str(slim[0]))
@@ -77,6 +79,7 @@ class CEC(loadfiles, CEC_Object):
         self.info_cut_xy_dx = cdx
         self.info_cut_xy_dy = cdy
         
+    @override
     def info(self):
         print('\nData Cube Info:')
         print('\033[32mPath:\033[36m',f'{self.path[0]}')

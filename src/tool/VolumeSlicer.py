@@ -943,32 +943,32 @@ class VolumeSlicer(tk.Frame):
         xlim : cutting kx lim after rotation, [min, max]
         zlim : cutting ky lim after rotation, [min, max]
         """
-        def filter(ind, ii, r2=None):
-            r1 = np.linspace(min(self.y[ind]), max(self.y[ind]), len(self.y[ind]))[:, None]
-            phi = np.linspace(min(self_x), max(self_x), len(self_x))[None, :]
-            r1, phi = np.broadcast_arrays(r1, phi)
-            for i in range(self.sym):
-                r1_offset, phi_offset = self.cal_r1_phi_offset()
-                if r2 is None:
-                    r1, phi = self.rot(r1, phi, r1_offset, phi_offset, angle-360//self.sym*i)
-                else:
-                    r1, phi = self.rot(r1, phi, r1_offset, phi_offset, angle-(r2-self.z[0])-360//self.sym*i)
-                if i == 0:
-                    x = np.sqrt(2*self.m*self.e*self.ev[ii])/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)  # x: r1, y: phi, at r2=0
-                    y = np.sqrt(2*self.m*self.e*self.ev[ii])/self.hbar*10**-10*np.sin(phi/180*np.pi)
-                else:
-                    x = np.append(x, np.sqrt(2*self.m*self.e*self.ev[ii])/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi), axis=0)
-                    y = np.append(y, np.sqrt(2*self.m*self.e*self.ev[ii])/self.hbar*10**-10*np.sin(phi/180*np.pi), axis=0)
-            ti=[]
-            for i in range(r1.shape[1]):
-                if any(xlim[0]<x[:,i]) and any(zlim[0]<y[:,i]) and any(x[:,i]<xlim[1]) and any(y[:,i]<zlim[1]):
-                    ti.append(i)
-            if len(ti) != 0:
-                if min(ti)>0:
-                    ti.insert(0, min(ti)-1)
-                if max(ti)<len(self.y[ind])-1:
-                    ti.append(max(ti)+1)
-            return ind[ti]
+        # def filter(ind, ii, r2=None):
+        #     r1 = np.linspace(min(self.y[ind]), max(self.y[ind]), len(self.y[ind]))[:, None]
+        #     phi = np.linspace(min(self_x), max(self_x), len(self_x))[None, :]
+        #     r1, phi = np.broadcast_arrays(r1, phi)
+        #     for i in range(self.sym):
+        #         r1_offset, phi_offset = self.cal_r1_phi_offset()
+        #         if r2 is None:
+        #             r1, phi = self.rot(r1, phi, r1_offset, phi_offset, angle-360//self.sym*i)
+        #         else:
+        #             r1, phi = self.rot(r1, phi, r1_offset, phi_offset, angle-(r2-self.z[0])-360//self.sym*i)
+        #         if i == 0:
+        #             x = np.sqrt(2*self.m*self.e*self.ev[ii])/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)  # x: r1, y: phi, at r2=0
+        #             y = np.sqrt(2*self.m*self.e*self.ev[ii])/self.hbar*10**-10*np.sin(phi/180*np.pi)
+        #         else:
+        #             x = np.append(x, np.sqrt(2*self.m*self.e*self.ev[ii])/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi), axis=0)
+        #             y = np.append(y, np.sqrt(2*self.m*self.e*self.ev[ii])/self.hbar*10**-10*np.sin(phi/180*np.pi), axis=0)
+        #     ti=[]
+        #     for i in range(r1.shape[1]):
+        #         if any(xlim[0]<x[:,i]) and any(zlim[0]<y[:,i]) and any(x[:,i]<xlim[1]) and any(y[:,i]<zlim[1]):
+        #             ti.append(i)
+        #     if len(ti) != 0:
+        #         if min(ti)>0:
+        #             ti.insert(0, min(ti)-1)
+        #         if max(ti)<len(self.y[ind])-1:
+        #             ti.append(max(ti)+1)
+        #     return ind[ti]
         self.cut_show = False
         if i ==100:
             self.cut_show = True
@@ -1478,28 +1478,28 @@ class VolumeSlicer(tk.Frame):
         except:pass
         self.x = self.ox[self.slim[0]:self.slim[1]+1]
         self.volume = self.ovolume[:, self.slim[0]:self.slim[1]+1, :]
-        def filter(ind, i, r2=None):    #test the filtering process in slice_data function
-            r1 = np.linspace(min(self.y[ind]), max(self.y[ind]), len(self.y[ind]))[:, None]
-            phi = np.linspace(min(self.x), max(self.x), len(self.x))[None, :]
-            r1, phi = np.broadcast_arrays(r1, phi)
-            if r2 is None:
-                r1_offset, phi_offset = self.cal_r1_phi_offset()
-                r1, phi = self.rot(r1, phi, r1_offset, phi_offset, self.angle)
-            else:
-                r1_offset, phi_offset = self.cal_r1_phi_offset(r2)
-                r1, phi = self.rot(r1, phi, r1_offset, phi_offset, self.angle-(r2-self.z[0]))
-            x = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)  # x: r1, y: phi, at r2=0
-            y = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(phi/180*np.pi)
-            ti=[]
-            for i in range(r1.shape[1]):
-                if any(-0.1<x[:,i]) and any(-0.2<y[:,i]) and any(x[:,i]<0.1) and any(y[:,i]<0.2):
-                    ti.append(i)
-            if len(ti) != 0:
-                if min(ti)>0:
-                    ti.insert(0, min(ti)-1)
-                if max(ti)<len(self.y[ind])-1:
-                    ti.append(max(ti)+1)
-            return ind[ti]
+        # def filter(ind, i, r2=None):    #test the filtering process in slice_data function
+        #     r1 = np.linspace(min(self.y[ind]), max(self.y[ind]), len(self.y[ind]))[:, None]
+        #     phi = np.linspace(min(self.x), max(self.x), len(self.x))[None, :]
+        #     r1, phi = np.broadcast_arrays(r1, phi)
+        #     if r2 is None:
+        #         r1_offset, phi_offset = self.cal_r1_phi_offset()
+        #         r1, phi = self.rot(r1, phi, r1_offset, phi_offset, self.angle)
+        #     else:
+        #         r1_offset, phi_offset = self.cal_r1_phi_offset(r2)
+        #         r1, phi = self.rot(r1, phi, r1_offset, phi_offset, self.angle-(r2-self.z[0]))
+        #     x = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(r1/180*np.pi) * np.cos(phi/180*np.pi)  # x: r1, y: phi, at r2=0
+        #     y = np.sqrt(2*self.m*self.e*self.ev[i])/self.hbar*10**-10*np.sin(phi/180*np.pi)
+        #     ti=[]
+        #     for i in range(r1.shape[1]):
+        #         if any(-0.1<x[:,i]) and any(-0.2<y[:,i]) and any(x[:,i]<0.1) and any(y[:,i]<0.2):
+        #             ti.append(i)
+        #     if len(ti) != 0:
+        #         if min(ti)>0:
+        #             ti.insert(0, min(ti)-1)
+        #         if max(ti)<len(self.y[ind])-1:
+        #             ti.append(max(ti)+1)
+        #     return ind[ti]
         if self.type == 'real':
             if self.z is not None:
                 self.xmin = np.min(np.min(self.x)+np.min(self.z))
