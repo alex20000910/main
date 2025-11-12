@@ -74,12 +74,18 @@ class CEC_Object(ABC):
     @abstractmethod
     def on_closing(self):
         pass
+    
+class cec_param:
+    def __init__(self, path_to_file: str=None, name: str=None, lf_path: list[str]=None, tlfpath: list[str]=None, cmap: str=None):
+        self.path_to_file = path_to_file
+        self.name = name
+        self.lf_path = lf_path
+        self.tlfpath = tlfpath
+        self.cmap = cmap
 
 class app_param:
-    def __init__(self, hwnd=None, ScaleFactor=None, scaled_font_size=None, scale=None, dpi=None, bar_pos=None, g_mem=None):
+    def __init__(self, hwnd=None, scale=None, dpi=None, bar_pos=None, g_mem=None):
         self.hwnd = hwnd
-        self.ScaleFactor = ScaleFactor
-        self.scaled_font_size = scaled_font_size
         self.scale = scale
         self.dpi = dpi
         self.bar_pos = bar_pos
@@ -3631,6 +3637,7 @@ class VolumeSlicer(tk.Frame):
                 self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
                 self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
             copy_to_clipboard(self.fig)
+            gc.collect()
         except ValueError:
             self.wait.done()
             print("Invalid input for slim values")
@@ -4300,13 +4307,13 @@ class CEC(loadfiles, CEC_Object):
             self.gg.destroy()
         self.__prework()
         self.tlg.focus_set()
-        if isinstance(lfs, FileSequence):   # Actually always True
-            for i in lfs.__dir__():
-                if i not in ['path', 'r1']:
-                    try:
-                        setattr(self, i, None)
-                    except:
-                        pass
+        # if isinstance(lfs, FileSequence):   # Actually always True
+        for i in loadfiles.__dir__():
+            if i not in ['path', 'r1']:
+                try:
+                    setattr(self, i, None)
+                except:
+                    pass
                     
     def __check_file(self):
         self.gg = RestrictedToplevel(self.g, bg='white')

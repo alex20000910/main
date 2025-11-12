@@ -84,7 +84,6 @@ from multiprocessing import Pool
 import time, subprocess
 from typing import Literal, Any
 from abc import ABC, abstractmethod
-from concurrent.futures import ThreadPoolExecutor
 import argparse
     
 VERSION = sys.version.split()[0]
@@ -428,6 +427,7 @@ class FileSequence(ABC):
     def export_casa(self):
         pass
 
+@pool_protect
 def fit_so_app(*args):
     global fit_so
     try:
@@ -802,18 +802,19 @@ def load_json(path_to_file: str) -> xr.DataArray:
     )
     return data
 
-def get_cec_params(f: h5py.File | Any) -> tuple:
+def get_cec_params(path_to_file: str) -> tuple:
     '''
     Get CEC parameters from the file.
     
     Parameters:
-        f (Any): The file object opened using h5py.File() or numpy.load().
+        path_to_file (str): The path to the file.
         
     Returns:
         (angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym) (tuple) : A tuple containing the CEC parameters.
     
     '''
-    if isinstance(f, h5py.File):
+    if path_to_file.endswith('.h5') or path_to_file.endswith('.H5'):
+        f = h5py.File(path_to_file, 'r')
         angle = np.array(f.get('VolumeSlicer').get('angle'))[0]
         cx = np.array(f.get('VolumeSlicer').get('cx'))[0]
         cy = np.array(f.get('VolumeSlicer').get('cy'))[0]
@@ -836,7 +837,8 @@ def get_cec_params(f: h5py.File | Any) -> tuple:
             sym = np.array(f.get('VolumeSlicer').get('sym'))[0]
         except:
             sym = 1
-    else:
+    elif path_to_file.endswith('.npz') or path_to_file.endswith('.NPZ'):
+        f = np.load(path_to_file)
         angle = f['angle']
         cx = f['cx']
         cy = f['cy']
@@ -861,27 +863,49 @@ def get_cec_params(f: h5py.File | Any) -> tuple:
             sym = 1
     return angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym
 
-def call_cec(path_to_file: str, f: h5py.File | Any, cec: CEC_Object, f_npz: bool, name: str, cmap: str, app_pars: Any) -> tuple[CEC_Object, bool, str, str, str, str]:
+def call_cec(g, lfs: FileSequence):
+    app_pars = lfs.app_pars
+    path_to_file, name, lf_path, tlfpath, cmap = lfs.cec_pars.path_to_file, lfs.cec_pars.name, lfs.cec_pars.lf_path, lfs.cec_pars.tlfpath, lfs.cec_pars.cmap
+    lfs.cec = None
+    try:
+        args = get_cec_params(path_to_file)
+        try:
+            lfs.cec = CEC(g, lf_path, mode='load', cmap=cmap, app_pars=app_pars)
+            lfs.cec.load(*args, name, path_to_file)
+        except:
+            lfs.cec = CEC(g, tlfpath, mode='load', cmap=cmap, app_pars=app_pars)
+            lfs.cec.load(*args, name, path_to_file)
+    except Exception as ecp:
+        if app_pars:
+            windll.user32.ShowWindow(app_pars.hwnd, 9)
+            windll.user32.SetForegroundWindow(app_pars.hwnd)
+        print(f"An error occurred: {ecp}")
+        print('\033[31mPath not found:\033[34m')
+        print(lf_path)
+        print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
+        message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
+        messagebox.showwarning("Warning", message)
+    return lfs
+
+def get_cec_attr(path_to_file: str, f: h5py.File | Any, name: str, cmap: str, app_pars: Any) -> tuple[str, str, str, str, str, str]:
     '''
     Call the CEC window.
 
     Parameters:
         path_to_file (str): The path to the HDF5 or NPZ file.
         f (Any): The file object opened using h5py.File() or numpy.load().
-        cec (CEC_Object): An instance of the CEC class. Store the window and focus it when all the loading processes are done.
-        f_npz (bool): An indicator determining whether the app should operate the CEC process
         name (str): The name of the dataset.
         cmap (str): The colormap to be used.
         app_pars (Any): Application parameters.
     
     Returns:
-        (cec, f_npz, PassEnergy, Dwell, Iterations, Slit) (tuple): A tuple containing the CEC indicators and info parameters.
-        - cec (CEC_Object): An instance of the CEC class loaded with slicing geometry.
-        - f_npz (bool): An indicator determining whether the app should operate the CEC process.
+        (PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath) (tuple): A tuple containing the CEC indicators and info parameters.
         - PassEnergy (str): Attributes string.
         - Dwell (str): Attributes string.
         - Iterations (str): Attributes string.
         - Slit (str): Attributes string.
+        - lf_path (str): List of raw data file paths.
+        - tlfpath (str): List of raw data file paths.
 
     '''
     if isinstance(f, h5py.File):
@@ -889,57 +913,57 @@ def call_cec(path_to_file: str, f: h5py.File | Any, cec: CEC_Object, f_npz: bool
         lf_path = [i.tobytes().decode('utf-8') for i in tlf_path]
     else:   # np.load
         lf_path = f['path']
-    try:
-        try:    #load path that saved in npz
-            tbasename = os.path.basename(lf_path[0])
-            if '.h5' in tbasename:
-                td=load_h5(lf_path[0])
-            elif '.json' in tbasename:
-                td=load_json(lf_path[0])
-            elif '.txt' in tbasename:
-                td=load_txt(lf_path[0])
-        except: #try load file in the same folder as npz
-            td = None
-            tlfpath = []
-            for i in lf_path:
-                tbasename = os.path.basename(i)
-                tpath = os.path.normpath(os.path.join(os.path.dirname(path_to_file), tbasename))
-                tlfpath.append(tpath)
-                try:
-                    if '.h5' in tbasename:
-                        td=load_h5(tpath)
-                    elif '.json' in tbasename:
-                        td=load_json(tpath)
-                    elif '.txt' in tbasename:
-                        td=load_txt(tpath)
-                except:
-                    pass
-        PassEnergy = td.attrs['PassEnergy']
-        Dwell = td.attrs['Dwell']
-        Iterations = td.attrs['Iterations']
-        Slit = td.attrs['Slit']
-        if f_npz is False:
-            f_npz = True
-            args = get_cec_params(f)
+    # try:
+    tlfpath = []
+    try:    #load path that saved in h5/npz
+        tbasename = os.path.basename(lf_path[0])
+        if '.h5' in tbasename:
+            td=load_h5(lf_path[0])
+        elif '.json' in tbasename:
+            td=load_json(lf_path[0])
+        elif '.txt' in tbasename:
+            td=load_txt(lf_path[0])
+    except: #try load file in the same folder as h5/npz
+        td = None
+        for i in lf_path:
+            tbasename = os.path.basename(i)
+            tpath = os.path.normpath(os.path.join(os.path.dirname(path_to_file), tbasename))
+            tlfpath.append(tpath)
             try:
-                cec = CEC(g, lf_path, mode='load', cmap=cmap, app_pars=app_pars)
-                cec.load(*args, name, path_to_file)
+                if '.h5' in tbasename:
+                    td=load_h5(tpath)
+                elif '.json' in tbasename:
+                    td=load_json(tpath)
+                elif '.txt' in tbasename:
+                    td=load_txt(tpath)
             except:
-                cec = CEC(g, tlfpath, mode='load', cmap=cmap, app_pars=app_pars)
-                cec.load(*args, name, path_to_file)
-    except Exception as ecp:
-        if f_npz is False:
-            f_npz = True
-            if app_pars:
-                windll.user32.ShowWindow(app_pars.hwnd, 9)
-                windll.user32.SetForegroundWindow(app_pars.hwnd)
-            print(f"An error occurred: {ecp}")
-            print('\033[31mPath not found:\033[34m')
-            print(lf_path)
-            print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
-            message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
-            messagebox.showwarning("Warning", message)
-    return cec, f_npz, PassEnergy, Dwell, Iterations, Slit
+                pass
+    PassEnergy = td.attrs['PassEnergy']
+    Dwell = td.attrs['Dwell']
+    Iterations = td.attrs['Iterations']
+    Slit = td.attrs['Slit']
+        # if f_npz is False:
+        #     f_npz = True
+        #     args = get_cec_params(f)
+        #     try:
+        #         cec = CEC(g, lf_path, mode='load', cmap=cmap, app_pars=app_pars)
+        #         cec.load(*args, name, path_to_file)
+        #     except:
+        #         cec = CEC(g, tlfpath, mode='load', cmap=cmap, app_pars=app_pars)
+        #         cec.load(*args, name, path_to_file)
+    # except Exception as ecp:
+    #     if f_npz is False:
+    #         f_npz = True
+    #         if app_pars:
+    #             windll.user32.ShowWindow(app_pars.hwnd, 9)
+    #             windll.user32.SetForegroundWindow(app_pars.hwnd)
+    #         print(f"An error occurred: {ecp}")
+    #         print('\033[31mPath not found:\033[34m')
+    #         print(lf_path)
+    #         print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
+    #         message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
+    #         messagebox.showwarning("Warning", message)
+    return PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath
 
 def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
     """
@@ -1051,7 +1075,11 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
             e_high = str(e_high)+' eV (B.E.)'
         if aq == 'VolumeSlicer':
             if 'cec' in kwargs and 'f_npz' in kwargs:
-                cec, f_npz, PassEnergy, Dwell, Iterations, Slit = call_cec(path_to_file, f, cec, f_npz, name, cmap, app_pars)
+                if f_npz is False:
+                    f_npz = True
+                    cec = 'CEC_Object'
+                PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f, name, cmap, app_pars)
+                cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
             
         a = np.linspace(a_low, a_high, a_num)
         d = np.asarray(f.get('Spectrum')).transpose()
@@ -1087,7 +1115,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
             }
         )
     if 'cec' in kwargs and 'f_npz' in kwargs:
-        return data, cec, f_npz
+        return data, cec, f_npz, cec_pars
     else:
         return data
 
@@ -1109,10 +1137,14 @@ def load_npz(path_to_file: str, **kwargs) -> xr.DataArray:
     else:
         cec = None
         f_npz = True
-    Name = os.path.basename(path_to_file).split('.npz')[0]
+    name = os.path.basename(path_to_file).split('.npz')[0]
     f = np.load(path_to_file)
     if 'cec' in kwargs and 'f_npz' in kwargs:
-        cec, f_npz, PassEnergy, Dwell, Iterations, Slit = call_cec(path_to_file, f, cec, f_npz, Name, cmap, app_pars)
+        if f_npz is False:
+            f_npz = True
+            cec = 'CEC_Object'
+        PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f, name, cmap, app_pars)
+        cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
     
     data = f['data']
     k = f['x']
@@ -1127,7 +1159,7 @@ def load_npz(path_to_file: str, **kwargs) -> xr.DataArray:
         },
         name='Spectrum',
         attrs={
-            'Name': Name,
+            'Name': name,
             'Acquisition': 'VolumeSlicer',
             'EnergyMode': 'Kinetic',
             'ExcitationEnergy': str(ExcitationEnergy)+' eV',
@@ -1145,7 +1177,7 @@ def load_npz(path_to_file: str, **kwargs) -> xr.DataArray:
         }
     )
     if 'cec' in kwargs and 'f_npz' in kwargs:
-        return data, cec, f_npz
+        return data, cec, f_npz, cec_pars
     else:
         return data
 
@@ -5052,7 +5084,7 @@ class loadfiles(FileSequence):
         object (FileSequence): File Sequence object.
         
     """
-    __slots__ = ['f_npz', 'n', 'opath', 'oname', 'r1s', 'r2s', 'sep', 'r1_splitter', 'r2_splitter', 'or2', 'or1', 'path1', 'r11', 'path', 'name', 'r1', 'r2', 'data', 'sort', 'zpath', 'xr_name', 'xr_coords', 'xr_attrs', 'load_mode', 'cec', 'f_npz_', 'app_pars']
+    __slots__ = ['f_npz', 'n', 'opath', 'oname', 'r1s', 'r2s', 'sep', 'r1_splitter', 'r2_splitter', 'or2', 'or1', 'path1', 'r11', 'path', 'name', 'r1', 'r2', 'data', 'sort', 'zpath', 'xr_name', 'xr_coords', 'xr_attrs', 'load_mode', 'cec', 'f_npz_', 'app_pars', 'cec_pars']
     def __init__(self, files: list[str] | tuple[str, ...] | str, mode: Literal['lazy', 'eager'] = 'lazy', init: bool = False, **kwargs):
         if isinstance(files, str):
             files = [files] # Convert string to list ensuring compatibility
@@ -5074,6 +5106,7 @@ class loadfiles(FileSequence):
         self.load_mode = mode
         self.init = init
         self.cec, self.f_npz_ = None, False
+        self.cec_pars = None
         if 'spectrogram' in kwargs:
             self.cec = False
         if 'cmap' in kwargs:
@@ -5085,12 +5118,12 @@ class loadfiles(FileSequence):
             try:
                 if '.npz' in os.path.basename(v):
                     if self.cec is None:
-                        data, self.cec, self.f_npz_ = load_npz(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap, app_pars=self.app_pars)
+                        data, self.cec, self.f_npz_, self.cec_pars = load_npz(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap, app_pars=self.app_pars)
                     else:
                         data = load_npz(v)
                 else:
                     if self.cec is None:
-                        data, self.cec, self.f_npz_ = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap, app_pars=self.app_pars)
+                        data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap, app_pars=self.app_pars)
                     else:
                         data = load_h5(v)
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
@@ -5482,6 +5515,8 @@ def o_load(drop=False, files=''):
         f_npz = False   # initial value to determine if operate CEC when loaded npz (prevent from endless calling CEC during loadfiles() process)
         clear(lfs)
         lfs = loadfiles(files, name='internal', cmap=value3.get(), app_pars=app_pars)
+        if lfs.cec_pars:
+            lfs = call_cec(g, lfs)
         tpath = lfs.path[0]
         b_name.config(state='normal')
         b_excitation.config(state='normal')
@@ -14026,7 +14061,7 @@ if __name__ == '__main__':
     
     # g_mem set to 300 MB
     g_mem = psutil.Process(pid).memory_info().rss/1024**3
-    app_pars = app_param(hwnd=hwnd, ScaleFactor=ScaleFactor, scaled_font_size=scaled_font_size, scale=scale, dpi=dpi, bar_pos=bar_pos, g_mem=g_mem)
+    app_pars = app_param(hwnd=hwnd, scale=scale, dpi=dpi, bar_pos=bar_pos, g_mem=g_mem)
 
     plt.rcParams['font.family'] = 'Arial'
     plt.rcParams['font.size'] = int(plt.rcParams['font.size'] * scale)
@@ -14267,6 +14302,8 @@ if __name__ == '__main__':
             lst = ff['lst']
             print('\n\033[90mRaw Data preloaded:\033[0m\n\n')
             lfs = loadfiles(lpath, init=True, name='internal', cmap=value3.get(), app_pars=app_pars)
+            if lfs.cec_pars:
+                lfs = call_cec(g, lfs)
             data = lfs.get(0)
             for _ in data.attrs.keys():
                 if _ != 'Description':
@@ -14858,7 +14895,11 @@ if __name__ == '__main__':
     # g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
     if lfs.cec is not None: # CEC loaded old data to show the cutting rectangle
-        lfs.cec.tlg.focus_force()
+        try:
+            lfs.cec.tlg.focus_force()
+        except Exception as e:
+            print(f"Error focusing on CEC window: {e}")
+            input("Press Enter to continue...")
     # g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
     g_mem = psutil.Process(os.getpid()).memory_info().rss / 1024**3  # Main GUI memory in GB
     app_pars.g_mem = g_mem
