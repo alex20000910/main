@@ -243,7 +243,8 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
 
 def get_src():
-    url = [r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
+    url = [r"https://github.com/alex20000910/main/blob/mod/src/viridis_2D.otp",
+           r"https://github.com/alex20000910/main/blob/mod/src/MDC_cut_utility.py",
            r"https://github.com/alex20000910/main/blob/mod/src/tool/__init__.py",
            r"https://github.com/alex20000910/main/blob/mod/src/tool/loader.py",
            r"https://github.com/alex20000910/main/blob/mod/src/tool/spectrogram.py",
@@ -252,7 +253,7 @@ def get_src():
            r"https://github.com/alex20000910/main/blob/mod/src/tool/CEC.py",
            r"https://github.com/alex20000910/main/blob/mod/src/tool/DataViewer.py"]
     for i, v in enumerate(url):
-        if i == 0:
+        if i < 2:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
         else:
             out_path = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
@@ -376,9 +377,9 @@ try:
     if __name__ == '__main__':
         import originpro as op
     import cv2
-    import cpuinfo
+    # import cpuinfo
     import psutil
-    import zarr
+    # import zarr
     if __name__ == '__main__':
         import PyQt5
         import pyqtgraph
@@ -869,6 +870,7 @@ def exp_origin(*e):
     origin_temp_var = f'''from {app_name} import *
 import originpro as op
 
+cdir = r"{cdir}"
 npzf = {npzf}
 dpath = r"{dpath}"      # Data Path
 emf = r"{emf}"             # Energy Mode: KE or BE
@@ -1042,7 +1044,7 @@ def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)
         sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
         sheet.from_list(1, y, lname=ylabel, units=yunit, axis='Y')
         sheet.from_list(2, z, lname=zlabel, units=zunit, axis='Z')
-        temp_path = os.path.join(".MDC_cut", "viridis_2D.otp")
+        temp_path = os.path.join(cdir, ".MDC_cut", "viridis_2D.otp")
         if os.path.exists(temp_path):
             gr=op.new_graph(title, temp_path)
         else:
@@ -11688,8 +11690,9 @@ if __name__ == '__main__':
     g.geometry(f"{screen_width}x{screen_height}+0+{sc_y}")
     # g.protocol("WM_DELETE_WINDOW", quit)
     g.update()
-    if lfs.cec is not None: # CEC loaded old data to show the cutting rectangle
-        lfs.cec.tlg.focus_force()
+    if lfs is not None: # CEC loaded old data to show the cutting rectangle
+        if lfs.cec is not None:
+            lfs.cec.tlg.focus_force()
     # g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
     g_mem = psutil.Process(os.getpid()).memory_info().rss / 1024**3  # Main GUI memory in GB
     app_pars.g_mem = g_mem
