@@ -8,13 +8,12 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from ctypes import windll
 import gc
 
-h=6.62607015e-34  # J·s
-m=9.10938356e-31  # kg
 class SO_Fitter(tk.Toplevel):
     def __init__(self, master, app_pars: app_param=None):
         super().__init__(master, background='white')
         self.title('Sample Offset Fitter')
         self.ev=1.602176634e-19  # eV=1.602176634e-19 J
+        h=6.62607015e-34  # J·s
         self.hbar=h/2/np.pi
         self.e=21.2   # need an entry
         # self.e=20.781
@@ -37,6 +36,7 @@ class SO_Fitter(tk.Toplevel):
         # self.p_list.append(p1)
         # self.p_list.append(p2)
         # self.p_list.append(p3)
+        m=9.10938356e-31  # kg
         self.k_vec = np.sqrt(2*m*self.e*self.ev)/self.hbar*1e-10
         
         self.layout()
@@ -307,6 +307,7 @@ class SO_Fitter(tk.Toplevel):
         
     def add_point(self):
         self.e = self.v_e.get()
+        m=9.10938356e-31  # kg
         self.k_vec = np.sqrt(2*m*self.e*self.ev)/self.hbar*1e-10
         r2 = self.v_r2.get()
         r1 = self.v_r1.get()

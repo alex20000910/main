@@ -1,34 +1,13 @@
-import os, inspect, io
+import os, io
 import tkinter as tk
-from tkinter import filedialog as fd
 import threading
-import sys, shutil
 from ctypes import windll
-import gc
-from tkinter import messagebox
-from multiprocessing import Pool
-import time
-from typing import Literal, Any
 from abc import ABC, abstractmethod
-
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 import numpy as np
-import xarray as xr
-import h5py
-import json
-from PIL import Image, ImageTk
-import tqdm
+from PIL import Image
 import win32clipboard
 import cv2
-import cpuinfo
 import psutil
-import zarr
-from scipy import special
-from scipy.optimize import curve_fit
 
 def copy_to_clipboard(ff) -> None:
     """

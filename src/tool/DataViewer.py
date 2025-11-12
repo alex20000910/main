@@ -913,7 +913,6 @@ class SliceBrowser(QMainWindow):
                 self.xRange, self.yRange = self.plot.getViewBox().viewRange()[0], self.plot.getViewBox().viewRange()[1]
         else:
             self.xRange, self.yRange = (self.xl, self.xh), (self.yl, self.yh)
-        self.plot.clear()
         self.update_E_job(arr)
 
         self.v_cross = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen((255, 0, 0), width=2, style=Qt.DotLine))
@@ -1330,6 +1329,7 @@ class SliceBrowser(QMainWindow):
         img_item = pg.ImageItem(arr.T)
         img_item.setLevels(np.min(arr), np.max(arr))
         self.hist.setImageItem(img_item)
+        self.plot.clear()
         self.plot.setLimits(xMin=self.xl-self.dx/2, xMax=self.xh+self.dx/2, yMin=self.yl-self.dy/2, yMax=self.yh+self.dy/2)
         self.plot.setRange(xRange=self.xRange, yRange=self.yRange, padding=0)
 

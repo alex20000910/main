@@ -1,35 +1,12 @@
 from MDC_cut_utility import *
-import os, inspect, io
-import tkinter as tk
-from tkinter import filedialog as fd
-import threading
+import os, inspect
 import sys, shutil
-from ctypes import windll
-import gc
-from tkinter import messagebox
-from multiprocessing import Pool
-import time
 from typing import Literal, Any
-from abc import ABC, abstractmethod
-
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
 import numpy as np
 import xarray as xr
 import h5py
 import json
-from PIL import Image, ImageTk
-import tqdm
-import win32clipboard
-import cv2
-import cpuinfo
-import psutil
 import zarr
-from scipy import special
-from scipy.optimize import curve_fit
 
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.

@@ -78,12 +78,9 @@ import sys, shutil
 from ctypes import windll
 import copy
 import gc
-from tkinter import messagebox, colorchooser, ttk
+from tkinter import messagebox, colorchooser
 # import ttkbootstrap as ttk
-from multiprocessing import Pool
-import time, subprocess
-from typing import Literal, Any
-from abc import ABC, abstractmethod
+import subprocess
 import argparse
     
 VERSION = sys.version.split()[0]
@@ -246,10 +243,20 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
 
 def get_src():
-    url = [r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp"]
-    for i in url:
-        out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(i))
-        get_file_from_github(i, out_path)
+    url = [r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
+           r"https://github.com/alex20000910/main/blob/mod/src/tool/__init__.py",
+           r"https://github.com/alex20000910/main/blob/mod/src/tool/loader.py",
+           r"https://github.com/alex20000910/main/blob/mod/src/tool/spectrogram.py",
+           r"https://github.com/alex20000910/main/blob/mod/src/tool/SO_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/mod/src/tool/VolumeSlicer.py",
+           r"https://github.com/alex20000910/main/blob/mod/src/tool/CEC.py",
+           r"https://github.com/alex20000910/main/blob/mod/src/tool/DataViewer.py"]
+    for i, v in enumerate(url):
+        if i == 0:
+            out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
+        else:
+            out_path = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
+        get_file_from_github(v, out_path)
 
 # set up .MDC_cut folder
 os.chdir(cdir)
@@ -257,7 +264,6 @@ if not os.path.exists('.MDC_cut'):
     os.makedirs('.MDC_cut')
     os.system('attrib +h +s .MDC_cut')
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
-# sys.path.append(r"C:\Users\dawan\Data\大學\實驗室\ARPES\src")
 
 # upgrade check
 v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
