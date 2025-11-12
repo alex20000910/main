@@ -28,6 +28,9 @@ import psutil
 import zarr
 from scipy import special
 from scipy.optimize import curve_fit
+tempdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+main_dir = os.path.dirname(tempdir)
+sys.path.append(main_dir)
 from MDC_cut import copy_to_clipboard, send_to_clipboard, get_bar_pos
 
 # deprecated
@@ -95,6 +98,15 @@ def set_hidden(path):
     t = threading.Thread(target=hidden_job, args=(path,))
     t.daemon = True
     t.start()
+
+def find_window():
+    # Windows系統中 可能的終端機視窗名稱
+    hwnd = windll.user32.FindWindowW(None, "命令提示字元")
+    if not hwnd:
+        hwnd = windll.user32.FindWindowW(None, "Command Prompt")
+    if not hwnd:
+        hwnd = windll.user32.FindWindowW(None, "cmd")
+    return hwnd
 
 class CEC_Object(ABC):
     @abstractmethod
