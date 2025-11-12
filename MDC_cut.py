@@ -256,8 +256,8 @@ os.chdir(cdir)
 if not os.path.exists('.MDC_cut'):
     os.makedirs('.MDC_cut')
     os.system('attrib +h +s .MDC_cut')
-# sys.path.append(os.path.join(cdir, '.MDC_cut'))
-sys.path.append(r"C:\Users\dawan\Data\大學\實驗室\ARPES\src")
+sys.path.append(os.path.join(cdir, '.MDC_cut'))
+# sys.path.append(r"C:\Users\dawan\Data\大學\實驗室\ARPES\src")
 
 # upgrade check
 v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
@@ -378,6 +378,8 @@ try:
         import pyqtgraph
     from tkinterdnd2 import DND_FILES, TkinterDnD
     from MDC_cut_utility import *
+    from tool import *
+    
 except ModuleNotFoundError:
     install()
     restart()
@@ -1431,7 +1433,7 @@ def view_3d(*e):
 
 def DataViewer_PyQt5():
     def j():
-        os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'DataViewer.py')}"')
+        os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
     threading.Thread(target=j,daemon=True).start()
 
 if __name__ == '__main__':
@@ -1788,7 +1790,7 @@ def f_copy_to_clipboard():
     if value.get() != '---Plot1---' or value1.get() != '---Plot2---' or value2.get() != '---Plot3---':
         st.put('Copied to clipboard')
         
-def copy_to_clipboard(ff) -> None:
+def copy_to_clipboard(ff: Figure) -> None:
     """
     Copies the given figure to the clipboard as a bitmap image.
     
@@ -1999,7 +2001,8 @@ def tools(*args):
         return
         
     def exp_casa():
-        lfs.export_casa()
+        explfs = lfs_exp_casa(lfs)
+        explfs.export_casa()
         toolg.destroy()
         return
         
