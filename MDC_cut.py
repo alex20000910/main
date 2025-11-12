@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "7.9"
-__release_date__ = "2025-11-06"
+__version__ = "8.0"
+__release_date__ = "2025-11-13"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -243,15 +243,15 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
 
 def get_src():
-    url = [r"https://github.com/alex20000910/main/blob/mod/src/viridis_2D.otp",
-           r"https://github.com/alex20000910/main/blob/mod/src/MDC_cut_utility.py",
-           r"https://github.com/alex20000910/main/blob/mod/src/tool/__init__.py",
-           r"https://github.com/alex20000910/main/blob/mod/src/tool/loader.py",
-           r"https://github.com/alex20000910/main/blob/mod/src/tool/spectrogram.py",
-           r"https://github.com/alex20000910/main/blob/mod/src/tool/SO_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/mod/src/tool/VolumeSlicer.py",
-           r"https://github.com/alex20000910/main/blob/mod/src/tool/CEC.py",
-           r"https://github.com/alex20000910/main/blob/mod/src/tool/DataViewer.py"]
+    url = [r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
+           r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py"]
     for i, v in enumerate(url):
         if i < 2:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))

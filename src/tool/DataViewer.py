@@ -12,7 +12,7 @@ from base64 import b64decode
 import cv2, os, inspect
 import h5py, time, zarr
 from ctypes import windll
-import shutil, psutil
+import shutil, psutil, argparse
 
 if __name__ == "__main__":
     cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -536,15 +536,16 @@ class SliceBrowser(QMainWindow):
 
         # 存檔按鈕
         self.export_btn = QPushButton("Export to HDF5 File")
-        # self.export_btn.setStyleSheet("""
-        #     QToolTip {
-        #         background-color: #222;
-        #         color: #EEE;
-        #         border: 1px solid black;
-        #         font-size: 18pt;
-        #     }
-        # """)
+        self.export_btn.setStyleSheet("""
+            QToolTip {
+                background-color: #222;
+                color: #EEE;
+                border: 5px solid white;
+                font-size: 20pt;
+            }
+        """)
         # self.export_btn.setToolTip("Export the current slice to an HDF5 file")
+        self.set_exp_h5_btn()
         right_layout.addWidget(self.export_btn)
 
         right_layout.addStretch()
@@ -779,7 +780,7 @@ class SliceBrowser(QMainWindow):
                 self.data_show = self.bin_data(self.raw_data_show, axis=0, bin_size=bin_e)
                 self.data_show = self.bin_data(self.data_show, axis=1, bin_size=bin_ky)
                 self.data_show = self.bin_data(self.data_show, axis=2, bin_size=bin_kx)
-        else:   #save
+        else:   #save (only allow path_angle==0)
             self.get_raw_data(save=True)
             if bin_e == 1 and bin_kx == 1 and bin_ky == 1:
                 arr = self.raw_data[:, indky, indkx]     #fix
@@ -1028,10 +1029,16 @@ class SliceBrowser(QMainWindow):
 
     def export_slice(self):
         # 匯出時也裁切 xlow/xhigh
-        if self.current_mode == 'kx':
-            self.gen_E_ky()
-        elif self.current_mode == 'ky':
-            self.gen_E_kx()
+        if self.path_angle == 0:
+            if self.current_mode == 'kx':
+                self.gen_E_ky()
+            elif self.current_mode == 'ky':
+                self.gen_E_kx()
+        else:
+            if self.mode == 'standard':
+                self.save_as_zarr(h5=True)
+            elif self.mode == 'display':
+                self.save_as_zarr_disp(h5=True)
     
     def gen_E_kx(self, event=None):
         if self.hwnd:
@@ -1152,7 +1159,15 @@ class SliceBrowser(QMainWindow):
         self.dir = os.path.join(self.path, f"Ang_{self.path_angle:.1f}_bin_{max(1, self.bin_e)}_{max(1, self.bin_kx)}_{max(1, self.bin_ky)}", axis)
         os.makedirs(self.dir, exist_ok=True)
 
-    def save_as_zarr(self):
+    def set_exp_h5_btn(self):
+        if self.path_angle != 0:
+            self.export_btn.setToolTip("Original data should be rotated which is time consuming.\nSave as a new zarr and reload that file to export HDF5.")
+            self.export_btn.setText("Save, reload, then export to HDF5")
+        else:
+            self.export_btn.setToolTip(None)
+            self.export_btn.setText("Export to HDF5 File")
+    
+    def save_as_zarr(self, h5=False):
         self.apply_rotation(save=True)
         
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
@@ -1187,6 +1202,7 @@ class SliceBrowser(QMainWindow):
         if self.raw_data is not None:
             zdata = np.append(self.raw_data, attr_array, axis=2)
         pr_bar.increaseProgress('Done')
+        pr_bar.close()
         
         pr_bar = ProgressDialog(3, self.icon)
         pr_bar.resize(self.w//3, self.h//4)
@@ -1221,24 +1237,24 @@ class SliceBrowser(QMainWindow):
                 os.system(f'attrib +h +s "{item_path}"')
         
         
-        path = os.path.join(path, '__disp__.zarr')
+        disp_path = os.path.join(path, '__disp__.zarr')
         size = det_chunk(self.shape[1], dtype=np.uint8)
         end = self.shape[0]
         if size/end >= 1.2:
             zdata = np.asarray(self.raw_data_show, dtype=np.uint8)
-            zarr.save_group(path, data=zdata, ang=np.array([0, 0],dtype=np.float32))
+            zarr.save_group(disp_path, data=zdata, ang=np.array([0, 0],dtype=np.float32))
             zdata = None
-            os.system(f'attrib +h +s "{path}"')
-            for name in os.listdir(path):
-                item_path = os.path.join(path, name)
+            os.system(f'attrib +h +s "{disp_path}"')
+            for name in os.listdir(disp_path):
+                item_path = os.path.join(disp_path, name)
                 if os.path.isfile(item_path):
                     os.system(f'attrib +h +s "{item_path}"')
                 elif os.path.isdir(item_path):
                     os.system(f'attrib +h +s "{item_path}"')
         else:
             rot_data = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'rot_data'), mode='r')
-            save_data = zarr.open(os.path.join(path, '__disp__.zarr', 'data'), mode='w', shape=self.shape, dtype=np.uint8)
-            save_ang = zarr.open(os.path.join(path, '__disp__.zarr', 'ang'), mode='w', shape=(2,), dtype=np.float32)
+            save_data = zarr.open(os.path.join(disp_path, '__disp__.zarr', 'data'), mode='w', shape=self.shape, dtype=np.uint8)
+            save_ang = zarr.open(os.path.join(disp_path, '__disp__.zarr', 'ang'), mode='w', shape=(2,), dtype=np.float32)
             save_ang[:] = np.array([0, 1], dtype=np.float32)
             step = int(min(size, self.shape[0]//1.5))
             for i in range(0, end, step):
@@ -1253,9 +1269,13 @@ class SliceBrowser(QMainWindow):
             save_ang[1] = 0
             
         pr_bar.increaseProgress('Done')
+        pr_bar.close()
         QApplication.restoreOverrideCursor()
+        if h5:
+            os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}" -f "{path}"')
+        
     
-    def save_as_zarr_disp(self):
+    def save_as_zarr_disp(self, h5=False):
         self.apply_rotation()
         
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
@@ -1280,6 +1300,7 @@ class SliceBrowser(QMainWindow):
         attr_array[2, 1] = ymin
         attr_array[3, 1] = ymax
         pr_bar.increaseProgress('Done')
+        pr_bar.close()
         os.chdir(os.path.dirname(self.path))
         QApplication.restoreOverrideCursor()
         path, _ = QFileDialog.getSaveFileName(None, "Save Zarr File", f'data_cube_Ang_{self.path_angle:.1f}_disp.zarr', "Zarr Files (*.zarr)")
@@ -1323,7 +1344,10 @@ class SliceBrowser(QMainWindow):
             elif os.path.isdir(item_path):
                 os.system(f'attrib +h +s "{item_path}"')
         pr_bar.increaseProgress('Done')
+        pr_bar.close()
         QApplication.restoreOverrideCursor()
+        if h5:
+            os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}" -f "{path}"')
 
     def update_E_job(self, arr):
         img_item = pg.ImageItem(arr.T)
@@ -1549,6 +1573,7 @@ class SliceBrowser(QMainWindow):
         
         self.path_angle += self.angle
         self.__path_angle()
+        self.set_exp_h5_btn()
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
         pr_bar = ProgressDialog(self.shape[0]+3, self.icon)
         pr_bar.resize(self.w//3, self.h//4)
@@ -1600,7 +1625,13 @@ if __name__ == "__main__":
     cdir = os.path.dirname(cdir)
     cdir = os.path.dirname(cdir)
     cdir = os.path.dirname(cdir)
-    folder = QFileDialog.getExistingDirectory(None, "Select Zarr Folder", cdir)
+    p = argparse.ArgumentParser(description="Open Zarr File")
+    p.add_argument("-f", "--folder", help="Zarr folder path", type=str, required=False)
+    args = p.parse_args()
+    if args.folder:
+        folder = args.folder
+    else:
+        folder = QFileDialog.getExistingDirectory(None, "Select Zarr Folder", cdir)
     if folder == "":
         sys.exit(0)
     hwnd = get_hwnd()
