@@ -15,4 +15,4 @@ The user manual is currently out of date. For the latest changes and new feature
 ## What will `MDC_cut.py` do?
 1. Download the required files from this repository and place them into the working PATH of `MDC_cut.py`.
 2. Try to use the pip installer to install the required python packages.
-3. Strat the GUI.
+3. Start the GUI.
