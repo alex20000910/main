@@ -13,6 +13,6 @@ The user manual is currently out of date. For the latest changes and new feature
 - If you don’t mind the environment, execute `MDC_cut.py` and check that it automatically installs the required dependencies.
 
 ## What will `MDC_cut.py` do?
-- **1**: Download the required files from this repository and place them into the working PATH of `MDC_cut.py`.
-- **2**: Try to use the pip installer to install the required python packages.
-- **3**: Strat the GUI.
+1. Download the required files from this repository and place them into the working PATH of `MDC_cut.py`.
+2. Try to use the pip installer to install the required python packages.
+3. Strat the GUI.
