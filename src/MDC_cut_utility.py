@@ -35,6 +35,35 @@ class FileSequence(ABC):
     def gen_r2(self, name: list[str], r1_splitter: list[str], r2_splitter: list[str]) -> np.float64 | list[str]:
         pass
 
+class MDC_param:
+    def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, scki, smfp, smfi, smaa1, smaa2, smresult):
+        self.ScaleFactor = ScaleFactor
+        self.sc_y = sc_y
+        self.g = g
+        self.scale = scale
+        self.npzf = npzf
+        self.vfe = vfe
+        self.emf = emf
+        self.st = st
+        self.dpath = dpath
+        self.name = name
+        self.k_offset = k_offset
+        self.value3 = value3
+        self.ev = ev
+        self.phi = phi
+        self.data = data
+        self.base = base
+        self.fpr = fpr
+        self.skmin = skmin
+        self.skmax = skmax
+        self.scki = scki
+        self.smfp = smfp
+        self.smfi = smfi
+        self.smaa1 = smaa1
+        self.smaa2 = smaa2
+        self.smresult = smresult
+        
+
 class cec_param:
     def __init__(self, path_to_file: str=None, name: str=None, lf_path: list[str]=None, tlfpath: list[str]=None, cmap: str=None):
         self.path_to_file = path_to_file

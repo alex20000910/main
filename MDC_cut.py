@@ -264,7 +264,8 @@ os.chdir(cdir)
 if not os.path.exists('.MDC_cut'):
     os.makedirs('.MDC_cut')
     os.system('attrib +h +s .MDC_cut')
-sys.path.append(os.path.join(cdir, '.MDC_cut'))
+# sys.path.append(os.path.join(cdir, '.MDC_cut'))
+sys.path.append(os.path.join(cdir, 'src'))
 
 # upgrade check
 v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
@@ -385,7 +386,11 @@ try:
         import pyqtgraph
     from tkinterdnd2 import DND_FILES, TkinterDnD
     from MDC_cut_utility import *
-    from tool import *
+    from tool.loader import *
+    from tool.spectrogram import *
+    from tool.SO_Fitter import *
+    from tool.VolumeSlicer import *
+    from tool.CEC import *
     
 except ModuleNotFoundError:
     install()
@@ -1767,6 +1772,7 @@ def poly_smooth(x, y, order=6,xx=None):
         y = np.polyval(coeffs, xx)
     return y
 
+@pool_protect
 def show_info():
     # 創建自定義窗口
     info_window = tk.Toplevel()
@@ -1793,11 +1799,13 @@ def show_info():
     info_window.update()
     info_window.destroy()
     
+@pool_protect
 def f_copy_to_clipboard():
     copy_to_clipboard(ff=fig)
     if value.get() != '---Plot1---' or value1.get() != '---Plot2---' or value2.get() != '---Plot3---':
         st.put('Copied to clipboard')
         
+@pool_protect
 def copy_to_clipboard(ff: Figure) -> None:
     """
     Copies the given figure to the clipboard as a bitmap image.
@@ -1825,6 +1833,7 @@ def copy_to_clipboard(ff: Figure) -> None:
     output.close()
     send_to_clipboard(win32clipboard.CF_DIB, data)
     
+@pool_protect
 def send_to_clipboard(clip_type, data):
     win32clipboard.OpenClipboard()
     win32clipboard.EmptyClipboard()
@@ -1833,6 +1842,7 @@ def send_to_clipboard(clip_type, data):
     
 # spectrogram
             
+@pool_protect
 def trans_plot(*e):
     global gtp
     gtp=RestrictedToplevel(g)
@@ -1873,6 +1883,7 @@ def fd_plot():
     s.setdata(ev[0:-1]+(ev[1]-ev[0])/2, np.diff(y)/np.diff(ev), dtype='fd', unit='dN/dE')
     s.plot(g, cmap)
 
+@pool_protect
 def o_cal(*e):
     r"""
     Calculate the angle in degrees based on the given values of calk and cale.
@@ -1897,11 +1908,13 @@ def o_cal(*e):
                     * 1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
     caldeg.config(text='Deg = '+'%.5f' % ans)
 
+@pool_protect
 def cal(*e):
     t = threading.Thread(target=o_cal)
     t.daemon = True
     t.start()
 
+@pool_protect
 def calculator(*e):
     global calf, caldeg, calk, cale, calken, caleen
     try:
@@ -1941,6 +1954,7 @@ def calculator(*e):
     set_center(g, calf, 0, 0)
     calf.focus_set()
 
+@pool_protect
 def scroll(event):
     if len(lfs.name) >1:
         if event.delta>0:
@@ -1948,6 +1962,7 @@ def scroll(event):
         elif event.delta<0:
             cf_down()
 
+@pool_protect
 def cf_up(*args):
     global namevar
     now = namevar.get()
@@ -1959,6 +1974,7 @@ def cf_up(*args):
                 namevar.set(lfs.name[i-1])
     change_file()
 
+@pool_protect
 def cf_down(*args): 
     global namevar
     now = namevar.get()
@@ -1971,6 +1987,7 @@ def cf_down(*args):
     change_file()
 
 npzf = False
+@pool_protect
 def change_file(*args):
     global data, rdd, npzf
     name = namevar.get()
@@ -2001,6 +2018,7 @@ def change_file(*args):
     if value.get() != '---Plot1---':
         o_plot1()
     
+@pool_protect
 def tools(*args):
     def spec(*args):
         s = spectrogram(path=lfs.path, name='internal', app_pars=lfs.app_pars)
@@ -2037,6 +2055,7 @@ def tools(*args):
     toolg.limit_bind()
     return
                 
+@pool_protect
 def def_cmap():
     global CE
     if 'CE' in globals():
@@ -2243,6 +2262,7 @@ class ColormapEditor(tk.Toplevel):
             messagebox.showerror("Error", f"Failed to load: {e}")
 
 
+@pool_protect
 def pr_load(data: xr.DataArray):
     global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
     dvalue = list(data.attrs.values())
@@ -2312,6 +2332,7 @@ def pr_load(data: xr.DataArray):
 
 fpr = 0
 
+@pool_protect
 def o_load(drop=False, files=''):
     global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist, b_tools, f_npz, npzf
     if not drop:
@@ -2421,6 +2442,7 @@ def o_load(drop=False, files=''):
     return
 
 
+@pool_protect
 def o_ecut():
     global data, ev, phi, mfpath, limg, img, name, rdd, st
     limg.config(image=img[np.random.randint(len(img))])
@@ -3556,6 +3578,7 @@ def o_loadefit():
     limg.config(image=img[np.random.randint(len(img))])
     print('Done')
     st.put('Done')
+################################################# mfit func start ######################################################
 
 def gl1(x, x0, a, w, y0):
     """
@@ -3854,7 +3877,7 @@ def lnr_bg(x: np.ndarray, n_samples=5) -> np.ndarray:
     left, right = np.mean(x[:n_samples]), np.mean(x[-n_samples:])
     o = np.ones(len(x))*np.mean([left, right])
     return o+mbgv
-
+################################################# mfit func end ######################################################
 
 def shirley_bg(
         xps: np.ndarray, eps=1e-7, max_iters=50, n_samples=5) -> np.ndarray:
@@ -4806,7 +4829,8 @@ def ejob():     # MDC Fitting GUI
     screen_height = egg.winfo_reqheight()
     tx = int(t_sc_w*windll.shcore.GetScaleFactorForDevice(0)/100) if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
     egg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
-    egg.update()
+    egg.update() 
+################################################# mfit start ######################################################
 
 def fmcgl2():
     global mbcgl2, kmin, kmax, flmcgl2, micgl2, mfp, mbcomp1, mbcomp2, flmcomp1, flmcomp2
@@ -7293,7 +7317,7 @@ def fitm():
     tt1 = threading.Thread(target=mjob)
     tt1.daemon = True
     tt1.start()
-
+################################################# mfit end ######################################################
 
 eprfit = 0
 
@@ -7369,7 +7393,8 @@ def fite():
 
 
 def cmfit(*e):
-    t1 = threading.Thread(target=fitm)
+    mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, scki=scki, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult)
+    t1 = threading.Thread(target=fitm, args=(mdc_pars,))  #fix add args
     t1.start()
 
 
@@ -10803,7 +10828,6 @@ if __name__ == '__main__':
     base_font_size = 16
     scaled_font_size = int(base_font_size * scale)
     
-    # g_mem set to 300 MB
     g_mem = psutil.Process(pid).memory_info().rss/1024**3
     app_pars = app_param(hwnd=hwnd, scale=scale, dpi=dpi, bar_pos=bar_pos, g_mem=g_mem)
 
@@ -11133,6 +11157,22 @@ if __name__ == '__main__':
                 print('\033[90mMDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
+        ko = ''
+        fev = []
+        rpos = []
+        ophi = []
+        fwhm = []
+        pos = []
+        kmin = []
+        kmax = []
+        skmin = []
+        skmax = []
+        scki = []
+        smfp = []
+        smfi = []
+        smaa1 = []
+        smaa2 = []
+        smresult = [1]
         print('\033[90mNo MDC fitted data preloaded (Casa)\033[0m')
 
     try:
@@ -11609,6 +11649,7 @@ if __name__ == '__main__':
             koffset.config(state='disabled')
     except:
         pass
+    from tool.MDC_Fitter import *
     print(f"\033[36mVersion: {__version__}")
     print(f"Release Date: {__release_date__}\n\033[0m")
     ###### hotkey ######
