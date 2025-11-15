@@ -12,6 +12,10 @@ See [`MDC_cut_UserManual.pdf`](MDC_cut_UserManual.pdf) for detailed instructions
 The user manual is currently out of date. For the latest changes and new features, refer to the release notes.
 
 ## Usage
+> [!WARNING]
+> It is highly recommended to run `MDC_cut.py` in a virtual environment to avoid conflicts with existing packages in your main Python environment.
+> 
+> `MDC_cut.py` will attempt to install the required dependencies automatically by **pip** if they are not already present.
 - Please download [`MDC_cut.py`](MDC_cut.py) and place it in the directory you want.
 - Create a virtual environment (e.g., via [Anaconda](https://www.anaconda.com/download)) with the required Python version to avoid changing your main environment, then run `MDC_cut.py` to automatically install the dependencies.
 - If you don’t mind the environment, execute `MDC_cut.py` and check that it automatically installs the required dependencies.
