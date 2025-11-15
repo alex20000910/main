@@ -26,9 +26,20 @@ The user manual is currently out of date. For the latest changes and new feature
 ![alt text](src/img/img_Volume_Viewer.png)
 
 > [!IMPORTANT]
-> Always specify the file name with clear geometric suffixes like **File1_R1_18_R2_85** for Angular LensMode or **File2_X_12_Z_45** for Transmission LensMode to well define the geometry of the spectum acquired.
+> Always specify the file name with clear geometric suffixes like
+>> **Name1_R1_18_R2_85.h5**, **Name2_r1_12_r2_45.h5**
+>> 
+> for Angular LensMode
+>> 
+> or
+>> **Name3_X_12_Z_45.h5**, **Name4_x_25_z_100.h5**
+>> 
+> for Transmission LensMode
+>> 
+> to well define the geometry of the spectum acquired.
 
-The application will parse the file name to extract the geometry information. R1 and R2 represent the motor of the sample manipulator, while 18 and 85 denote the angles(in degrees) of the respective motors.
+The application will parse the file name to extract the geometry information. R1 and R2 represent the motor of the sample manipulator, while the numbers denote the angles(in degrees) or position(in millimeters) of the respective motors.
+
 Let's say we have some ARPES raw data files (`.h5`/`.json` format) from the PREVAC EA15 analyzer.
 
 The typical workflow would be:
