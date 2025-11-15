@@ -21,9 +21,9 @@ The user manual is currently out of date. For the latest changes and new feature
 3. Start the GUI.
 
 ## Work Flow
-<img src="src\img\img_raw.png" width="50%">
-<img src="src\img\img_k_plane.png" width="50%">
-<img src="src\img\img_Volume_Viewer.png" width="50%">
+![alt text](src\img\img_raw.png)
+![alt text](src\img\img_k_plane.png)
+![alt text](src\img\img_Volume_Viewer.png)
 
 > [!IMPORTANT]
 > Always specify the file name with clear geometric suffixes like **File1_R1_18_R2_85** for Angular LensMode or **File2_X_12_Z_45** for Transmission LensMode to well define the geometry of the spectum acquired.
@@ -48,9 +48,9 @@ In addition to the steps mentioned above, `MDC_cut.py` provides a variety of too
 > Change the OriginPro project format to `.opju` by directly modify the keyword in `MDC_cut.py` if you are using OriginPro 2023 or later. Typically, the older `.opj` format is still supported by later versions of OriginPro.
 
 ## Snapshots
-<img src="src\img\img_main.png" width="75%">
-<img src="src\img\img_SO_Fitter.png" width="75%">
-<img src="src\img\img_CEC.png" width="75%">
-<img src="src\img\img_DataViewer.png" width="75%">
-<img src="src\img\img_Spectrogram.png" width="75%">
-<img src="src\img\img_MDC_Fitter.png" width="75%">
+![alt text](src\img\img_main.png)
+![alt text](src\img\img_SO_Fitter.png)
+![alt text](src\img\img_CEC.png)
+![alt text](src\img\img_DataViewer.png)
+![alt text](src\img\img_Spectrogram.png)
+![alt text](src\img\img_MDC_Fitter.png)
