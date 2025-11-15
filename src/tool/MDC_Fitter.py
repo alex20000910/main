@@ -1,17 +1,15 @@
-import sys  #fix
-sys.path.append(r'C:\Users\dawan\Data\大學\實驗室\ARPES\src')   #fix
 from MDC_cut_utility import *
 import tkinter as tk
 from tkinter import filedialog as fd
+from tkinter import messagebox
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from ctypes import windll
 from abc import ABC, abstractmethod
-import gc
 import threading
 from lmfit import Parameters, Minimizer
 from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
@@ -33,7 +31,7 @@ class MDC_Fitter(ABC):
 
 def init_pars(app_pars=None):
     if app_pars is not None:
-        global ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, scki, smfp, smfi, smaa1, smaa2, smresult, m, h
+        global ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, smfp, smfi, smaa1, smaa2, smresult, smcst, m, h, smresult_original
         ScaleFactor = app_pars.ScaleFactor
         sc_y = app_pars.sc_y
         g = app_pars.g
@@ -53,19 +51,21 @@ def init_pars(app_pars=None):
         fpr = app_pars.fpr
         skmin = app_pars.skmin
         skmax = app_pars.skmax
-        scki = app_pars.scki
         smfp = app_pars.smfp
         smfi = app_pars.smfi
         smaa1 = app_pars.smaa1
         smaa2 = app_pars.smaa2
         smresult = app_pars.smresult
+        smcst = app_pars.smcst
         m = 9.10938356e-31  # electron mass kg
         h = 6.62607015e-34  # Planck constant J·s
+        smresult_original = copy.deepcopy(smresult)
+        clear(app_pars)
+        app_pars = None
 
 def _size(s: int) -> int:
     return int(s * scale)
 
-# ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, m, h = [None]*14
 #############################
 
 def gl1(x, x0, a, w, y0):
@@ -411,7 +411,7 @@ def fmcgl2():
 def pack_fitpar(mresult):
     if len(smresult) > 1:
         o=smresult
-        for ii,result in enumerate(mresult):
+        for ii, result in enumerate(mresult):
             try:
                 s = putfitpar(result)
                 for i in range(len(o[ii])):
@@ -1749,6 +1749,7 @@ def _mprplot_job1():
                 px = (2 * m * tev * 1.6 * 10 ** -19) ** 0.5 * np.sin(px / 180 * np.pi) * 10 ** -10 / (h / 2 / np.pi)
             pz = data.to_numpy()
             mfpra.pcolormesh(px, py, pz, cmap=value3.get())
+            pz=None
             oyl = mfpra.get_ylim()
 
             if emf == 'KE':
@@ -2091,6 +2092,7 @@ def mfitplot():  # mfiti Scale
     myl = mfitax.get_ylim()
     tmxl = np.copy(mxl)
     mfitout.draw()
+    x, x_arg, y, lbg, vv, ty, fl, txl, tyl, dx, dy = None, None, None, None, None, None, None, None, None, None, None
     mplfi()
 
 
@@ -2494,10 +2496,39 @@ def fmposcst():
         min_x2.config(state='disabled')
         mbposcst.config(bg='white')
 
-
+def mgg_close():
+    global mgg
+    try:
+        flag = True
+        count = 0
+        smresult = pack_fitpar(mresult)
+        for i, j in zip(smresult, smresult_original):
+            if not np.array_equal(i, j):
+                flag = False
+                break
+            count += 1
+        if flag:
+            mgg.destroy()
+            clear(mgg)
+            mgg=True
+        else:
+            if messagebox.askyesno("MDC Fitter", "Unsaved changes detected. Do you want to exit without saving?", default='no', icon='warning'):
+                mgg.destroy()
+                clear(mgg)
+                mgg=True
+            else:
+                fmend()
+                savemfit()
+    except Exception as ex:
+        print(f"Error:({__file__}, line:{ex.__traceback__.tb_lineno})", ex)
+        mgg.destroy()
+        clear(mgg)
+        mgg=True
+    
 def mjob():     # MDC Fitting GUI
-    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mprf, mpr, b_pr, mbgv, fdo
+    global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mpr, b_pr, mbgv, fdo
     mgg = tk.Toplevel(g, bg='white')
+    mgg.protocol("WM_DELETE_WINDOW", mgg_close)
     mdpi = mgg.winfo_fpixels('1i')
     t_sc_w = windll.user32.GetSystemMetrics(0)
     tx = int(t_sc_w*windll.shcore.GetScaleFactorForDevice(0)/100) if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
@@ -2792,6 +2823,8 @@ def mjob():     # MDC Fitting GUI
     try:
         flsmresult = smresult
         flsmcst = smcst
+        flsmresult = None
+        flsmcst = None
     except:
         smcst=np.zeros(len(ev)*6).reshape(len(ev),6)
         smresult = [1]
@@ -2828,11 +2861,8 @@ class oklim():
 mgg=None
 def fitm(mdc_pars):
     if mgg is not None:
-        try:
-            mgg.lift()
-            return
-        except:
-            pass
+        mgg.lift()
+        return
     init_pars(mdc_pars)
     global ev, phi, data, mvv, maa1, maa2, fmxx, fmyy, fmx, fmy, kmin, kmax, cki, mbase, mprfit, mf_prswap, smresult, klim
     mprfit = 0

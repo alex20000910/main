@@ -36,7 +36,7 @@ class FileSequence(ABC):
         pass
 
 class MDC_param:
-    def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, scki, smfp, smfi, smaa1, smaa2, smresult):
+    def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, smfp, smfi, smaa1, smaa2, smresult, smcst):
         self.ScaleFactor = ScaleFactor
         self.sc_y = sc_y
         self.g = g
@@ -56,12 +56,12 @@ class MDC_param:
         self.fpr = fpr
         self.skmin = skmin
         self.skmax = skmax
-        self.scki = scki
         self.smfp = smfp
         self.smfi = smfi
         self.smaa1 = smaa1
         self.smaa2 = smaa2
         self.smresult = smresult
+        self.smcst = smcst
         
 
 class cec_param:
