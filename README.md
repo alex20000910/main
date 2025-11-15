@@ -32,7 +32,7 @@ The user manual is currently out of date. For the latest changes and new feature
 > for Angular LensMode
 >> 
 > or
->> **Name3_X_12_Z_45.h5**, **Name4_x_25_z_100.h5**
+>> **Name3_X_12_Z_45.h5**, **Name4_x_11_z_48.h5**
 >> 
 > for Transmission LensMode
 >> 
