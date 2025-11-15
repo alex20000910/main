@@ -2,6 +2,7 @@
 ![GitHub License](https://img.shields.io/github/license/alex20000910/main)
 ![GitHub Release](https://img.shields.io/github/v/release/alex20000910/main)
 ![GitHub Release Date](https://img.shields.io/github/release-date/alex20000910/main)
+![GitHub Created At](https://img.shields.io/github/created-at/alex20000910/main)
 
 This application is specifically designed to process data produced by [**Spectrium**](https://prevac.pl/produkt/spectrium/), a software product of [**PREVAC sp. z o.o.**](https://prevac.pl/)
 
