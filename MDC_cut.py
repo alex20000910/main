@@ -252,7 +252,8 @@ def get_src():
            r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py"]
+           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py"]
     for i, v in enumerate(url):
         if i < 2:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
