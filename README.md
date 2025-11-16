@@ -11,6 +11,23 @@ This application is specifically designed to process data produced by [**Spectri
 See [`MDC_cut_UserManual.pdf`](MDC_cut_UserManual.pdf) for detailed instructions.
 The user manual is currently out of date. For the latest changes and new features, refer to the release notes.
 
+- **One Click to Go**: Launch instantly — no setup, no friction.
+- **Intuitive Interface**: Clean, user-friendly design with zero learning curve.
+- **Comprehensive Toolkit**: All-in-one solution for ARPES data visualization and analysis.
+    - **Sample Offset Fitter**: Precisely calibrate sample orientation.
+    - **k-plane Conversion**: Transform raw data into momentum space seamlessly.
+    - **Volume Viewer**: Explore and slice 3D k-space data with ease.
+    - **MDC Fitter**: Analyze momentum distribution curves efficiently.
+    - **Spectrogram Tool**: Generate and select spectrograms from your data.
+    - **Versatile Export Options**: Export data in graph(.png, .jpg...), HDF5, CasaXPS (.vms), and OriginPro (.opj/.opju) formats.
+
+## Contents
+- [**Usage**](#usage)
+- [**What will `MDC_cut.py` do?**](#what-will-mdc_cutpy-do)
+- [**Work Flow**](#work-flow)
+  - [**Geometry Definition**](#geometry-definition)
+  - [**E-Angle to E-k Conversion**](#e-angle-to-e-k-conversion)
+- [**Snapshots**](#snapshots)
 ## Usage
 > [!WARNING]
 > It is highly recommended to run `MDC_cut.py` in a virtual environment to avoid conflicts with existing packages in your main Python environment.
@@ -43,6 +60,31 @@ The user manual is currently out of date. For the latest changes and new feature
 >> 
 > to well define the geometry of the spectum acquired.
 
+### Geometry Definition
+The geometry of the data is defined by the angles or positions of the sample manipulator motors.
+The following table illustrates the relationship between motor positions and the corresponding energy and angles resolved by the EA15 analyzer.
+> [!NOTE]
+> The values shown in the images below are for illustration purposes only and do not represent actual measurements.
+> The actual positions and angles of the motors might not be exactly the same as those depicted.
+>
+> For example, R1=-31° corresponds to $\psi$=0° and R2=85° corresponds to $\phi$=0° in the **Spectrium** software.
+>
+> However, users might not suffer from this offset since they can always calibrate the offset angle in the **k-plane** tool.
+> Additionally, there would be no difference in the k-space conversion as long as the relative angles are correct.
+
+<div align="center">
+
+|Energy|Angle (resolved by EA15 lens)|
+|:---:|:---:|
+|![](src/img/geo_E.gif)|![](src/img/geo_theta.gif)|
+
+|$\phi$ (Rotation around Y-axis, **R2** Motor)|$\psi$ (Tilt around Z-axis, **R1** Motor)|
+|:---:|:---:|
+|![](src/img/geo_phi.gif)|![](src/img/geo_psi.gif)|
+
+</div>
+
+### E-Angle to E-k Conversion
 The application will parse the file name to extract the geometry information. R1 and R2 represent the motor of the sample manipulator, while the numbers denote the angles(in degrees) or position(in millimeters) of the respective motors.
 
 Let's say we have some ARPES raw data files (`.h5`/`.json` format) from the PREVAC EA15 analyzer.
@@ -58,10 +100,13 @@ The typical workflow would be:
 > **Sample Offset Fitter** can help you find the offset angle with ease.
 5. After exporting, you can visualize the data in the **Volume Viewer** tool. It allows you to slice through the 3D k-space data export the desired 2D cuts in HDF5 format.
 6. Further analysis like MDC fitting can be performed in the **MDC Fitter** tool by loading the exported 2D cuts back into `MDC_cut.py` using the **Load Raw Data** button.
+>[!TIP]
+> Many tools in `MDC_cut.py` have HOTKEY bindings for quick access. Try **Enter**, **Up Arrow**, **Down Arrow**, **Left Arrow**, **Right Arrow**, and **Scroll Wheel** for navigation, confirmation, and adjustments.
 
 In addition to the steps mentioned above, `MDC_cut.py` provides a variety of tools for data visualization, exporting to [**CasaXPS**](https://www.casaxps.com/)(.vms), and generating [**OriginPro**](https://www.originlab.com/) projects(.opj). Explore the GUI to discover more features!
 > [!NOTE]
-> Change the OriginPro project format to `.opju` by directly modify the keyword in `MDC_cut.py` if you are using OriginPro 2023 or later. Typically, the older `.opj` format is still supported by later versions of OriginPro.
+> Change the OriginPro project format to `.opju` by directly modify the keyword in `MDC_cut.py` if you are using OriginPro 2018 or later. Typically, the older `.opj` format is still supported by later versions of OriginPro.
+
 
 ## Snapshots
 ![alt text](src/img/img_main.png)
