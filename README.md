@@ -1,9 +1,9 @@
 # MDC_cut: An ARPES data analysis tool
-![Python Version](https://img.shields.io/badge/Python-3.12_|_3.13-3776AB?logo=python&logoColor=%233776AB)
-![GitHub License](https://img.shields.io/github/license/alex20000910/main?logo=licenses&logoColor=white)
-![GitHub Release](https://img.shields.io/github/v/release/alex20000910/main)
-![GitHub Release Date](https://img.shields.io/github/release-date/alex20000910/main)
-![GitHub Created At](https://img.shields.io/github/created-at/alex20000910/main)
+![Python Version](https://img.shields.io/badge/Python-3.12_|_3.13-3776AB?logo=python&logoColor=%233776AB&style=plastic)
+![GitHub License](https://img.shields.io/github/license/alex20000910/main?logo=licenses&logoColor=white&style=plastic)
+![GitHub Release](https://img.shields.io/github/v/release/alex20000910/main?style=plastic)
+![GitHub Release Date](https://img.shields.io/github/release-date/alex20000910/main?style=plastic)
+![GitHub Created At](https://img.shields.io/github/created-at/alex20000910/main?style=plastic)
 
 This application is specifically designed to process data produced by [**Spectrium**](https://prevac.pl/produkt/spectrium/), a software product of [**PREVAC sp. z o.o.**](https://prevac.pl/)
 
