@@ -102,8 +102,8 @@ if VERSION < 3130:
     "psutil==7.0.0",
     "zarr==3.1.1",
     "PyQt5==5.15.11",
-    "tkinterdnd2==0.4.3",
     "pyqtgraph==0.13.7"
+    "tkinterdnd2==0.4.3",
     ]
 else:
     REQUIREMENTS = ["numpy==2.2.6",
@@ -369,8 +369,6 @@ try:
     if __name__ == '__main__':
         from scipy.optimize import curve_fit
         from scipy.signal import hilbert
-        from scipy.stats import mode
-        from scipy.interpolate import griddata
     if __name__ == '__main__':
         from lmfit import Parameters, Minimizer
         from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
@@ -378,20 +376,20 @@ try:
     import win32clipboard
     if __name__ == '__main__':
         import originpro as op
-    import cv2
+    from cv2 import Laplacian, GaussianBlur, CV_64F
     # import cpuinfo
     import psutil
     # import zarr
     if __name__ == '__main__':
         import PyQt5
         import pyqtgraph
-    from tkinterdnd2 import DND_FILES, TkinterDnD
+        from tkinterdnd2 import DND_FILES, TkinterDnD
     from MDC_cut_utility import *
-    from tool.loader import *
-    from tool.spectrogram import *
-    from tool.SO_Fitter import *
-    from tool.VolumeSlicer import *
-    from tool.CEC import *
+    from tool.loader import loadfiles, load_h5, load_json, load_npz, load_txt
+    from tool.spectrogram import spectrogram, lfs_exp_casa
+    if __name__ == '__main__':
+        from tool.SO_Fitter import SO_Fitter
+        from tool.CEC import CEC, call_cec
     
 except ModuleNotFoundError:
     install()
@@ -4677,23 +4675,24 @@ def cefit(*e):
 ############################################################
 ############################################################
 
-
-def o_fitgl():
-    try:
-        # global pos,fwhm,epos,efwhm,base,k_offset,st,evv,eaa,fexx,feyy,fex,fey,mvv,maa,fmxx,fmyy,fmx,fmy
-        global st
-        print('fitting')
-        st.put('fitting')
-        t1 = threading.Thread(target=fitm)
-        t2 = threading.Thread(target=fite)
-        t1.start()
-        t2.start()
-        t1.join()
-        t2.join()
-        print('Done')
-        st.put('Done')
-    except:
-        pass
+###########################decprecated##############################
+# def o_fitgl():
+#     try:
+#         # global pos,fwhm,epos,efwhm,base,k_offset,st,evv,eaa,fexx,feyy,fex,fey,mvv,maa,fmxx,fmyy,fmx,fmy
+#         global st
+#         print('fitting')
+#         st.put('fitting')
+#         t1 = threading.Thread(target=fitm)
+#         t2 = threading.Thread(target=fite)
+#         t1.start()
+#         t2.start()
+#         t1.join()
+#         t2.join()
+#         print('Done')
+#         st.put('Done')
+#     except:
+#         pass
+###########################decprecated##############################
 
 
 def clmfit():
@@ -4981,10 +4980,10 @@ def o_bareband():
         st.put('No file selected')
         
 def im_smooth(data, kernel_size=17):
-    return cv2.GaussianBlur(data, (kernel_size, kernel_size), 0)
+    return GaussianBlur(data, (kernel_size, kernel_size), 0)
 
 def laplacian_operation(data):
-    return -cv2.Laplacian(data, cv2.CV_64F)
+    return -Laplacian(data, CV_64F)
 
 def laplacian_filter(data, kernel_size=17):
     im=im_smooth(data, kernel_size)
@@ -5075,17 +5074,7 @@ def o_plot1(*e):
             #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
             
             elif value.get() == 'Second Derivative':    #axis: phi, eV
-                ao = fig.subplots()
-                # pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
-                # pz = np.diff(smooth(pz.transpose()))/np.diff(ev)
-                # pz = sdgd_filter(data.to_numpy(), phi, ev)
-                # if emf=='KE':
-                #     px, py = np.meshgrid(phi[0:-2], ev[0:-2])
-                # else:
-                #     px, py = np.meshgrid(phi[0:-2], vfe-ev[0:-2])
-                # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.602176634*10**-19).transpose(
-                # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
-                
+                ao = fig.subplots()                
                 pz = laplacian_filter(data.to_numpy(), im_kernel)
                 if emf=='KE':
                     px, py = np.meshgrid(phi, ev)
@@ -5101,36 +5090,6 @@ def o_plot1(*e):
                 h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
                 cb = fig.colorbar(h0)
                 cb.set_ticklabels(cb.get_ticks(), font='Arial')
-                
-            # elif value.get() == 'Second Derivative':    #axis: phi
-            #     ao = fig.subplots()
-            #     pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
-            #     pz = -np.diff(smooth(pz))/np.diff(phi[0:-1])
-                # if emf=='KE':
-                #     px, py = np.meshgrid(phi[0:-2], ev)
-                # else:
-                #     px, py = np.meshgrid(phi[0:-2], vfe-ev)
-                # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-                # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
-            #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
-            #     cb = fig.colorbar(h0)
-            #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
-                
-            # elif value.get() == 'Second Derivative':    #axis: eV
-            #     ao = fig.subplots()
-            #     pz = np.diff(smooth(data.to_numpy().transpose()))/np.diff(ev)
-            #     pz = -np.diff(smooth(pz))/np.diff(ev[0:-1])
-            #     pz = pz.transpose()
-                # if emf=='KE':
-                #     px, py = np.meshgrid(phi, ev[0:-2])
-                # else:
-                #     px, py = np.meshgrid(phi, vfe-ev[0:-2])
-                # px = (2*m*np.full_like(np.zeros([len(phi), len(ev[0:-2])], dtype=float), ev[0:-2]+np.diff(ev[0:-1])/2*2)*1.602176634*10**-19).transpose(
-                # )**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
-            #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
-            #     cb = fig.colorbar(h0)
-            #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
-                
             else:
                 if 'MDC Curves' not in value.get():
                     fig.clear()
@@ -5556,21 +5515,6 @@ def o_plot3(*e):
             ################################################################################## Hilbert Transform
             ##################################################################################
             tbe = (vfe-fev)*1000
-            ###################################################插入KK缺失值 棄用
-            # de = np.diff(tbe)
-            # de = np.append(de, de[-1])
-            # rm=mode(de)
-            # rm=rm.mode
-            # otbe=tbe
-            # for i,v in enumerate(de):
-            #     if abs(v-rm)>abs(rm/2):
-            #         print(v,rm)
-            #         ap_tbe = tbe[i]+rm
-            #         de = np.append(de[0:i+1],np.append([rm],de[i+1::]))
-            #         tbe = np.append(tbe[0:i+1],np.append([interp(ap_tbe,otbe,otbe)],tbe[i+1::]))
-            #         ry = np.append(ry[0:i+1],np.append([interp(ap_tbe,otbe,ry)],ry[i+1::]))
-            #         iy = np.append(iy[0:i+1],np.append([interp(ap_tbe,otbe,iy)],iy[i+1::]))
-            ###################################################插入KK缺失值 棄用
             
             ix=(tbe-tbe[-1])*-1
             cix=np.append(ix+ix[0],ix)
@@ -5723,100 +5667,7 @@ def o_plot3(*e):
                 ax.invert_xaxis()
             ##################################################################################
             ################################################################################## Hilbert Transform
-            
-            
-            
-            ################################################################################## KK definition
-            ##################################################################################
-            # ax = fig.subplots(2, 1)
-            # a = ax[0]
-            # b = ax[1]
-            # a.set_title('Self Energy', font='Arial', fontsize=size(18))
-            # a.plot(rx, ry, c='black', linestyle='-',
-            #        marker='.', label=r'Re $\Sigma$')
-            # a.tick_params(direction='in')
-            # a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=size(14))
-            # a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=size(14))
 
-            
-            # ix=(tbe-tbe[-1])*-1
-            # cix=np.append(ix+ix[0],ix)
-            # tix=cix[0:len(cix)-1]*-1
-            # # kx=ix
-            # kx = np.append(cix,tix[::-1])
-            # ky = np.linspace(0, 1, len(kx))
-            # ciy=np.append(iy*0,iy)
-            # tiy=ciy[0:len(ciy)-1]
-            # ciy = np.append(ciy,tiy[::-1])
-            # # de=np.linspace(0,1,len(kx))
-            # # de[0:-1]=np.diff(kx)
-            # # de[-1]=de[-2]
-            # de = np.diff(kx)
-            # de = np.append(de, de[-1])
-
-            # for i in range(len(kx)):
-            #     # ky[i]=np.trapz(y=iy/(iy-kx[i]),x=iy,dx=de)
-            #     intg = 0
-            #     for j in range(len(kx)):
-            #         if i != j:
-            #             tval = ciy[j]/(kx[j]-kx[i])*de[j]
-            #             if str(ciy[j]) == 'nan':
-            #                 tval = 0
-            #             intg += tval
-            #     ky[i] = -1/np.pi*intg/2
-            # a.plot(tbe, ky[len(ix):2*len(ix)], c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-            # # a.plot(tbe, ky, c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-            # handles, labels = a.get_legend_handles_labels()
-            # a.legend(handles, labels)
-            # # a.legend([h1,h2],['measured data','KK transform'])
-
-            # #   KK Re
-            # b.plot(tbe, ciy[len(ix):2*len(ix)], c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-            # # b.plot(tbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
-            # b.tick_params(direction='in')
-            # b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=size(14))
-            # b.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=size(14))
-            
-            
-            # ix=(tbe-tbe[-1])*-1
-            # cix=np.append(ix+ix[0],ix)
-            # tix=cix[0:len(cix)-1]*-1
-            # kx = np.append(cix,tix[::-1])
-            # ky = np.linspace(0, 1, len(kx))
-            # ciy=np.append(ry*0,ry)
-            # tiy=ciy[0:len(ciy)-1]*-1
-            # ciy = np.append(ciy,tiy[::-1])
-            
-            # # kx = rx
-            # ky = np.linspace(0, 1, len(kx))
-            # # de=np.linspace(0,1,len(kx))
-            # # de[0:-1]=np.diff(kx)
-            # # de[-1]=de[-2]
-            # de = np.diff(kx)
-            # de = np.append(de, de[-1])
-
-            # for i in range(len(kx)):
-            #     # ky[i]=np.trapz(y=iy/(iy-kx[i]),x=iy,dx=de)
-            #     intg = 0
-            #     for j in range(len(kx)):
-            #         if i != j:
-            #             tval = ciy[j]/(kx[j]-kx[i])*de[j]
-            #             if str(ciy[j]) == 'nan':
-            #                 tval = 0
-            #             intg += tval
-            #     ky[i] = 1/np.pi*intg
-            # b.plot(tbe, ky[len(ix):2*len(ix)], c='red', linestyle='-', marker='.',
-            #        label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
-            # handles, labels = b.get_legend_handles_labels()
-            # b.legend(handles, labels)
-            # a.invert_xaxis()
-            # b.invert_xaxis()
-            
-            
-            ##################################################################################
-            ################################################################################## KK definition
-            
-            
         elif value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
             bo = fig.subplots()
             if emf=='KE':
@@ -6437,16 +6288,7 @@ def exp(*e):
                 drag_from_anywhere=True,
                 snap_values=n[1]
             ))
-        elif value.get() == 'Second Derivative':
-            # pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
-            # pz = -np.diff(smooth(pz))/np.diff(phi[0:-1])
-            # if emf=='KE':
-            #     px, py = np.meshgrid(phi[0:-2], ev)
-            # else:
-            #     px, py = np.meshgrid(phi[0:-2], vfe-ev)
-            # px = (2*m*np.full_like(np.zeros([len(phi[0:-2]), len(ev)], dtype=float), ev)*1.602176634*10**-19).transpose(
-            # )**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi[0:-1])/2*2)/180*np.pi)*10**-10/(h/2/np.pi)
-            
+        elif value.get() == 'Second Derivative':            
             pz = laplacian_filter(data.to_numpy(), im_kernel)
             if emf=='KE':
                 px, py = np.meshgrid(phi, ev)
@@ -7007,97 +6849,6 @@ def exp(*e):
                     ll=a.legend(fontsize=size(20))
                     ll.draw_frame(False)
                 a.invert_xaxis()
-            ####################################################################################### KK definition
-            #######################################################################################
-            # f, ax = plt.subplots(2, 1, dpi=150)
-            # a = ax[0]
-            # b = ax[1]
-            # a.set_title('Self Energy', font='Arial', fontsize=size(24))
-            # a.plot(rx, ry, c='black', linestyle='-',
-            #        marker='.', label=r'Re $\Sigma$')
-            # a.tick_params(direction='in')
-            # a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=size(22))
-            # a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=size(22))
-
-            # tbe = (vfe-fev)*1000
-            # ix=(tbe-tbe[-1])*-1
-            # cix=np.append(ix+ix[0],ix)
-            # tix=cix[0:len(cix)-1]*-1
-            # # kx=ix
-            # kx = np.append(cix,tix[::-1])
-            # ky = np.linspace(0, 1, len(kx))
-            # ciy=np.append(iy*0,iy)
-            # tiy=ciy[0:len(ciy)-1]
-            # ciy = np.append(ciy,tiy[::-1])
-            # # de=np.linspace(0,1,len(kx))
-            # # de[0:-1]=np.diff(kx)
-            # # de[-1]=de[-2]
-            # de = np.diff(kx)
-            # de = np.append(de, de[-1])
-
-            # for i in range(len(kx)):
-            #     # ky[i]=np.trapz(y=iy/(iy-kx[i]),x=iy,dx=de)
-            #     intg = 0
-            #     for j in range(len(kx)):
-            #         if i != j:
-            #             tval = ciy[j]/(kx[j]-kx[i])*de[j]
-            #             if str(ciy[j]) == 'nan':
-            #                 tval = 0
-            #             intg += tval
-            #     ky[i] = -1/np.pi*intg/2
-            # a.plot(tbe, ky[len(ix):2*len(ix)], c='red', linestyle='-', marker='.',
-            #        label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
-            # handles, labels = a.get_legend_handles_labels()
-            # a.legend(handles, labels)
-            # # a.legend([h1,h2],['measured data','KK transform'])
-
-            # #   KK Re
-            # b.plot(tbe, ciy[len(ix):2*len(ix)], c='black', linestyle='-',
-            #        marker='.', label=r'Im $\Sigma$')
-            # b.tick_params(direction='in')
-            # b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=size(22))
-            # b.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=size(22))
-
-            
-            
-            # ix=(tbe-tbe[-1])*-1
-            # cix=np.append(ix+ix[0],ix)
-            # tix=cix[0:len(cix)-1]*-1
-            # kx = np.append(cix,tix[::-1])
-            # ky = np.linspace(0, 1, len(kx))
-            # ciy=np.append(ry*0,ry)
-            # tiy=ciy[0:len(ciy)-1]*-1
-            # ciy = np.append(ciy,tiy[::-1])
-            
-            # # kx = rx
-            # ky = np.linspace(0, 1, len(kx))
-            # # de=np.linspace(0,1,len(kx))
-            # # de[0:-1]=np.diff(kx)
-            # # de[-1]=de[-2]
-            # de = np.diff(kx)
-            # de = np.append(de, de[-1])
-
-            # for i in range(len(kx)):
-            #     # ky[i]=np.trapz(y=iy/(iy-kx[i]),x=iy,dx=de)
-            #     intg = 0
-            #     for j in range(len(kx)):
-            #         if i != j:
-            #             tval = ciy[j]/(kx[j]-kx[i])*de[j]
-            #             if str(ciy[j]) == 'nan':
-            #                 tval = 0
-            #             intg += tval
-            #     ky[i] = 1/np.pi*intg
-            # b.plot(tbe, ky[len(ix):2*len(ix)], c='red', linestyle='-', marker='.',
-            #        label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
-            # handles, labels = b.get_legend_handles_labels()
-            # b.legend(handles, labels)
-            
-            # a.invert_xaxis()
-            # b.invert_xaxis()
-            #######################################################################################
-            ####################################################################################### KK definition
-            
-            
             
         elif value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
             f0 = plt.figure(figsize=(8*scale, 7*scale), layout='constrained')
@@ -7964,9 +7715,10 @@ def load(drop=False, files='', *args):
 
 
 def fitgl():
-    t12 = threading.Thread(target=o_fitgl)
-    t12.daemon = True
-    t12.start()
+    pass
+    # t12 = threading.Thread(target=o_fitgl)
+    # t12.daemon = True
+    # t12.start()
 
 
 def tstate():

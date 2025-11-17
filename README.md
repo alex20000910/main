@@ -27,12 +27,15 @@ The user manual is currently out of date. For the latest changes and new feature
 - [**Work Flow**](#work-flow)
   - [**Geometry Definition**](#geometry-definition)
   - [**E-Angle to E-k Conversion**](#e-angle-to-e-k-conversion)
+- [**Requirements**](#requirements)
 - [**Snapshots**](#snapshots)
 ## Usage
 > [!WARNING]
 > It is highly recommended to run `MDC_cut.py` in a virtual environment to avoid conflicts with existing packages in your main Python environment.
 > 
 > `MDC_cut.py` will attempt to install the required dependencies automatically by **pip** if they are not already present.
+>
+> Make sure you have an environment with **Python 3.12 or above**.
 - Please download [`MDC_cut.py`](MDC_cut.py) and place it in the directory you want.
 - Create a virtual environment (e.g., via [Anaconda](https://www.anaconda.com/download)) with the required Python version to avoid changing your main environment, then run `MDC_cut.py` to automatically install the dependencies.
 - If you don’t mind the environment, execute `MDC_cut.py` and check that it automatically installs the required dependencies.
@@ -107,6 +110,49 @@ In addition to the steps mentioned above, `MDC_cut.py` provides a variety of too
 > [!NOTE]
 > Change the OriginPro project format to `.opju` by directly modify the keyword in `MDC_cut.py` if you are using OriginPro 2018 or later. Typically, the older `.opj` format is still supported by later versions of OriginPro.
 
+## Requirements
+You don't need to manually install the dependencies. `MDC_cut.py` will automatically install them via pip if they are not already present in your environment.
+The following are the tested Python versions and their corresponding package versions:
+
+- Python 3.12.x
+  - numpy 1.26.4
+  - opencv-python 4.10.0.84
+  - matplotlib 3.10.5
+  - xarray 2025.7.1
+  - h5py 3.14.0
+  - Pillow 11.3.0
+  - scipy 1.16.1
+  - lmfit 1.3.4
+  - tqdm 4.67.1
+  - pywin32 311
+  - originpro 1.1.13
+  - py-cpuinfo 9.0.0
+  - psutil 7.0.0
+  - zarr 3.1.1
+  - PyQt5 5.15.11
+  - pyqtgraph 0.13.7
+  - tkinterdnd 0.4.3
+- Python 3.13.x
+  - numpy 2.2.6
+  - opencv-python 4.12.0.88
+  - matplotlib 3.10.5
+  - xarray 2025.7.1
+  - h5py 3.14.0
+  - Pillow 11.3.0
+  - scipy 1.16.1
+  - lmfit 1.3.4
+  - tqdm 4.67.1
+  - pywin32 311
+  - originpro 1.1.13
+  - py-cpuinfo 9.0.0
+  - psutil 7.0.0
+  - zarr 3.1.1
+  - PyQt5 5.15.11
+  - pyqtgraph 0.13.7
+  - tkinterdnd 0.4.3
+
+The only difference between Python 3.12.x and 3.13.x environments is the numpy and opencv-python versions due to pip version compatibility.
+The highest tested Python version is 3.13.5.
 
 ## Snapshots
 ![alt text](src/img/img_main.png)
