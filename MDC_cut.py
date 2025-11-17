@@ -385,7 +385,7 @@ try:
         import pyqtgraph
         from tkinterdnd2 import DND_FILES, TkinterDnD
     from MDC_cut_utility import *
-    from tool.loader import loadfiles, load_h5, load_json, load_npz, load_txt
+    from tool.loader import loadfiles, mloader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
@@ -3137,7 +3137,7 @@ def loadmfit_():
     st.put('Done')
     lmgg.destroy()
 
-
+#fix
 def loadmfit_2p():
     file = fd.askopenfilename(
         title="Select MDC Fitted file", filetypes=(("VMS files", "*.vms"),))
@@ -7729,9 +7729,14 @@ def tstate():
         pass
 
 def lm2p():
-    t = threading.Thread(target=loadmfit_2p)
+    lmgg.destroy()
+    global rdd
+    ml = mloader(st, data, ev, phi, rdd, cdir, lowlim.get())
+    t = threading.Thread(target=ml.loadmfit_2p)
     t.daemon = True
     t.start()
+    t.join()
+    rdd = ml.rdd
 
 
 def lmre():
@@ -7741,9 +7746,34 @@ def lmre():
 
 
 def lm():
-    t = threading.Thread(target=loadmfit_)
+    lmgg.destroy()
+    global rdd, mfi_x, data, fpr
+    global fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst
+    ml = mloader(st, data, ev, phi, rdd, cdir, lowlim.get())
+    ml.loadparam(k_offset.get(), base.get(), npzf, fpr, name)
+    file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
+    t = threading.Thread(target=ml.loadmfit_, args=(file,))
     t.daemon = True
     t.start()
+    t.join()
+    rdd, mfi_x, data, fpr = ml.rdd, ml.mfi_x, ml.data, ml.fpr
+    fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst = ml.fev, ml.rpos, ml.ophi, ml.fwhm, ml.pos, ml.kmin, ml.kmax, ml.skmin, ml.skmax, ml.smaa1, ml.smaa2, ml.smfp, ml.smfi, ml.smresult, ml.smcst
+    limg.config(image=img[np.random.randint(len(img))])
+    if ml.fload:
+        try:
+            tbasename = os.path.basename(rdd)
+            if '.h5' in tbasename:
+                data = load_h5(rdd)
+                pr_load(data)
+            elif '.json' in tbasename:
+                data = load_json(rdd)
+                pr_load(data)
+            elif '.txt' in tbasename:
+                data = load_txt(rdd)
+                pr_load(data)
+        except: # Maybe file not found(at other location), just skip
+            print(f'{rdd} File path not found, skip loading raw data.')
+    clear(ml)
 
 
 def o_loadmfit():

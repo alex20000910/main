@@ -7,6 +7,8 @@ import xarray as xr
 import h5py
 import json
 import zarr
+from PIL import ImageTk
+from tkinter import filedialog as fd
 
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
@@ -927,4 +929,603 @@ class loadfiles(FileSequence):
                 print('Error in loadfiles().gen_r2')
                 print(sys.exc_info())
                 return name
-            
+
+class mloader:
+    def __init__(self, st, data, ev, phi, rdd, cdir, lowlim=0):
+        self.st = st
+        self.data = data
+        self.ev = ev
+        self.phi = phi
+        self.rdd = rdd
+        self.cdir = cdir
+        self.lowlim = lowlim
+    
+    def loadparam(self, k_offset: str, base: str, npzf: bool, fpr: int, name: str):
+        self.k_offset = k_offset
+        self.base = base
+        self.npzf = npzf
+        self.mfi_x = []
+        self.fload = False
+        self.fpr = fpr
+        self.name = name
+        
+        self.fev = []
+        self.rpos = []
+        self.ophi = []
+        self.fwhm = []
+        self.pos = []
+        self.kmin = []
+        self.kmax = []
+        self.skmin = []
+        self.skmax = []
+        self.smfp = []
+        self.smfi = []
+        self.smaa1 = []
+        self.smaa2 = []
+        self.smresult = []
+        self.smcst = []
+    
+    def loadmfit_2p(self, file: str):
+        # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("VMS files", "*.vms"),))
+        mfpath = ''
+        yy = []
+        for n in range(len(self.ev)):
+            ecut = self.data.sel(eV=self.ev[n], method='nearest')
+            y = ecut.to_numpy().reshape(len(self.phi))
+            y = np.where(y > int(self.lowlim), y, int(self.lowlim))
+            yy.append(y)
+            path = 'ecut_%.3f.txt' % self.ev[n]
+            mfpath += path
+        if len(file) > 2:
+            self.rdd = file
+            print('Loading...')
+            self.st.put('Loading...')
+        else:
+            self.rdd = path
+            # self.lmgg.destroy()
+        if ".vms" in file:
+            n = -1
+            # os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+            os.chdir(os.path.dirname(self.rdd))
+            fc = open('copy2p_'+os.path.basename(file), 'w', encoding='utf-8')
+            try:
+                with open(file) as f:
+                    f1 = 0
+                    f2 = 0
+                    indf = 0
+                    for i, line in enumerate(f):
+                        if line[0:11] in mfpath:
+                            fi = int(mfpath.find(line[0:11])/15)
+                            n = -1
+                            f1 = 0
+                            f2 = 0
+                            indf = 0
+                        if line[0:22] == 'CASA region (*Survey*)':
+                            ts = line.split(' ')
+                            ts[4] = str(round(float(ts[4]), 6))
+                            ts[5] = str(round(float(ts[5]), 6))
+                            fc.write(' '.join(ts))
+                            fc.write('2'+'\n')
+                            n = 1
+                        # 若無篩選條件   indent於此if以下
+                        elif line[0:20] == 'CASA comp (*Survey*)':
+                            s = line.split(' ')
+                            s[17] = str(round(float(s[17]), 6))
+                            s[18] = str(round(float(s[17])-0.0001, 6))
+                            s[19] = str(round(float(s[17])+0.0001, 6))
+                            fc.write(' '.join(s))
+
+                            s = line.split(' ')
+                            s[2] = '(*Survey_*)'
+                            s[8] = str(0)
+                            s[9] = str(0.3)  # Area B=A*2
+                            s[14] = str(0)
+                            s[15] = str(1)  # FWHM B=A*1
+
+                            s[17] = str(round(float(s[17]), 6))
+                            s[18] = str(round(float(s[18]), 6))
+                            s[17] = str(round(float(s[17])-0.05, 6))
+                            s[18] = ts[4]
+                            s[19] = ts[5]
+                            fc.write(' '.join(s))
+                        elif line[0:100] == 'XPS\n':
+                            fc.write('XPS'+'\n')
+                            indf = 1
+                        elif line[0:100] == 'Al\n':
+                            fc.write('Al'+'\n')
+                            indf = 0
+                        elif line[0:100] == '494\n' and f1 == 0:
+                            if indf == 1:
+                                fc.write('494'+'\n')
+                                indf = 0
+                            else:
+                                f1 = 1
+                                ti = i
+                        elif line[0:100] == '0\n' and f1 == 1:
+                            if ti == i-1:
+                                f2 = 1
+                                ti = i
+                            else:
+                                f1 = 0
+                                ti = 0
+                        elif line[0:100] == '1\n' and f2 == 1:
+                            if ti == i-1:
+                                ti = 0
+                                f2 = 0
+                                fc.write('494'+'\n')
+                                fc.write('0'+'\n')
+                                fc.write('1'+'\n')
+                                for j in range(len(self.phi)):
+                                    fc.write(str(int(yy[fi][-j-1]))+'\n')
+                                n = len(self.phi)
+                            else:
+                                f1 = 0
+                                f2 = 0
+                                ti = 0
+                        elif line[0:100] == '8\n':
+                            if indf == 1:
+                                fc.write('8'+'\n')
+                                indf = 0
+                            else:
+                                fc.write('9'+'\n')
+                        elif line[0:100] == '9\n':
+                            if indf == 1:
+                                fc.write('9'+'\n')
+                                indf = 0
+                            else:
+                                fc.write('10'+'\n')
+                        elif line[0:100] == '10\n':
+                            if indf == 1:
+                                fc.write('10'+'\n')
+                                indf = 0
+                            else:
+                                fc.write('11'+'\n')
+                        elif line[0:100] == '11\n':
+                            if indf == 1:
+                                fc.write('11'+'\n')
+                                indf = 0
+                            else:
+                                fc.write('12'+'\n')
+                        else:
+                            if n <= 0:
+                                if f2 == 1:
+                                    fc.write('494'+'\n')
+                                    fc.write('0'+'\n')
+                                    f2 = 0
+                                    f1 = 0
+                                elif f1 == 1:
+                                    fc.write('494'+'\n')
+                                    f1 = 0
+                                fc.write(line)
+                            if n > 0:
+                                f1 = 2
+                                n -= 1
+                                if n == 0:
+                                    f1 = 0
+                        # pass  # process line i      #勿動
+            except UnicodeDecodeError:
+                with open(file, encoding='utf-8') as f:
+                    f1 = 0
+                    f2 = 0
+                    indf = 0
+                    for i, line in enumerate(f):
+                        if line[0:11] in mfpath:
+                            fi = int(mfpath.find(line[0:11])/15)
+                            n = -1
+                            f1 = 0
+                            f2 = 0
+                            indf = 0
+                        if line[0:22] == 'CASA region (*Survey*)':
+                            ts = line.split(' ')
+                            ts[4] = str(round(float(ts[4]), 6))
+                            ts[5] = str(round(float(ts[5]), 6))
+                            fc.write(' '.join(ts))
+                            fc.write('2'+'\n')
+                            n = 1
+                        # 若無篩選條件   indent於此if以下
+                        elif line[0:20] == 'CASA comp (*Survey*)':
+                            s = line.split(' ')
+                            s[17] = str(round(float(s[17]), 6))
+                            s[18] = str(round(float(s[17])-0.0001, 6))
+                            s[19] = str(round(float(s[17])+0.0001, 6))
+                            fc.write(' '.join(s))
+
+                            s = line.split(' ')
+                            s[2] = '(*Survey_*)'
+                            s[8] = str(0)
+                            s[9] = str(0.3)  # Area B=A*2
+                            s[14] = str(0)
+                            s[15] = str(1)  # FWHM B=A*1
+
+                            s[17] = str(round(float(s[17]), 6))
+                            s[18] = str(round(float(s[18]), 6))
+                            s[17] = str(round(float(s[17])-0.05, 6))
+                            s[18] = ts[4]
+                            s[19] = ts[5]
+                            fc.write(' '.join(s))
+                        elif line[0:100] == 'XPS\n':
+                            fc.write('XPS'+'\n')
+                            indf = 1
+                        elif line[0:100] == 'Al\n':
+                            fc.write('Al'+'\n')
+                            indf = 0
+                        elif line[0:100] == '494\n' and f1 == 0:
+                            if indf == 1:
+                                fc.write('494'+'\n')
+                                indf = 0
+                            else:
+                                f1 = 1
+                                ti = i
+                        elif line[0:100] == '0\n' and f1 == 1:
+                            if ti == i-1:
+                                f2 = 1
+                                ti = i
+                            else:
+                                f1 = 0
+                                ti = 0
+                        elif line[0:100] == '1\n' and f2 == 1:
+                            if ti == i-1:
+                                ti = 0
+                                f2 = 0
+                                fc.write('494'+'\n')
+                                fc.write('0'+'\n')
+                                fc.write('1'+'\n')
+                                for j in range(len(self.phi)):
+                                    fc.write(str(int(yy[fi][-j-1]))+'\n')
+                                n = len(self.phi)
+                            else:
+                                f1 = 0
+                                f2 = 0
+                                ti = 0
+                        elif line[0:100] == '8\n':
+                            if indf == 1:
+                                fc.write('8'+'\n')
+                                indf = 0
+                            else:
+                                fc.write('9'+'\n')
+                        elif line[0:100] == '9\n':
+                            if indf == 1:
+                                fc.write('9'+'\n')
+                                indf = 0
+                            else:
+                                fc.write('10'+'\n')
+                        elif line[0:100] == '10\n':
+                            if indf == 1:
+                                fc.write('10'+'\n')
+                                indf = 0
+                            else:
+                                fc.write('11'+'\n')
+                        elif line[0:100] == '11\n':
+                            if indf == 1:
+                                fc.write('11'+'\n')
+                                indf = 0
+                            else:
+                                fc.write('12'+'\n')
+                        else:
+                            if n <= 0:
+                                if f2 == 1:
+                                    fc.write('494'+'\n')
+                                    fc.write('0'+'\n')
+                                    f2 = 0
+                                    f1 = 0
+                                elif f1 == 1:
+                                    fc.write('494'+'\n')
+                                    f1 = 0
+                                fc.write(line)
+                            if n > 0:
+                                f1 = 2
+                                n -= 1
+                                if n == 0:
+                                    f1 = 0
+                        # pass  # process line i      #勿動
+            fc.close()
+            os.chdir(self.cdir)
+        print('Done')
+        self.st.put('Done')
+        # self.lmgg.destroy()
+    
+    def loadmfit_(self, file: str):
+        # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
+        # global h, m, fwhm, fev, pos, limg, img, name, ophi, rpos, st, kmax, kmin, lmgg
+        # global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x, smresult, smcst
+        m=9.1093837015e-31  # electron mass kg
+        h=6.62607015e-34   # Planck constant J·s
+        mfpath = ''
+        yy = []
+        for n in range(len(self.ev)):
+            ecut = self.data.sel(eV=self.ev[n], method='nearest')
+            y = ecut.to_numpy().reshape(len(self.phi))
+            y = np.where(y > int(self.lowlim), y, int(self.lowlim))
+            yy.append(y)
+            path = 'ecut_%.3f.txt' % self.ev[n]
+            mfpath += path
+        if len(file) > 2:
+            self.fpr = 0
+            self.rdd = file
+            print('Loading...')
+            self.st.put('Loading...')
+        else:
+            self.rdd = path
+            # self.lmgg.destroy()
+        if ".vms" in file:
+            n = -1
+            fev = np.array([], dtype=float)
+            self.mfi_x = np.arange(len(self.ev))
+            t_fwhm = []
+            t_pos = []
+            t_kmax = []
+            t_kmin = []
+            smfi = []
+            skmin = []
+            skmax = []
+            smfp = [1 for i in range(len(self.ev))]
+            # os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+            os.chdir(os.path.dirname(self.rdd))
+            fc = open('copy2p_'+os.path.basename(file), 'w', encoding='utf-8')
+            ff = open(self.name+'_mdc_fitted_raw_data.txt', 'w',
+                    encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
+            ff.write('K.E. (eV)'+'\t'+'FWHM (k)'+'\t'+'Position (k)'+'\n')
+            try:
+                with open(file) as f:
+                    for i, line in enumerate(f):
+                        if line[0:11] in mfpath:
+                            fi = int(mfpath.find(line[0:11])/15)
+                        if line[0:22] == 'CASA region (*Survey*)':
+                            tkmax = line.split(' ')[4]
+                            tkmin = line.split(' ')[5]
+                        # 若無篩選條件   indent於此if以下
+                        elif line[0:20] == 'CASA comp (*Survey*)':
+                            tpos = line.split(' ')[17]
+                            tfwhm = line.split(' ')[11]
+                            area = line.split(' ')[5]
+                            # tkmax=line.split(' ')[18]
+                            # tkmin=line.split(' ')[19]
+                            # 以下if判斷式區段---------可自訂篩選條件------可多層if-----注意indent----------條件篩選值可至 xxxx_fitted_raw_data.txt---檢查需求
+                            ##################################################################################################
+                            ##################################################################################################
+                            # area tfwhm,tpos(1486.6+...)
+                            if (self.ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (self.ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
+                                if self.npzf:tkk = self.phi
+                                else:tkk = (2*m*self.ev[fi]*1.602176634*10**-19)**0.5*np.sin(self.phi/180*np.pi)*10**-10/(h/2/np.pi)
+                                if float(tpos) > 1200:
+                                    tkk+=1486.6
+                                d = tkk[1]-tkk[0]
+                                tr = float(tpos)+float(tfwhm)/2
+                                tl = float(tpos)-float(tfwhm)/2
+                                ri = int((tr-tkk[0])/d)
+                                li = int((tl-tkk[0])/d)
+                                tr = tkk[ri]+(float(tr)-(tkk[0]+ri*d)
+                                            )/d*(tkk[ri+1]-tkk[ri])
+                                tl = tkk[li]+(float(tl)-(tkk[0]+li*d)
+                                            )/d*(tkk[li+1]-tkk[li])
+                                tfwhm = tr-tl
+                                tpi = int((float(tpos)-tkk[0])/d)
+                                tpos = tkk[tpi]+(float(tpos)-(tkk[0]+tpi*d)
+                                                )/d*(tkk[tpi+1]-tkk[tpi])
+                                tpi = int((float(tkmax)-tkk[0])/d)
+                                tkmax = tkk[tpi]+(float(tkmax) -
+                                                (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
+                                tpi = int((float(tkmin)-tkk[0])/d)
+                                if tpi > 492:
+                                    tpi = 492
+                                tkmin = tkk[tpi]+(float(tkmin) -
+                                                (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
+
+                                fev = np.append(fev, self.ev[fi])  # 內容勿動 indent小最內圈if一階
+                                t_fwhm.append(tfwhm)  # 內容勿動 indent小最內圈if一階
+                                t_pos.append(tpos)  # 內容勿動 indent小最內圈if一階
+                                t_kmax.append(tkmax)
+                                t_kmin.append(tkmin)
+                                if fi not in smfi:
+                                    smfi.append(fi)
+                                    skmin.append(tkmin)
+                                    skmax.append(tkmax)
+                                elif fi in smfi:
+                                    smfp[fi] += 1
+                                if tpos > 1000:
+                                    # 內容勿動 indent小最內圈if一階
+                                    ff.write(
+                                        str(self.ev[fi])+'\t'+str(tfwhm)+'\t'+str(np.float64(tpos)-1486.6)+'\n')
+                                else:
+                                    ff.write(
+                                        str(self.ev[fi])+'\t'+str(tfwhm)+'\t'+str(np.float64(tpos))+'\n')
+
+                        # pass  # process line i      #勿動
+            except UnicodeDecodeError:
+                with open(file, encoding='utf-8') as f:
+                    for i, line in enumerate(f):
+                        if line[0:11] in mfpath:
+                            fi = int(mfpath.find(line[0:11])/15)
+                        if line[0:22] == 'CASA region (*Survey*)':
+                            tkmax = line.split(' ')[4]
+                            tkmin = line.split(' ')[5]
+                        # 若無篩選條件   indent於此if以下
+                        elif line[0:20] == 'CASA comp (*Survey*)':
+                            tpos = line.split(' ')[17]
+                            tfwhm = line.split(' ')[11]
+                            area = line.split(' ')[5]
+                            # tkmax=line.split(' ')[18]
+                            # tkmin=line.split(' ')[19]
+                            # 以下if判斷式區段---------可自訂篩選條件------可多層if-----注意indent----------條件篩選值可至 xxxx_fitted_raw_data.txt---檢查需求
+                            ##################################################################################################
+                            ##################################################################################################
+                            # area tfwhm,tpos(1486.6+...)
+                            if (self.ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (self.ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
+                                if self.npzf:tkk = self.phi
+                                else:tkk = (2*m*self.ev[fi]*1.602176634*10**-19)**0.5*np.sin(self.phi/180*np.pi)*10**-10/(h/2/np.pi)
+                                if float(tpos) > 1200:
+                                    tkk+=1486.6
+                                d = tkk[1]-tkk[0]
+                                tr = float(tpos)+float(tfwhm)/2
+                                tl = float(tpos)-float(tfwhm)/2
+                                ri = int((tr-tkk[0])/d)
+                                li = int((tl-tkk[0])/d)
+                                tr = tkk[ri]+(float(tr)-(tkk[0]+ri*d)
+                                            )/d*(tkk[ri+1]-tkk[ri])
+                                tl = tkk[li]+(float(tl)-(tkk[0]+li*d)
+                                            )/d*(tkk[li+1]-tkk[li])
+                                tfwhm = tr-tl
+                                tpi = int((float(tpos)-tkk[0])/d)
+                                tpos = tkk[tpi]+(float(tpos)-(tkk[0]+tpi*d)
+                                                )/d*(tkk[tpi+1]-tkk[tpi])
+                                tpi = int((float(tkmax)-tkk[0])/d)
+                                tkmax = tkk[tpi]+(float(tkmax) -
+                                                (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
+                                tpi = int((float(tkmin)-tkk[0])/d)
+                                if tpi > 492:
+                                    tpi = 492
+                                tkmin = tkk[tpi]+(float(tkmin) -
+                                                (tkk[0]+tpi*d))/d*(tkk[tpi+1]-tkk[tpi])
+
+                                fev = np.append(fev, self.ev[fi])  # 內容勿動 indent小最內圈if一階
+                                t_fwhm.append(tfwhm)  # 內容勿動 indent小最內圈if一階
+                                t_pos.append(tpos)  # 內容勿動 indent小最內圈if一階
+                                t_kmax.append(tkmax)
+                                t_kmin.append(tkmin)
+                                if fi not in smfi:
+                                    smfi.append(fi)
+                                    skmin.append(tkmin)
+                                    skmax.append(tkmax)
+                                elif fi in smfi:
+                                    smfp[fi] += 1
+                                if tpos > 1000:
+                                    # 內容勿動 indent小最內圈if一階
+                                    ff.write(
+                                        str(self.ev[fi])+'\t'+str(tfwhm)+'\t'+str(np.float64(tpos)-1486.6)+'\n')
+                                else:
+                                    ff.write(
+                                        str(self.ev[fi])+'\t'+str(tfwhm)+'\t'+str(np.float64(tpos))+'\n')
+
+                        # pass  # process line i      #勿動
+            ff.close()
+            fc.close()
+            fwhm = np.float64(t_fwhm)     # FWHM
+            if np.max(np.float64(t_pos)) > 50:
+                rpos = np.float64(t_pos)-1486.6    # Pos
+                kmax = np.float64(t_kmax)-1486.6
+                kmin = np.float64(t_kmin)-1486.6
+                skmax = np.float64(skmax)-1486.6
+                skmin = np.float64(skmin)-1486.6
+            else:
+                rpos = np.float64(t_pos)    # Pos
+                kmax = np.float64(t_kmax)
+                kmin = np.float64(t_kmin)
+                skmax = np.float64(skmax)
+                skmin = np.float64(skmin)
+
+            ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
+                            10**-10*(h/2/np.pi))*180/np.pi
+            pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
+                np.sin((np.float64(self.k_offset)+ophi) /
+                    180*np.pi)*10**-10/(h/2/np.pi)
+            okmphi = np.arcsin(kmin/(2*m*fev*1.602176634*10**-19) **
+                            0.5/10**-10*(h/2/np.pi))*180/np.pi
+            kmin = (2*m*fev*1.602176634*10**-19)**0.5 * \
+                np.sin((np.float64(self.k_offset)+okmphi) /
+                    180*np.pi)*10**-10/(h/2/np.pi)
+            okMphi = np.arcsin(kmax/(2*m*fev*1.602176634*10**-19) **
+                            0.5/10**-10*(h/2/np.pi))*180/np.pi
+            kmax = (2*m*fev*1.602176634*10**-19)**0.5 * \
+                np.sin((np.float64(self.k_offset)+okMphi) /
+                    180*np.pi)*10**-10/(h/2/np.pi)
+
+            rpos = res(fev, rpos)
+            ophi = res(fev, ophi)
+            fwhm = res(fev, fwhm)
+            pos = res(fev, pos)
+            kmin = res(fev, kmin)
+            kmax = res(fev, kmax)
+            fev = res(fev, fev)
+
+            smfi = res(smfi, smfi)
+            tkmin = res(smfi, skmin)
+            tkmax = res(smfi, skmax)
+            skmin, skmax = [], []
+            smaa1 = np.float64(np.arange(4*len(self.ev)).reshape(len(self.ev), 4))
+            smaa2 = np.float64(np.arange(8*len(self.ev)).reshape(len(self.ev), 8))
+            ti = 0
+            ti2 = 0
+            for i, v in enumerate(self.ev):
+                if i in smfi:
+                    skmin.append(tkmin[ti2])
+                    skmax.append(tkmax[ti2])
+                    ti2 += 1
+                    if smfp[i] == 2:  # 2peak以上要改
+                        ti += 1
+                else:
+                    skmin.append((2*m*v*1.602176634*10**-19)**0.5 *
+                                np.sin(-0.5/180*np.pi)*10**-10/(h/2/np.pi))
+                    skmax.append((2*m*v*1.602176634*10**-19)**0.5 *
+                                np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi))
+                a1 = [(skmin[i]+skmax[i])/2, 10, 0.5, int(self.base)]
+                a2 = [(skmin[i]+skmax[i])/2, 10, 0.5, int(self.base),
+                    (skmin[i]+skmax[i])/2, 10, 0.5, int(self.base)]
+
+                if i in smfi:
+                    if smfp[i] == 1:
+                        a1 = [rpos[ti], 10, fwhm[ti], int(self.base)]
+                    elif smfp[i] == 2:
+                        a2 = [rpos[ti-1], 10, fwhm[ti-1],
+                            int(self.base), rpos[ti], 10, fwhm[ti], int(self.base)]
+                    ti += 1
+                smaa1[i, :] = a1
+                smaa2[i, :] = a2
+
+            skmin, skmax = np.float64(skmin), np.float64(skmax)
+            self.fpr = 1
+            try:
+                smresult=[]
+            except:
+                pass
+            os.chdir(self.cdir)
+        elif ".npz" in file:
+            try:
+                with np.load(file, 'rb') as f:
+                    self.rdd = str(f['path'])
+                    fev = f['fev']
+                    fwhm = f['fwhm']
+                    pos = f['pos']
+                    skmin = f['skmin']
+                    skmax = f['skmax']
+                    smaa1 = f['smaa1']
+                    smaa2 = f['smaa2']
+                    smfp = f['smfp']
+                    smfi = f['smfi']
+                    smresult = f['smresult']
+                    smcst = f['smcst']
+                rpos = np.copy(pos)
+                ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19) **
+                                0.5/10**-10*(h/2/np.pi))*180/np.pi
+                self.fpr = 1
+                tbasename = os.path.basename(self.rdd)
+                if '.h5' in tbasename:
+                    # data = load_h5(self.rdd)
+                    # pr_load(data)
+                    self.fload = True
+                elif '.json' in tbasename:
+                    # data = load_json(self.rdd)
+                    # pr_load(data)
+                    self.fload = True
+                elif '.txt' in tbasename:
+                    # data = load_txt(self.rdd)
+                    # pr_load(data)
+                    self.fload = True
+            except:
+                pass
+        self.fev, self.rpos, self.ophi, self.fwhm, self.pos = fev, rpos, ophi, fwhm, pos
+        self.skmin, self.skmax = skmin, skmax
+        self.smaa1, self.smaa2 = smaa1, smaa2
+        self.smfp, self.smfi = smfp, smfi
+        if ".vms" in file:
+            np.savez(os.path.join(self.cdir, '.MDC_cut', 'mfit.npz'), ko=self.k_offset, fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
+                    kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
+            self.kmin, self.kmax = kmin, kmax
+        elif ".npz" in file:
+            np.savez(os.path.join(self.cdir, '.MDC_cut', 'mfit.npz'), ko=self.k_offset, fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=skmin,
+                    kmax=skmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
+            self.kmin, self.kmax = skmin, skmax
+            self.smresult, self.smcst = smresult, smcst
+        # self.limg.config(image=self.img[np.random.randint(len(self.img))])
+        print('Done')
+        self.st.put('Done')
+        # self.lmgg.destroy()

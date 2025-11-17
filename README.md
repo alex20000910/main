@@ -1,5 +1,6 @@
 # MDC_cut: An ARPES data analysis tool
-![GitHub License](https://img.shields.io/github/license/alex20000910/main)
+![Python Version](https://img.shields.io/badge/Python-3.12_|_3.13-3776AB?logo=python&logoColor=%233776AB)
+![GitHub License](https://img.shields.io/github/license/alex20000910/main?logo=licenses&logoColor=white)
 ![GitHub Release](https://img.shields.io/github/v/release/alex20000910/main)
 ![GitHub Release Date](https://img.shields.io/github/release-date/alex20000910/main)
 ![GitHub Created At](https://img.shields.io/github/created-at/alex20000910/main)
@@ -37,7 +38,7 @@ The user manual is currently out of date. For the latest changes and new feature
 >
 > Make sure you have an environment with **Python 3.12 or above**.
 - Please download [`MDC_cut.py`](MDC_cut.py) and place it in the directory you want.
-- Create a virtual environment (e.g., via [Anaconda](https://www.anaconda.com/download)) with the required Python version to avoid changing your main environment, then run `MDC_cut.py` to automatically install the dependencies.
+- Create a virtual environment (e.g., via [![Anaconda](https://img.shields.io/badge/Anaconda-white?logo=anaconda&logoColor=%23)](https://www.anaconda.com/download)) with the required Python version to avoid changing your main environment, then run `MDC_cut.py` to automatically install the dependencies.
 - If you don’t mind the environment, execute `MDC_cut.py` and check that it automatically installs the required dependencies.
 
 ## What will `MDC_cut.py` do?
