@@ -413,6 +413,64 @@ lfs = None
 fit_so = None   # for SO_Fitter instance checking
 
 @pool_protect
+def f_help(*e):
+    import webbrowser
+    url = r"https://github.com/alex20000910/main"
+    webbrowser.open(url)
+
+@pool_protect
+def about(*e):
+    about_win = RestrictedToplevel(g, bg='white')
+    about_win.title('About MDC_cut')
+    fr = tk.Frame(about_win, bg='white')
+    
+    fr.pack(padx=5, pady=5)
+    l1 = tk.Label(fr, text='MDC_cut', font=('Arial', size(20), "bold"), bg='white')
+    l1.pack()
+    l2 = tk.Label(fr, text='Version: '+__version__, font=('Arial', size(16)), bg='white')
+    l2.pack(pady=5)
+    l3 = tk.Label(fr, text='Release Date: '+__release_date__, font=('Arial', size(16)), bg='white')
+    l3.pack(pady=5)
+    l4 = tk.Label(fr, text='Developed by Chih-Keng Hung', font=('Arial', size(16)), bg='white')
+    l4.pack(pady=5)
+    t_contact = tk.Text(fr, width=40, height=2, font=('Arial', size(16)), bg='white', bd=0, wrap='none')
+    t_contact.insert(tk.END, 'Email: alex1010512@gmail.com\nGitHub: https://github.com/alex20000910/main')
+    t_contact.config(state=tk.DISABLED)
+    t_contact.pack(pady=5)
+    text = tk.Text(fr, width=50, height=10, wrap='word', font=('Arial', size(14)), bg='white')
+    text.pack(pady=5)
+    license_text = """MIT License
+
+Copyright (c) 2024-2025 Chih-Keng Hung
+
+Permission is hereby granted, free of charge, to any person obtaining a copy \
+of this software and associated documentation files (the "Software"), to deal \
+in the Software without restriction, including without limitation the rights \
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell \
+copies of the Software, and to permit persons to whom the Software is \
+furnished to do so, subject to the following conditions:
+
+1. The above copyright notice and this permission notice shall be included in \
+all copies or substantial portions of the Software.
+
+2. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR \
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, \
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE \
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER \
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, \
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE \
+SOFTWARE."""
+    text.insert(tk.END, license_text)
+    text.config(state=tk.DISABLED)
+    b1 = tk.Button(fr, text='OK', font=('Arial', size(16)), width=10, command=about_win.destroy)
+    b1.pack(pady=5)
+    set_center(g, about_win, 0, 0)
+    about_win.resizable(False, False)
+    about_win.grab_set()
+    about_win.focus_force()
+
+
+@pool_protect
 def fit_so_app(*args):
     global fit_so
     try:
@@ -6903,7 +6961,7 @@ if __name__ == '__main__':
     
     menubar = tk.Menu(g, tearoff=0, bg="white")
 
-    # 建立「檔案」選單
+    # File Menu
     filemenu = tk.Menu(menubar, tearoff=0, bg="white")
     
     filemenu1 = tk.Menu(filemenu, tearoff=0, bg="white")
@@ -6927,7 +6985,7 @@ if __name__ == '__main__':
     
     # filemenu.entryconfig("Load Raw Data", state='disabled')
     
-    # 建立「編輯」選單
+    # Plot Menu
     plotmenu = tk.Menu(menubar, tearoff=0, bg="white")
     
     optionList = ['Raw Data', 'E-k Diagram', 'MDC Normalized', 'First Derivative', 'Second Derivative', 'MDC Curves', 'E-k with MDC Curves']
@@ -6953,6 +7011,7 @@ if __name__ == '__main__':
     plotmenu.add_command(label="Clear MDC Fitted Data", command=clmfit)
     plotmenu.add_command(label="Clear EDC Fitted Data", command=clefit)
     
+    # Tools Menu
     toolmenu = tk.Menu(menubar, tearoff=0, bg="white")
     
     toolmenu1 = tk.Menu(toolmenu, tearoff=0, bg="white")
@@ -6970,6 +7029,11 @@ if __name__ == '__main__':
     toolmenu.add_command(label="E-k Angle Converter", command=calculator, image=icon_manager.get_mini_icon('calculator'), compound='left', accelerator="F9")
     toolmenu.add_command(label="Volume Viewer", command=view_3d, image=icon_manager.get_mini_icon('view_3d'), compound='left', accelerator="F12")
     toolmenu.add_command(label="Sample Offset Fitter", command=fit_so_app, image=icon_manager.get_mini_icon('so_fit'), compound='left', accelerator="Ctrl+P")
+    
+    helpmenu = tk.Menu(menubar, tearoff=0, bg="white")
+    menubar.add_cascade(label="Help", menu=helpmenu)
+    helpmenu.add_command(label="About MDC_Cut", command=about)
+    helpmenu.add_command(label="Help", command=f_help)
     
     g.config(menu=menubar)
     
