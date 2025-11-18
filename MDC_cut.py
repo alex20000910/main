@@ -421,8 +421,11 @@ def f_help(*e):
 @pool_protect
 def about(*e):
     about_win = RestrictedToplevel(g, bg='white')
+    about_win.overrideredirect(True)
     about_win.title('About MDC_cut')
-    fr = tk.Frame(about_win, bg='white')
+    bd_fr = tk.Frame(about_win, bg='gray', padx=2, pady=2)
+    bd_fr.pack()
+    fr = tk.Frame(bd_fr, bg='white')
     
     fr.pack(padx=5, pady=5)
     l1 = tk.Label(fr, text='MDC_cut', font=('Arial', size(20), "bold"), bg='white')
@@ -438,7 +441,7 @@ def about(*e):
     t_contact.config(state=tk.DISABLED)
     t_contact.pack(pady=5)
     text = tk.Text(fr, width=50, height=10, wrap='word', font=('Arial', size(14)), bg='white')
-    text.pack(pady=5)
+    text.pack(padx=10, pady=5)
     license_text = """MIT License
 
 Copyright (c) 2024-2025 Chih-Keng Hung
@@ -462,8 +465,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE \
 SOFTWARE."""
     text.insert(tk.END, license_text)
     text.config(state=tk.DISABLED)
-    b1 = tk.Button(fr, text='OK', font=('Arial', size(16)), width=10, command=about_win.destroy)
+    b1 = tk.Button(fr, text='OK', font=('Arial', size(16)), width=10, command=about_win.destroy, bd=2)
     b1.pack(pady=5)
+    
+    about_win.bind('<Return>', lambda e: about_win.destroy())
     set_center(g, about_win, 0, 0)
     about_win.resizable(False, False)
     about_win.grab_set()
