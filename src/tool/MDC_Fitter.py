@@ -2513,9 +2513,12 @@ def mgg_close():
             mgg=True
         else:
             if messagebox.askyesno("MDC Fitter", "Unsaved changes detected. Do you want to exit without saving?", default='no', icon='warning'):
-                mgg.destroy()
-                clear(mgg)
-                mgg=True
+                try:
+                    mgg.destroy()
+                    clear(mgg)
+                    mgg=True
+                except:
+                    pass
             else:
                 fmend()
                 savemfit()

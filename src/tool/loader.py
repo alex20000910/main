@@ -940,14 +940,13 @@ class mloader:
         self.cdir = cdir
         self.lowlim = lowlim
     
-    def loadparam(self, k_offset: str, base: str, npzf: bool, fpr: int, name: str):
+    def loadparam(self, k_offset: str, base: str, npzf: bool, fpr: int):
         self.k_offset = k_offset
         self.base = base
         self.npzf = npzf
         self.mfi_x = []
         self.fload = False
         self.fpr = fpr
-        self.name = name
         
         self.fev = []
         self.rpos = []
@@ -972,7 +971,7 @@ class mloader:
         for n in range(len(self.ev)):
             ecut = self.data.sel(eV=self.ev[n], method='nearest')
             y = ecut.to_numpy().reshape(len(self.phi))
-            y = np.where(y > int(self.lowlim), y, int(self.lowlim))
+            y = np.where(y >= int(self.lowlim), y, int(self.lowlim))
             yy.append(y)
             path = 'ecut_%.3f.txt' % self.ev[n]
             mfpath += path
@@ -993,6 +992,7 @@ class mloader:
                     f1 = 0
                     f2 = 0
                     indf = 0
+                    fi = 0
                     for i, line in enumerate(f):
                         if line[0:11] in mfpath:
                             fi = int(mfpath.find(line[0:11])/15)
@@ -1223,19 +1223,336 @@ class mloader:
         print('Done')
         self.st.put('Done')
         # self.lmgg.destroy()
-    
-    def loadmfit_(self, file: str):
-        # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
-        # global h, m, fwhm, fev, pos, limg, img, name, ophi, rpos, st, kmax, kmin, lmgg
-        # global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x, smresult, smcst
-        m=9.1093837015e-31  # electron mass kg
-        h=6.62607015e-34   # Planck constant J·s
+        
+    def loadmfit_re(self, file: str):
+        # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("VMS files", "*.vms"),))
+        # global st
+        # global data, rdd, lmgg
+        name = self.data.attrs['Name']
         mfpath = ''
         yy = []
         for n in range(len(self.ev)):
             ecut = self.data.sel(eV=self.ev[n], method='nearest')
             y = ecut.to_numpy().reshape(len(self.phi))
-            y = np.where(y > int(self.lowlim), y, int(self.lowlim))
+            y = np.where(y >= int(self.lowlim), y, int(self.lowlim))
+            yy.append(y)
+            path = 'ecut_%.3f.txt' % self.ev[n]
+            mfpath += path
+        if len(file) > 2:
+            self.rdd = file
+            print('Loading...')
+            self.st.put('Loading...')
+        else:
+            self.rdd = path
+            # self.lmgg.destroy()
+        if ".vms" in file:
+            n = -1
+            fev = np.array([], dtype=float)
+            t_fwhm = []
+            t_pos = []
+            t_kmax = []
+            t_kmin = []
+            smfi = []
+            skmin = []
+            skmax = []
+            smfp = [1 for i in range(len(self.ev))]
+            # os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+            os.chdir(os.path.dirname(self.rdd))
+            fc = open('rev_'+os.path.basename(file), 'w', encoding='utf-8')
+            ff = open(name+'_mdc_fitted_raw_data.txt', 'w',
+                    encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
+            ff.write('K.E. (eV)'+'\t'+'FWHM (k)'+'\t'+'Position (k)'+'\n')
+            try:
+                with open(file) as f:
+                    f1 = 0
+                    f2 = 0
+                    indf = 0
+                    fi = 0
+                    for i, line in enumerate(f):
+                        if line[0:11] in mfpath:
+                            fi = int(mfpath.find(line[0:11])/15)
+                            n = -1
+                            f1 = 0
+                            f2 = 0
+                            indf = 0
+                        if line[0:22] == 'CASA region (*Survey*)':
+                            tkmax = line.split(' ')[4]
+                            tkmin = line.split(' ')[5]
+                            ts = line.split(' ')
+                            if float(tkmax) > 1000:
+                                ts[4], ts[5] = str(
+                                    round(-(float(ts[5])-1486.6)+1486.6, 6)), str(round(-(float(ts[4])-1486.6)+1486.6, 6))
+                            else:
+                                ts[4], ts[5] = str(
+                                    round(-float(ts[5]), 6)), str(round(-float(ts[4]), 6))
+                            fc.write(' '.join(ts))
+                        elif line[0:12] == 'CASA comp (*':  # 若無篩選條件   indent於此if以下
+                            tpos = line.split(' ')[17]
+                            tfwhm = line.split(' ')[11]
+                            area = line.split(' ')[5]
+                            # tkmax=line.split(' ')[18]
+                            # tkmin=line.split(' ')[19]
+                            #####################################
+                            s = line.split(' ')
+                            if float(tpos) > 1000:
+                                s[17] = str(
+                                    round(-(float(s[17])-1486.6)+1486.6, 6))
+                                s[18], s[19] = str(
+                                    round(-(float(s[19])-1486.6)+1486.6, 6)), str(round(-(float(s[18])-1486.6)+1486.6, 6))
+                            else:
+                                s[17] = str(round(-float(s[17]), 6))
+                                s[18], s[19] = str(
+                                    round(-float(s[19]), 6)), str(round(-float(s[18]), 6))
+                            fc.write(' '.join(s))
+                            '''
+                            s=line.split(' ')
+                            s[2]='(*Survey_*)'
+                            s[8]=str(0)
+                            s[9]=str(0.3)     #Area B=A*2
+                            s[14]=str(0)
+                            s[15]=str(1)    #FWHM B=A*1
+                            
+                            s[17]=str(round(float(s[17]),6))
+                            s[18]=str(round(float(s[18]),6))
+                            s[17]=str(round(float(s[17])-0.05,6))
+                            s[18]=ts[4]
+                            s[19]=ts[5]
+                            fc.write(' '.join(s))
+                            '''
+                            #####################################
+
+                            # 以下if判斷式區段---------可自訂篩選條件------可多層if-----注意indent----------條件篩選值可至 xxxx_fitted_raw_data.txt---檢查需求
+                            ##################################################################################################
+                            ##################################################################################################
+                            # area tfwhm,tpos(1486.6+...)
+                            if (self.ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (self.ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
+                                fev = np.append(fev, self.ev[fi])  # 內容勿動 indent小最內圈if一階
+                                t_fwhm.append(tfwhm)  # 內容勿動 indent小最內圈if一階
+                                t_pos.append(tpos)  # 內容勿動 indent小最內圈if一階
+                                t_kmax.append(tkmax)
+                                t_kmin.append(tkmin)
+                                if fi not in smfi:
+                                    smfi.append(fi)
+                                    skmin.append(tkmin)
+                                    skmax.append(tkmax)
+                                elif fi in smfi:
+                                    smfp[fi] += 1
+                                if float(tpos) > 1000:
+                                    # 內容勿動 indent小最內圈if一階
+                                    ff.write(
+                                        str(self.ev[fi])+'\t'+tfwhm+'\t'+str(np.float64(tpos)-1486.6)+'\n')
+                                else:
+                                    ff.write(str(self.ev[fi])+'\t'+tfwhm +
+                                            '\t'+str(np.float64(tpos))+'\n')
+                            ##################################################################################################
+                            ##################################################################################################
+                        elif line[0:100] == 'XPS\n':
+                            fc.write('XPS'+'\n')
+                            indf = 1
+                        elif line[0:100] == 'Al\n':
+                            fc.write('Al'+'\n')
+                            indf = 0
+                        elif line[0:100] == '494\n' and f1 == 0:
+                            if indf == 1:
+                                fc.write('494'+'\n')
+                                indf = 0
+                            else:
+                                f1 = 1
+                                ti = i
+                        elif line[0:100] == '0\n' and f1 == 1:
+                            if ti == i-1:
+                                f2 = 1
+                                ti = i
+                            else:
+                                f1 = 0
+                                ti = 0
+                        elif line[0:100] == '1\n' and f2 == 1:
+                            if ti == i-1:
+                                ti = 0
+                                f2 = 0
+                                fc.write('494'+'\n')
+                                fc.write('0'+'\n')
+                                fc.write('1'+'\n')
+                                for j in range(len(self.phi)):
+                                    # fc.write(str(int(yy[fi][-j-1]))+'\n')
+                                    fc.write(str(int(yy[fi][j]))+'\n')
+                                n = len(self.phi)
+                            else:
+                                f1 = 0
+                                f2 = 0
+                                ti = 0
+                        else:
+                            if n <= 0:
+                                if f2 == 1:
+                                    fc.write('494'+'\n')
+                                    fc.write('0'+'\n')
+                                    f2 = 0
+                                    f1 = 0
+                                elif f1 == 1:
+                                    fc.write('494'+'\n')
+                                    f1 = 0
+                                fc.write(line)
+                            if n > 0:
+                                f1 = 2
+                                n -= 1
+                                if n == 0:
+                                    f1 = 0
+                        # pass  # process line i      #勿動
+            except UnicodeDecodeError:
+                with open(file, encoding='utf-8') as f:
+                    f1 = 0
+                    f2 = 0
+                    indf = 0
+                    for i, line in enumerate(f):
+                        if line[0:11] in mfpath:
+                            fi = int(mfpath.find(line[0:11])/15)
+                            n = -1
+                            f1 = 0
+                            f2 = 0
+                            indf = 0
+                        if line[0:22] == 'CASA region (*Survey*)':
+                            tkmax = line.split(' ')[4]
+                            tkmin = line.split(' ')[5]
+                            ts = line.split(' ')
+                            if float(tkmax) > 1000:
+                                ts[4], ts[5] = str(
+                                    round(-(float(ts[5])-1486.6)+1486.6, 6)), str(round(-(float(ts[4])-1486.6)+1486.6, 6))
+                            else:
+                                ts[4], ts[5] = str(
+                                    round(-float(ts[5]), 6)), str(round(-float(ts[4]), 6))
+                            fc.write(' '.join(ts))
+                        elif line[0:12] == 'CASA comp (*':  # 若無篩選條件   indent於此if以下
+                            tpos = line.split(' ')[17]
+                            tfwhm = line.split(' ')[11]
+                            area = line.split(' ')[5]
+                            # tkmax=line.split(' ')[18]
+                            # tkmin=line.split(' ')[19]
+                            #####################################
+                            s = line.split(' ')
+                            if float(tpos) > 1000:
+                                s[17] = str(
+                                    round(-(float(s[17])-1486.6)+1486.6, 6))
+                                s[18], s[19] = str(
+                                    round(-(float(s[19])-1486.6)+1486.6, 6)), str(round(-(float(s[18])-1486.6)+1486.6, 6))
+                            else:
+                                s[17] = str(round(-float(s[17]), 6))
+                                s[18], s[19] = str(
+                                    round(-float(s[19]), 6)), str(round(-float(s[18]), 6))
+                            fc.write(' '.join(s))
+                            '''
+                            s=line.split(' ')
+                            s[2]='(*Survey_*)'
+                            s[8]=str(0)
+                            s[9]=str(0.3)     #Area B=A*2
+                            s[14]=str(0)
+                            s[15]=str(1)    #FWHM B=A*1
+                            
+                            s[17]=str(round(float(s[17]),6))
+                            s[18]=str(round(float(s[18]),6))
+                            s[17]=str(round(float(s[17])-0.05,6))
+                            s[18]=ts[4]
+                            s[19]=ts[5]
+                            fc.write(' '.join(s))
+                            '''
+                            #####################################
+
+                            # 以下if判斷式區段---------可自訂篩選條件------可多層if-----注意indent----------條件篩選值可至 xxxx_fitted_raw_data.txt---檢查需求
+                            ##################################################################################################
+                            ##################################################################################################
+                            # area tfwhm,tpos(1486.6+...)
+                            if (self.ev[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (self.ev[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
+                                fev = np.append(fev, self.ev[fi])  # 內容勿動 indent小最內圈if一階
+                                t_fwhm.append(tfwhm)  # 內容勿動 indent小最內圈if一階
+                                t_pos.append(tpos)  # 內容勿動 indent小最內圈if一階
+                                t_kmax.append(tkmax)
+                                t_kmin.append(tkmin)
+                                if fi not in smfi:
+                                    smfi.append(fi)
+                                    skmin.append(tkmin)
+                                    skmax.append(tkmax)
+                                elif fi in smfi:
+                                    smfp[fi] += 1
+                                if float(tpos) > 1000:
+                                    # 內容勿動 indent小最內圈if一階
+                                    ff.write(
+                                        str(self.ev[fi])+'\t'+tfwhm+'\t'+str(np.float64(tpos)-1486.6)+'\n')
+                                else:
+                                    ff.write(str(self.ev[fi])+'\t'+tfwhm +
+                                            '\t'+str(-np.float64(tpos))+'\n')
+                            ##################################################################################################
+                            ##################################################################################################
+                        elif line[0:100] == 'XPS\n':
+                            fc.write('XPS'+'\n')
+                            indf = 1
+                        elif line[0:100] == 'Al\n':
+                            fc.write('Al'+'\n')
+                            indf = 0
+                        elif line[0:100] == '494\n' and f1 == 0:
+                            if indf == 1:
+                                fc.write('494'+'\n')
+                                indf = 0
+                            else:
+                                f1 = 1
+                                ti = i
+                        elif line[0:100] == '0\n' and f1 == 1:
+                            if ti == i-1:
+                                f2 = 1
+                                ti = i
+                            else:
+                                f1 = 0
+                                ti = 0
+                        elif line[0:100] == '1\n' and f2 == 1:
+                            if ti == i-1:
+                                ti = 0
+                                f2 = 0
+                                fc.write('494'+'\n')
+                                fc.write('0'+'\n')
+                                fc.write('1'+'\n')
+                                for j in range(len(self.phi)):
+                                    # fc.write(str(int(yy[fi][-j-1]))+'\n')
+                                    fc.write(str(int(yy[fi][j]))+'\n')
+                                n = len(self.phi)
+                            else:
+                                f1 = 0
+                                f2 = 0
+                                ti = 0
+                        else:
+                            if n <= 0:
+                                if f2 == 1:
+                                    fc.write('494'+'\n')
+                                    fc.write('0'+'\n')
+                                    f2 = 0
+                                    f1 = 0
+                                elif f1 == 1:
+                                    fc.write('494'+'\n')
+                                    f1 = 0
+                                fc.write(line)
+                            if n > 0:
+                                f1 = 2
+                                n -= 1
+                                if n == 0:
+                                    f1 = 0
+                        # pass  # process line i      #勿動
+            ff.close()
+            fc.close()
+            os.chdir(self.cdir)
+            print('Done')
+            self.st.put('Done')
+            # lmgg.destroy()
+    
+    def loadmfit_(self, file: str):
+        # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
+        # global h, m, fwhm, fev, pos, limg, img, name, ophi, rpos, st, kmax, kmin, lmgg
+        # global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x, smresult, smcst
+        h=6.62607015*10**-34
+        m=9.10938356*10**-31
+        name = self.data.attrs['Name']
+        mfpath = ''
+        yy = []
+        for n in range(len(self.ev)):
+            ecut = self.data.sel(eV=self.ev[n], method='nearest')
+            y = ecut.to_numpy().reshape(len(self.phi))
+            y = np.where(y >= int(self.lowlim), y, int(self.lowlim))
             yy.append(y)
             path = 'ecut_%.3f.txt' % self.ev[n]
             mfpath += path
@@ -1261,9 +1578,8 @@ class mloader:
             smfp = [1 for i in range(len(self.ev))]
             # os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
             os.chdir(os.path.dirname(self.rdd))
-            fc = open('copy2p_'+os.path.basename(file), 'w', encoding='utf-8')
-            ff = open(self.name+'_mdc_fitted_raw_data.txt', 'w',
-                    encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
+            # fc = open('copy2p_'+os.path.basename(file), 'w', encoding='utf-8')
+            ff = open(name+'_mdc_fitted_raw_data.txt', 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
             ff.write('K.E. (eV)'+'\t'+'FWHM (k)'+'\t'+'Position (k)'+'\n')
             try:
                 with open(file) as f:
@@ -1398,7 +1714,7 @@ class mloader:
 
                         # pass  # process line i      #勿動
             ff.close()
-            fc.close()
+            # fc.close()
             fwhm = np.float64(t_fwhm)     # FWHM
             if np.max(np.float64(t_pos)) > 50:
                 rpos = np.float64(t_pos)-1486.6    # Pos
@@ -1529,3 +1845,236 @@ class mloader:
         print('Done')
         self.st.put('Done')
         # self.lmgg.destroy()
+
+class eloader:
+    def __init__(self, st, data, ev, phi, rdd, cdir, lowlim=0):
+        self.st = st
+        self.data = data
+        self.ev = ev
+        self.phi = phi
+        self.rdd = rdd
+        self.cdir = cdir
+        self.lowlim = lowlim
+    
+    def loadparam(self, k_offset: str, base: str, npzf: bool, fpr: int):
+        self.k_offset = k_offset
+        self.base = base
+        self.npzf = npzf
+        self.efi_x = []
+        self.fload = False
+        self.fpr = fpr
+        
+        self.fphi = []
+        self.epos = []
+        self.ffphi = []
+        self.efwhm = []
+        self.fk = []
+        self.emin = []
+        self.emax = []
+        self.semin = []
+        self.semax = []
+        self.sefp = []
+        self.sefi = []
+        self.seaa1 = []
+        self.seaa2 = []
+        # self.seresult = []
+        # self.secst = []
+    
+    
+    def loadefit(self, file: str):
+        # file = fd.askopenfilename(title="Select EDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
+        h=6.62607015*10**-34
+        m=9.10938356*10**-31
+        name = self.data.attrs['Name']
+        efpath = ''
+        # global h, m, efwhm, ffphi, fphi, epos, fk, limg, img, name, st, emin, emax
+        # global data, rdd, semin, semax, seaa1, seaa2, sefp, sefi, fpr, efi_x
+        for n in range(len(self.phi)):
+            # angcut = self.data.sel(phi=self.phi[n], method='nearest')
+            # x = self.ev
+            # y = angcut.to_numpy().reshape(len(x))
+            # y = np.where(y > int(self.lowlim), y, int(self.lowlim))
+            path = 'angcut_%.5d.txt' % (self.phi[n]*1000)
+            efpath += path
+        if len(file) > 2:
+            self.fpr = 0
+            self.rdd = file
+            print('Loading...')
+            self.st.put('Loading...')
+        else:
+            self.rdd = path
+        if ".vms" in file:
+            fphi = np.array([], dtype=float)
+            self.efi_x = np.arange(len(self.phi))
+            t_fwhm = []
+            t_pos = []
+            t_emax = []
+            t_emin = []
+            sefi = []
+            semin = []
+            semax = []
+            sefp = [1 for i in range(len(self.phi))]
+            tphi = []
+            # os.chdir(self.rdd.removesuffix(self.rdd.split('/')[-1]))
+            os.chdir(os.path.dirname(self.rdd))
+            ff = open(name+'_edc_fitted_raw_data.txt', 'w',
+                    encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
+            if self.npzf:ff.write('k (2pi/A)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
+            else:ff.write('Angle (deg)'+'\t'+'FWHM (eV)'+'\t'+'Position (eV)'+'\n')
+            with open(file) as f:
+                fi=0
+                for i, line in enumerate(f):
+                    if line[0:16] in efpath:
+                        if '-' in line[0:16]:
+                            fi = int(efpath.find(line[0:16])/17)
+                        else:
+                            fi = int(
+                                len(self.phi)//2+(efpath.find(line[0:16])-17*len(self.phi)//2)/16)
+                    if line[0:22] == 'CASA region (*Survey*)':
+                        temax = line.split(' ')[4]
+                        temin = line.split(' ')[5]
+                    # 若無篩選條件   indent於此if以下
+                    if line[0:20] == 'CASA comp (*Survey*)':
+                        tpos = line.split(' ')[17]
+                        tfwhm = line.split(' ')[11]
+                        area = line.split(' ')[5]
+                        # temax=line.split(' ')[18]
+                        # temin=line.split(' ')[19]
+
+                        # 以下if判斷式區段---------可自訂篩選條件------可多層if-----注意indent----------條件篩選值可至 xxxx_fitted_raw_data.txt---檢查需求
+                        ##################################################################################################
+                        ##################################################################################################
+                        # area tfwhm,tpos(1486.6+...)
+                        if np.float64(area) > 0 and np.float64(tfwhm) < 3:
+                            if (self.phi[fi] > 20.58 and np.float64(tpos) < 1486.6+0.023) or (self.phi[fi] < 20.58 and np.float64(tpos) > 1486.6+0.023) or 1 == 1:
+
+                                # 內容勿動 indent小最內圈if一階
+                                fphi = np.append(fphi, self.phi[fi])
+                                t_fwhm.append(tfwhm)  # 內容勿動 indent小最內圈if一階
+                                t_pos.append(tpos)  # 內容勿動 indent小最內圈if一階
+                                t_emax.append(temax)
+                                t_emin.append(temin)
+                                if fi not in sefi:
+                                    tphi.append(self.phi[fi])
+                                    sefi.append(fi)
+                                    semin.append(temin)
+                                    semax.append(temax)
+                                elif fi in sefi:
+                                    sefp[fi] += 1
+                                if float(tpos) > 1000:
+                                    # 內容勿動 indent小最內圈if一階
+                                    ff.write(
+                                        str(self.phi[fi])+'\t'+tfwhm+'\t'+str(np.float64(tpos)-1486.6)+'\n')
+                                else:
+                                    ff.write(str(self.phi[fi])+'\t'+tfwhm +
+                                            '\t'+str(-np.float64(tpos))+'\n')
+                        ##################################################################################################
+                        ##################################################################################################
+                    pass  # process line i      #勿動
+            ff.close()
+            efwhm = np.float64(t_fwhm)     # FWHM
+            if np.max(np.float64(t_pos)) > 50:
+                epos = np.float64(t_pos)-1486.6    # Pos
+                emax = np.float64(t_emax)-1486.6
+                emin = np.float64(t_emin)-1486.6
+                semax = np.float64(semax)-1486.6
+                semin = np.float64(semin)-1486.6
+            else:
+                epos = np.float64(t_pos)    # Pos
+                emax = np.float64(t_emax)
+                emin = np.float64(t_emin)
+                semax = np.float64(semax)
+                semin = np.float64(semin)
+            ffphi = np.float64(self.k_offset)+fphi
+            fk = (2*m*epos*1.602176634*10**-19)**0.5 * np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)  # error need fix
+
+            epos = res(fphi, epos)
+            ffphi = res(fphi, ffphi)
+            efwhm = res(fphi, efwhm)
+            fk = res(fphi, fk)
+            emin = res(fphi, emin)
+            emax = res(fphi, emax)
+            fphi = res(fphi, fphi)
+
+            sefi = res(tphi, sefi)
+            temin = res(tphi, semin)
+            temax = res(tphi, semax)
+            semin, semax = [], []
+            seaa1 = np.float64(np.arange(4*len(self.phi)).reshape(len(self.phi), 4))
+            seaa2 = np.float64(np.arange(8*len(self.phi)).reshape(len(self.phi), 8))
+            ti = 0
+            ti2 = 0
+            for i in range(len(self.phi)):
+                if i in sefi:
+                    semin.append(temin[ti2])
+                    semax.append(temax[ti2])
+                    ti2 += 1
+                    if sefp[i] == 2:  # 2peak以上要改
+                        ti += 1
+                else:
+                    semin.append(np.min(self.ev))
+                    semax.append(np.max(self.ev))
+                a1 = [(semin[i]+semax[i])/2, 10, 5, int(self.base)]
+                a2 = [(semin[i]+semax[i])/2, 10, 5, int(self.base),
+                    (semin[i]+semax[i])/2, 10, 0.5, int(self.base)]
+                if i in sefi:
+                    if sefp[i] == 1:
+                        a1 = [epos[ti], 10, efwhm[ti], int(self.base)]
+                    elif sefp[i] == 2:
+                        a2 = [epos[ti-1], 10, efwhm[ti-1],
+                            int(self.base), epos[ti], 10, efwhm[ti], int(self.base)]
+                    ti += 1
+                seaa1[i, :] = a1
+                seaa2[i, :] = a2
+            semin, semax = np.float64(semin), np.float64(semax)
+            self.fpr = 1
+            os.chdir(self.cdir)
+        elif ".npz" in file:
+            try:
+                with np.load(file, 'rb') as f:
+                    self.rdd = str(f['path'])
+                    fphi = f['fphi']
+                    efwhm = f['efwhm']
+                    epos = f['epos']
+                    semin = f['semin']
+                    semax = f['semax']
+                    seaa1 = f['seaa1']
+                    seaa2 = f['seaa2']
+                    sefp = f['sefp']
+                    sefi = f['sefi']
+                ffphi = np.float64(self.k_offset)+fphi
+                fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
+                    np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
+                self.fpr = 1
+                tbasename = os.path.basename(self.rdd)
+                if '.h5' in tbasename:
+                    # data = load_h5(self.rdd)
+                    # pr_load(data)
+                    self.fload = True
+                elif '.json' in tbasename:
+                    # data = load_json(self.rdd)
+                    # pr_load(data)
+                    self.fload = True
+                elif '.txt' in tbasename:
+                    # data = load_txt(self.rdd)
+                    # pr_load(data)
+                    self.fload = True
+            except:
+                pass
+        self.fphi, self.epos, self.ffphi, self.efwhm, self.fk = fphi, epos, ffphi, efwhm, fk
+        self.semin, self.semax = semin, semax
+        self.seaa1, self.seaa2 = seaa1, seaa2
+        self.sefp, self.sefi = sefp, sefi
+        if ".vms" in file:
+            np.savez(os.path.join(self.cdir, '.MDC_cut', 'efit.npz'), ko=self.k_offset, fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
+                    emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
+            self.emin, self.emax = emin, emax
+        elif ".npz" in file:
+            np.savez(os.path.join(self.cdir, '.MDC_cut', 'efit.npz'), ko=self.k_offset, fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
+                    emin=semin, emax=semax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
+            self.emin, self.emax = semin, semax
+        # limg.config(image=img[np.random.randint(len(img))])
+        print('Done')
+        self.st.put('Done')
+
+        
