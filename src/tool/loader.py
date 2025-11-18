@@ -1986,6 +1986,7 @@ class eloader:
                 semax = np.float64(semax)
                 semin = np.float64(semin)
             ffphi = np.float64(self.k_offset)+fphi
+            epos = np.abs(epos)
             fk = (2*m*epos*1.602176634*10**-19)**0.5 * np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)  # error need fix
 
             epos = res(fphi, epos)
@@ -2076,5 +2077,3 @@ class eloader:
         # limg.config(image=img[np.random.randint(len(img))])
         print('Done')
         self.st.put('Done')
-
-        
