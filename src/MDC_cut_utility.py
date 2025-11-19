@@ -80,6 +80,122 @@ class app_param:
         self.bar_pos = bar_pos
         self.g_mem = g_mem
 
+class AboutWindow:
+    def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, version: str = "x.x.x", release_date: str = "YYYY-MM-DD"):
+        self.g = master
+        self.scale = scale
+        self.version = version
+        self.release_date = release_date
+        self.show()
+    
+    def size(self, size: int) -> int:
+        return(int(self.scale*size))
+    
+    def select_all(self, event):
+        event.widget.tag_add(tk.SEL, "1.0", tk.END)
+        event.widget.mark_set(tk.INSERT, "1.0")
+        event.widget.see(tk.INSERT)
+        return 'break'
+    
+    def select_none(self, event):
+        event.widget.tag_remove(tk.SEL, "1.0", tk.END)
+        return 'break'
+    
+    def show(self):
+        self.about_win = tk.Toplevel(self.g, bg='white')
+        self.about_win.overrideredirect(True)
+        self.about_win.title('About MDC_cut')
+        
+        bg = ["#d0d0d0", "#b0b0b0", "#909090", "#707070"]
+        gap=3
+        bd1_fr = tk.Frame(self.about_win, bg=bg[0], padx=gap, pady=gap)
+        bd1_fr.pack()
+        bd2_fr = tk.Frame(bd1_fr, bg=bg[1], padx=gap, pady=gap)
+        bd2_fr.pack()
+        bd3_fr = tk.Frame(bd2_fr, bg=bg[2], padx=gap, pady=gap)
+        bd3_fr.pack()
+        bd_fr = tk.Frame(bd3_fr, bg=bg[3], padx=gap, pady=gap)
+        bd_fr.pack()
+        fr = tk.Frame(bd_fr, bg='white', padx=gap/2, pady=gap/2)
+        fr.pack()
+        
+        l1 = tk.Label(fr, text='MDC_cut', font=('Arial', self.size(20), "bold"), bg='white')
+        l1.pack(pady=10)
+        l2 = tk.Label(fr, text='Version: '+self.version, font=('Arial', self.size(16)), bg='white')
+        l2.pack(pady=5)
+        l3 = tk.Label(fr, text='Release Date: '+self.release_date, font=('Arial', self.size(16)), bg='white')
+        l3.pack(pady=5)
+        l4 = tk.Label(fr, text='Developed by Chih-Keng Hung', font=('Arial', self.size(16)), bg='white')
+        l4.pack(pady=5)
+        
+        fr1 = tk.Frame(fr, bg='white')
+        fr1.pack(pady=5)
+        l_e = tk.Label(fr, text='Email: ', font=('Arial', self.size(16)), bg='white')
+        l_e.pack(side=tk.LEFT, in_=fr1)
+        str_email = 'alex1010512@gmail.com'
+        t_email = tk.Text(fr1, width=20, height=1, font=('Arial', self.size(16)), bg='white', bd=0, wrap='none')
+        t_email.tag_configure("blue", background="white", foreground="blue", selectbackground="blue", selectforeground="white")
+        t_email.insert(tk.END, str_email, "blue")
+        t_email.config(state=tk.DISABLED)
+        t_email.pack(side=tk.LEFT)
+        t_email.bind('<FocusIn>', self.select_all)
+        t_email.bind('<FocusOut>', self.select_none)
+        
+        fr2 = tk.Frame(fr, bg='white')
+        fr2.pack(pady=5)
+        l_github = tk.Label(fr, text='GitHub: ', font=('Arial', self.size(16)), bg='white')
+        l_github.pack(side=tk.LEFT, in_=fr2)
+        str_github = 'https://github.com/alex20000910/main'
+        t_github = tk.Text(fr2, width=31, height=1, font=('Arial', self.size(16)), bg='white', bd=0, wrap='none')
+        t_github.tag_configure("blue", background="white", foreground="blue", selectbackground="blue", selectforeground="white")
+        t_github.insert(tk.END, str_github, "blue")
+        t_github.config(state=tk.DISABLED)
+        t_github.pack(side=tk.LEFT)
+        t_github.bind('<FocusIn>', self.select_all)
+        t_github.bind('<FocusOut>', self.select_none)
+        
+        text = tk.Text(fr, width=50, height=10, wrap='word', font=('Arial', self.size(14)), bg='white')
+        text.pack(padx=10, pady=5)
+        license_text = """MIT License
+
+Copyright (c) 2024-2025 Chih-Keng Hung
+
+Permission is hereby granted, free of charge, to any person obtaining a copy \
+of this software and associated documentation files (the "Software"), to deal \
+in the Software without restriction, including without limitation the rights \
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell \
+copies of the Software, and to permit persons to whom the Software is \
+furnished to do so, subject to the following conditions:
+
+1. The above copyright notice and this permission notice shall be included in \
+all copies or substantial portions of the Software.
+
+2. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR \
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, \
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE \
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER \
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, \
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE \
+SOFTWARE."""
+        text.insert(tk.END, license_text)
+        text.config(state=tk.DISABLED)
+        b1 = tk.Button(fr, text='OK', font=('Arial', self.size(16)), width=10, command=self.destroy, bd=2)
+        b1.pack(pady=10)
+        
+        self.about_win.bind('<Return>', self.destroy)
+        set_center(self.g, self.about_win, 0, 0)
+        self.bind_funcid = self.g.bind('<Configure>', lambda event: set_center(self.g, self.about_win, 0, 0))
+        self.about_win.resizable(False, False)
+        self.about_win.grab_set()
+        self.about_win.focus_force()
+    
+    def destroy(self, *e):
+        self.g.unbind('<Configure>', self.bind_funcid)
+        self.g.bind('<Configure>', lambda event: on_configure(self.g, event))
+        self.about_win.grab_release()
+        self.about_win.destroy()
+        clear(self.about_win)
+
 class RestrictedToplevel(tk.Toplevel):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
@@ -108,6 +224,10 @@ class RestrictedToplevel(tk.Toplevel):
             # 如果位置超出範圍，重新設定
             if x != new_x or y != new_y:
                 self.geometry(f"+{new_x}+{new_y}")
+
+def on_configure(g, *e):
+    if g.winfo_width() < g.winfo_reqwidth() or g.winfo_height() < g.winfo_reqheight():
+        g.geometry(f"{g.winfo_reqwidth()}x{g.winfo_reqheight()}")
 
 def interp(x: float | list[float] | np.ndarray, xp: list[float] | np.ndarray, fp: list[float] | np.ndarray) -> np.ndarray:
     """
