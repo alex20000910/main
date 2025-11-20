@@ -1574,10 +1574,6 @@ d
         tx, ty = np.meshgrid(x, self.phi)
         tz = tx*0
         tz[0:, 0:] = z[0:, xi]
-        # ttx = np.linspace(min(x),max(x),len(x)*4)
-        # tx, ty = np.meshgrid(ttx, self.phi)
-        # x, y = np.meshgrid(x, self.phi)
-        # tz = griddata((x.flatten(), y.flatten()), tz.flatten(), (tx, ty), method='cubic')
         self.tr_a1.clear()
         self.tr_a1.pcolormesh(tx,ty,tz,cmap=self.cmap)
         tx, ty, tz = None, None, None

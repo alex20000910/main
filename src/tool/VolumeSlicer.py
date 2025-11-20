@@ -23,6 +23,8 @@ import psutil
 import zarr
 
 def cut_job_y(args):
+    if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))), 'stop_signal')):
+        return -1
     i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume, cdensity, xmax, xmin, ymax, ymin, z, x, self_z, self_y, ev, e_photon, sym = args
     g=VolumeSlicer()
     g.ev = ev
@@ -58,6 +60,8 @@ def cut_job_y(args):
     return i
 
 def cut_job_x(args):
+    if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))), 'stop_signal')):
+        return -1
     i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume, cdensity, xmax, xmin, ymax, ymin, z, x, self_z, self_y, ev, e_photon, sym = args
     g=VolumeSlicer()
     g.ev = ev
@@ -288,9 +292,9 @@ class g_cut_plot(tk.Toplevel):
         self.stop_event.clear()
         if self.pool:
             self.pool.terminate()
-            print('Terminated')
+            print('Pool Terminated')
             self.pool.join()
-            print('Joined')
+            print('Pool Joined')
         self.destroy()
         clear(self)
         gc.collect()
@@ -1018,10 +1022,26 @@ class VolumeSlicer(tk.Frame):
         command = input()
         if command.strip().lower() == '':
             self.stop_event.set()
-            if self.pool:
-                self.pool.terminate()
-                self.pool.join()
-                self.pool = None
+            tempdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+            tempdir = os.path.dirname(tempdir)
+            with open(os.path.join(tempdir, 'stop_signal'), 'w') as f:
+                f.write('stop')
+            print("\033[35mStopping the process...\033[0m")
+    
+    def monitor(self):
+        tempdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        tempdir = os.path.dirname(tempdir)
+        path = os.path.join(tempdir, 'cube_temp_save')
+        total = len(self.ev)
+        pbar = tqdm.tqdm(total=len(self.ev), desc='Processing', colour='blue', file=sys.stdout)
+        while not self.stop_event.is_set():
+            time.sleep(0.5)
+            files = os.listdir(path)
+            completed = len(files)
+            if completed > pbar.n:
+                pbar.update(completed - pbar.n)
+            if completed >= total:
+                break
     
     def t_cut_job_y(self):
         angle = self.angle
@@ -1037,6 +1057,8 @@ class VolumeSlicer(tk.Frame):
         tempdir = os.path.dirname(tempdir)
         try:
             os.chdir(os.path.join(tempdir))
+            if os.path.exists(os.path.join(tempdir, 'stop_signal')):
+                os.remove(os.path.join(tempdir, 'stop_signal'))
             if os.path.exists('cut_temp_save'):
                 shutil.rmtree('cut_temp_save')
             os.mkdir('cut_temp_save')
@@ -1045,10 +1067,11 @@ class VolumeSlicer(tk.Frame):
             os.mkdir('cube_temp_save')
             with Pool(self.pool_size) as self.pool:
                 args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume[:, :, i], self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
+                # threading.Thread(target=self.monitor).start()
+                # self.pool.map(cut_job_y, args)
                 for i, result in enumerate(tqdm.tqdm(self.pool.imap(cut_job_y, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
                     if self.stop_event.is_set():
                         break
-                    pass
                 if not self.stop_event.is_set():
                     print("\n\033[32mPress \033[31m'Enter' \033[32mto coninue...\033[0m")
                 args = None
@@ -1079,10 +1102,11 @@ class VolumeSlicer(tk.Frame):
             os.mkdir('cube_temp_save')
             with Pool(self.pool_size) as self.pool:
                 args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume[:, :, i], self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
+                # threading.Thread(target=self.monitor).start()
+                # self.pool.map(cut_job_x, args)
                 for i, result in enumerate(tqdm.tqdm(self.pool.imap(cut_job_x, args), total=len(self.ev), desc="Processing", file=sys.stdout, colour='blue')):
                     if self.stop_event.is_set():
                         break
-                    pass
                 if not self.stop_event.is_set():
                     print("\n\033[32mPress \033[31m'Enter' \033[32mto coninue...\033[0m")
                 args = None
@@ -1146,7 +1170,6 @@ class VolumeSlicer(tk.Frame):
         print('\033[33mPhysical CPU cores:\033[36m', psutil.cpu_count(logical=False))
         self.det_core_num()
         print('\033[0mPlease wait...\n')
-        print('\033[32mIf you want to stop the process, wait for 20 seconds and try.\nBut sometimes it may not work.\033[0m')
         print('\nThe following shows the progress bar and the estimation of the processing time')
         angle = self.angle
         self.cx_cut = self.cx
@@ -1184,7 +1207,6 @@ class VolumeSlicer(tk.Frame):
         else:   # cut along kx
             self.t = threading.Thread(target=self.t_cut_job_y, daemon=True)
             self.t.start()
-        time.sleep(5)
         print("\n\033[32m-----Press \033[31m'Enter' \033[32mto terminate the pool-----\033[0m\n")
         t1.join()
         self.t.join()
