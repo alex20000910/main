@@ -114,52 +114,46 @@ In addition to the steps mentioned above, `MDC_cut.py` provides a variety of too
 ## Requirements
 You don't need to manually install the dependencies. `MDC_cut.py` will automatically install them via pip if they are not already present in your environment.
 The following are the tested Python versions and their corresponding package versions:
+<div align="center">
 
-- ![Python 3.12.x](https://img.shields.io/badge/Python-3.12.x-3376AB?logo=python)
-  - ![numpy 1.26.4](https://img.shields.io/badge/numpy-1.26.4-013243?logo=numpy&logoColor=013243)
-  - ![opencv-python 4.10.0.84](https://img.shields.io/badge/opencv--python-4.10.0.84-5C3EE8?logo=opencv&logoColor=5C3EE8)
-  - ![matplotlib 3.10.5](https://img.shields.io/badge/matplotlib-3.10.5-11557C)
-  - ![xarray 2025.7.1](https://img.shields.io/badge/xarray-2025.7.1-4423ab)
-  - ![h5py 3.14.0](https://img.shields.io/badge/h5py-3.14.0-ad2222)
-  - ![Pillow 11.3.0](https://img.shields.io/badge/Pillow-11.3.0-32aa66)
-  - ![scipy 1.16.1](https://img.shields.io/badge/scipy-1.16.1-8CAAE6?logo=scipy)
-  - ![lmfit 1.3.4](https://img.shields.io/badge/lmfit-1.3.4-78bc99)
-  - ![tqdm 4.67.1](https://img.shields.io/badge/tqdm-4.67.1-FFC107?logo=tqdm)
-  - ![pywin32 311](https://img.shields.io/badge/pywin32-311-0012ae)
-  - ![originpro 1.1.13](https://img.shields.io/badge/originpro-1.1.13-ae2399)
-  - ![py-cpuinfo 9.0.0](https://img.shields.io/badge/py--cpuinfo-9.0.0-90fc36)
-  - ![psutil 7.0.0](https://img.shields.io/badge/psutil-7.0.0-36aeff)
-  - ![zarr 3.1.1](https://img.shields.io/badge/zarr-3.1.1-65cc11)
-  - ![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-5c70ff)
-  - ![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-dd4488)
-  - ![tkinterdnd 0.4.3](https://img.shields.io/badge/tkinterdnd-0.4.3-35abaa)
-- ![Python 3.13.x](https://img.shields.io/badge/Python-3.13.x-3376AB?logo=python)
-  - ![numpy 2.2.6](https://img.shields.io/badge/numpy-2.2.6-013243?logo=numpy&logoColor=013243)
-  - ![opencv-python 4.12.0.88](https://img.shields.io/badge/opencv--python-4.12.0.88-5C3EE8?logo=opencv&logoColor=5C3EE8)
-  - ![matplotlib 3.10.5](https://img.shields.io/badge/matplotlib-3.10.5-11557C)
-  - ![xarray 2025.7.1](https://img.shields.io/badge/xarray-2025.7.1-4423ab)
-  - ![h5py 3.14.0](https://img.shields.io/badge/h5py-3.14.0-ad2222)
-  - ![Pillow 11.3.0](https://img.shields.io/badge/Pillow-11.3.0-32aa66)
-  - ![scipy 1.16.1](https://img.shields.io/badge/scipy-1.16.1-8CAAE6?logo=scipy)
-  - ![lmfit 1.3.4](https://img.shields.io/badge/lmfit-1.3.4-78bc99)
-  - ![tqdm 4.67.1](https://img.shields.io/badge/tqdm-4.67.1-FFC107?logo=tqdm)
-  - ![pywin32 311](https://img.shields.io/badge/pywin32-311-0012ae)
-  - ![originpro 1.1.13](https://img.shields.io/badge/originpro-1.1.13-ae2399)
-  - ![py-cpuinfo 9.0.0](https://img.shields.io/badge/py--cpuinfo-9.0.0-90fc36)
-  - ![psutil 7.0.0](https://img.shields.io/badge/psutil-7.0.0-36aeff)
-  - ![zarr 3.1.1](https://img.shields.io/badge/zarr-3.1.1-65cc11)
-  - ![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-5c70ff)
-  - ![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-dd4488)
-  - ![tkinterdnd 0.4.3](https://img.shields.io/badge/tkinterdnd-0.4.3-35abaa)
+|![Python 3.12.x](https://img.shields.io/badge/Python-3.12.x-3376AB?logo=python)|![Python 3.13.x](https://img.shields.io/badge/Python-3.13.x-3376AB?logo=python)|
+|:---:|:---:|
+|![numpy 1.26.4](https://img.shields.io/badge/numpy-1.26.4-013243?logo=numpy&logoColor=013243&labelColor=676767)|![numpy 2.2.6](https://img.shields.io/badge/numpy-2.2.6-013243?logo=numpy&logoColor=013243&labelColor=676767)|
+|![opencv-python 4.10.0.84](https://img.shields.io/badge/opencv--python-4.10.0.84-5C3EE8?logo=opencv&logoColor=5C3EE8&labelColor=676767)|![opencv-python 4.12.0.88](https://img.shields.io/badge/opencv--python-4.12.0.88-5C3EE8?logo=opencv&logoColor=5C3EE8&labelColor=676767)|
+|![matplotlib 3.10.5](https://img.shields.io/badge/matplotlib-3.10.5-3376AB?logo=pypi&labelColor=676767)|![matplotlib 3.10.5](https://img.shields.io/badge/matplotlib-3.10.5-3376AB?logo=pypi&labelColor=676767)|
+|![xarray 2025.7.1](https://img.shields.io/badge/xarray-2025.7.1-3376AB?logo=pypi&labelColor=676767)|![xarray 2025.7.1](https://img.shields.io/badge/xarray-2025.7.1-3376AB?logo=pypi&labelColor=676767)|
+|![h5py 3.14.0](https://img.shields.io/badge/h5py-3.14.0-3376AB?logo=pypi&labelColor=676767)|![h5py 3.14.0](https://img.shields.io/badge/h5py-3.14.0-3376AB?logo=pypi&labelColor=676767)|
+|![Pillow 11.3.0](https://img.shields.io/badge/Pillow-11.3.0-3376AB?logo=pypi&labelColor=676767)|![Pillow 11.3.0](https://img.shields.io/badge/Pillow-11.3.0-3376AB?logo=pypi&labelColor=676767)|
+|![scipy 1.16.1](https://img.shields.io/badge/scipy-1.16.1-8CAAE6?logo=scipy&labelColor=676767)|![scipy 1.16.1](https://img.shields.io/badge/scipy-1.16.1-8CAAE6?logo=scipy&labelColor=676767)|
+|![lmfit 1.3.4](https://img.shields.io/badge/lmfit-1.3.4-3376AB?logo=pypi&labelColor=676767)|![lmfit 1.3.4](https://img.shields.io/badge/lmfit-1.3.4-3376AB?logo=pypi&labelColor=676767)|
+|![tqdm 4.67.1](https://img.shields.io/badge/tqdm-4.67.1-FFC107?logo=tqdm&labelColor=676767)|![tqdm 4.67.1](https://img.shields.io/badge/tqdm-4.67.1-FFC107?logo=tqdm&labelColor=676767)|
+|![pywin32 311](https://img.shields.io/badge/pywin32-311-3376AB?logo=pypi&labelColor=676767)|![pywin32 311](https://img.shields.io/badge/pywin32-311-3376AB?logo=pypi&labelColor=676767)|
+|![originpro 1.1.13](https://img.shields.io/badge/originpro-1.1.13-3376AB?logo=pypi&labelColor=676767)|![originpro 1.1.13](https://img.shields.io/badge/originpro-1.1.13-3376AB?logo=pypi&labelColor=676767)|
+|![py-cpuinfo 9.0.0](https://img.shields.io/badge/py--cpuinfo-9.0.0-3376AB?logo=pypi&labelColor=676767)|![py-cpuinfo 9.0.0](https://img.shields.io/badge/py--cpuinfo-9.0.0-3376AB?logo=pypi&labelColor=676767)|
+|![psutil 7.0.0](https://img.shields.io/badge/psutil-7.0.0-3376AB?logo=pypi&labelColor=676767)|![psutil 7.0.0](https://img.shields.io/badge/psutil-7.0.0-3376AB?logo=pypi&labelColor=676767)|
+|![zarr 3.1.1](https://img.shields.io/badge/zarr-3.1.1-3376AB?logo=pypi&labelColor=676767)|![zarr 3.1.1](https://img.shields.io/badge/zarr-3.1.1-3376AB?logo=pypi&labelColor=676767)|
+|![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-3376AB?logo=pypi&labelColor=676767)|![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-3376AB?logo=pypi&labelColor=676767)|
+|![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-3376AB?logo=pypi&labelColor=676767)|![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-3376AB?logo=pypi&labelColor=676767)|
+|![tkinterdnd 0.4.3](https://img.shields.io/badge/tkinterdnd-0.4.3-3376AB?logo=pypi&labelColor=676767)|![tkinterdnd 0.4.3](https://img.shields.io/badge/tkinterdnd-0.4.3-3376AB?logo=pypi&labelColor=676767)|
+
+</div>
 
 The only difference between Python 3.12.x and 3.13.x environments is the numpy and opencv-python versions due to pip version compatibility.
 You can find the full list of required packages in the beginning section of `MDC_cut.py`.(**REQUIREMENTS**)
-The highest tested Python version is 3.13.5.
+The highest tested Python version is **3.13.5**.
+
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Note that those third-party libraries used in this project may have their own licenses.
 
 ## Snapshots
+<div align="center">
+
 ![alt text](src/img/img_main.png)
 ![alt text](src/img/img_SO_Fitter.png)
 ![alt text](src/img/img_CEC.png)
 ![alt text](src/img/img_DataViewer.png)
 ![alt text](src/img/img_Spectrogram.png)
 ![alt text](src/img/img_MDC_Fitter.png)
+
+</div>
