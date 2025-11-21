@@ -1233,7 +1233,21 @@ class VolumeSlicer(tk.Frame):
             self.update()
         except ValueError:
             print("Invalid input for density value")
-            
+    
+    def refresh_geometry(self):
+        self.g.update_idletasks()
+        w = self.g.winfo_reqwidth()
+        h = self.g.winfo_reqheight()
+        t_sc_w = windll.user32.GetSystemMetrics(0)
+        tx = t_sc_w if self.g.winfo_x()+self.g.winfo_width()/2 > t_sc_w else 0
+        ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+        if self.app_pars.bar_pos == 'top':    #taskbar on top
+            sc_y = int(40*ScaleFactor/100)
+        else:
+            sc_y = 0
+        self.g.geometry(f'{w}x{h}+{tx}+{sc_y}')
+        self.g.update()
+    
     def change_mode(self, mode='normal'):
         self.mode = mode
         self.__get_slim()
@@ -1264,18 +1278,7 @@ class VolumeSlicer(tk.Frame):
                 if mode == 'normal':
                     self.cut_xy(init=True)   # init cut params
                     self.update_window()
-                self.g.update()
-                w = self.g.winfo_reqwidth()
-                h = self.g.winfo_reqheight()
-                t_sc_w = windll.user32.GetSystemMetrics(0)
-                tx = t_sc_w if self.g.winfo_x()+self.g.winfo_width()/2 > t_sc_w else 0
-                ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
-                if self.app_pars.bar_pos == 'top':    #taskbar on top
-                    sc_y = int(40*ScaleFactor/100)
-                else:
-                    sc_y = 0
-                self.g.geometry(f'{w}x{h}+{tx}+{sc_y}')
-                self.g.update()
+                self.refresh_geometry()
             except Exception as e:
                 print(e)
                 self.type = 'real'
@@ -1336,6 +1339,7 @@ class VolumeSlicer(tk.Frame):
                 self.set_sym_button.pack_forget()
                 if mode == 'normal':
                     self.update_window()
+                self.refresh_geometry()
             except Exception as e:
                 print(e)
                 self.type = 'reciprocal'
