@@ -107,9 +107,7 @@ The typical workflow would be:
 >[!TIP]
 > Many tools in `MDC_cut.py` have HOTKEY bindings for quick access. Try **Enter**, **Up Arrow**, **Down Arrow**, **Left Arrow**, **Right Arrow**, and **Scroll Wheel** for navigation, confirmation, and adjustments.
 
-In addition to the steps mentioned above, `MDC_cut.py` provides a variety of tools for data visualization, exporting to [**CasaXPS**](https://www.casaxps.com/)(.vms), and generating [**OriginPro**](https://www.originlab.com/) projects(.opj). Explore the GUI to discover more features!
-> [!NOTE]
-> Change the OriginPro project format to `.opju` by directly modify the keyword in `MDC_cut.py` if you are using OriginPro 2018 or later. Typically, the older `.opj` format is still supported by later versions of OriginPro.
+In addition to the steps mentioned above, `MDC_cut.py` provides a variety of tools for data visualization, exporting to [**CasaXPS**](https://www.casaxps.com/)(.vms), and generating [**OriginPro**](https://www.originlab.com/) projects(.opj/.opju). Explore the GUI to discover more features!
 
 ## Requirements
 You don't need to manually install the dependencies. `MDC_cut.py` will automatically install them via pip if they are not already present in your environment.

@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.0.2"
-__release_date__ = "2025-11-20"
+__version__ = "8.1"
+__release_date__ = "2025-11-21"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -243,8 +243,9 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         print("Failed to download source file:", e, file=sys.stderr)
         print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
 
-def get_src():
-    url = [r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
+def get_src(ver=False):
+    url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
+           r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
            r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
@@ -255,17 +256,19 @@ def get_src():
            r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py"]
     for i, v in enumerate(url):
-        if i < 2:
+        if i < 3:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
         else:
             out_path = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
         get_file_from_github(v, out_path)
+        if ver:
+            break
 
 # set up .MDC_cut folder
 os.chdir(cdir)
 if not os.path.exists('.MDC_cut'):
     os.makedirs('.MDC_cut')
-    os.system('attrib +h +s .MDC_cut')
+os.system('attrib +h +s .MDC_cut')
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 
 # upgrade check
@@ -384,17 +387,21 @@ try:
         import PyQt5
         import pyqtgraph
         from tkinterdnd2 import DND_FILES, TkinterDnD
+except ModuleNotFoundError:
+    install()
+    restart()
+    quit()
+
+try:
     from MDC_cut_utility import *
     from tool.loader import loadfiles, mloader, eloader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
-    
-except ModuleNotFoundError:
-    install()
-    restart()
-    quit()
+except ImportError:
+    print('Some source files missing. Downloading...')
+    get_src()
 
 if __name__ == '__main__':
     pid = os.getpid()
@@ -634,18 +641,22 @@ def f_patch_origin():
     print('Patching OriginPro...Done')
     st.put('Patching OriginPro...Done')
 ########################### patching ############################
+def ch_suffix(*e):
+    global l1, b3, origin_func
+    origin_func.ch_suffix(dpath, l1, b3)
 
 def pre_process(input):
         return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
 
 def gui_exp_origin(*e):
-    global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11
+    global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,l1,b3,origin_func
     limg.config(image=img[np.random.randint(len(img))])
     if 'gori' in globals():
         gori.destroy()
+    origin_func = origin()
     gori=RestrictedToplevel(g,bg='white')
     gori.title('Export to Origin')
-    l1=tk.Label(gori,text=f"{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.opj",font=('Arial', size(10), "bold"),bg='white',wraplength=600)
+    l1=tk.Label(gori,text=f"{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.{origin_func.suffix}",font=('Arial', size(10), "bold"),bg='white',wraplength=600)
     l1.grid(row=0,column=0)
     b1=tk.Button(gori,text='Patch Origin',command=patch_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
     # b1.grid(row=1,column=0)
@@ -676,8 +687,12 @@ def gui_exp_origin(*e):
     c10.grid(row=9,column=0,sticky='w')
     c11=tk.Checkbutton(fr,text='Second Derivative',variable=v11,font=('Arial', size(18), "bold"),bg='white')
     c11.grid(row=10,column=0,sticky='w')
-    b2=tk.Button(fr,text='Export',command=exp_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
-    b2.grid(row=11,column=0)
+    fr_exp=tk.Frame(fr,bg='white')
+    fr_exp.grid(row=11,column=0)
+    b2=tk.Button(fr_exp,text='Export',command=exp_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
+    b2.pack(side='left')
+    b3=tk.Button(fr_exp,text=f'(.{origin_func.suffix})',command=ch_suffix, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
+    b3.pack(side='right')
     cl=[c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
     for i in range(len(cl)):
         if i in no:
@@ -881,6 +896,7 @@ def pr_exp_origin():
         no.append(10)
         
 def exp_origin(*e):
+    global origin_func
     origin_temp_var = f'''from {app_name} import *
 import originpro as op
 
@@ -976,8 +992,9 @@ save()
             origin_temp_exec+=cmdlist[i]
         
     with open(cdir+os.sep+'origin_temp.py', 'w', encoding='utf-8') as f:
-        f.write(origin_temp_var+origin_temp_func+origin_temp_exec+origin_temp_save)
+        f.write(origin_temp_var+origin_func.func+origin_temp_exec+origin_temp_save)
     f.close()
+    origin_func = None
     def j():
         # os.system(f'code {cdir+r"\origin_temp.py"}')
         limg.config(image=img[np.random.randint(len(img))])
@@ -990,155 +1007,6 @@ save()
         print('Exported to Origin')
         st.put('Exported to Origin')
     threading.Thread(target=j,daemon=True).start()
-
-origin_temp_func = r'''
-def note():
-    nt=op.new_notes('Data Info')
-    nt.syntax = 0   # Markdown; 0(Normal Text), 1(HTML), 2(Markdown), 3(Origin Rich Text)
-    nt.view = 0    # Render Mode; 0(Text Mode), 1(Render Mode)
-    nt.append(f'Region')
-    nt.append(f'        File Path: {dpath}')
-    for i in range(len(dkey)):
-        if dkey[i] != 'Description':
-            if dkey[i] == 'Path':
-                pass
-            else:
-                nt.append(f'        {dkey[i]}: {dvalue[i]}')
-        else:
-            for j,k in enumerate(dvalue[i].split('\n')):
-                if j == 0:
-                    nt.append(f'        {dkey[i]}:')
-                    nt.append(f'                {k}')
-                else:
-                    nt.append(f'                {k}')
-    nt.append(f'\nParameters\n'+\
-        f'        Energy Mode: {le_mode}\n'+\
-        f'        Fermi Energy: {vfe} eV\n'+\
-        f'        k offset: {ko} deg\n'+\
-        f'        Gaussian Filter Kernel Size: {im_kernel}\n')
-    if bpath is not None:
-        nt.append(f'        Bare Band Path: {bpath}\n'+\
-            f'        Bare Band Offset: {bbo} meV\n'+\
-            f'        Bare Band k Ratio: {bbk}\n')
-    else:
-        nt.append(f'        Bare Band Path: None\n')
-
-def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)', xlabel=r"\g(f)", ylabel=f'{le_mode}', zlabel='Intensity', xunit="deg", yunit='eV', zunit='Counts'):
-    try:
-        if title!='E-Phi (Raw Data)':
-            if not npzf:
-                x = np.sqrt(2*m*tev*1.602176634*10**-19)*np.sin((np.float64(ko)+x)/180*np.pi)*10**-10/(h/2/np.pi)
-            xlabel='k'
-        else:   # title == E-Phi (Raw Data)
-            if npzf:
-                title = 'E-k (Sliced Data)'
-                xlabel='k'
-        if 'Second Derivative' in title:
-            z=sdz
-        if 'Data plot with pos' in title:
-            x1 = pos
-            if emf=='KE':
-                y1=fev
-            else:
-                y1= vfe-fev
-        if title=='Data plot with pos & bare band':
-            x2 = k*bbk
-            if emf=='KE':
-                y2 = (be - np.float64(bbo))/1000+vfe
-            else:
-                y2 = (-be + np.float64(bbo))/1000
-        if xlabel=='k':
-            xunit=r"2\g(p)Å\+(-1)"
-        x,y,z = x.flatten(), y.flatten(), z.flatten()
-        # create a new book
-        wb = op.new_book('w',title)
-        # access the first sheet
-        sheet = wb[0]
-        # add data to the sheet
-        sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
-        sheet.from_list(1, y, lname=ylabel, units=yunit, axis='Y')
-        sheet.from_list(2, z, lname=zlabel, units=zunit, axis='Z')
-        temp_path = os.path.join(cdir, ".MDC_cut", "viridis_2D.otp")
-        if os.path.exists(temp_path):
-            gr=op.new_graph(title, temp_path)
-        else:
-            gr=op.new_graph(title, 'TriContgray')
-        gr[0].add_plot(sheet, 1, 0, 2)
-        if ylabel=='Binding Energy':
-            ylm=gr[0].ylim
-            gr[0].set_ylim(ylm[1],ylm[0])
-            gr[0].set_ylim(step=-1*float(ylm[2]))
-        if len(x1) != 0:
-            sheet.from_list(3, x1, lname='x1', units=xunit, axis='X')
-            sheet.from_list(4, y1, lname='y1', units=yunit, axis='Y')
-            g1=gr[0].add_plot(sheet, 4, 3,type='s')
-            g1.symbol_size = 5
-            g1.symbol_kind = 2
-        if len(x2) != 0:
-            sheet.from_list(5, x2, lname='x2', units=xunit, axis='X')
-            sheet.from_list(6, y2, lname='y2', units=yunit, axis='Y')
-            g2=gr[0].add_plot(sheet, 6, 5,type='l')
-            g2.symbol_size = 5
-            g2.symbol_kind = 2
-            g2.color = 'red'
-        gr[0].rescale()
-        wb.show = False
-    except Exception as e:
-        print(f"Error in plot2d: {e}")
-        try:
-            print(title)
-        except:
-            pass
-
-def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], title='title', xlabel='x', ylabel='y', ylabel1='y1', ylabel2='y2', xunit='arb', yunit='arb'):
-    try:
-        # create a new book
-        wb = op.new_book('w',title)
-        # access the first sheet
-        sheet = wb[0]
-        # add data to the sheet
-        if ylabel1 == 'y1':
-            ylabel1 = ylabel
-        sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
-        sheet.from_list(1, y1, lname=ylabel1, units=yunit, axis='Y')
-        gr=op.new_graph(title, 'scatter')
-        g1=gr[0].add_plot(sheet, 1, 0)
-        g1.symbol_size = 5
-        g1.symbol_kind = 2
-        if len(y2) != 0:
-            sheet.from_list(2, y2, lname=ylabel2, units=yunit, axis='Y')
-            g2=gr[0].add_plot(sheet, 2, 0)
-            g2.symbol_size = 5
-            g2.symbol_kind = 2
-            g2.color = 'red'
-            gr[0].label('yl').text = f'{ylabel} ({yunit})'
-        if xlabel=='Binding Energy':
-            xlm=gr[0].xlim
-            gr[0].set_xlim(xlm[1],xlm[0])
-            gr[0].set_xlim(step=-1*float(xlm[2]))
-        gr[0].rescale()
-        wb.show = False
-    except Exception as e:
-        print(f"Error in plot1d: {e}")
-        try:
-            print(title)
-        except:
-            pass
-def save(format='opj'):
-    """
-    Save the Origin data in .opj format.
-    Can be saved in .opju format as well.
-    """
-    tbasename = os.path.basename(dpath)
-    if '.h5' in tbasename:
-        op.save(dpath.removesuffix('.h5').replace("/","\\")+'.'+format)
-    elif '.json' in tbasename:
-        op.save(dpath.removesuffix('.json').replace("/","\\")+'.'+format)
-    elif '.txt' in tbasename:
-        op.save(dpath.removesuffix('.txt').replace("/","\\")+'.'+format)
-    elif '.npz' in tbasename:
-        op.save(dpath.removesuffix('.npz').replace("/","\\")+'.'+format)
-'''
 
 def rplot(f, canvas):
     """
@@ -6551,6 +6419,94 @@ def plot3_set(opt):
 def size(s: int) -> int:
     return int(s * scale)
 
+def check_github_connection()->bool:
+    try:
+        import requests
+    except ImportError:
+        requests = None
+        
+    url = "https://github.com"
+    if requests:
+        try:
+            response = requests.get(url, timeout=5)  # 設定 5 秒的超時時間
+            if response.status_code == 200:
+                return True
+            else:
+                return False
+        except requests.ConnectionError:
+            return False
+        except requests.Timeout:
+            return False
+        except Exception:
+            return False
+    else:
+        import urllib.request
+        try:
+            with urllib.request.urlopen(url, timeout=5) as response:
+                if response.status == 200:
+                    return True
+                else:
+                    return False
+        except Exception:
+            return False
+
+# compare the version with remote repository (only execute when using GUI)
+def version_check():
+    f = check_github_connection()
+    if not f:
+        return
+    get_src(ver=True)
+    path = os.path.join(cdir, '.MDC_cut', 'MDC_cut.py')
+    with open(path, mode='r', encoding='utf-8') as f:
+        for line in f:
+            if line.startswith('__version__ =') or line.startswith("__version__="):
+                remote_ver = line.split('=')[1].strip().strip('"').strip("'")
+                if remote_ver != __version__:
+                    win_ver = tk.Toplevel(g, bg='white')
+                    win_ver.title("Version Check")
+                    win_ver.resizable(False, False)
+                    lbl = tk.Label(win_ver, text=f"A new version {remote_ver} is available.\nUpdate now?", bg='white', font=("Arial", size(18)))
+                    lbl.pack(pady=10)
+                    def update_now():
+                        win_ver.destroy()
+                        if os.name == 'nt' and hwnd:
+                            windll.user32.ShowWindow(hwnd, 9)
+                            windll.user32.SetForegroundWindow(hwnd)
+                        print('\033[36m\nUpdating to the latest version...\nPlease wait...\033[0m')
+                        get_src()
+                        v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
+                        if os.path.exists(v_check_path):
+                            with open(v_check_path, mode='w') as f:
+                                f.write(remote_ver)
+                        src = os.path.join(cdir, '.MDC_cut', f'{app_name}.py')
+                        dst = os.path.join(cdir, f'{app_name}.py')
+                        if os.name == 'nt':
+                            os.system(f'copy "{src}" "{dst}" > nul')
+                            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                        elif os.name == 'posix':
+                            try:
+                                os.system(f'cp "{src}" "{dst}"')
+                                os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                            except:
+                                os.system(f'cp "{src}" "{dst}"')
+                                os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                        os.remove(src)
+                        quit()
+                    yn_frame = tk.Frame(win_ver, bg='white')
+                    yn_frame.pack(pady=5)
+                    btn_update = tk.Button(yn_frame, text="Update", command=update_now, font=("Arial", size(16), 'bold'))
+                    btn_update.pack(side=tk.LEFT, padx=5)
+                    def later():
+                        win_ver.destroy()
+                    btn_later = tk.Button(yn_frame, text="Later", command=later, font=("Arial", size(16), 'bold'))
+                    btn_later.pack(side=tk.LEFT, padx=5)
+                    set_center(g, win_ver, w_extend=15)
+                    win_ver.bind('<Return>', lambda e: update_now())
+                    win_ver.grab_set()
+                    win_ver.focus_set()
+                break
+    os.system(f'del {path}')
+
 if __name__ == '__main__':
     os.chdir(cdir)
     if os.path.exists('open_check_MDC_cut.txt')==0:
@@ -7444,6 +7400,7 @@ if __name__ == '__main__':
     if lfs is not None: # CEC loaded old data to show the cutting rectangle
         if lfs.cec is not None:
             lfs.cec.tlg.focus_force()
+    version_check()
     # g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
     g_mem = psutil.Process(os.getpid()).memory_info().rss / 1024**3  # Main GUI memory in GB
     app_pars.g_mem = g_mem
