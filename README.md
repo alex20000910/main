@@ -29,6 +29,7 @@ The user manual is currently out of date. For the latest changes and new feature
   - [**Geometry Definition**](#geometry-definition)
   - [**E-Angle to E-k Conversion**](#e-angle-to-e-k-conversion)
 - [**Requirements**](#requirements)
+- [**License**](#license)
 - [**Snapshots**](#snapshots)
 ## Usage
 > [!WARNING]
