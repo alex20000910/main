@@ -1022,269 +1022,76 @@ def rplot(f, canvas):
     # a.set_yticklabels(labels=a.get_yticklabels(),font='Arial',fontsize=size(10));
     canvas.draw()
 
-def cexcitation_h5(s:str):
-    with h5py.File(dpath, 'r+') as hf:
-        # Read the dataset
-        data = hf['Region']['ExcitationEnergy']['Value'][:]
-        print("Original:", data)
-        
-        # Prepare the new data
-        new_data = np.array([float(s)], dtype=float)  # Use vlen=str for variable-length strings
-        
-        # Delete the old dataset
-        del hf['Region']['ExcitationEnergy']['Value']
-        
-        # Create a new dataset with the same name but with the new data
-        hf.create_dataset('Region/ExcitationEnergy/Value', data=new_data, dtype=float)
-        
-        # Verify changes
-        modified_data = hf['Region']['ExcitationEnergy']['Value'][:]
-        print("Modified:", modified_data)
+class c_excitation(c_excitation_window):
+    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', e_photon: float=1000.0, scale: float=1.0, *args, **kwargs):
+        super().__init__(parent, bg, dpath, e_photon, scale)
+    
+    def pr_load(self, data):
+        pr_load(data)
+    
+    def load_h5(self, path: str):
+        return load_h5(path)
+    
+    def load_json(self, path: str):
+        return load_json(path)
+    
+    def load_npz(self, path: str):
+        return load_npz(path)
 
-def cexcitation_json(s:str):
-    with open(dpath, 'r') as f:
-        data = json.load(f)
-        print("Original:", data['Region']['ExcitationEnergy']['Value'])
-    data['Region']['ExcitationEnergy']['Value'] = float(s)
-    with open(dpath, 'w') as f:
-        json.dump(data, f, indent=2)
-        print("Modified:", data['Region']['ExcitationEnergy']['Value'])
+class c_name(c_name_window):
+    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', name: str='', scale: float=1.0, *args, **kwargs):
+        super().__init__(parent, bg, dpath, name, scale)
+    
+    def pr_load(self, data):
+        pr_load(data)
+    
+    def load_h5(self, path: str):
+        return load_h5(path)
+    
+    def load_json(self, path: str):
+        return load_json(path)
+    
+    def load_npz(self, path: str):
+        return load_npz(path)
 
-def cexcitation_npz(s:str):
-    with np.load(dpath, allow_pickle=True) as data:
-        data_dict = {key: data[key] for key in data}
-    data_dict['e_photon'] = float(s)
-    np.savez(dpath, **data_dict)
-    print(f"Modified .npz file saved to {dpath}")
-
-def cexcitation_save_str():
-    global data
-    s=t_cein.get('1.0',tk.END)
-    if s:
-        s = s.replace('\n\n\n\n\n', '')
-        s = s.replace('\n\n\n\n', '')
-        s = s.replace('\n\n\n', '')
-        s = s.replace('\n\n', '')
-        s = s.replace('\n', '')
-        tbasename = os.path.basename(dpath)
-        if '.h5' in tbasename:
-            cexcitation_h5(s)
-            data = load_h5(dpath)  # data save as xarray.DataArray format
-            pr_load(data)
-        elif '.json' in tbasename:
-            cexcitation_json(s)
-            data = load_json(dpath)
-            pr_load(data)
-        elif '.npz' in tbasename:
-            cexcitation_npz(s)
-            data = load_npz(dpath)
-            pr_load(data)
-    gcestr.destroy()
+class c_description(c_description_window):
+    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0, *args, **kwargs):
+        super().__init__(parent, bg, dpath, description, scale)
+    
+    def pr_load(self, data):
+        pr_load(data)
+    
+    def load_h5(self, path: str):
+        return load_h5(path)
+    
+    def load_json(self, path: str):
+        return load_json(path)
+    
+    def load_npz(self, path: str):
+        return load_npz(path)
 
 def cexcitation():
-    global gcestr,t_cein
+    global gcestr
     messagebox.showwarning("Warning","Floats Input Only")
     if 'gcestr' in globals():
         gcestr.destroy()
-    gcestr=RestrictedToplevel(g,bg='white')
-    gcestr.title('Excitation Energy')
-    fr=tk.Frame(gcestr,bg='white')
-    fr.grid(row=0,column=0)
-    t_cein = tk.Text(fr, height=1, width=60)
-    t_cein.grid(row=0,column=0)
-    try:
-        t_cein.insert(tk.END, str(e_photon))
-    except:
-        t_cein.insert(tk.END, '1000.0')
-    t_cein.config(font=('Arial', size(16)))
-    fr1 = tk.Frame(gcestr,bg='white')
-    fr1.grid(row=1,column=0)
-    b1=tk.Button(fr1,text='Confirm',command=cexcitation_save_str, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b1.grid(row=1,column=0)
-    b2=tk.Button(fr1,text='Cancel',command=gcestr.destroy, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b2.grid(row=1,column=1)
-    set_center(g, gcestr, 0, 0)
-    gcestr.update()
-    gcestr.limit_bind()
+        clear(gcestr)
+    gcestr = c_excitation(g, 'white', dpath, e_photon, scale)
 
-def cname_h5(s:str):
-    with h5py.File(dpath, 'r+') as hf:
-        # Read the dataset
-        data = hf['Region']['Name'][:]
-        print("Original:", data)
-        
-        # Prepare the new data
-        new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-        
-        # Delete the old dataset
-        del hf['Region']['Name']
-        
-        # Create a new dataset with the same name but with the new data
-        hf.create_dataset('Region/Name', data=new_data, dtype=h5py.special_dtype(vlen=str))
-        
-        # Verify changes
-        modified_data = hf['Region']['Name'][:]
-        print("Modified:", modified_data)
-
-def cname_json(s:str):
-    with open(dpath, 'r') as f:
-        data = json.load(f)
-        print("Original:", data['Region']['Name'])
-    data['Region']['Name'] = s
-    with open(dpath, 'w') as f:
-        json.dump(data, f, indent=2)
-        print("Modified:", data['Region']['Name'])
-
-def cname_npz(s:str):
-    global dpath
-    os.chdir(os.path.dirname(dpath))
-    old_name = os.path.basename(dpath)
-    new_name = s+'.npz'
-    try:
-        os.rename(old_name, new_name)
-        print(f"File renamed from {old_name} to {new_name}")
-        dpath = os.path.normpath(os.path.dirname(dpath)+'/'+s+'.npz')
-    except FileNotFoundError:
-        print(f"File {old_name} not found.")
-    except PermissionError:
-        print(f"Permission denied to rename {old_name}.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
-
-def cname_save_str():
-    global data
-    s=t_cin.get('1.0',tk.END)
-    if s:
-        s = s.replace('\n\n\n\n\n', '')
-        s = s.replace('\n\n\n\n', '')
-        s = s.replace('\n\n\n', '')
-        s = s.replace('\n\n', '')
-        s = s.replace('\n', '')
-        tbasename = os.path.basename(dpath)
-        if '.h5' in tbasename:
-            cname_h5(s)
-            data = load_h5(dpath)  # data save as xarray.DataArray format
-            pr_load(data)
-        elif '.json' in tbasename:
-            cname_json(s)
-            data = load_json(dpath)
-            pr_load(data)
-        elif '.npz' in tbasename:
-            cname_npz(s)
-            data = load_npz(dpath)
-            pr_load(data)
-    gcstr.destroy()
-    
 def cname():
-    global gcstr,t_cin
+    # global gcstr,t_cin
+    global gcstr
     messagebox.showwarning("Warning","允許中文、符號")
     if 'gcstr' in globals():
         gcstr.destroy()
-    gcstr=RestrictedToplevel(g,bg='white')
-    gcstr.title('Name')
-    fr=tk.Frame(gcstr,bg='white')
-    fr.grid(row=0,column=0)
-    t_cin = tk.Text(fr, height=1, width=60, bd=5, padx=10, pady=10)
-    t_cin.grid(row=0,column=0)
-    t_cin.insert(tk.END, name)
-    t_cin.config(font=('Arial', size(20)))
-    t_cin.focus_set()
-    fr1 = tk.Frame(gcstr,bg='white')
-    fr1.grid(row=1,column=0)
-    b1=tk.Button(fr1,text='Confirm',command=cname_save_str, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b1.grid(row=1,column=0)
-    b2=tk.Button(fr1,text='Cancel',command=gcstr.destroy, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b2.grid(row=1,column=1)
-    set_center(g, gcstr, 0, 0)
-    gcstr.update()
-    gcstr.limit_bind()
+    gcstr = c_name(g, 'white', dpath, name, scale)
 
-def desc_h5(s:str):
-    with h5py.File(dpath, 'r+') as hf:
-        # Read the dataset
-        data = hf['Region']['Description'][:]
-        print("Original:", data)
-        
-        # Prepare the new data
-        # s1 = b'BUF : 1.68E-6 mbar'
-        # s2 = b'0.50kV 100mA'
-        # new_data = np.array([s1, b'\n', s2], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-        
-        # s='BUF : 1.68E-6 mbar\n0.50kV 100mA'
-        new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
-        
-        # Delete the old dataset
-        del hf['Region']['Description']
-        
-        # Create a new dataset with the same name but with the new data
-        hf.create_dataset('Region/Description', data=new_data, dtype=h5py.special_dtype(vlen=str))
-        
-        # Verify changes
-        modified_data = hf['Region']['Description'][:]
-        print("Modified:", modified_data)
-
-def desc_json(s:str):
-    with open(dpath, 'r') as f:
-        data = json.load(f)
-        print("Original:", data['Region']['Description'])
-    data['Region']['Description'] = s
-    with open(dpath, 'w') as f:
-        json.dump(data, f, indent=2)
-        print("Modified:", data['Region']['Description'])
-
-def desc_npz(s:str):
-    with np.load(dpath, allow_pickle=True) as data:
-        data_dict = {key: data[key] for key in data}
-    data_dict['desc'] = [s]
-    np.savez(dpath, **data_dict)
-    print(f"Modified .npz file saved to {dpath}")
-    
-def save_str():
-    global data
-    s=t_in.get('1.0',tk.END)
-    if s:
-        s = s.replace('\n\n\n\n\n', '\n')
-        s = s.replace('\n\n\n\n', '\n')
-        s = s.replace('\n\n\n', '\n')
-        s = s.replace('\n\n', '\n')
-        tbasename = os.path.basename(dpath)
-        if '.h5' in tbasename:
-            desc_h5(s)
-            data = load_h5(dpath)  # data save as xarray.DataArray format
-            pr_load(data)
-        elif '.json' in tbasename:
-            desc_json(s)
-            data = load_json(dpath)
-            pr_load(data)
-        elif '.npz' in tbasename:
-            desc_npz(s)
-            data = load_npz(dpath)
-            pr_load(data)
-    gstr.destroy()
-    
 def desc():
-    global gstr,t_in
+    global gstr
     messagebox.showwarning("Warning","允許中文、符號")
     if 'gstr' in globals():
         gstr.destroy()
-    gstr=RestrictedToplevel(g,bg='white')
-    gstr.title('Description')
-    fr=tk.Frame(gstr,bg='white')
-    fr.grid(row=0,column=0)
-    t_in = tk.Text(fr, height=10, width=50, bd=5, padx=10, pady=10)
-    t_in.grid(row=0,column=0)
-    t_in.insert(tk.END, description)
-    t_in.config(font=('Arial', size(16)))
-    t_in.focus_set()
-    fr1 = tk.Frame(gstr,bg='white')
-    fr1.grid(row=1,column=0)
-    b1=tk.Button(fr1,text='Confirm',command=save_str, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b1.grid(row=1,column=0)
-    b2=tk.Button(fr1,text='Cancel',command=gstr.destroy, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b2.grid(row=1,column=1)
-    set_center(g, gstr, 0, 0)
-    gstr.update()
-    gstr.limit_bind()
+    gstr=c_description(g, 'white', dpath, description, scale)
 
 def view_3d(*e):
     DataViewer_PyQt5()
@@ -1628,6 +1435,7 @@ def def_cmap():
     global CE
     if 'CE' in globals():
         CE.destroy()
+        clear(CE)
     CE = ColormapEditor(g, scale)
     set_center(g, CE, 0, 0)
     CE.update()
