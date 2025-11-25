@@ -1,5 +1,6 @@
 import os, io
 import tkinter as tk
+from tkinter import messagebox, colorchooser
 import threading
 from ctypes import windll
 from abc import ABC, abstractmethod
@@ -10,6 +11,8 @@ import win32clipboard
 import cv2
 import psutil
 from base64 import b64decode
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 
 class CEC_Object(ABC):
     @abstractmethod
@@ -695,6 +698,180 @@ def save(format='{self.suffix}'):
 '''
         return body
 
+class EmodeWindow(RestrictedToplevel, ABC):
+    def __init__(self, parent: tk.Misc | None = None, bg: str='white', vfe: float=21.2, scale: float=1.0):
+        super().__init__(parent, bg=bg)
+        self.vfe = vfe
+        self.scale = scale
+        v_fe = tk.StringVar(value=str(vfe))
+        self.title('Fermi Level')
+        fr=tk.Frame(self, bg='white')
+        fr.grid(row=0,column=0)
+        l_in = tk.Label(fr, text='Fermi Level (eV) : ', font=('Arial', self.size(16), "bold"), bg='white')
+        l_in.grid(row=0,column=0)
+        self.fe_in = tk.Entry(fr, font=("Arial", self.size(16), "bold"), width=10, textvariable=v_fe, bd=5)
+        self.fe_in.grid(row=0,column=1)
+        fr1 = tk.Frame(self, bg='white')
+        fr1.grid(row=1,column=0)
+        b1=tk.Button(fr1,text='Confirm',command=self.save_fe, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5)
+        b1.grid(row=1,column=0)
+        self.bind('<Return>', self.save_fe)
+        set_center(parent, self, 0, 0)
+        self.focus_set()
+        self.fe_in.focus_set()
+        self.fe_in.icursor(tk.END)
+        self.update()
+        self.limit_bind()
+    
+    @abstractmethod
+    def save_fe(self):
+        # plot the data in main thread
+        pass
+        
+    def size(self, size: int) -> int:
+        return(int(self.scale*size))
+
+class ColormapEditorWindow(tk.Toplevel, ABC):
+    def __init__(self, master: tk.Misc | None = None, scale: float = 1.0):
+        super().__init__()
+        set_center(master, self, 0, 0)
+        self.master = master
+        self.scale = scale
+        self.title("Colormap Editor")
+        self.colors = ['#0000ff', '#00ff00', '#ff0000']  # default three colors
+        self.scales = [0, 0.5, 1]
+        self.entries = []
+        self.scale_entries = []
+        self.vmin = tk.DoubleVar(value=0.0)
+        self.vmax = tk.DoubleVar(value=1.0)
+        self.colormap_name = tk.StringVar(value="custom_cmap")
+        self.bind('<Configure>', self.on_configure)
+        self._draw_ui()
+
+    def on_configure(self, event):
+        if self.winfo_width() != self.winfo_reqwidth() or self.winfo_height() != self.winfo_reqheight():
+            self.geometry(f"{self.winfo_reqwidth()}x{self.winfo_reqheight()}")
+            set_center(self.master, self, 0, 0)
+
+    def size(self, size: int) -> int:
+        return(int(self.scale*size))
+    
+    def _draw_ui(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+        self.entries.clear()
+        self.scale_entries.clear()
+        n = len(self.colors)
+
+        # Frame for color buttons and - + buttons
+        colorbar = tk.Frame(self)
+        colorbar.grid(row=0, column=0, columnspan=10, pady=5)
+
+        # - button (left)
+        if n > 2:
+            btn_minus = tk.Button(colorbar, font=('Arial', self.size(15)), text=" - ", command=self.remove_node)
+            btn_minus.pack(side=tk.LEFT, padx=4)
+        else:
+            btn_minus = None
+
+        # Color buttons and Entry vertically stacked
+        for i, (color, scale) in enumerate(zip(self.colors, self.scales)):
+            btn_frame = tk.Frame(colorbar)
+            btn_frame.pack(side=tk.LEFT, padx=4)
+            btn = tk.Button(btn_frame, bg=color, width=10, font=("Arial", self.size(15)), command=lambda i=i: self.pick_color(i))
+            btn.pack(side=tk.TOP)
+            self.entries.append(btn)
+            scale_entry = tk.Entry(btn_frame, font=("Arial", self.size(15)), width=5, justify='center')
+            scale_entry.insert(0, str(scale))
+            # 讓第0個和最後一個Entry為readonly
+            if i == 0 or i == n - 1:
+                scale_entry.config(state='readonly')
+            scale_entry.pack(side=tk.TOP, pady=(2, 0))
+            self.scale_entries.append(scale_entry)
+
+        # + button (right)
+        btn_plus = tk.Button(colorbar, font=("Arial", self.size(15)), text=" + ", command=self.add_node)
+        btn_plus.pack(side=tk.LEFT, padx=4)
+
+        # Other widgets
+        tk.Label(self, font=("Arial", self.size(15)), text="vmin:").grid(row=3, column=0, sticky='e')
+        tk.Entry(self, font=("Arial", self.size(15)), textvariable=self.vmin, width=7).grid(row=3, column=1, sticky='w')
+        tk.Label(self, font=("Arial", self.size(15)), text="vmax:").grid(row=3, column=2, sticky='e')
+        tk.Entry(self, font=("Arial", self.size(15)), textvariable=self.vmax, width=7).grid(row=3, column=3, sticky='w')
+        tk.Label(self, font=("Arial", self.size(15)), text="Colormap Name:").grid(row=4, column=0, sticky='e')
+        tk.Entry(self, font=("Arial", self.size(15)), textvariable=self.colormap_name, width=15).grid(row=4, column=1, columnspan=2, sticky='w')
+        tk.Button(self, font=("Arial", self.size(15)), text="Show Colormap", command=self.show_colormap_toplevel).grid(row=5, column=0, columnspan=max(3, len(self.colors)), pady=5)
+        tk.Button(self, font=("Arial", self.size(15)), text="Register & Save", command=self.register_and_save).grid(row=6, column=0, columnspan=2, pady=5)
+        tk.Button(self, font=("Arial", self.size(15)), text="Load Colormap", command=self.load_colormap).grid(row=6, column=2, columnspan=2, pady=5)
+    
+    def pick_color(self, idx):
+        color = colorchooser.askcolor(title="Pick a color")[1]
+        if color:
+            self.colors[idx] = color
+            self.entries[idx].config(bg=color)
+        self.focus_set()
+
+    def add_node(self):
+        if len(self.colors) >= 10:
+            return
+        mid = len(self.colors) // 2
+        self.colors.insert(mid, '#ffffff')
+        # 重新等分 scale
+        n = len(self.colors)
+        self.scales = [round(i/(n-1), 4) for i in range(n)]
+        self._draw_ui()
+
+    def remove_node(self):
+        if len(self.colors) > 2:
+            self.colors.pop(-2)
+            # 重新等分 scale
+            n = len(self.colors)
+            self.scales = [round(i/(n-1), 4) for i in range(n)]
+            self._draw_ui()
+
+    def get_colormap(self):
+        try:
+            self.scales = [float(e.get()) for e in self.scale_entries]
+        except ValueError:
+            messagebox.showerror("Error", "Please enter valid scale values.")
+            return None
+        if not (all(0 <= s <= 1 for s in self.scales) and all(self.scales[i] < self.scales[i+1] for i in range(len(self.scales)-1))):
+            messagebox.showerror("Error", "Scales must be increasing and between 0 and 1.")
+            return None
+        from matplotlib.colors import LinearSegmentedColormap
+        cmap = LinearSegmentedColormap.from_list(self.colormap_name.get(), list(zip(self.scales, self.colors)))
+        return cmap
+
+    def show_colormap_toplevel(self):
+        cmap = self.get_colormap()
+        if cmap is None:
+            return
+        arr = np.linspace(self.vmin.get(), self.vmax.get(), 100).reshape(1, -1)
+        top = tk.Toplevel(self)
+        top.title(f"Colormap Preview: {self.colormap_name.get()}")
+        fig, ax = plt.subplots(figsize=(5*self.scale, 3*self.scale))
+        im = ax.imshow(arr, aspect='auto', cmap=cmap, vmin=self.vmin.get(), vmax=self.vmax.get())
+        ax.set_xticks([])
+        ax.set_yticks([])
+        fig.colorbar(im, ax=ax, orientation='horizontal')
+        canvas = FigureCanvasTkAgg(fig, master=top)
+        fig.tight_layout()
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        # Release resources when closing
+        def on_close():
+            plt.close(fig)
+            top.destroy()
+        top.protocol("WM_DELETE_WINDOW", on_close)
+
+    @abstractmethod
+    def register_and_save(self):
+        pass
+    
+    @abstractmethod
+    def load_colormap(self):
+        pass
+
 def on_configure(g, *e):
     if g.winfo_width() < g.winfo_reqwidth() or g.winfo_height() < g.winfo_reqheight():
         g.geometry(f"{g.winfo_reqwidth()}x{g.winfo_reqheight()}")
@@ -978,3 +1155,17 @@ def clear(obj):
                     pass
     except:
         pass
+
+def file_walk(path=[], file_type='.h5'):
+    out = []
+    if path != []:
+        if os.path.isdir(path):
+            for dirpath, dirnames, filenames in os.walk(path):
+                for filename in filenames:
+                    if filename.endswith(file_type) or filename.endswith(file_type.upper()):
+                        full_path = os.path.join(dirpath, filename)
+                        out.append(full_path)
+        elif os.path.isfile(path):
+            if path.endswith(file_type) or path.endswith(file_type.upper()):
+                out.append(path)
+    return out
