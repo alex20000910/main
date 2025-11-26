@@ -1,6 +1,5 @@
 import os, io
 import tkinter as tk
-from tkinter import messagebox, colorchooser
 import threading
 from ctypes import windll
 from abc import ABC, abstractmethod
@@ -11,9 +10,6 @@ import win32clipboard
 import cv2
 import psutil
 from base64 import b64decode
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.pyplot as plt
-import h5py, json
 
 class CEC_Object(ABC):
     @abstractmethod

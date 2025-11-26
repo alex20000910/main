@@ -5,6 +5,7 @@ import numpy as np
 import h5py, json
 import os
 import tkinter as tk
+from threading import Thread
 from abc import ABC, abstractmethod
 from tkinter import colorchooser, messagebox
 from ctypes import windll
@@ -723,3 +724,59 @@ class VersionCheckWindow(tk.Toplevel, ABC):
     @abstractmethod
     def get_src(self, ver: bool = False):
         pass
+
+class CalculatorWindow(tk.Toplevel):
+    def __init__(self, master: tk.Misc|None=None, scale: float=1.0):
+        super().__init__(master, bg='white')
+        self.scale = scale
+        self.resizable(False, False)
+        self.title('E-k Angle Converter')
+        fr = tk.Frame(self, bg='white')
+        fr.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+        
+        calkl = tk.Label(fr, text='delta k (to 0)', font=(
+            "Arial", self.size(18), "bold"), bg="white", fg="black")
+        calkl.grid(row=1, column=0)
+        calel = tk.Label(fr, text='Kinetic Energy', font=(
+            "Arial", self.size(18), "bold"), bg="white", fg="black")
+        calel.grid(row=2, column=0)
+
+        self.calk = tk.StringVar()
+        self.calk.set('0')
+        self.calk.trace_add('write', self.cal)
+        self.cale = tk.StringVar()
+        self.cale.set('0')
+        self.cale.trace_add('write', self.cal)
+        self.calken = tk.Entry(fr, font=("Arial", self.size(18), "bold"),
+                        width=15, textvariable=self.calk, bd=9)
+        self.calken.grid(row=1, column=1)
+        self.caleen = tk.Entry(fr, font=("Arial", self.size(18), "bold"),
+                        width=15, textvariable=self.cale, bd=9)
+        self.caleen.grid(row=2, column=1)
+        
+        self.caldeg = tk.Label(self, text='Deg = 0', font=(
+            "Arial", self.size(18), "bold"), bg="white", fg="black")
+        self.caldeg.pack(side=tk.TOP, fill=tk.X)
+        
+        set_center(master, self, 0, 0)
+        self.calken.focus_set()
+        self.calken.select_range(0, tk.END)
+    
+    def size(self, s: int) -> int:
+        return(int(self.scale*s))
+    
+    def cal_job(self):
+        h = 6.62607015*10**-34  # J·s
+        m = 9.1093837015*10**-31  # kg
+        if '' == self.calk.get():
+            self.calk.set('0')
+            self.calken.select_range(0, 1)
+        if '' == self.cale.get():
+            self.cale.set('0')
+            self.caleen.select_range(0, 1)
+        ans = np.arcsin(np.float64(self.calk.get())/np.sqrt(2*m*np.float64(self.cale.get())
+                        * 1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+        self.caldeg.config(text='Deg = '+'%.5f' % ans)
+
+    def cal(self, *e):
+        Thread(target=self.cal_job, daemon=True).start()

@@ -401,7 +401,7 @@ try:
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
-        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow
+        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow
 except ImportError:
     print('Some source files missing. Downloading...')
     get_src()
@@ -1167,75 +1167,14 @@ def fd_plot():
     s.plot(g, cmap)
 
 @pool_protect
-def o_cal(*e):
-    r"""
-    Calculate the angle in degrees based on the given values of calk and cale.
-
-    Parameters
-    ----------
-        \*e (event) : For tkinter event input, not used in this function.
-
-    Returns
-    -------
-        float : The calculated angle in degrees.
-
-    """
-    global calk, cale
-    if '' == calk.get():
-        calk.set('0')
-        calken.select_range(0, 1)
-    if '' == cale.get():
-        cale.set('0')
-        caleen.select_range(0, 1)
-    ans = np.arcsin(np.float64(calk.get())/np.sqrt(2*m*np.float64(cale.get())
-                    * 1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
-    caldeg.config(text='Deg = '+'%.5f' % ans)
-
-@pool_protect
-def cal(*e):
-    t = threading.Thread(target=o_cal)
-    t.daemon = True
-    t.start()
-
-@pool_protect
 def calculator(*e):
-    global calf, caldeg, calk, cale, calken, caleen
+    global calf
     try:
         calf.destroy()
+        clear(calf)
     except:
         pass
-    calf = tk.Toplevel(g, bg='white')
-    calf.resizable(False, False)
-    calf.title('E-k Angle Converter')
-    fr = tk.Frame(calf, bg='white')
-    fr.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
-    
-    calkl = tk.Label(fr, text='delta k (to 0)', font=(
-        "Arial", size(18), "bold"), bg="white", fg="black")
-    calkl.grid(row=1, column=0)
-    calel = tk.Label(fr, text='Kinetic Energy', font=(
-        "Arial", size(18), "bold"), bg="white", fg="black")
-    calel.grid(row=2, column=0)
-
-    calk = tk.StringVar()
-    calk.set('0')
-    calk.trace_add('write', cal)
-    cale = tk.StringVar()
-    cale.set('0')
-    cale.trace_add('write', cal)
-    calken = tk.Entry(fr, font=("Arial", size(18), "bold"),
-                    width=15, textvariable=calk, bd=9)
-    calken.grid(row=1, column=1)
-    caleen = tk.Entry(fr, font=("Arial", size(18), "bold"),
-                    width=15, textvariable=cale, bd=9)
-    caleen.grid(row=2, column=1)
-    
-    caldeg = tk.Label(calf, text='Deg = 0', font=(
-        "Arial", size(18), "bold"), bg="white", fg="black")
-    caldeg.pack(side=tk.TOP, fill=tk.X)
-    
-    set_center(g, calf, 0, 0)
-    calf.focus_set()
+    calf = CalculatorWindow(g, scale)
 
 @pool_protect
 def scroll(event):
