@@ -7,8 +7,7 @@ import xarray as xr
 import h5py
 import json
 import zarr
-from PIL import ImageTk
-from tkinter import filedialog as fd
+from tkinterdnd2 import DND_FILES
 
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
@@ -2077,3 +2076,114 @@ class eloader:
         # limg.config(image=img[np.random.randint(len(img))])
         print('Done')
         self.st.put('Done')
+
+class tkDnD_loader(ABC):
+    """
+    A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
+    
+    Attributes:
+        root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
+    """
+    def __init__(self, root=None):
+        if root is not None:
+            self.root = root
+            root.drop_target_register(DND_FILES)
+            root.dnd_bind('<<Drop>>', self.on_drop)
+        
+    def on_drop(self, event):
+        raw_str = event.data.split()
+        if len(raw_str) > 1:
+            files = []
+            flag = False
+            t_str = ''
+            for i in raw_str:
+                if '{' in i:
+                    flag = True
+                    t_str += ' ' + i
+                if '}' in i:
+                    flag = False
+                    t_str += ' ' + i
+                    files.append(t_str.split('{')[1].split('}')[0])
+                    t_str = ''
+                if '{' not in i and '}' not in i:
+                    if flag:
+                        t_str += ' ' + i
+                    else:
+                        files.append(i)
+        else:
+            if raw_str[0].startswith('{') and raw_str[0].endswith('}'):
+                files = [raw_str[0].split('{')[1].split('}')[0]]
+            else:
+                files = raw_str
+        if files:
+            self.load(drop=True, files=files)
+    
+    @abstractmethod
+    def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
+        pass
+    
+    @staticmethod
+    def check_h5(file):
+        path_h5 = []
+        t_path_h5 = file_walk(path=file, file_type='.h5')
+        for path in t_path_h5:
+            with h5py.File(path, 'r') as f:
+                keys = list(f.keys())
+                if 'Data' in keys and 'Region' in keys and 'Spectrum' in keys:
+                    path_h5.append(path)
+        return path_h5
+
+    @staticmethod
+    def check_json(file):
+        path_json = []
+        t_path_json = file_walk(path=file, file_type='.json')
+        for path in t_path_json:
+            with open(path, 'r') as f:
+                data = json.load(f)
+                keys = list(data.keys())
+                if 'Region' in keys and 'Detector' in keys and 'Data' in keys and 'Manipulator' in keys and 'Spectrum' in keys:
+                    path_json.append(path)
+        return path_json
+    
+    @staticmethod
+    def check_npz(file):
+        path_npz = []
+        t_path_npz = file_walk(path=file, file_type='.npz')
+        for path in t_path_npz:
+            f = np.load(path)
+            keys = list(f.keys())
+            if 'cx' in keys and 'cy' in keys and 'cdx' in keys and 'cdy' in keys and 'desc' in keys:
+                path_npz.append(path)
+        return path_npz
+    
+    @staticmethod
+    def check_txt(file):
+        path_txt = []
+        t_path_txt = file_walk(path=file, file_type='.txt')
+        for path in t_path_txt:
+            try:
+                load_txt(path)
+                path_txt.append(path)
+            except:
+                pass
+        return path_txt
+
+    @staticmethod
+    def load_raw(files):
+        out = []
+        if files:
+            for file in files:
+                file = os.path.normpath(file)   #有機會因模組版本有所差異 控制好固定格式
+                path_h5 = tkDnD_loader.check_h5(file=file)
+                path_json = tkDnD_loader.check_json(file=file)
+                path_npz = tkDnD_loader.check_npz(file=file)
+                path_txt = tkDnD_loader.check_txt(file=file)
+
+                for i in [path_h5, path_json, path_npz, path_txt]:
+                    if len(i) > 0:
+                        out += i
+                        
+            if out != []:
+                return out
+            
+        return ''

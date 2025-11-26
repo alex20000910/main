@@ -83,7 +83,7 @@ from tkinter import messagebox, colorchooser
 import subprocess
 import argparse
 import importlib
-from typing import override
+from typing import override, Literal
     
 VERSION = sys.version.split()[0]
 VERSION = int(''.join(VERSION.split('.')))
@@ -245,17 +245,18 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
 
 def get_src(ver=False):
-    url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
-           r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
-           r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py"]
+    url = [r"https://github.com/alex20000910/main/blob/update/MDC_cut.py",
+           r"https://github.com/alex20000910/main/blob/update/src/viridis_2D.otp",
+           r"https://github.com/alex20000910/main/blob/update/src/MDC_cut_utility.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/__init__.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/loader.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/spectrogram.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/SO_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/VolumeSlicer.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/CEC.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/DataViewer.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/MDC_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/window.py"]
     for i, v in enumerate(url):
         if i < 3:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
@@ -395,11 +396,12 @@ except ModuleNotFoundError:
 
 try:
     from MDC_cut_utility import *
-    from tool.loader import loadfiles, mloader, eloader, load_h5, load_json, load_npz, load_txt
+    from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
+        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow
 except ImportError:
     print('Some source files missing. Downloading...')
     get_src()
@@ -440,112 +442,19 @@ def fit_so_app(*args):
     except AttributeError:
         fit_so = SO_Fitter(g, app_pars)
 
-class tkDnD:
+class tkDnD(tkDnD_loader):
     """
     A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
     
     Attributes:
         root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
     """
-    def __init__(self, root=None):
-        if root is not None:
-            self.root = root
-            root.drop_target_register(DND_FILES)
-            root.dnd_bind('<<Drop>>', self.on_drop)
-        
-    def on_drop(self, event):
-        raw_str = event.data.split()
-        if len(raw_str) > 1:
-            files = []
-            flag = False
-            t_str = ''
-            for i in raw_str:
-                if '{' in i:
-                    flag = True
-                    t_str += ' ' + i
-                if '}' in i:
-                    flag = False
-                    t_str += ' ' + i
-                    files.append(t_str.split('{')[1].split('}')[0])
-                    t_str = ''
-                if '{' not in i and '}' not in i:
-                    if flag:
-                        t_str += ' ' + i
-                    else:
-                        files.append(i)
-        else:
-            if raw_str[0].startswith('{') and raw_str[0].endswith('}'):
-                files = [raw_str[0].split('{')[1].split('}')[0]]
-            else:
-                files = raw_str
-        if files:
-            load(drop=True, files=files)
+    def __init__(self, root=None, *args, **kwargs):
+        super().__init__(root)
     
-    @staticmethod
-    def check_h5(file):
-        path_h5 = []
-        t_path_h5 = file_walk(path=file, file_type='.h5')
-        for path in t_path_h5:
-            with h5py.File(path, 'r') as f:
-                keys = list(f.keys())
-                if 'Data' in keys and 'Region' in keys and 'Spectrum' in keys:
-                    path_h5.append(path)
-        return path_h5
-
-    @staticmethod
-    def check_json(file):
-        path_json = []
-        t_path_json = file_walk(path=file, file_type='.json')
-        for path in t_path_json:
-            with open(path, 'r') as f:
-                data = json.load(f)
-                keys = list(data.keys())
-                if 'Region' in keys and 'Detector' in keys and 'Data' in keys and 'Manipulator' in keys and 'Spectrum' in keys:
-                    path_json.append(path)
-        return path_json
-    
-    @staticmethod
-    def check_npz(file):
-        path_npz = []
-        t_path_npz = file_walk(path=file, file_type='.npz')
-        for path in t_path_npz:
-            f = np.load(path)
-            keys = list(f.keys())
-            if 'cx' in keys and 'cy' in keys and 'cdx' in keys and 'cdy' in keys and 'desc' in keys:
-                path_npz.append(path)
-        return path_npz
-    
-    @staticmethod
-    def check_txt(file):
-        path_txt = []
-        t_path_txt = file_walk(path=file, file_type='.txt')
-        for path in t_path_txt:
-            try:
-                load_txt(path)
-                path_txt.append(path)
-            except:
-                pass
-        return path_txt
-
-    @staticmethod
-    def load_raw(files):
-        out = []
-        if files:
-            for file in files:
-                file = os.path.normpath(file)   #有機會因模組版本有所差異 控制好固定格式
-                path_h5 = tkDnD.check_h5(file=file)
-                path_json = tkDnD.check_json(file=file)
-                path_npz = tkDnD.check_npz(file=file)
-                path_txt = tkDnD.check_txt(file=file)
-
-                for i in [path_h5, path_json, path_npz, path_txt]:
-                    if len(i) > 0:
-                        out += i
-                        
-            if out != []:
-                return out
-            
-        return ''
+    @override
+    def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
+        load(drop, files)
 
 class G_emode(EmodeWindow):
     def __init__(self, parent: tk.Misc | None = None, bg: str='white', vfe: float=21.2, scale: float=1.0, *args, **kwargs):
@@ -610,11 +519,10 @@ def f_patch_origin():
     st.put('Patching OriginPro...Done')
 ########################### patching ############################
 def ch_suffix(*e):
-    global l1, b3, origin_func
     origin_func.ch_suffix(dpath, l1, b3)
 
 def pre_process(input):
-        return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
+    return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
 
 def gui_exp_origin(*e):
     global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,l1,b3,origin_func
@@ -6079,93 +5987,13 @@ def plot3_set(opt):
 def size(s: int) -> int:
     return int(s * scale)
 
-def check_github_connection()->bool:
-    try:
-        import requests
-    except ImportError:
-        requests = None
-        
-    url = "https://github.com"
-    if requests:
-        try:
-            response = requests.get(url, timeout=5)  # 設定 5 秒的超時時間
-            if response.status_code == 200:
-                return True
-            else:
-                return False
-        except requests.ConnectionError:
-            return False
-        except requests.Timeout:
-            return False
-        except Exception:
-            return False
-    else:
-        import urllib.request
-        try:
-            with urllib.request.urlopen(url, timeout=5) as response:
-                if response.status == 200:
-                    return True
-                else:
-                    return False
-        except Exception:
-            return False
-
-# compare the version with remote repository (only execute when using GUI)
-def version_check():
-    f = check_github_connection()
-    if not f:
-        return
-    get_src(ver=True)
-    path = os.path.join(cdir, '.MDC_cut', 'MDC_cut.py')
-    with open(path, mode='r', encoding='utf-8') as f:
-        for line in f:
-            if line.startswith('__version__ =') or line.startswith("__version__="):
-                remote_ver = line.split('=')[1].strip().strip('"').strip("'")
-                if remote_ver != __version__:
-                    win_ver = tk.Toplevel(g, bg='white')
-                    win_ver.title("Version Check")
-                    win_ver.resizable(False, False)
-                    lbl = tk.Label(win_ver, text=f"A new version {remote_ver} is available.\nUpdate now?", bg='white', font=("Arial", size(18)))
-                    lbl.pack(pady=10)
-                    def update_now():
-                        win_ver.destroy()
-                        if os.name == 'nt' and hwnd:
-                            windll.user32.ShowWindow(hwnd, 9)
-                            windll.user32.SetForegroundWindow(hwnd)
-                        print('\033[36m\nUpdating to the latest version...\nPlease wait...\033[0m')
-                        get_src()
-                        v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
-                        if os.path.exists(v_check_path):
-                            with open(v_check_path, mode='w') as f:
-                                f.write(remote_ver)
-                        src = os.path.join(cdir, '.MDC_cut', f'{app_name}.py')
-                        dst = os.path.join(cdir, f'{app_name}.py')
-                        if os.name == 'nt':
-                            os.system(f'copy "{src}" "{dst}" > nul')
-                            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                        elif os.name == 'posix':
-                            try:
-                                os.system(f'cp "{src}" "{dst}"')
-                                os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                            except:
-                                os.system(f'cp "{src}" "{dst}"')
-                                os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                        os.remove(src)
-                        quit()
-                    yn_frame = tk.Frame(win_ver, bg='white')
-                    yn_frame.pack(pady=5)
-                    btn_update = tk.Button(yn_frame, text="Update", command=update_now, font=("Arial", size(16), 'bold'))
-                    btn_update.pack(side=tk.LEFT, padx=5)
-                    def later():
-                        win_ver.destroy()
-                    btn_later = tk.Button(yn_frame, text="Later", command=later, font=("Arial", size(16), 'bold'))
-                    btn_later.pack(side=tk.LEFT, padx=5)
-                    set_center(g, win_ver, w_extend=15)
-                    win_ver.bind('<Return>', lambda e: update_now())
-                    win_ver.grab_set()
-                    win_ver.focus_set()
-                break
-    os.system(f'del {path}')
+class version_check(VersionCheckWindow):
+    def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, cdir: str='', app_name: str='', __version__: str='', hwnd: int=0):
+        super().__init__(master, scale, cdir, app_name, __version__, hwnd)
+    
+    @override
+    def get_src(self, ver: bool = False):
+        get_src(ver)
 
 if __name__ == '__main__':
     os.chdir(cdir)
@@ -7060,7 +6888,7 @@ if __name__ == '__main__':
     if lfs is not None: # CEC loaded old data to show the cutting rectangle
         if lfs.cec is not None:
             lfs.cec.tlg.focus_force()
-    version_check()
+    version_check(g, scale, cdir, app_name, __version__, hwnd)
     # g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
     g_mem = psutil.Process(os.getpid()).memory_info().rss / 1024**3  # Main GUI memory in GB
     app_pars.g_mem = g_mem
