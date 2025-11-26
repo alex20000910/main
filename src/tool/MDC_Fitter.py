@@ -68,45 +68,6 @@ def _size(s: int) -> int:
 
 #############################
 
-def gl1(x, x0, a, w, y0):
-    """
-    Calculate the value of a Lorentzian function at a given x-coordinate.
-
-    Parameters:
-        x (float): The x-coordinate at which to evaluate the function.
-        x0 (float): The center of the Lorentzian function.
-        a (float): The amplitude of the Lorentzian function.
-        w (float): The full width at half maximum (FWHM) of the Lorentzian function.
-        y0 (float): The y-offset of the Lorentzian function.
-
-    Returns:
-        float: The value of the Lorentzian function at the given x-coordinate.
-    """
-    v = a/(1+(x-x0)**2/(1/2*w)**2)+y0
-    return v
-
-def gl2(x, x1, h1, w1, y1, x2, h2, w2, y2):
-    """
-    Calculates the sum of two Lorentzian functions.
-
-    Parameters:
-        x (float): The input value.
-        x1 (float): The center of the first Lorentzian function.
-        h1 (float): The height of the first Lorentzian function.
-        w1 (float): The width of the first Lorentzian function.
-        y1 (float): The y-offset of the first Lorentzian function.
-        x2 (float): The center of the second Lorentzian function.
-        h2 (float): The height of the second Lorentzian function.
-        w2 (float): The width of the second Lorentzian function.
-        y2 (float): The y-offset of the second Lorentzian function.
-
-    Returns:
-        float: The sum of the two Lorentzian functions.
-    """
-    v1 = h1/(1+(x-x1)**2/(1/2*w1)**2)+y1
-    v2 = h2/(1+(x-x2)**2/(1/2*w2)**2)+y2
-    return v1+v2
-
 wr1 = 0
 wr2 = 0
 fa1 = 0
@@ -154,33 +115,6 @@ def fgl2_a(params, x, data):
     area2 = np.sum(gl1(x, x2, h2, w2, y2))
     return model - data + area1/fa1 - area2/fa2
 
-
-
-def fgl2(params, x, data):
-    h1 = params['h1']
-    h2 = params['h2']
-    x1 = params['x1']
-    x2 = params['x2']
-    w1 = params['w1']
-    w2 = params['w2']
-    y1 = params['y1']
-    y2 = params['y2']
-    model = (gl1(x, x1, h1, w1, y1) +
-             gl1(x, x2, h2, w2, y2))
-    return model - data
-
-
-
-def fgl1(params, xx, data):
-    h = params['h']
-    x = params['x']
-    w = params['w']
-    y = params['y']
-    model = gl1(xx, x, h, w, y)
-    return model - data
-
-
-
 def toa1():
     a1 = []
     a1.append(result.params['x'].value)
@@ -188,8 +122,6 @@ def toa1():
     a1.append(result.params['w'].value)
     a1.append(result.params['y'].value)
     return a1
-
-
 
 def toa2(xx):
     global fswa1a2
@@ -222,8 +154,6 @@ def toa2(xx):
         a2 = np.array([t2, t1]).flatten()
         fswa1a2 = 1
     return a2
-
-
 
 def swapc1c2():
     i = mfiti.get()
@@ -1865,34 +1795,6 @@ def f_pr():
         mpr=1
         mprplot(mxl)
         b_pr.config(text='Real Time Preview ON', fg='green')
-
-
-def filter(y, a, b):
-    """
-    Filters the input array y based on the conditions defined by a and b.
-    Returns two arrays: one containing the filtered values and another containing
-    the indices of the filtered values in the original array.
-    If a is greater than b, it swaps them to ensure a is always less than or equal to b.
-    If no values in y meet the condition, it returns empty arrays.
-    
-    Parameters:
-        y (array-like): The input array to be filtered.
-        a (float): The lower bound for filtering.
-        b (float): The upper bound for filtering.
-    Returns:
-        (filtered y, index of filtered y) (tuple): A tuple of two ndarrays.
-    
-    Example:
-        >>> y = [1, 2, 3, 4, 5]
-        >>> a = 2
-        >>> b = 4
-        >>> filter(y, a, b)
-        (array([2, 3, 4]), array([1, 2, 3]))
-    """
-    if a > b:
-        a, b = b, a  # Ensure a is less than or equal to b
-    return np.array([x for x in y if a <= x <= b]), np.array([i for i, x in enumerate(y) if a <= x <= b])
-
 
 def mfitplot():  # mfiti Scale
     global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6, mxf1, mxf2, mwf1, mwf2, maf1, maf2, mt1, mt2, mt3, mt4, mt5, fdo, mf_prswap
