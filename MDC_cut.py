@@ -443,38 +443,40 @@ def fit_so_app(*args):
     except AttributeError:
         fit_so = SO_Fitter(g, app_pars)
 
-class tkDnD(tkDnD_loader):
-    """
-    A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
-    
-    Attributes:
-        root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
-    """
-    def __init__(self, root=None, *args, **kwargs):
-        super().__init__(root)
-    
-    @override
-    def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
-        load(drop, files)
-
-class G_emode(EmodeWindow):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', vfe: float=21.2, scale: float=1.0, *args, **kwargs):
-        super().__init__(parent, bg, vfe, scale)
+if __name__ == '__main__':
+    class tkDnD(tkDnD_loader):
+        """
+        A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
         
-    @override
-    def save_fe(self, *args):
-        global gfe, vfe
-        try:
-            vfe=float(self.fe_in.get())
-            self.destroy()
-            plot1()
-            plot2()
-            plot3()
-        except:
-            messagebox.showwarning("Warning","Invalid Input\n"+str(sys.exc_info()[1]))
-            self.destroy()
-            gfe = G_emode(g, bg='white', vfe=vfe, scale=scale)
+        Attributes:
+            root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
+        """
+        def __init__(self, root=None, *args, **kwargs):
+            super().__init__(root)
+        
+        @override
+        def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
+            load(drop, files)
 
+    class G_emode(EmodeWindow):
+        def __init__(self, parent: tk.Misc | None = None, bg: str='white', vfe: float=21.2, scale: float=1.0, *args, **kwargs):
+            super().__init__(parent, bg, vfe, scale)
+            
+        @override
+        def save_fe(self, *args):
+            global gfe, vfe
+            try:
+                vfe=float(self.fe_in.get())
+                self.destroy()
+                plot1()
+                plot2()
+                plot3()
+            except:
+                messagebox.showwarning("Warning","Invalid Input\n"+str(sys.exc_info()[1]))
+                self.destroy()
+                gfe = G_emode(g, bg='white', vfe=vfe, scale=scale)
+
+@pool_protect
 def emode():
     global gfe,fe_in,b_emode,emf,v_fe,mfpr
     if 'gfe' in globals():
@@ -931,54 +933,56 @@ def rplot(f, canvas):
     # a.set_yticklabels(labels=a.get_yticklabels(),font='Arial',fontsize=size(10));
     canvas.draw()
 
-class c_excitation(c_excitation_window):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', e_photon: float=1000.0, scale: float=1.0, *args, **kwargs):
-        super().__init__(parent, bg, dpath, e_photon, scale)
-    
-    def pr_load(self, data):
-        pr_load(data)
-    
-    def load_h5(self, path: str):
-        return load_h5(path)
-    
-    def load_json(self, path: str):
-        return load_json(path)
-    
-    def load_npz(self, path: str):
-        return load_npz(path)
+if __name__ == '__main__':
+    class c_excitation(c_excitation_window):
+        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', e_photon: float=1000.0, scale: float=1.0, *args, **kwargs):
+            super().__init__(parent, bg, dpath, e_photon, scale)
+        
+        def pr_load(self, data):
+            pr_load(data)
+        
+        def load_h5(self, path: str):
+            return load_h5(path)
+        
+        def load_json(self, path: str):
+            return load_json(path)
+        
+        def load_npz(self, path: str):
+            return load_npz(path)
 
-class c_name(c_name_window):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', name: str='', scale: float=1.0, *args, **kwargs):
-        super().__init__(parent, bg, dpath, name, scale)
-    
-    def pr_load(self, data):
-        pr_load(data)
-    
-    def load_h5(self, path: str):
-        return load_h5(path)
-    
-    def load_json(self, path: str):
-        return load_json(path)
-    
-    def load_npz(self, path: str):
-        return load_npz(path)
+    class c_name(c_name_window):
+        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', name: str='', scale: float=1.0, *args, **kwargs):
+            super().__init__(parent, bg, dpath, name, scale)
+        
+        def pr_load(self, data):
+            pr_load(data)
+        
+        def load_h5(self, path: str):
+            return load_h5(path)
+        
+        def load_json(self, path: str):
+            return load_json(path)
+        
+        def load_npz(self, path: str):
+            return load_npz(path)
 
-class c_description(c_description_window):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0, *args, **kwargs):
-        super().__init__(parent, bg, dpath, description, scale)
-    
-    def pr_load(self, data):
-        pr_load(data)
-    
-    def load_h5(self, path: str):
-        return load_h5(path)
-    
-    def load_json(self, path: str):
-        return load_json(path)
-    
-    def load_npz(self, path: str):
-        return load_npz(path)
+    class c_description(c_description_window):
+        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0, *args, **kwargs):
+            super().__init__(parent, bg, dpath, description, scale)
+        
+        def pr_load(self, data):
+            pr_load(data)
+        
+        def load_h5(self, path: str):
+            return load_h5(path)
+        
+        def load_json(self, path: str):
+            return load_json(path)
+        
+        def load_npz(self, path: str):
+            return load_npz(path)
 
+@pool_protect
 def cexcitation():
     global gcestr
     messagebox.showwarning("Warning","Floats Input Only")
@@ -987,14 +991,15 @@ def cexcitation():
         clear(gcestr)
     gcestr = c_excitation(g, 'white', dpath, e_photon, scale)
 
+@pool_protect
 def cname():
-    # global gcstr,t_cin
     global gcstr
     messagebox.showwarning("Warning","允許中文、符號")
     if 'gcstr' in globals():
         gcstr.destroy()
     gcstr = c_name(g, 'white', dpath, name, scale)
 
+@pool_protect
 def desc():
     global gstr
     messagebox.showwarning("Warning","允許中文、符號")
@@ -1277,7 +1282,7 @@ def tools(*args):
     toolg.focus_set()
     toolg.limit_bind()
     return
-                
+
 @pool_protect
 def def_cmap():
     global CE
@@ -1288,86 +1293,87 @@ def def_cmap():
     set_center(g, CE, 0, 0)
     CE.update()
 
-class ColormapEditor(ColormapEditorWindow):
-    def __init__(self, parent: tk.Misc | None = None, scale: float = 1.0):
-        super().__init__(parent, scale)
-        
-    @override
-    def register_and_save(self):
-        global optionList3, value3, setcmap
-        cmap = self.get_colormap()
-        if cmap is None:
-            return
-        name = self.colormap_name.get()
-        # Register to matplotlib colormap
-        matplotlib.colormaps.register(cmap, name=name, force=True)
-        messagebox.showinfo("Colormap", f"Colormap '{name}' has been registered to matplotlib.")
-        if colormap_name:
-            optionList3 = [name, 'prevac_cmap', colormap_name, 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
-        else:
-            optionList3 = [name, 'prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
-        setcmap.grid_forget()
-        value3.set(name)
-        setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
-        setcmap.grid(row=0, column=1)
-        g.update()
-        # Save file
-        data = {
-            "colors": np.array(self.colors),
-            "scales": np.array(self.scales),
-            "vmin": self.vmin.get(),
-            "vmax": self.vmax.get(),
-            "name": name
-        }
-        save_path = fd.asksaveasfilename(
-            title="Save custom colormap",
-            defaultextension=".npz",
-            filetypes=[("NumPy zip", "*.npz")],
-            initialdir=cdir,
-            initialfile=f"{name}.npz"
-        )
-        np.savez(save_path, **data)
-        np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
-        if save_path:
-            messagebox.showinfo("Colormap", f"Colormap has been saved to:\n{save_path}")
-
-    @override
-    def load_colormap(self):
-        global optionList3, value3, setcmap
-        # Load npz file
-        load_dir = cdir
-        file_path = fd.askopenfilename(
-            title="Select custom colormap file",
-            filetypes=[("NumPy zip", "*.npz")],
-            initialdir=load_dir if os.path.exists(load_dir) else "."
-        )
-        if not file_path:
-            return
-        try:
-            data = np.load(file_path, allow_pickle=True)
-            self.colors = list(data["colors"])
-            self.scales = list(data["scales"])
-            self.vmin.set(float(data["vmin"]))
-            self.vmax.set(float(data["vmax"]))
-            self.colormap_name.set(str(data["name"]))
-            self._draw_ui()
-            messagebox.showinfo("Colormap", f"Colormap loaded: {self.colormap_name.get()}")
+if __name__ == '__main__':
+    class ColormapEditor(ColormapEditorWindow):
+        def __init__(self, parent: tk.Misc | None = None, scale: float = 1.0):
+            super().__init__(parent, scale)
+            
+        @override
+        def register_and_save(self):
+            global optionList3, value3, setcmap
             cmap = self.get_colormap()
             if cmap is None:
                 return
             name = self.colormap_name.get()
             # Register to matplotlib colormap
             matplotlib.colormaps.register(cmap, name=name, force=True)
-            optionList3.append(name)
+            messagebox.showinfo("Colormap", f"Colormap '{name}' has been registered to matplotlib.")
+            if colormap_name:
+                optionList3 = [name, 'prevac_cmap', colormap_name, 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
+            else:
+                optionList3 = [name, 'prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
             setcmap.grid_forget()
             value3.set(name)
             setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
             setcmap.grid(row=0, column=1)
             g.update()
+            # Save file
+            data = {
+                "colors": np.array(self.colors),
+                "scales": np.array(self.scales),
+                "vmin": self.vmin.get(),
+                "vmax": self.vmax.get(),
+                "name": name
+            }
+            save_path = fd.asksaveasfilename(
+                title="Save custom colormap",
+                defaultextension=".npz",
+                filetypes=[("NumPy zip", "*.npz")],
+                initialdir=cdir,
+                initialfile=f"{name}.npz"
+            )
+            np.savez(save_path, **data)
             np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to load: {e}")
+            if save_path:
+                messagebox.showinfo("Colormap", f"Colormap has been saved to:\n{save_path}")
+
+        @override
+        def load_colormap(self):
+            global optionList3, value3, setcmap
+            # Load npz file
+            load_dir = cdir
+            file_path = fd.askopenfilename(
+                title="Select custom colormap file",
+                filetypes=[("NumPy zip", "*.npz")],
+                initialdir=load_dir if os.path.exists(load_dir) else "."
+            )
+            if not file_path:
+                return
+            try:
+                data = np.load(file_path, allow_pickle=True)
+                self.colors = list(data["colors"])
+                self.scales = list(data["scales"])
+                self.vmin.set(float(data["vmin"]))
+                self.vmax.set(float(data["vmax"]))
+                self.colormap_name.set(str(data["name"]))
+                self._draw_ui()
+                messagebox.showinfo("Colormap", f"Colormap loaded: {self.colormap_name.get()}")
+                cmap = self.get_colormap()
+                if cmap is None:
+                    return
+                name = self.colormap_name.get()
+                # Register to matplotlib colormap
+                matplotlib.colormaps.register(cmap, name=name, force=True)
+                optionList3.append(name)
+                setcmap.grid_forget()
+                value3.set(name)
+                setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
+                setcmap.grid(row=0, column=1)
+                g.update()
+                np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to load: {e}")
 
 
 @pool_protect
@@ -1635,6 +1641,7 @@ def o_angcut():
     print('Done')
     st.put('Done')
 
+@pool_protect
 def cmfit(*e):
     import tool.MDC_Fitter
     from tool.MDC_Fitter import mgg as mgg
@@ -1650,7 +1657,7 @@ def cmfit(*e):
         threading.Thread(target=tool.MDC_Fitter.fitm, args=(mdc_pars,)).start()
         clear(mdc_pars)
 
-
+@pool_protect
 def cefit(*e):
     import tool.EDC_Fitter
     from tool.EDC_Fitter import egg as egg
@@ -1665,11 +1672,6 @@ def cefit(*e):
         edc_pars = EDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, semin=semin, semax=semax, sefp=sefp, sefi=sefi, seaa1=seaa1, seaa2=seaa2)
         threading.Thread(target=tool.EDC_Fitter.fite, args=(edc_pars,)).start()
         clear(edc_pars)
-
-############################################################
-############################################################
-############################################################
-############################################################
 
 ###########################decprecated##############################
 # def o_fitgl():
@@ -1689,7 +1691,6 @@ def cefit(*e):
 #     except:
 #         pass
 ###########################decprecated##############################
-
 
 def clmfit():
     global rpos, pos, fwhm, fev, ophi
@@ -4866,13 +4867,14 @@ def plot3_set(opt):
 def size(s: int) -> int:
     return int(s * scale)
 
-class version_check(VersionCheckWindow):
-    def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, cdir: str='', app_name: str='', __version__: str='', hwnd: int=0):
-        super().__init__(master, scale, cdir, app_name, __version__, hwnd)
-    
-    @override
-    def get_src(self, ver: bool = False):
-        get_src(ver)
+if __name__ == '__main__':
+    class version_check(VersionCheckWindow):
+        def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, cdir: str='', app_name: str='', __version__: str='', hwnd: int=0):
+            super().__init__(master, scale, cdir, app_name, __version__, hwnd)
+        
+        @override
+        def get_src(self, ver: bool = False):
+            get_src(ver)
 
 if __name__ == '__main__':
     os.chdir(cdir)
