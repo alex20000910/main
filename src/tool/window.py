@@ -1,3 +1,4 @@
+from sympy import EX
 from MDC_cut_utility import RestrictedToplevel, set_center, clear, on_configure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
@@ -9,6 +10,7 @@ from threading import Thread
 from abc import ABC, abstractmethod
 from tkinter import colorchooser, messagebox
 from ctypes import windll
+from typing import override
 
 class AboutWindow:
     def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, version: str = "x.x.x", release_date: str = "YYYY-MM-DD"):
@@ -301,93 +303,72 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
     def load_colormap(self):
         pass
 
-class c_excitation_window(RestrictedToplevel, ABC):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', e_photon: float=1000.0, scale: float=1.0):
+class c_attr_window(RestrictedToplevel, ABC):
+    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', attr: float|str='', scale: float=1.0):
         super().__init__(parent, bg=bg)
         self.scale = scale
         self.dpath = dpath
-        self.title('Excitation Energy')
-        fr=tk.Frame(self, bg='white')
+        self.title('Attributes Editor')
+        fr=tk.Frame(self,bg='white')
         fr.grid(row=0,column=0)
-        self.t_cein = tk.Text(fr, height=1, width=60)
-        self.t_cein.grid(row=0,column=0)
-        self.t_cein.insert(tk.END, str(e_photon))
-        self.t_cein.config(font=('Arial', self.size(16)))
+        self.t_in = tk.Text(fr)
+        self.t_in.grid(row=0,column=0)
+        self.t_in.insert(tk.END, str(attr))
         fr1 = tk.Frame(self,bg='white')
         fr1.grid(row=1,column=0)
-        b1=tk.Button(fr1,text='Confirm',command=self.cexcitation_save_str, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5)
+        b1=tk.Button(fr1,text='Confirm',command=self.attr_save_str, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5)
         b1.grid(row=1,column=0)
         b2=tk.Button(fr1,text='Cancel',command=self.destroy, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5)
         b2.grid(row=1,column=1)
-        self.bind('<Return>', self.cexcitation_save_str)
-        self.t_cein.bind('<Return>', self.cexcitation_save_str)
-        set_center(parent, self, 0, 0)
+        # self.bind('<Return>', self.attr_save_str)
+        # self.t_in.bind('<Return>', self.attr_save_str)
+    
+    def show(self):
+        set_center(self.master, self, 0, 0)
         self.update()
         self.limit_bind()
-        self.t_cein.focus_set()
-
-    def size(self, size: int) -> int:
-        return(int(self.scale*size))
+        self.grab_set()
+        self.t_in.focus_set()
     
-    def cexcitation_h5(self, s:str):
-        with h5py.File(self.dpath, 'r+') as hf:
-            # Read the dataset
-            data = hf['Region']['ExcitationEnergy']['Value'][:]
-            print("Original:", data)
-            
-            # Prepare the new data
-            new_data = np.array([float(s)], dtype=float)  # Use vlen=str for variable-length strings
-            
-            # Delete the old dataset
-            del hf['Region']['ExcitationEnergy']['Value']
-            
-            # Create a new dataset with the same name but with the new data
-            hf.create_dataset('Region/ExcitationEnergy/Value', data=new_data, dtype=float)
-            
-            # Verify changes
-            modified_data = hf['Region']['ExcitationEnergy']['Value'][:]
-            print("Modified:", modified_data)
-
-    def cexcitation_json(self, s:str):
-        with open(self.dpath, 'r') as f:
-            data = json.load(f)
-            print("Original:", data['Region']['ExcitationEnergy']['Value'])
-        data['Region']['ExcitationEnergy']['Value'] = float(s)
-        with open(self.dpath, 'w') as f:
-            json.dump(data, f, indent=2)
-            print("Modified:", data['Region']['ExcitationEnergy']['Value'])
-
-    def cexcitation_npz(self, s:str):
-        with np.load(self.dpath, allow_pickle=True) as data:
-            data_dict = {key: data[key] for key in data}
-        data_dict['e_photon'] = float(s)
-        np.savez(self.dpath, **data_dict)
-        print(f"Modified .npz file saved to {self.dpath}")
-
-    def cexcitation_save_str(self, *e):
+    def size(self, s: int=16)->int:
+        return int(self.scale*s)
+    
+    def attr_save_str(self, *e):
         global data
-        s=self.t_cein.get('1.0',tk.END)
+        s=self.string
         if s:
-            s = s.replace('\n\n\n\n\n', '')
-            s = s.replace('\n\n\n\n', '')
-            s = s.replace('\n\n\n', '')
-            s = s.replace('\n\n', '')
-            s = s.replace('\n', '')
             tbasename = os.path.basename(self.dpath)
             if '.h5' in tbasename:
-                self.cexcitation_h5(s)
+                self.attr_h5(s)
                 data = self.load_h5(self.dpath)  # data save as xarray.DataArray format
                 self.pr_load(data)
             elif '.json' in tbasename:
-                self.cexcitation_json(s)
+                self.attr_json(s)
                 data = self.load_json(self.dpath)
                 self.pr_load(data)
             elif '.npz' in tbasename:
-                self.cexcitation_npz(s)
+                self.attr_npz(s)
                 data = self.load_npz(self.dpath)
                 self.pr_load(data)
         self.destroy()
     
+    @property
+    @abstractmethod
+    def string(self) -> str:
+        pass
+    
+    @abstractmethod
+    def attr_h5(self, s:str):
+        pass
+    
+    @abstractmethod
+    def attr_json(self, s:str):
+        pass
+    
+    @abstractmethod
+    def attr_npz(self, s:str):
+        pass
+        
     @abstractmethod
     def pr_load(self, data):
         # plot the data in main thread
@@ -405,36 +386,83 @@ class c_excitation_window(RestrictedToplevel, ABC):
         # Implement loading npz file and return data
         pass
 
-class c_name_window(RestrictedToplevel, ABC):
+class c_excitation_window(c_attr_window):
+    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', e_photon: float=1000.0, scale: float=1.0):
+        super().__init__(parent, bg=bg, dpath=dpath, attr=e_photon, scale=scale)
+        self.win_par = (parent, bg, dpath, e_photon, scale)
+        self.t_in.config(height=1, width=60, font=('Arial', self.size(16)))
+        self.bind('<Return>', self.attr_save_str)
+        self.t_in.bind('<Return>', self.attr_save_str)
+        self.show()
+    
+    @abstractmethod
+    def check_string(self, s:str) -> str:
+        pass
+
+    @property
+    @override
+    def string(self) -> str:
+        s=self.t_in.get('1.0',tk.END)
+        for i in ['\n\n\n\n\n', '\n\n\n\n', '\n\n\n', '\n\n', '\n']:
+            s = s.replace(i, '')
+        return self.check_string(s)
+    
+    @override
+    def attr_h5(self, s):
+        with h5py.File(self.dpath, 'r+') as hf:
+            # Read the dataset
+            data = hf['Region']['ExcitationEnergy']['Value'][:]
+            print("Original:", data)
+            
+            # Prepare the new data
+            new_data = np.array([float(s)], dtype=float)  # Use vlen=str for variable-length strings
+            
+            # Delete the old dataset
+            del hf['Region']['ExcitationEnergy']['Value']
+            
+            # Create a new dataset with the same name but with the new data
+            hf.create_dataset('Region/ExcitationEnergy/Value', data=new_data, dtype=float)
+            
+            # Verify changes
+            modified_data = hf['Region']['ExcitationEnergy']['Value'][:]
+            print("Modified:", modified_data)
+    
+    @override
+    def attr_json(self, s):
+        with open(self.dpath, 'r') as f:
+            data = json.load(f)
+            print("Original:", data['Region']['ExcitationEnergy']['Value'])
+        data['Region']['ExcitationEnergy']['Value'] = float(s)
+        with open(self.dpath, 'w') as f:
+            json.dump(data, f, indent=2)
+            print("Modified:", data['Region']['ExcitationEnergy']['Value'])
+        
+    @override
+    def attr_npz(self, s):
+        with np.load(self.dpath, allow_pickle=True) as data:
+            data_dict = {key: data[key] for key in data}
+        data_dict['e_photon'] = float(s)
+        np.savez(self.dpath, **data_dict)
+        print(f"Modified .npz file saved to {self.dpath}")
+        
+class c_name_window(c_attr_window):
     def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', name: str='', scale: float=1.0):
-        super().__init__(parent, bg=bg)
-        self.scale = scale
-        self.dpath = dpath
-        self.title('Name')
-        fr=tk.Frame(self,bg='white')
-        fr.grid(row=0,column=0)
-        self.t_cin = tk.Text(fr, height=1, width=60, bd=5, padx=10, pady=10)
-        self.t_cin.grid(row=0,column=0)
-        self.t_cin.insert(tk.END, name)
-        self.t_cin.config(font=('Arial', self.size(20)))
-        self.t_cin.focus_set()
-        fr1 = tk.Frame(self, bg='white')
-        fr1.grid(row=1,column=0)
-        b1=tk.Button(fr1,text='Confirm',command=self.cname_save_str, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5)
-        b1.grid(row=1,column=0)
-        b2=tk.Button(fr1,text='Cancel',command=self.destroy, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5)
-        b2.grid(row=1,column=1)
-        self.bind('<Return>', self.cname_save_str)
-        self.t_cin.bind('<Return>', self.cname_save_str)
-        set_center(parent, self, 0, 0)
-        self.update()
-        self.limit_bind()
-        self.t_cin.focus_set()
+        super().__init__(parent, bg=bg, dpath=dpath, attr=name, scale=scale)
+        self.t_in.config(height=1, width=60, bd=5, padx=10, pady=10, font=('Arial', self.size(20)))
+        self.bind('<Return>', self.attr_save_str)
+        self.t_in.bind('<Return>', self.attr_save_str)
+        self.show()
     
-    def size(self, s: int=16)->int:
-        return int(self.scale*s)
+    @property
+    @override
+    def string(self) -> str:
+        s=self.t_in.get('1.0',tk.END)
+        for i in ['\n\n\n\n\n', '\n\n\n\n', '\n\n\n', '\n\n', '\n']:
+            s = s.replace(i, '')
+        return s
     
-    def cname_h5(self, s:str):
+    @override
+    def attr_h5(self, s:str):
         with h5py.File(self.dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['Name'][:]
@@ -453,7 +481,8 @@ class c_name_window(RestrictedToplevel, ABC):
             modified_data = hf['Region']['Name'][:]
             print("Modified:", modified_data)
 
-    def cname_json(self, s:str):
+    @override
+    def attr_json(self, s:str):
         with open(self.dpath, 'r') as f:
             data = json.load(f)
             print("Original:", data['Region']['Name'])
@@ -461,8 +490,9 @@ class c_name_window(RestrictedToplevel, ABC):
         with open(self.dpath, 'w') as f:
             json.dump(data, f, indent=2)
             print("Modified:", data['Region']['Name'])
-
-    def cname_npz(self, s:str):
+            
+    @override
+    def attr_npz(self, s:str):
         global dpath
         os.chdir(os.path.dirname(self.dpath))
         old_name = os.path.basename(self.dpath)
@@ -479,75 +509,22 @@ class c_name_window(RestrictedToplevel, ABC):
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    def cname_save_str(self, *e):
-        global data
-        s=self.t_cin.get('1.0',tk.END)
-        if s:
-            s = s.replace('\n\n\n\n\n', '')
-            s = s.replace('\n\n\n\n', '')
-            s = s.replace('\n\n\n', '')
-            s = s.replace('\n\n', '')
-            s = s.replace('\n', '')
-            tbasename = os.path.basename(self.dpath)
-            if '.h5' in tbasename:
-                self.cname_h5(s)
-                data = self.load_h5(self.dpath)  # data save as xarray.DataArray format
-                self.pr_load(data)
-            elif '.json' in tbasename:
-                self.cname_json(s)
-                data = self.load_json(self.dpath)
-                self.pr_load(data)
-            elif '.npz' in tbasename:
-                self.cname_npz(s)
-                data = self.load_npz(self.dpath)
-                self.pr_load(data)
-        self.destroy()
-    
-    @abstractmethod
-    def pr_load(self, data):
-        # plot the data in main thread
-        pass
-    @abstractmethod
-    def load_h5(self, dpath: str):
-        # Implement loading h5 file and return data
-        pass
-    @abstractmethod
-    def load_json(self, dpath: str):
-        # Implement loading json file and return data
-        pass
-    @abstractmethod
-    def load_npz(self, dpath: str):
-        # Implement loading npz file and return data
-        pass
-
-class c_description_window(RestrictedToplevel, ABC):
+class c_description_window(c_attr_window):
     def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0):
-        super().__init__(parent, bg=bg)
-        self.scale = scale
-        self.dpath = dpath
-        self.title('Description')
-        fr=tk.Frame(self, bg='white')
-        fr.grid(row=0,column=0)
-        self.t_in = tk.Text(fr, height=10, width=50, bd=5, padx=10, pady=10)
-        self.t_in.grid(row=0,column=0)
-        self.t_in.insert(tk.END, description)
-        self.t_in.config(font=('Arial', self.size(16)))
-        self.t_in.focus_set()
-        fr1 = tk.Frame(self, bg='white')
-        fr1.grid(row=1,column=0)
-        b1=tk.Button(fr1,text='Confirm',command=self.save_str, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5)
-        b1.grid(row=1,column=0)
-        b2=tk.Button(fr1,text='Cancel',command=self.destroy, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5)
-        b2.grid(row=1,column=1)
-        set_center(parent, self, 0, 0)
-        self.update()
-        self.limit_bind()
-        self.t_in.focus_set()
+        super().__init__(parent, bg=bg, dpath=dpath, attr=description, scale=scale)
+        self.t_in.config(height=10, width=50, bd=5, padx=10, pady=10, font=('Arial', self.size(16)))
+        self.show()
     
-    def size(self, s: int=16)->int:
-        return int(self.scale*s)
+    @property
+    @override
+    def string(self) -> str:
+        s=self.t_in.get('1.0',tk.END)
+        for i in ['\n\n\n\n\n', '\n\n\n\n', '\n\n\n', '\n\n']:
+            s = s.replace(i, '\n')
+        return s
     
-    def desc_h5(self, s:str):
+    @override
+    def attr_h5(self, s:str):
         with h5py.File(self.dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['Description'][:]
@@ -571,7 +548,8 @@ class c_description_window(RestrictedToplevel, ABC):
             modified_data = hf['Region']['Description'][:]
             print("Modified:", modified_data)
 
-    def desc_json(self, s:str):
+    @override
+    def attr_json(self, s:str):
         with open(self.dpath, 'r') as f:
             data = json.load(f)
             print("Original:", data['Region']['Description'])
@@ -579,54 +557,14 @@ class c_description_window(RestrictedToplevel, ABC):
         with open(self.dpath, 'w') as f:
             json.dump(data, f, indent=2)
             print("Modified:", data['Region']['Description'])
-
-    def desc_npz(self, s:str):
+            
+    @override
+    def attr_npz(self, s:str):
         with np.load(self.dpath, allow_pickle=True) as data:
             data_dict = {key: data[key] for key in data}
         data_dict['desc'] = [s]
         np.savez(self.dpath, **data_dict)
         print(f"Modified .npz file saved to {self.dpath}")
-        
-    def save_str(self):
-        global data
-        s=self.t_in.get('1.0',tk.END)
-        if s:
-            s = s.replace('\n\n\n\n\n', '\n')
-            s = s.replace('\n\n\n\n', '\n')
-            s = s.replace('\n\n\n', '\n')
-            s = s.replace('\n\n', '\n')
-            tbasename = os.path.basename(self.dpath)
-            if '.h5' in tbasename:
-                self.desc_h5(s)
-                data = self.load_h5(self.dpath)  # data save as xarray.DataArray format
-                self.pr_load(data)
-            elif '.json' in tbasename:
-                self.desc_json(s)
-                data = self.load_json(self.dpath)
-                self.pr_load(data)
-            elif '.npz' in tbasename:
-                self.desc_npz(s)
-                data = self.load_npz(self.dpath)
-                self.pr_load(data)
-        self.destroy()
-    
-    @abstractmethod
-    def pr_load(self, data):
-        # plot the data in main thread
-        pass
-    @abstractmethod
-    def load_h5(self, dpath: str):
-        # Implement loading h5 file and return data
-        pass
-    @abstractmethod
-    def load_json(self, dpath: str):
-        # Implement loading json file and return data
-        pass
-    @abstractmethod
-    def load_npz(self, dpath: str):
-        # Implement loading npz file and return data
-        pass
-
 
 # compare the version with remote repository (only execute when using GUI)
 class VersionCheckWindow(tk.Toplevel, ABC):

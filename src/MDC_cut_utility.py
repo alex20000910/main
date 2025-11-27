@@ -113,9 +113,23 @@ class RestrictedToplevel(tk.Toplevel):
         super().__init__(parent, **kwargs)
         set_center(parent, self, 0, 0)
         self.parent = parent
-        self.width = parent.winfo_reqwidth()
-        self.height = parent.winfo_reqheight()
+        dpi=parent.winfo_fpixels('1i')
+        path = os.path.join('.MDC_cut','odpi')
+        with open(path, 'r') as f:
+            s=f.read()
+            odpi=float(s)
+        size = int(str(tk.Menu(parent).cget('font')).split(' ')[1])
+        bd = int(tk.Menu(parent).cget('bd'))
+        self.menusize=int((size*dpi/odpi+bd*2*2)*windll.shcore.GetScaleFactorForDevice(0)/100)
         
+    @property
+    def width(self):
+        return self.parent.winfo_width()
+    
+    @property
+    def height(self):
+        return self.parent.winfo_height()+self.menusize
+    
     def limit_bind(self):
         # 綁定配置變化事件
         self.bind('<Configure>', self.on_configure)
@@ -132,7 +146,6 @@ class RestrictedToplevel(tk.Toplevel):
             # 限制移動範圍
             new_x = max(self.x_min, min(x, self.x_max - self.winfo_width()))
             new_y = max(self.y_min, min(y, self.y_max - self.winfo_height()))
-            
             # 如果位置超出範圍，重新設定
             if x != new_x or y != new_y:
                 self.geometry(f"+{new_x}+{new_y}")
@@ -861,7 +874,7 @@ def set_center(parent: tk.Tk, child: tk.Toplevel, w_extend: int | None = None, h
         h_extend = 0
     if not isinstance(w_extend, int) or not isinstance(h_extend, int):
         raise TypeError("w_extend and h_extend must be integers.")
-    w_parent, h_parent = parent.winfo_reqwidth(), parent.winfo_reqheight()
+    w_parent, h_parent = parent.winfo_width(), parent.winfo_height()
     w_child, h_child = child.winfo_reqwidth(), child.winfo_reqheight()
     px = parent.winfo_x() + w_parent // 2 - w_child // 2
     py = parent.winfo_y() + h_parent // 2 - h_child // 2

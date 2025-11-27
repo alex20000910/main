@@ -366,27 +366,26 @@ try:
         from matplotlib.widgets import SpanSelector
         from matplotlib.widgets import RectangleSelector
         import matplotlib as mpl
-        from matplotlib.widgets import Cursor
-        from matplotlib.widgets import Slider
+        # from matplotlib.widgets import Cursor
+        # from matplotlib.widgets import Slider
     import numpy as np
     import xarray as xr
     import h5py
     from PIL import Image, ImageTk
     if __name__ == '__main__':
-        from scipy.optimize import curve_fit
+        # from scipy.optimize import curve_fit
         from scipy.signal import hilbert
-    if __name__ == '__main__':
-        from lmfit import Parameters, Minimizer
+        # from lmfit import Parameters, Minimizer
         from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
     import tqdm
     import win32clipboard
     if __name__ == '__main__':
         import originpro as op
     from cv2 import Laplacian, GaussianBlur, CV_64F
-    # import cpuinfo
     import psutil
-    # import zarr
     if __name__ == '__main__':
+        import cpuinfo
+        import zarr
         import PyQt5
         import pyqtgraph
         from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -402,7 +401,7 @@ try:
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
-        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow
+        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow
 except ImportError:
     print('Some source files missing. Downloading...')
     get_src()
@@ -422,26 +421,6 @@ fk = []
 fev = []
 lfs = None
 fit_so = None   # for SO_Fitter instance checking
-
-@pool_protect
-def f_help(*e):
-    import webbrowser
-    url = r"https://github.com/alex20000910/main"
-    webbrowser.open(url)
-
-@pool_protect
-def about(*e):
-    AboutWindow(master=g, scale=scale, version=__version__, release_date=__release_date__)
-
-@pool_protect
-def fit_so_app(*args):
-    global fit_so
-    try:
-        fit_so.lift()
-    except TypeError:
-        fit_so = SO_Fitter(g, app_pars)
-    except AttributeError:
-        fit_so = SO_Fitter(g, app_pars)
 
 if __name__ == '__main__':
     class tkDnD(tkDnD_loader):
@@ -475,6 +454,157 @@ if __name__ == '__main__':
                 messagebox.showwarning("Warning","Invalid Input\n"+str(sys.exc_info()[1]))
                 self.destroy()
                 gfe = G_emode(g, bg='white', vfe=vfe, scale=scale)
+    
+    class c_attr(c_attr_window):
+        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', attr: float|str='', scale: float=1.0, *args, **kwargs):
+            super().__init__(parent, bg, dpath, attr, scale)
+        
+        @override
+        def pr_load(self, data):
+            pr_load(data)
+        
+        @override
+        def load_h5(self, path: str):
+            return load_h5(path)
+        
+        @override
+        def load_json(self, path: str):
+            return load_json(path)
+        
+        @override
+        def load_npz(self, path: str):
+            return load_npz(path)
+
+    class c_excitation(c_excitation_window, c_attr):
+        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', e_photon: float=1000.0, scale: float=1.0, *args, **kwargs):
+            super().__init__(parent, bg, dpath, e_photon, scale)
+        
+        @override
+        def check_string(self, s:str) -> str:
+            try:
+                float(s)
+                return s
+            except Exception as e:
+                messagebox.showerror("Error", f"{e}\nPlease enter a valid number for Excitation Energy.")
+                c_excitation(*self.win_par)
+                return ''
+
+    class c_name(c_name_window, c_attr):
+        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', name: str='', scale: float=1.0, *args, **kwargs):
+            super().__init__(parent, bg, dpath, name, scale)
+
+    class c_description(c_description_window, c_attr):
+        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0, *args, **kwargs):
+            super().__init__(parent, bg, dpath, description, scale)
+
+    class ColormapEditor(ColormapEditorWindow):
+        def __init__(self, parent: tk.Misc | None = None, scale: float = 1.0):
+            super().__init__(parent, scale)
+            
+        @override
+        def register_and_save(self):
+            global optionList3, value3, setcmap
+            cmap = self.get_colormap()
+            if cmap is None:
+                return
+            name = self.colormap_name.get()
+            # Register to matplotlib colormap
+            matplotlib.colormaps.register(cmap, name=name, force=True)
+            messagebox.showinfo("Colormap", f"Colormap '{name}' has been registered to matplotlib.")
+            if colormap_name:
+                optionList3 = [name, 'prevac_cmap', colormap_name, 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
+            else:
+                optionList3 = [name, 'prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
+            setcmap.grid_forget()
+            value3.set(name)
+            setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
+            setcmap.grid(row=0, column=1)
+            g.update()
+            # Save file
+            data = {
+                "colors": np.array(self.colors),
+                "scales": np.array(self.scales),
+                "vmin": self.vmin.get(),
+                "vmax": self.vmax.get(),
+                "name": name
+            }
+            save_path = fd.asksaveasfilename(
+                title="Save custom colormap",
+                defaultextension=".npz",
+                filetypes=[("NumPy zip", "*.npz")],
+                initialdir=cdir,
+                initialfile=f"{name}.npz"
+            )
+            np.savez(save_path, **data)
+            np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
+            if save_path:
+                messagebox.showinfo("Colormap", f"Colormap has been saved to:\n{save_path}")
+
+        @override
+        def load_colormap(self):
+            global optionList3, value3, setcmap
+            # Load npz file
+            load_dir = cdir
+            file_path = fd.askopenfilename(
+                title="Select custom colormap file",
+                filetypes=[("NumPy zip", "*.npz")],
+                initialdir=load_dir if os.path.exists(load_dir) else "."
+            )
+            if not file_path:
+                return
+            try:
+                data = np.load(file_path, allow_pickle=True)
+                self.colors = list(data["colors"])
+                self.scales = list(data["scales"])
+                self.vmin.set(float(data["vmin"]))
+                self.vmax.set(float(data["vmax"]))
+                self.colormap_name.set(str(data["name"]))
+                self._draw_ui()
+                messagebox.showinfo("Colormap", f"Colormap loaded: {self.colormap_name.get()}")
+                cmap = self.get_colormap()
+                if cmap is None:
+                    return
+                name = self.colormap_name.get()
+                # Register to matplotlib colormap
+                matplotlib.colormaps.register(cmap, name=name, force=True)
+                optionList3.append(name)
+                setcmap.grid_forget()
+                value3.set(name)
+                setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
+                setcmap.grid(row=0, column=1)
+                g.update()
+                np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
+                
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to load: {e}")
+
+    class version_check(VersionCheckWindow):
+        def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, cdir: str='', app_name: str='', __version__: str='', hwnd: int=0):
+            super().__init__(master, scale, cdir, app_name, __version__, hwnd)
+        
+        @override
+        def get_src(self, ver: bool = False):
+            get_src(ver)
+
+@pool_protect
+def f_help(*e):
+    import webbrowser
+    url = r"https://github.com/alex20000910/main"
+    webbrowser.open(url)
+
+@pool_protect
+def about(*e):
+    AboutWindow(master=g, scale=scale, version=__version__, release_date=__release_date__)
+
+@pool_protect
+def fit_so_app(*args):
+    global fit_so
+    try:
+        fit_so.lift()
+    except TypeError:
+        fit_so = SO_Fitter(g, app_pars)
+    except AttributeError:
+        fit_so = SO_Fitter(g, app_pars)
 
 @pool_protect
 def emode():
@@ -933,55 +1063,6 @@ def rplot(f, canvas):
     # a.set_yticklabels(labels=a.get_yticklabels(),font='Arial',fontsize=size(10));
     canvas.draw()
 
-if __name__ == '__main__':
-    class c_excitation(c_excitation_window):
-        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', e_photon: float=1000.0, scale: float=1.0, *args, **kwargs):
-            super().__init__(parent, bg, dpath, e_photon, scale)
-        
-        def pr_load(self, data):
-            pr_load(data)
-        
-        def load_h5(self, path: str):
-            return load_h5(path)
-        
-        def load_json(self, path: str):
-            return load_json(path)
-        
-        def load_npz(self, path: str):
-            return load_npz(path)
-
-    class c_name(c_name_window):
-        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', name: str='', scale: float=1.0, *args, **kwargs):
-            super().__init__(parent, bg, dpath, name, scale)
-        
-        def pr_load(self, data):
-            pr_load(data)
-        
-        def load_h5(self, path: str):
-            return load_h5(path)
-        
-        def load_json(self, path: str):
-            return load_json(path)
-        
-        def load_npz(self, path: str):
-            return load_npz(path)
-
-    class c_description(c_description_window):
-        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0, *args, **kwargs):
-            super().__init__(parent, bg, dpath, description, scale)
-        
-        def pr_load(self, data):
-            pr_load(data)
-        
-        def load_h5(self, path: str):
-            return load_h5(path)
-        
-        def load_json(self, path: str):
-            return load_json(path)
-        
-        def load_npz(self, path: str):
-            return load_npz(path)
-
 @pool_protect
 def cexcitation():
     global gcestr
@@ -1293,89 +1374,6 @@ def def_cmap():
     set_center(g, CE, 0, 0)
     CE.update()
 
-if __name__ == '__main__':
-    class ColormapEditor(ColormapEditorWindow):
-        def __init__(self, parent: tk.Misc | None = None, scale: float = 1.0):
-            super().__init__(parent, scale)
-            
-        @override
-        def register_and_save(self):
-            global optionList3, value3, setcmap
-            cmap = self.get_colormap()
-            if cmap is None:
-                return
-            name = self.colormap_name.get()
-            # Register to matplotlib colormap
-            matplotlib.colormaps.register(cmap, name=name, force=True)
-            messagebox.showinfo("Colormap", f"Colormap '{name}' has been registered to matplotlib.")
-            if colormap_name:
-                optionList3 = [name, 'prevac_cmap', colormap_name, 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
-            else:
-                optionList3 = [name, 'prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
-            setcmap.grid_forget()
-            value3.set(name)
-            setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
-            setcmap.grid(row=0, column=1)
-            g.update()
-            # Save file
-            data = {
-                "colors": np.array(self.colors),
-                "scales": np.array(self.scales),
-                "vmin": self.vmin.get(),
-                "vmax": self.vmax.get(),
-                "name": name
-            }
-            save_path = fd.asksaveasfilename(
-                title="Save custom colormap",
-                defaultextension=".npz",
-                filetypes=[("NumPy zip", "*.npz")],
-                initialdir=cdir,
-                initialfile=f"{name}.npz"
-            )
-            np.savez(save_path, **data)
-            np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
-            if save_path:
-                messagebox.showinfo("Colormap", f"Colormap has been saved to:\n{save_path}")
-
-        @override
-        def load_colormap(self):
-            global optionList3, value3, setcmap
-            # Load npz file
-            load_dir = cdir
-            file_path = fd.askopenfilename(
-                title="Select custom colormap file",
-                filetypes=[("NumPy zip", "*.npz")],
-                initialdir=load_dir if os.path.exists(load_dir) else "."
-            )
-            if not file_path:
-                return
-            try:
-                data = np.load(file_path, allow_pickle=True)
-                self.colors = list(data["colors"])
-                self.scales = list(data["scales"])
-                self.vmin.set(float(data["vmin"]))
-                self.vmax.set(float(data["vmax"]))
-                self.colormap_name.set(str(data["name"]))
-                self._draw_ui()
-                messagebox.showinfo("Colormap", f"Colormap loaded: {self.colormap_name.get()}")
-                cmap = self.get_colormap()
-                if cmap is None:
-                    return
-                name = self.colormap_name.get()
-                # Register to matplotlib colormap
-                matplotlib.colormaps.register(cmap, name=name, force=True)
-                optionList3.append(name)
-                setcmap.grid_forget()
-                value3.set(name)
-                setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
-                setcmap.grid(row=0, column=1)
-                g.update()
-                np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
-                
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to load: {e}")
-
-
 @pool_protect
 def pr_load(data: xr.DataArray):
     global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
@@ -1387,8 +1385,7 @@ def pr_load(data: xr.DataArray):
     for _ in data.attrs.keys():
         if _ == 'Description':
             ts=str(data.attrs[_])
-            ts=ts.replace('\n\n\n','\n')
-            ts=ts.replace('\n\n','\n')
+            ts=ts.replace('\n\n\n','\n').replace('\n\n','\n')
             t=ts.split('\n')
             st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                     ')
             # st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                         ')
@@ -1424,22 +1421,14 @@ def pr_load(data: xr.DataArray):
     e_photon=np.float64(dvalue[3].split(' ')[0])
     lensmode=dvalue[8]
     description=dvalue[13]
-    description=description.replace('\n\n\n\n\n','\n')
-    description=description.replace('\n\n\n\n','\n')
-    description=description.replace('\n\n\n','\n')
-    description=description.replace('\n\n','\n')
+    for i in ['\n\n\n\n\n','\n\n\n\n','\n\n\n','\n\n']:
+        description=description.replace(i,'\n')
     if lensmode=='Transmission':
-        menu1.config(state='disabled')
-        menu2.config(state='disabled')
-        menu3.config(state='disabled')
-        in_fit.config(state='disabled')
-        b_fit.config(state='disabled')
+        for i in [menu1, menu2, menu3, in_fit, b_fit]:
+            i.config(state='disabled')
     else:
-        menu1.config(state='normal')
-        menu2.config(state='normal')
-        menu3.config(state='normal')
-        in_fit.config(state='normal')
-        b_fit.config(state='normal')
+        for i in [menu1, menu2, menu3, in_fit, b_fit]:
+            i.config(state='normal')
     os.chdir(cdir)
     np.savez(os.path.join(cdir, '.MDC_cut', 'rd.npz'), path=dpath, name=name, lpath=[i for i in lfs.path], ev=ev,
              phi=phi, st=st, lst=lst)
@@ -4868,15 +4857,6 @@ def size(s: int) -> int:
     return int(s * scale)
 
 if __name__ == '__main__':
-    class version_check(VersionCheckWindow):
-        def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, cdir: str='', app_name: str='', __version__: str='', hwnd: int=0):
-            super().__init__(master, scale, cdir, app_name, __version__, hwnd)
-        
-        @override
-        def get_src(self, ver: bool = False):
-            get_src(ver)
-
-if __name__ == '__main__':
     os.chdir(cdir)
     if os.path.exists('open_check_MDC_cut.txt')==0:
         with open('open_check_MDC_cut.txt', 'w', encoding = 'utf-8') as f:
@@ -4913,6 +4893,10 @@ if __name__ == '__main__':
     tkDnD(g)    #bind whole window to Drag-and-drop function
     # g = ttk.Window(themename='darkly')
     odpi=g.winfo_fpixels('1i')
+    path = os.path.join(cdir, '.MDC_cut', 'odpi')
+    with open(path, 'w') as f:
+        f.write(f'{odpi}')  #for RestrictedToplevel
+        f.close()
     # print('odpi:',odpi)
     # prfactor = 1 if ScaleFactor <= 150 else 1.03
     # prfactor = 1.03 if ScaleFactor <= 100 else 0.9 if ScaleFactor <= 125 else 0.8 if ScaleFactor <= 150 else 0.5
