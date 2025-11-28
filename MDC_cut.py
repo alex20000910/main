@@ -460,6 +460,26 @@ if __name__ == '__main__':
             super().__init__(parent, bg, dpath, attr, scale)
         
         @override
+        def attr_save_str(self, *e):
+            global data
+            s=self.string
+            if s:
+                tbasename = os.path.basename(self.dpath)
+                if '.h5' in tbasename:
+                    self.attr_h5(s)
+                    data = self.load_h5(self.dpath)  # data save as xarray.DataArray format
+                    self.pr_load(data)
+                elif '.json' in tbasename:
+                    self.attr_json(s)
+                    data = self.load_json(self.dpath)
+                    self.pr_load(data)
+                elif '.npz' in tbasename:
+                    self.attr_npz(s)
+                    data = self.load_npz(self.dpath)
+                    self.pr_load(data)
+            self.destroy()
+        
+        @override
         def pr_load(self, data):
             pr_load(data)
         
@@ -492,6 +512,24 @@ if __name__ == '__main__':
     class c_name(c_name_window, c_attr):
         def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', name: str='', scale: float=1.0, *args, **kwargs):
             super().__init__(parent, bg, dpath, name, scale)
+            
+        @override
+        def attr_npz(self, s:str):
+            global dpath
+            os.chdir(os.path.dirname(self.dpath))
+            old_name = os.path.basename(self.dpath)
+            new_name = s+'.npz'
+            try:
+                os.rename(old_name, new_name)
+                print(f"File renamed from {old_name} to {new_name}")
+                self.dpath = os.path.normpath(os.path.dirname(self.dpath)+'/'+s+'.npz')
+                dpath = self.dpath
+            except FileNotFoundError:
+                print(f"File {old_name} not found.")
+            except PermissionError:
+                print(f"Permission denied to rename {old_name}.")
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
     class c_description(c_description_window, c_attr):
         def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0, *args, **kwargs):
@@ -647,6 +685,30 @@ if __name__ == '__main__':
     class plot3_window(Plot3Window):
         def __init__(self, parent: tk.Misc | None, scale: float, fev: list, fk: list):
             super().__init__(parent, scale, fev, fk)
+        
+        @override
+        def ini(self):
+            global mp, ep, mf, ef
+            if len(self.fev) <= 0:
+                mp, mf = 0, 0
+                for i in [self.mpos, self.mfwhm]:
+                    i.deselect()
+                    i.config(state='disabled')
+            if len(self.fk) <= 0:
+                ep, ef = 0, 0
+                for i in [self.epos, self.efwhm]:
+                    i.deselect()
+                    i.config(state='disabled')
+                
+        @override
+        def chf(self):
+            global mp, ep, mf, ef
+            for i, j in zip([mp, ep, mf, ef], [self.v_mpos, self.v_epos, self.v_mfwhm, self.v_efwhm]):
+                i = j.get()
+            t10 = threading.Thread(target=self.o_plot3)
+            t10.daemon = True
+            t10.start()
+            self.destroy()
         
         @override
         def o_plot3(self):

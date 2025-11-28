@@ -320,8 +320,6 @@ class c_attr_window(RestrictedToplevel, ABC):
         b1.grid(row=1,column=0)
         b2=tk.Button(fr1,text='Cancel',command=self.destroy, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5)
         b2.grid(row=1,column=1)
-        # self.bind('<Return>', self.attr_save_str)
-        # self.t_in.bind('<Return>', self.attr_save_str)
     
     def show(self):
         set_center(self.master, self, 0, 0)
@@ -333,28 +331,13 @@ class c_attr_window(RestrictedToplevel, ABC):
     def size(self, s: int=16)->int:
         return int(self.scale*s)
     
-    def attr_save_str(self, *e):
-        global data
-        s=self.string
-        if s:
-            tbasename = os.path.basename(self.dpath)
-            if '.h5' in tbasename:
-                self.attr_h5(s)
-                data = self.load_h5(self.dpath)  # data save as xarray.DataArray format
-                self.pr_load(data)
-            elif '.json' in tbasename:
-                self.attr_json(s)
-                data = self.load_json(self.dpath)
-                self.pr_load(data)
-            elif '.npz' in tbasename:
-                self.attr_npz(s)
-                data = self.load_npz(self.dpath)
-                self.pr_load(data)
-        self.destroy()
-    
     @property
     @abstractmethod
     def string(self) -> str:
+        pass
+    
+    @abstractmethod
+    def attr_save_str(self, *e):
         pass
     
     @abstractmethod
@@ -490,24 +473,6 @@ class c_name_window(c_attr_window):
         with open(self.dpath, 'w') as f:
             json.dump(data, f, indent=2)
             print("Modified:", data['Region']['Name'])
-            
-    @override
-    def attr_npz(self, s:str):
-        global dpath
-        os.chdir(os.path.dirname(self.dpath))
-        old_name = os.path.basename(self.dpath)
-        new_name = s+'.npz'
-        try:
-            os.rename(old_name, new_name)
-            print(f"File renamed from {old_name} to {new_name}")
-            self.dpath = os.path.normpath(os.path.dirname(self.dpath)+'/'+s+'.npz')
-            dpath = self.dpath
-        except FileNotFoundError:
-            print(f"File {old_name} not found.")
-        except PermissionError:
-            print(f"Permission denied to rename {old_name}.")
-        except Exception as e:
-            print(f"An error occurred: {e}")
 
 class c_description_window(c_attr_window):
     def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0):
@@ -848,36 +813,11 @@ class Plot3Window(RestrictedToplevel, IconManager, ABC):
         super().__init__(master, bg='white', padx=10, pady=10)
         IconManager.__init__(self)
         self.scale = scale
-        def ini():
-            global mp, ep, mf, ef
-            if len(fev) <= 0:
-                mp = 0
-                mpos.deselect()
-                mpos.config(state='disabled')
-                mf = 0
-                mfwhm.deselect()
-                mfwhm.config(state='disabled')
-            if len(fk) <= 0:
-                ep = 0
-                epos.deselect()
-                epos.config(state='disabled')
-                ef = 0
-                efwhm.deselect()
-                efwhm.config(state='disabled')
-
-        def chf():
-            global mp, ep, mf, ef
-            mp = v_mpos.get()
-            ep = v_epos.get()
-            mf = v_mfwhm.get()
-            ef = v_efwhm.get()
-            t10 = Thread(target=self.o_plot3)
-            t10.daemon = True
-            t10.start()
-            self.destroy()
+        self.fev = fev
+        self.fk = fk
 
         def on_enter(event):
-            chf()
+            self.chf()
         
         self.title('Data Point List')
         self.iconphoto(False, tk.PhotoImage(data=b64decode(self.gicon)))
@@ -887,19 +827,19 @@ class Plot3Window(RestrictedToplevel, IconManager, ABC):
 
         pos = tk.Frame(self, bg="white")
         pos.grid(row=1, column=0, padx=10, pady=5)
-        v_mpos = tk.IntVar()
-        mpos = tk.Checkbutton(pos, text="MDC", font=(
-            "Arial", self.size(16), "bold"), variable=v_mpos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        mpos.grid(row=0, column=0, padx=10, pady=5)
-        mpos.intvar = v_mpos
-        mpos.select()
+        self.v_mpos = tk.IntVar()
+        self.mpos = tk.Checkbutton(pos, text="MDC", font=(
+            "Arial", self.size(16), "bold"), variable=self.v_mpos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
+        self.mpos.grid(row=0, column=0, padx=10, pady=5)
+        self.mpos.intvar = self.v_mpos
+        self.mpos.select()
 
-        v_epos = tk.IntVar()
-        epos = tk.Checkbutton(pos, text="EDC", font=(
-            "Arial", self.size(16), "bold"), variable=v_epos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        epos.grid(row=0, column=1, padx=10, pady=5)
-        epos.intvar = v_epos
-        epos.select()
+        self.v_epos = tk.IntVar()
+        self.epos = tk.Checkbutton(pos, text="EDC", font=(
+            "Arial", self.size(16), "bold"), variable=self.v_epos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
+        self.epos.grid(row=0, column=1, padx=10, pady=5)
+        self.epos.intvar = self.v_epos
+        self.epos.select()
 
         lfwhm = tk.Label(self, text='FWHM', font=(
             "Arial", self.size(18), "bold"), bg="white", height='1')
@@ -907,32 +847,40 @@ class Plot3Window(RestrictedToplevel, IconManager, ABC):
 
         fwhm = tk.Frame(self, bg="white")
         fwhm.grid(row=3, column=0, padx=10, pady=5)
-        v_mfwhm = tk.IntVar()
-        mfwhm = tk.Checkbutton(fwhm, text="MDC", font=(
-            "Arial", self.size(16), "bold"), variable=v_mfwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        mfwhm.grid(row=0, column=0, padx=10, pady=5)
-        mfwhm.intvar = v_mfwhm
-        mfwhm.select()
+        self.v_mfwhm = tk.IntVar()
+        self.mfwhm = tk.Checkbutton(fwhm, text="MDC", font=(
+            "Arial", self.size(16), "bold"), variable=self.v_mfwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
+        self.mfwhm.grid(row=0, column=0, padx=10, pady=5)
+        self.mfwhm.intvar = self.v_mfwhm
+        self.mfwhm.select()
 
-        v_efwhm = tk.IntVar()
-        efwhm = tk.Checkbutton(fwhm, text="EDC", font=(
-            "Arial", self.size(16), "bold"), variable=v_efwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        efwhm.grid(row=0, column=1, padx=10, pady=5)
-        efwhm.intvar = v_efwhm
-        efwhm.select()
+        self.v_efwhm = tk.IntVar()
+        self.efwhm = tk.Checkbutton(fwhm, text="EDC", font=(
+            "Arial", self.size(16), "bold"), variable=self.v_efwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
+        self.efwhm.grid(row=0, column=1, padx=10, pady=5)
+        self.efwhm.intvar = self.v_efwhm
+        self.efwhm.select()
 
         bflag = tk.Button(self, text="OK", font=("Arial", self.size(16), "bold"),
-                          height=2, width=10, bg="white", command=chf)
+                          height=2, width=10, bg="white", command=self.chf)
         bflag.grid(row=4, column=0, padx=10, pady=5)
         set_center(master, self, 0, 0)
         self.bind('<Return>', on_enter)
         self.focus_set()
         self.limit_bind()
         self.grab_set()
-        ini()
+        self.ini()
         
     def size(self, s: int=16)->int:
         return int(self.scale*s)
+    
+    @abstractmethod
+    def ini(self):
+        pass
+    
+    @abstractmethod
+    def chf(self):
+        pass
     
     @abstractmethod
     def o_plot3(self):
