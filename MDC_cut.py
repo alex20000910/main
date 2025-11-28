@@ -401,7 +401,7 @@ try:
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
-        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow
+        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot3Window
 except ImportError:
     print('Some source files missing. Downloading...')
     get_src()
@@ -585,6 +585,14 @@ if __name__ == '__main__':
         @override
         def get_src(self, ver: bool = False):
             get_src(ver)
+            
+    class plot3_window(Plot3Window):
+        def __init__(self, parent: tk.Misc | None, scale: float, fev: list, fk: list):
+            super().__init__(parent, 'white', scale, fev, fk)
+        
+        @override
+        def o_plot3(self):
+            o_plot3()
 
 @pool_protect
 def f_help(*e):
@@ -4628,89 +4636,91 @@ def plot3(*e):
     global gg
     if 'gg' in globals():
         gg.destroy()
+        clear(gg)
     if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
-        def ini():
-            global mp, ep, mf, ef
-            if len(fev) <= 0:
-                mp = 0
-                mpos.deselect()
-                mpos.config(state='disabled')
-                mf = 0
-                mfwhm.deselect()
-                mfwhm.config(state='disabled')
-            if len(fk) <= 0:
-                ep = 0
-                epos.deselect()
-                epos.config(state='disabled')
-                ef = 0
-                efwhm.deselect()
-                efwhm.config(state='disabled')
+        gg = plot3_window(g, scale, fev, fk)
+        # def ini():
+        #     global mp, ep, mf, ef
+        #     if len(fev) <= 0:
+        #         mp = 0
+        #         mpos.deselect()
+        #         mpos.config(state='disabled')
+        #         mf = 0
+        #         mfwhm.deselect()
+        #         mfwhm.config(state='disabled')
+        #     if len(fk) <= 0:
+        #         ep = 0
+        #         epos.deselect()
+        #         epos.config(state='disabled')
+        #         ef = 0
+        #         efwhm.deselect()
+        #         efwhm.config(state='disabled')
 
-        def chf():
-            global mp, ep, mf, ef
-            mp = v_mpos.get()
-            ep = v_epos.get()
-            mf = v_mfwhm.get()
-            ef = v_efwhm.get()
-            t10 = threading.Thread(target=o_plot3)
-            t10.daemon = True
-            t10.start()
-            gg.destroy()
+        # def chf():
+        #     global mp, ep, mf, ef
+        #     mp = v_mpos.get()
+        #     ep = v_epos.get()
+        #     mf = v_mfwhm.get()
+        #     ef = v_efwhm.get()
+        #     t10 = threading.Thread(target=o_plot3)
+        #     t10.daemon = True
+        #     t10.start()
+        #     gg.destroy()
 
-        def on_enter(event):
-            chf()
+        # def on_enter(event):
+        #     chf()
             
-        gg = RestrictedToplevel(g, bg="white", padx=10, pady=10)
-        gg.title('Data Point List')
-        gg.iconphoto(False, tk.PhotoImage(data=b64decode(icon.gicon)))
-        lpos = tk.Label(gg, text='Position', font=(
-            "Arial", size(18), "bold"), bg="white", height='1')
-        lpos.grid(row=0, column=0, padx=10, pady=10)
+        # gg = RestrictedToplevel(g, bg="white", padx=10, pady=10)
+        # gg.title('Data Point List')
+        # gg.iconphoto(False, tk.PhotoImage(data=b64decode(icon.gicon)))
+        # lpos = tk.Label(gg, text='Position', font=(
+        #     "Arial", size(18), "bold"), bg="white", height='1')
+        # lpos.grid(row=0, column=0, padx=10, pady=10)
 
-        pos = tk.Frame(gg, bg="white")
-        pos.grid(row=1, column=0, padx=10, pady=5)
-        v_mpos = tk.IntVar()
-        mpos = tk.Checkbutton(pos, text="MDC", font=(
-            "Arial", size(16), "bold"), variable=v_mpos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        mpos.grid(row=0, column=0, padx=10, pady=5)
-        mpos.intvar = v_mpos
-        mpos.select()
+        # pos = tk.Frame(gg, bg="white")
+        # pos.grid(row=1, column=0, padx=10, pady=5)
+        # v_mpos = tk.IntVar()
+        # mpos = tk.Checkbutton(pos, text="MDC", font=(
+        #     "Arial", size(16), "bold"), variable=v_mpos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
+        # mpos.grid(row=0, column=0, padx=10, pady=5)
+        # mpos.intvar = v_mpos
+        # mpos.select()
 
-        v_epos = tk.IntVar()
-        epos = tk.Checkbutton(pos, text="EDC", font=(
-            "Arial", size(16), "bold"), variable=v_epos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        epos.grid(row=0, column=1, padx=10, pady=5)
-        epos.intvar = v_epos
-        epos.select()
+        # v_epos = tk.IntVar()
+        # epos = tk.Checkbutton(pos, text="EDC", font=(
+        #     "Arial", size(16), "bold"), variable=v_epos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
+        # epos.grid(row=0, column=1, padx=10, pady=5)
+        # epos.intvar = v_epos
+        # epos.select()
 
-        lfwhm = tk.Label(gg, text='FWHM', font=(
-            "Arial", size(18), "bold"), bg="white", height='1')
-        lfwhm.grid(row=2, column=0, padx=10, pady=10)
+        # lfwhm = tk.Label(gg, text='FWHM', font=(
+        #     "Arial", size(18), "bold"), bg="white", height='1')
+        # lfwhm.grid(row=2, column=0, padx=10, pady=10)
 
-        fwhm = tk.Frame(gg, bg="white")
-        fwhm.grid(row=3, column=0, padx=10, pady=5)
-        v_mfwhm = tk.IntVar()
-        mfwhm = tk.Checkbutton(fwhm, text="MDC", font=(
-            "Arial", size(16), "bold"), variable=v_mfwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        mfwhm.grid(row=0, column=0, padx=10, pady=5)
-        mfwhm.intvar = v_mfwhm
-        mfwhm.select()
+        # fwhm = tk.Frame(gg, bg="white")
+        # fwhm.grid(row=3, column=0, padx=10, pady=5)
+        # v_mfwhm = tk.IntVar()
+        # mfwhm = tk.Checkbutton(fwhm, text="MDC", font=(
+        #     "Arial", size(16), "bold"), variable=v_mfwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
+        # mfwhm.grid(row=0, column=0, padx=10, pady=5)
+        # mfwhm.intvar = v_mfwhm
+        # mfwhm.select()
 
-        v_efwhm = tk.IntVar()
-        efwhm = tk.Checkbutton(fwhm, text="EDC", font=(
-            "Arial", size(16), "bold"), variable=v_efwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        efwhm.grid(row=0, column=1, padx=10, pady=5)
-        efwhm.intvar = v_efwhm
-        efwhm.select()
+        # v_efwhm = tk.IntVar()
+        # efwhm = tk.Checkbutton(fwhm, text="EDC", font=(
+        #     "Arial", size(16), "bold"), variable=v_efwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
+        # efwhm.grid(row=0, column=1, padx=10, pady=5)
+        # efwhm.intvar = v_efwhm
+        # efwhm.select()
 
-        bflag = tk.Button(gg, text="OK", font=("Arial", size(16), "bold"),
-                          height=2, width=10, bg="white", command=chf)
-        bflag.grid(row=4, column=0, padx=10, pady=5)
-        set_center(g, gg, 0, 0)
-        gg.bind('<Return>', on_enter)
-        gg.focus_set()
-        gg.limit_bind()
-        ini()
+        # bflag = tk.Button(gg, text="OK", font=("Arial", size(16), "bold"),
+        #                   height=2, width=10, bg="white", command=chf)
+        # bflag.grid(row=4, column=0, padx=10, pady=5)
+        # set_center(g, gg, 0, 0)
+        # gg.bind('<Return>', on_enter)
+        # gg.focus_set()
+        # gg.limit_bind()
+        # ini()
     else:
         t10 = threading.Thread(target=o_plot3)
         t10.daemon = True
