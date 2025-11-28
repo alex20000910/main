@@ -601,10 +601,48 @@ if __name__ == '__main__':
     class plot1_window_MDC_curves(Plot1Window_MDC_curves, plot1_window):
         def __init__(self, parent: tk.Misc | None, scale: float, d: int, l: int, p: int):
             super().__init__(parent, scale, d, l, p)
-    
+
+        @override
+        def chf(self):
+            global d, l, p
+            try:
+                d = int(self.v_d.get())
+                l = int(self.v_l.get())
+                p = int(self.v_p.get())
+                if p < l:
+                    t8 = threading.Thread(target=self.o_plot1)
+                    t8.daemon = True
+                    t8.start()
+                    self.destroy()
+                else:
+                    messagebox.showwarning("Warning","Invalid Input\n"+"Polyorder must be less than window_length")
+                    self.destroy()
+                    self.plot1()
+            except:
+                self.destroy()
+                self.plot1()
+
     class plot1_window_Second_Derivative(Plot1Window_Second_Derivative, plot1_window):
         def __init__(self, parent: tk.Misc | None, scale: float, im_kernel: int):
             super().__init__(parent, scale, im_kernel)
+        
+        @override
+        def chf(self):
+            global im_kernel
+            try:
+                if int(self.v_k.get())%2==1:
+                    im_kernel = int(self.v_k.get())
+                    t8 = threading.Thread(target=self.o_plot1)
+                    t8.daemon = True
+                    t8.start()
+                    self.destroy()
+                else:
+                    messagebox.showwarning("Warning","Invalid Input\n"+"Kernel size must be an odd number")
+                    self.destroy()
+                    self.plot1()
+            except:
+                self.destroy()
+                self.plot1()
     
     class plot3_window(Plot3Window):
         def __init__(self, parent: tk.Misc | None, scale: float, fev: list, fk: list):
@@ -2274,7 +2312,7 @@ def o_plot1(*e):
 def o_plot2(*e):
     global fig, out, fwhm, fev, pos, value, value1, value2, k, be, rx, ry, ix, iy, pflag, limg, img, bb_offset, bbk_offset, optionList1, st
     if 'gg' in globals():
-        clear(gg)
+        gg.destroy()
     if value1.get() in optionList1:
         try:
             b_sw.grid_remove()
@@ -4499,7 +4537,7 @@ d,l,p = 8,20,3
 def plot1(*e):
     global gg
     if 'gg' in globals():
-        clear(gg)
+        gg.destroy()
     if 'MDC Curves' in value.get():
         gg = plot1_window_MDC_curves(g, scale, d, l, p)
     elif value.get() == 'Second Derivative':
@@ -4508,7 +4546,6 @@ def plot1(*e):
         t8 = threading.Thread(target=o_plot1)
         t8.daemon = True
         t8.start()
-
 
 @pool_protect
 def plot2(*e):
@@ -4521,7 +4558,7 @@ def plot2(*e):
 def plot3(*e):
     global gg
     if 'gg' in globals():
-        clear(gg)
+        gg.destroy()
     if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
         gg = plot3_window(g, scale, fev, fk)
     else:
