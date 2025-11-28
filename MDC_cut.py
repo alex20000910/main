@@ -401,7 +401,7 @@ try:
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
-        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot3Window
+        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
 except ImportError:
     print('Some source files missing. Downloading...')
     get_src()
@@ -585,10 +585,30 @@ if __name__ == '__main__':
         @override
         def get_src(self, ver: bool = False):
             get_src(ver)
+    
+    class plot1_window(Plot1Window):
+        def __init__(self, parent: tk.Misc | None, scale: float):
+            super().__init__(parent, scale)
             
+        @override
+        def o_plot1(self):
+            o_plot1()
+            
+        @override
+        def plot1(self):
+            plot1()
+
+    class plot1_window_MDC_curves(Plot1Window_MDC_curves, plot1_window):
+        def __init__(self, parent: tk.Misc | None, scale: float, d: int, l: int, p: int):
+            super().__init__(parent, scale, d, l, p)
+    
+    class plot1_window_Second_Derivative(Plot1Window_Second_Derivative, plot1_window):
+        def __init__(self, parent: tk.Misc | None, scale: float, im_kernel: int):
+            super().__init__(parent, scale, im_kernel)
+    
     class plot3_window(Plot3Window):
         def __init__(self, parent: tk.Misc | None, scale: float, fev: list, fk: list):
-            super().__init__(parent, 'white', scale, fev, fk)
+            super().__init__(parent, scale, fev, fk)
         
         @override
         def o_plot3(self):
@@ -2254,7 +2274,7 @@ def o_plot1(*e):
 def o_plot2(*e):
     global fig, out, fwhm, fev, pos, value, value1, value2, k, be, rx, ry, ix, iy, pflag, limg, img, bb_offset, bbk_offset, optionList1, st
     if 'gg' in globals():
-        gg.destroy()
+        clear(gg)
     if value1.get() in optionList1:
         try:
             b_sw.grid_remove()
@@ -4479,145 +4499,11 @@ d,l,p = 8,20,3
 def plot1(*e):
     global gg
     if 'gg' in globals():
-        gg.destroy()
+        clear(gg)
     if 'MDC Curves' in value.get():
-        def select_all(event):
-            event.widget.select_range(0, tk.END)
-            return 'break'
-        
-        def ini():
-            v_d.set(str(d))
-            v_l.set(str(l))
-            v_p.set(str(p))
-            cl.focus()
-        def chf():
-            global d, l, p
-            try:
-                d = int(v_d.get())
-                l = int(v_l.get())
-                p = int(v_p.get())
-                if p < l:
-                    t8 = threading.Thread(target=o_plot1)
-                    t8.daemon = True
-                    t8.start()
-                    gg.destroy()
-                else:
-                    messagebox.showwarning("Warning","Invalid Input\n"+"Polyorder must be less than window_length")
-                    gg.destroy()
-                    plot1(*e)
-            except:
-                gg.destroy()
-                plot1(*e)
-
-        def on_enter(event):
-            chf()
-            
-        gg = RestrictedToplevel(g, bg="white", padx=10, pady=10)
-        gg.title('Plotting Parameter')
-        gg.iconphoto(False, tk.PhotoImage(data=b64decode(icon.gicon)))
-
-        fd = tk.Frame(gg, bg="white")
-        fd.grid(row=0, column=0, padx=10, pady=5)
-        ld = tk.Label(fd, text='Energy Axis Density (1/n), n :', font=(
-            "Arial", size(18), "bold"), bg="white", height='1')
-        ld.grid(row=0, column=0, padx=10, pady=10)
-        v_d = tk.StringVar()
-        cd = tk.Entry(fd, font=(
-            "Arial", size(16), "bold"), textvariable=v_d, width=10, bg="white")
-        cd.grid(row=0, column=1, padx=10, pady=5)
-
-        fl = tk.Frame(gg, bg="white")
-        fl.grid(row=1, column=0, padx=10, pady=5)
-        ll = tk.Label(fl, text='Savgol Filter Window Length :', font=(
-            "Arial", size(18), "bold"), bg="white", height='1')
-        ll.grid(row=0, column=0, padx=10, pady=10)
-        v_l = tk.StringVar()
-        cl = tk.Entry(fl, font=(
-            "Arial", size(16), "bold"), textvariable=v_l, width=10, bg="white")
-        cl.grid(row=0, column=1, padx=10, pady=5)
-        
-        fp = tk.Frame(gg, bg="white")
-        fp.grid(row=2, column=0, padx=10, pady=5)
-        lp = tk.Label(fp, text='Savgol Filter Polynomial Degree :', font=(
-            "Arial", size(18), "bold"), bg="white", height='1')
-        lp.grid(row=0, column=0, padx=10, pady=10)
-        v_p = tk.StringVar()
-        cp = tk.Entry(fp, font=(
-            "Arial", size(16), "bold"), textvariable=v_p, width=10, bg="white")
-        cp.grid(row=0, column=1, padx=10, pady=5)
-
-        l_smooth = tk.Label(gg, text='Note:\n\tPolynomial Degree 0 or 1: Moving Average\n\tPolyorder must be less than window_length', font=(
-            "Arial", size(14), "bold"), bg="white", height='3',justify='left')
-        l_smooth.grid(row=3, column=0, padx=10, pady=10)
-
-        bflag = tk.Button(gg, text="OK", font=("Arial", size(16), "bold"),
-                          height=2, width=10, bg="white", command=chf)
-        bflag.grid(row=4, column=0, padx=10, pady=5)
-        cd.bind('<FocusIn>', select_all)
-        cl.bind('<FocusIn>', select_all)
-        cp.bind('<FocusIn>', select_all)
-        set_center(g, gg, 0, 0)
-        gg.bind('<Return>', on_enter)
-        gg.focus_set()
-        gg.limit_bind()
-        ini()
+        gg = plot1_window_MDC_curves(g, scale, d, l, p)
     elif value.get() == 'Second Derivative':
-        def select_all(event):
-            event.widget.select_range(0, tk.END)
-            return 'break'
-        
-        def ini():
-            v_k.set(str(im_kernel))
-            ck.focus()
-        def chf():
-            global im_kernel
-            try:
-                if int(v_k.get())%2==1:
-                    im_kernel = int(v_k.get())
-                    t8 = threading.Thread(target=o_plot1)
-                    t8.daemon = True
-                    t8.start()
-                    gg.destroy()
-                else:
-                    messagebox.showwarning("Warning","Invalid Input\n"+"Kernel size must be an odd number")
-                    gg.destroy()
-                    plot1(*e)
-            except:
-                gg.destroy()
-                plot1(*e)
-
-        def on_enter(event):
-            chf()
-            
-        gg = RestrictedToplevel(g, bg="white", padx=10, pady=10)
-        gg.title('Gaussian Smoothing Kernel Size')
-        gg.iconphoto(False, tk.PhotoImage(data=b64decode(icon.gicon)))
-
-        fd = tk.Frame(gg, bg="white")
-        fd.grid(row=0, column=0, padx=10, pady=5)
-        ld = tk.Label(fd, text='Kernel Size :', font=(
-            "Arial", size(18), "bold"), bg="white", height='1')
-        ld.grid(row=0, column=0, padx=10, pady=10)
-        v_k = tk.StringVar()
-        ck = tk.Entry(fd, font=(
-            "Arial", size(16), "bold"), textvariable=v_k, width=10, bg="white")
-        ck.grid(row=0, column=1, padx=10, pady=5)
-        
-        l_smooth = tk.Label(gg, text='Note:\n\tKernel size must be an odd number', font=(
-            "Arial", size(14), "bold"), bg="white", height='3',justify='left')
-        l_smooth.grid(row=3, column=0, padx=10, pady=10)
-        
-        bflag = tk.Button(gg, text="OK", font=("Arial", size(16), "bold"),
-                          height=2, width=10, bg="white", command=chf)
-        bflag.grid(row=4, column=0, padx=10, pady=5)
-        
-        ck.bind('<FocusIn>', select_all)
-        
-        set_center(g, gg, 0, 0)
-        gg.bind('<Return>', on_enter)
-        gg.focus_set()
-        gg.limit_bind()
-        ini()
+        gg = plot1_window_Second_Derivative(g, scale, im_kernel)
     else:
         t8 = threading.Thread(target=o_plot1)
         t8.daemon = True
@@ -4635,92 +4521,9 @@ def plot2(*e):
 def plot3(*e):
     global gg
     if 'gg' in globals():
-        gg.destroy()
         clear(gg)
     if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
         gg = plot3_window(g, scale, fev, fk)
-        # def ini():
-        #     global mp, ep, mf, ef
-        #     if len(fev) <= 0:
-        #         mp = 0
-        #         mpos.deselect()
-        #         mpos.config(state='disabled')
-        #         mf = 0
-        #         mfwhm.deselect()
-        #         mfwhm.config(state='disabled')
-        #     if len(fk) <= 0:
-        #         ep = 0
-        #         epos.deselect()
-        #         epos.config(state='disabled')
-        #         ef = 0
-        #         efwhm.deselect()
-        #         efwhm.config(state='disabled')
-
-        # def chf():
-        #     global mp, ep, mf, ef
-        #     mp = v_mpos.get()
-        #     ep = v_epos.get()
-        #     mf = v_mfwhm.get()
-        #     ef = v_efwhm.get()
-        #     t10 = threading.Thread(target=o_plot3)
-        #     t10.daemon = True
-        #     t10.start()
-        #     gg.destroy()
-
-        # def on_enter(event):
-        #     chf()
-            
-        # gg = RestrictedToplevel(g, bg="white", padx=10, pady=10)
-        # gg.title('Data Point List')
-        # gg.iconphoto(False, tk.PhotoImage(data=b64decode(icon.gicon)))
-        # lpos = tk.Label(gg, text='Position', font=(
-        #     "Arial", size(18), "bold"), bg="white", height='1')
-        # lpos.grid(row=0, column=0, padx=10, pady=10)
-
-        # pos = tk.Frame(gg, bg="white")
-        # pos.grid(row=1, column=0, padx=10, pady=5)
-        # v_mpos = tk.IntVar()
-        # mpos = tk.Checkbutton(pos, text="MDC", font=(
-        #     "Arial", size(16), "bold"), variable=v_mpos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        # mpos.grid(row=0, column=0, padx=10, pady=5)
-        # mpos.intvar = v_mpos
-        # mpos.select()
-
-        # v_epos = tk.IntVar()
-        # epos = tk.Checkbutton(pos, text="EDC", font=(
-        #     "Arial", size(16), "bold"), variable=v_epos, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        # epos.grid(row=0, column=1, padx=10, pady=5)
-        # epos.intvar = v_epos
-        # epos.select()
-
-        # lfwhm = tk.Label(gg, text='FWHM', font=(
-        #     "Arial", size(18), "bold"), bg="white", height='1')
-        # lfwhm.grid(row=2, column=0, padx=10, pady=10)
-
-        # fwhm = tk.Frame(gg, bg="white")
-        # fwhm.grid(row=3, column=0, padx=10, pady=5)
-        # v_mfwhm = tk.IntVar()
-        # mfwhm = tk.Checkbutton(fwhm, text="MDC", font=(
-        #     "Arial", size(16), "bold"), variable=v_mfwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        # mfwhm.grid(row=0, column=0, padx=10, pady=5)
-        # mfwhm.intvar = v_mfwhm
-        # mfwhm.select()
-
-        # v_efwhm = tk.IntVar()
-        # efwhm = tk.Checkbutton(fwhm, text="EDC", font=(
-        #     "Arial", size(16), "bold"), variable=v_efwhm, onvalue=1, offvalue=0, height=2, width=10, bg="white")
-        # efwhm.grid(row=0, column=1, padx=10, pady=5)
-        # efwhm.intvar = v_efwhm
-        # efwhm.select()
-
-        # bflag = tk.Button(gg, text="OK", font=("Arial", size(16), "bold"),
-        #                   height=2, width=10, bg="white", command=chf)
-        # bflag.grid(row=4, column=0, padx=10, pady=5)
-        # set_center(g, gg, 0, 0)
-        # gg.bind('<Return>', on_enter)
-        # gg.focus_set()
-        # gg.limit_bind()
-        # ini()
     else:
         t10 = threading.Thread(target=o_plot3)
         t10.daemon = True

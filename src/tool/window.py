@@ -719,9 +719,170 @@ class CalculatorWindow(tk.Toplevel):
     def cal(self, *e):
         Thread(target=self.cal_job, daemon=True).start()
 
+class Plot1Window(RestrictedToplevel, IconManager, ABC):
+    def __init__(self, master: tk.Misc | None, scale: float):
+        super().__init__(master, bg='white', padx=10, pady=10)
+        IconManager.__init__(self)
+        self.master = master
+        self.scale = scale
+        self.iconphoto(False, tk.PhotoImage(data=b64decode(self.gicon)))
+
+    def show(self):
+        set_center(self.master, self, 0, 0)
+        self.focus_set()
+        self.limit_bind()
+        self.grab_set()
+    
+    def size(self, s: int=16)->int:
+        return int(self.scale*s)
+    
+    @abstractmethod
+    def o_plot1(self):
+        pass
+    
+    @abstractmethod
+    def plot1(self, *e):
+        pass
+
+class Plot1Window_MDC_curves(Plot1Window):
+    def __init__(self, master: tk.Misc | None, scale: float, d: int, l: int, p: int):
+        super().__init__(master, scale)
+        
+        def select_all(event):
+            event.widget.select_range(0, tk.END)
+            return 'break'
+        
+        def ini():
+            v_d.set(str(d))
+            v_l.set(str(l))
+            v_p.set(str(p))
+            cl.focus()
+        def chf():
+            global d, l, p
+            try:
+                d = int(v_d.get())
+                l = int(v_l.get())
+                p = int(v_p.get())
+                if p < l:
+                    t8 = Thread(target=self.o_plot1)
+                    t8.daemon = True
+                    t8.start()
+                    self.destroy()
+                else:
+                    messagebox.showwarning("Warning","Invalid Input\n"+"Polyorder must be less than window_length")
+                    self.destroy()
+                    self.plot1()
+            except:
+                self.destroy()
+                self.plot1()
+
+        def on_enter(event):
+            chf()
+
+        self.title('Plotting Parameter')
+        fd = tk.Frame(self, bg="white")
+        fd.grid(row=0, column=0, padx=10, pady=5)
+        ld = tk.Label(fd, text='Energy Axis Density (1/n), n :', font=(
+            "Arial", self.size(18), "bold"), bg="white", height='1')
+        ld.grid(row=0, column=0, padx=10, pady=10)
+        v_d = tk.StringVar()
+        cd = tk.Entry(fd, font=(
+            "Arial", self.size(16), "bold"), textvariable=v_d, width=10, bg="white")
+        cd.grid(row=0, column=1, padx=10, pady=5)
+
+        fl = tk.Frame(self, bg="white")
+        fl.grid(row=1, column=0, padx=10, pady=5)
+        ll = tk.Label(fl, text='Savgol Filter Window Length :', font=(
+            "Arial", self.size(18), "bold"), bg="white", height='1')
+        ll.grid(row=0, column=0, padx=10, pady=10)
+        v_l = tk.StringVar()
+        cl = tk.Entry(fl, font=(
+            "Arial", self.size(16), "bold"), textvariable=v_l, width=10, bg="white")
+        cl.grid(row=0, column=1, padx=10, pady=5)
+        
+        fp = tk.Frame(self, bg="white")
+        fp.grid(row=2, column=0, padx=10, pady=5)
+        lp = tk.Label(fp, text='Savgol Filter Polynomial Degree :', font=(
+            "Arial", self.size(18), "bold"), bg="white", height='1')
+        lp.grid(row=0, column=0, padx=10, pady=10)
+        v_p = tk.StringVar()
+        cp = tk.Entry(fp, font=(
+            "Arial", self.size(16), "bold"), textvariable=v_p, width=10, bg="white")
+        cp.grid(row=0, column=1, padx=10, pady=5)
+
+        l_smooth = tk.Label(self, text='Note:\n\tPolynomial Degree 0 or 1: Moving Average\n\tPolyorder must be less than window_length', font=(
+            "Arial", self.size(14), "bold"), bg="white", height='3',justify='left')
+        l_smooth.grid(row=3, column=0, padx=10, pady=10)
+
+        bflag = tk.Button(self, text="OK", font=("Arial", self.size(16), "bold"),
+                          height=2, width=10, bg="white", command=chf)
+        bflag.grid(row=4, column=0, padx=10, pady=5)
+        
+        cd.bind('<FocusIn>', select_all)
+        cl.bind('<FocusIn>', select_all)
+        cp.bind('<FocusIn>', select_all)
+        self.bind('<Return>', on_enter)
+        self.show()
+        ini()
+
+class Plot1Window_Second_Derivative(Plot1Window):
+    def __init__(self, master: tk.Misc | None, scale: float, im_kernel: int):
+        super().__init__(master, scale)
+        def select_all(event):
+            event.widget.select_range(0, tk.END)
+            return 'break'
+        
+        def ini():
+            v_k.set(str(im_kernel))
+            ck.focus()
+        def chf():
+            global im_kernel
+            try:
+                if int(v_k.get())%2==1:
+                    im_kernel = int(v_k.get())
+                    t8 = Thread(target=self.o_plot1)
+                    t8.daemon = True
+                    t8.start()
+                    self.destroy()
+                else:
+                    messagebox.showwarning("Warning","Invalid Input\n"+"Kernel size must be an odd number")
+                    self.destroy()
+                    self.plot1()
+            except:
+                self.destroy()
+                self.plot1()
+
+        def on_enter(event):
+            chf()
+        
+        self.title('Gaussian Smoothing Kernel Size')
+        fd = tk.Frame(self, bg="white")
+        fd.grid(row=0, column=0, padx=10, pady=5)
+        ld = tk.Label(fd, text='Kernel Size :', font=(
+            "Arial", self.size(18), "bold"), bg="white", height='1')
+        ld.grid(row=0, column=0, padx=10, pady=10)
+        v_k = tk.StringVar()
+        ck = tk.Entry(fd, font=(
+            "Arial", self.size(16), "bold"), textvariable=v_k, width=10, bg="white")
+        ck.grid(row=0, column=1, padx=10, pady=5)
+        
+        l_smooth = tk.Label(self, text='Note:\n\tKernel size must be an odd number', font=(
+            "Arial", self.size(14), "bold"), bg="white", height='3',justify='left')
+        l_smooth.grid(row=3, column=0, padx=10, pady=10)
+        
+        bflag = tk.Button(self, text="OK", font=("Arial", self.size(16), "bold"),
+                          height=2, width=10, bg="white", command=chf)
+        bflag.grid(row=4, column=0, padx=10, pady=5)
+        
+        ck.bind('<FocusIn>', select_all)
+        self.bind('<Return>', on_enter)
+        self.show()
+        ini()
+
 class Plot3Window(RestrictedToplevel, IconManager, ABC):
     def __init__(self, master: tk.Misc | None, scale: float, fev: list, fk: list):
         super().__init__(master, bg='white', padx=10, pady=10)
+        IconManager.__init__(self)
         self.scale = scale
         def ini():
             global mp, ep, mf, ef
@@ -803,6 +964,7 @@ class Plot3Window(RestrictedToplevel, IconManager, ABC):
         self.bind('<Return>', on_enter)
         self.focus_set()
         self.limit_bind()
+        self.grab_set()
         ini()
         
     def size(self, s: int=16)->int:
