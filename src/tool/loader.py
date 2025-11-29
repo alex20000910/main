@@ -2167,11 +2167,12 @@ class tkDnD_loader(ABC):
         return ''
 
 class file_loader(ABC):
-    def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, name: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar):
+    def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar, fr_tool: tk.Frame, b_tools: tk.Button, l_name: tk.OptionMenu, scale: float):
         self.files = files
         self.lfs = lfs
         self.k_offset = k_offset
-        self.data, self.rdd, self.fpr, self.npzf = None, None, None, None
+        self.data, self.rdd, self.fpr, self.npzf, self.nlist, self.namevar = None, None, None, None, None, None
+        self.scale = scale
         
         if len(files) > 0:
             clear(self.lfs)
@@ -2184,7 +2185,27 @@ class file_loader(ABC):
             b_desc.config(state='normal')
             self.rdd = tpath
             self.fpr = 0
-            self.batch_master()
+            if len(self.files) > 1:  #mulitple files
+                if len(self.lfs.n)>0:self.lfs.sort='no'
+                if b_tools is not None and l_name is not None:
+                    b_tools.grid_forget()
+                    l_name.grid_forget()
+                b_tools = tk.Button(fr_tool, text='Batch Master', command=self.tools, width=12, height=1, font=('Arial', self.size(12), "bold"), bg='white')
+                b_tools.grid(row=0, column=0)
+                self.nlist = self.lfs.name
+                self.namevar = tk.StringVar(value=self.nlist[0])
+                l_name = tk.OptionMenu(fr_tool, self.namevar, *self.nlist, command=self.change_file)
+                if len(self.namevar.get()) >30:
+                    l_name.config(font=('Arial', self.size(11), "bold"))
+                elif len(self.namevar.get()) >20:
+                    l_name.config(font=('Arial', self.size(12), "bold"))
+                else:
+                    l_name.config(font=('Arial', self.size(14), "bold"))
+                l_name.grid(row=0, column=1)
+            else:   #single file
+                if b_tools is not None and l_name is not None:
+                    b_tools.grid_forget()
+                    l_name.grid_forget()
             if self.lfs.f_npz[0]:self.npzf = True
             else:self.npzf = False
             if self.npzf:
@@ -2212,24 +2233,24 @@ class file_loader(ABC):
             self.pr_load(self.data)
             tname = self.lfs.name[0]
             print(f'\n{tname}')
-            if tname != name:
+            if tname != self.name:
                 print(f'\033[31mname need correction\033[0m')
-                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'H5 Name', name))
+                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'H5 Name', self.name))
             else:
                 print('Name is correct')
-                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'H5 Name'))
+                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {self.name}\033[0m'%('Path Name', 'H5 Name'))
             st.put('Loaded')
         elif '.json' in tbasename:
             self.data = self.lfs.get(0)
             self.pr_load(self.data)
             tname = self.lfs.name[0]
             print(f'\n{tname}')
-            if tname != name:
+            if tname != self.name:
                 print(f'\033[31mname need correction\033[0m')
-                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'JSON Name', name))
+                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'JSON Name', self.name))
             else:
                 print('Name is correct')
-                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'JSON Name'))
+                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {self.name}\033[0m'%('Path Name', 'JSON Name'))
             st.put('Loaded')
         elif '.txt' in tbasename:
             self.data = self.lfs.get(0)
@@ -2244,6 +2265,14 @@ class file_loader(ABC):
             st.put('')
         tname, tbasename, tpath = None, None, None
         self.pars()
+    
+    def size(self, s: int) -> int:
+        return int(s * self.scale)
+    
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
     
     @abstractmethod
     def call_cec(self, g: tk.Misc, lfs: FileSequence) -> FileSequence:
@@ -2263,10 +2292,6 @@ class file_loader(ABC):
     
     @abstractmethod
     def set_k_offset(self):
-        pass
-    
-    @abstractmethod
-    def batch_master(self):
         pass
     
     @abstractmethod

@@ -419,7 +419,6 @@ m=9.10938356*10**-31
 mp, ep, mf, ef = 1, 1, 1, 1
 fk = []
 fev = []
-lfs = None
 fit_so = None   # for SO_Fitter instance checking
 
 if __name__ == '__main__':
@@ -438,11 +437,16 @@ if __name__ == '__main__':
             load(drop, files)
 
     class main_loader(file_loader):
-        def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, name: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar):
-            super().__init__(files, path, cmap, name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
+        def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar, fr_tool: tk.Frame, b_tools: tk.Button, l_name: tk.OptionMenu, scale: float):
+            super().__init__(files, path, cmap, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale)
+        
+        @property
+        @override
+        def name(self) -> str:
+            return name
         
         @override
-        def call_cec(self, g, lfs):
+        def call_cec(self, g, lfs) -> FileSequence:
             return call_cec(g, lfs)
 
         @override
@@ -465,36 +469,11 @@ if __name__ == '__main__':
                 self.k_offset.set('0')
         
         @override
-        def batch_master(self):
-            global b_tools, l_name, namevar, nlist
-            if len(self.files) > 1:  #mulitple files
-                if len(self.lfs.n)>0:self.lfs.sort='no'
-                if 'b_tools' in globals() and 'l_name' in globals():
-                    b_tools.grid_forget()
-                    l_name.grid_forget()
-                b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
-                b_tools.grid(row=0, column=0)
-                nlist = self.lfs.name
-                namevar = tk.StringVar(value=nlist[0])
-                l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
-                if len(namevar.get()) >30:
-                    l_name.config(font=('Arial', size(11), "bold"))
-                elif len(namevar.get()) >20:
-                    l_name.config(font=('Arial', size(12), "bold"))
-                else:
-                    l_name.config(font=('Arial', size(14), "bold"))
-                l_name.grid(row=0, column=1)
-            else:   #single file
-                if 'b_tools' in globals() and 'l_name' in globals():
-                    b_tools.grid_forget()
-                    l_name.grid_forget()
-        
-        @override
         def pars(self):
             def set_globals(var, glob):
                 if var is not None:
                     globals()[glob] = var
-            for i, j in zip(['data', 'rdd', 'fpr', 'lfs', 'npzf'], [self.data, self.rdd, self.fpr, self.lfs, self.npzf]):
+            for i, j in zip(['data', 'rdd', 'fpr', 'lfs', 'npzf', 'nlist', 'namevar'], [self.data, self.rdd, self.fpr, self.lfs, self.npzf, self.nlist, self.namevar]):
                 set_globals(j, i)
     
     class G_emode(EmodeWindow):
@@ -1634,7 +1613,7 @@ def o_load(drop=False, files=''):
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     files = tkDnD.load_raw(files)
-    main_loader(files, path, value3.get(), name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
+    main_loader(files, path, value3.get(), lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale)
 
 @pool_protect
 def o_ecut():
@@ -5048,6 +5027,7 @@ if __name__ == '__main__':
             rdd = path  # old version data path
             dpath = path    # new version data path
     except:
+        data, lfs = None, None
         print('\033[90mNo Raw Data preloaded\033[0m')
 
     try:
@@ -5570,16 +5550,15 @@ if __name__ == '__main__':
         b_name.config(state='disable')
         b_excitation.config(state='disable')
         b_desc.config(state='disable')
-    try:
-        info.config(state='normal')
+    if data is not None:
         pr_load(data)
+        b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
+        nlist = lfs.name
+        namevar = tk.StringVar(value=nlist[0])
+        l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
         if len(lfs.name) > 1:
             if len(lfs.n)>0:lfs.sort='no'
-            b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
             b_tools.grid(row=0, column=0)
-            nlist = lfs.name
-            namevar = tk.StringVar(value=nlist[0])
-            l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
             if len(namevar.get()) >30:
                 l_name.config(font=('Arial', size(11), "bold"))
             elif len(namevar.get()) >20:
@@ -5592,8 +5571,8 @@ if __name__ == '__main__':
             koffset.config(state='normal')
             k_offset.set('0')
             koffset.config(state='disabled')
-    except:
-        pass
+    else:
+        b_tools, l_name = None, None
     # from tool.MDC_Fitter import gl1, gl2, fgl2
     print(f"\033[36mVersion: {__version__}")
     print(f"Release Date: {__release_date__}\n\033[0m")
