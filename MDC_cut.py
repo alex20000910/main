@@ -396,7 +396,7 @@ except ModuleNotFoundError:
 
 try:
     from MDC_cut_utility import *
-    from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, loader, load_h5, load_json, load_npz, load_txt
+    from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
@@ -437,7 +437,7 @@ if __name__ == '__main__':
         def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
             load(drop, files)
 
-    class loader(loader):
+    class loader(file_loader):
         def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, name: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar):
             super().__init__(files, path, cmap, name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
         

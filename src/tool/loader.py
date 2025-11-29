@@ -2167,7 +2167,7 @@ class tkDnD_loader(ABC):
             
         return ''
 
-class loader(ABC):
+class file_loader(ABC):
     def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, name: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar):
         self.files = files
         self.lfs = lfs
