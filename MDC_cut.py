@@ -446,7 +446,7 @@ if __name__ == '__main__':
             return call_cec(g, lfs)
 
         @override
-        def pr_load(self, data: xr.DataArray):
+        def pr_load(self, data):
             pr_load(data)
         
         @override
@@ -491,10 +491,11 @@ if __name__ == '__main__':
         
         @override
         def pars(self):
-            global data, rdd, fpr, lfs, npzf
-            npzf = self.npzf
-            for i, j in zip([data, rdd, fpr, lfs], [self.data, self.rdd, self.fpr, self.lfs]):
-                if j: i = j
+            def set_globals(var, glob):
+                if var is not None:
+                    globals()[glob] = var
+            for i, j in zip(['data', 'rdd', 'fpr', 'lfs', 'npzf'], [self.data, self.rdd, self.fpr, self.lfs, self.npzf]):
+                set_globals(j, i)
     
     class G_emode(EmodeWindow):
         def __init__(self, parent: tk.Misc | None = None, bg: str='white', vfe: float=21.2, scale: float=1.0, *args, **kwargs):
@@ -762,8 +763,7 @@ if __name__ == '__main__':
         @override
         def chf(self):
             global mp, ep, mf, ef
-            for i, j in zip([mp, ep, mf, ef], [self.v_mpos, self.v_epos, self.v_mfwhm, self.v_efwhm]):
-                i = j.get()
+            mp, ep, mf, ef = self.v_mpos.get(), self.v_epos.get(), self.v_mfwhm.get(), self.v_efwhm.get()
             t10 = threading.Thread(target=self.o_plot3)
             t10.daemon = True
             t10.start()
@@ -1532,7 +1532,7 @@ def tools(*args):
         CEC(g, lfs.path, cmap=value3.get(), app_pars=lfs.app_pars)
         toolg.destroy()
         return
-        
+    
     global toolg
     if 'toolg' in globals():
         toolg.destroy()
@@ -1540,7 +1540,14 @@ def tools(*args):
     toolg.title('Batch Master')
     b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
     b_spec.grid(row=0, column=0)
-    if lfs.sort != 'no':
+    try:
+        flag = False
+        t_, t__ = lfs.r1.copy(), lfs.r2.copy()
+        flag = True
+        t_, t__ = None, None
+    except:
+        pass
+    if lfs.sort != 'no' and flag:
         b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
         b_kplane.grid(row=0, column=1)
     b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
@@ -1622,114 +1629,12 @@ fpr = 0
 
 @pool_protect
 def o_load(drop=False, files=''):
-    global data, limg, rdd, st, fpr, lfs, l_name, namevar, nlist, b_tools, npzf
     if not drop:
         files = fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     files = tkDnD.load_raw(files)
-    l = main_loader(files, path, value3.get(), name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
-    l.pars()
-    # if len(files) > 0:
-    #     clear(lfs)
-    #     lfs = loadfiles(files, name='internal', cmap=value3.get(), app_pars=app_pars)
-    #     if lfs.cec_pars:
-    #         lfs = call_cec(g, lfs)
-    #     tpath = lfs.path[0]
-    #     b_name.config(state='normal')
-    #     b_excitation.config(state='normal')
-    #     b_desc.config(state='normal')
-    #     rdd = tpath
-    #     fpr = 0
-    #     if len(files) > 1:  #mulitple files
-    #         if len(lfs.n)>0:lfs.sort='no'
-    #         try:
-    #             b_tools.grid_forget()
-    #             l_name.grid_forget()
-    #         except:
-    #             pass
-    #         b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
-    #         b_tools.grid(row=0, column=0)
-    #         nlist = lfs.name
-    #         namevar = tk.StringVar(value=nlist[0])
-    #         l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
-    #         if len(namevar.get()) >30:
-    #             l_name.config(font=('Arial', size(11), "bold"))
-    #         elif len(namevar.get()) >20:
-    #             l_name.config(font=('Arial', size(12), "bold"))
-    #         else:
-    #             l_name.config(font=('Arial', size(14), "bold"))
-    #         l_name.grid(row=0, column=1)
-    #     else:   #single file
-    #         try:
-    #             b_tools.grid_forget()
-    #             l_name.grid_forget()
-    #         except:
-    #             pass
-    #     if lfs.f_npz[0]:npzf = True
-    #     else:npzf = False
-    #     if npzf:
-    #         koffset.config(state='normal')
-    #         k_offset.set('0')
-    #         koffset.config(state='disable')
-    #     else:
-    #         koffset.config(state='normal')
-    #         try:
-    #             k_offset.set(ko)
-    #         except:
-    #             k_offset.set('0')
-    # else:
-    #     if lfs is None:
-    #         b_name.config(state='disable')
-    #         b_excitation.config(state='disable')
-    #         b_desc.config(state='disable')
-    #     else:
-    #         rdd = path
-    #     st.put('')
-    #     return
-    
-    # limg.config(image=img[np.random.randint(len(img))])
-    # tbasename = os.path.basename(tpath)
-    # if '.h5' in tbasename:
-    #     data = lfs.get(0)  # data save as xarray.DataArray format
-    #     pr_load(data)
-    #     tname = lfs.name[0]
-    #     print(f'\n{tname}')
-    #     if tname != name:
-    #         print(f'\033[31mname need correction\033[0m')
-    #         print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'H5 Name', name))
-    #     else:
-    #         print('Name is correct')
-    #         print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'H5 Name'))
-    #     st.put('Loaded')
-    # elif '.json' in tbasename:
-    #     data = lfs.get(0)
-    #     pr_load(data)
-    #     tname = lfs.name[0]
-    #     print(f'\n{tname}')
-    #     if tname != name:
-    #         print(f'\033[31mname need correction\033[0m')
-    #         print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'JSON Name', name))
-    #     else:
-    #         print('Name is correct')
-    #         print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'JSON Name'))
-    #     st.put('Loaded')
-    # elif '.txt' in tbasename:
-    #     data = lfs.get(0)
-    #     pr_load(data)
-    #     st.put('Loaded')
-    # elif '.npz' in tbasename:
-    #     data = lfs.get(0)
-    #     pr_load(data)
-    #     tname = lfs.name[0]
-    #     st.put('Loaded')
-    # else:
-    #     st.put('')
-    #     pass
-    # #   print Attributes
-    # tname, tbasename, tpath = None, None, None
-    # return
-
+    main_loader(files, path, value3.get(), name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
 
 @pool_protect
 def o_ecut():

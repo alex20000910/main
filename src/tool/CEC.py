@@ -261,15 +261,20 @@ class CEC(loadfiles, CEC_Object):
             self.gg.destroy()
         self.__prework()
         self.tlg.focus_set()
-        for i in loadfiles.__dict__:
-            if i not in ['path', 'r1']:
-                try:
-                    setattr(self, i, None)
-                except: # property does not have setter
+        try:
+            self.lb.listbox.focus_set()
+        except:
+            pass
+        if f:
+            for i in loadfiles.__dict__:
+                if i not in ['path', 'r1']:
                     try:
-                        self.i = None
-                    except:
-                        pass
+                        setattr(self, i, None)
+                    except: # property does not have setter
+                        try:
+                            self.i = None
+                        except:
+                            pass
                     
     def __check_file(self):
         self.gg = RestrictedToplevel(self.g, bg='white')
@@ -357,7 +362,6 @@ class CEC(loadfiles, CEC_Object):
         self.f1 = False
         self.gg.bind('<Return>', self.__check)
         set_center(self.g, self.gg, 0, 0)
-        self.gg.focus_set()
         self.gg.limit_bind()
         return
         
@@ -421,7 +425,6 @@ class CEC(loadfiles, CEC_Object):
             self.f2 = False
             self.gg.bind('<Return>', self.__check)
             set_center(self.g, self.gg ,0 ,0)
-            self.gg.focus_set()
             self.gg.limit_bind()
         else:
             self.__check(f=True)
@@ -531,6 +534,7 @@ class add_lb():
         if listbox.size() > 0:
             listbox.select_set(0)
             listbox.event_generate('<<ListboxSelect>>')
+        self.listbox = listbox
         return
         
     def __on_up(self, event, lb, l):

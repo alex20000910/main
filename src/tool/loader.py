@@ -2171,21 +2171,21 @@ class file_loader(ABC):
         self.files = files
         self.lfs = lfs
         self.k_offset = k_offset
-        self.data, self.rdd, self.fpr, self.lfs = None, None, None, None
+        self.data, self.rdd, self.fpr, self.npzf = None, None, None, None
         
         if len(files) > 0:
-            clear(lfs)
-            lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
-            if lfs.cec_pars:
-                lfs = self.call_cec(g, lfs)
-            tpath = lfs.path[0]
+            clear(self.lfs)
+            self.lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
+            if self.lfs.cec_pars:
+                self.lfs = self.call_cec(g, self.lfs)
+            tpath = self.lfs.path[0]
             b_name.config(state='normal')
             b_excitation.config(state='normal')
             b_desc.config(state='normal')
             self.rdd = tpath
             self.fpr = 0
             self.batch_master()
-            if lfs.f_npz[0]:self.npzf = True
+            if self.lfs.f_npz[0]:self.npzf = True
             else:self.npzf = False
             if self.npzf:
                 koffset.config(state='normal')
@@ -2195,7 +2195,7 @@ class file_loader(ABC):
                 koffset.config(state='normal')
                 self.set_k_offset()
         else:
-            if lfs is None:
+            if self.lfs is None:
                 b_name.config(state='disable')
                 b_excitation.config(state='disable')
                 b_desc.config(state='disable')
@@ -2204,12 +2204,13 @@ class file_loader(ABC):
             st.put('')
             return
         
+        self.pars()
         limg.config(image=img[np.random.randint(len(img))])
         tbasename = os.path.basename(tpath)
         if '.h5' in tbasename:
-            self.data = lfs.get(0)  # data save as xarray.DataArray format
+            self.data = self.lfs.get(0)  # data save as xarray.DataArray format
             self.pr_load(self.data)
-            tname = lfs.name[0]
+            tname = self.lfs.name[0]
             print(f'\n{tname}')
             if tname != name:
                 print(f'\033[31mname need correction\033[0m')
@@ -2219,9 +2220,9 @@ class file_loader(ABC):
                 print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'H5 Name'))
             st.put('Loaded')
         elif '.json' in tbasename:
-            self.data = lfs.get(0)
+            self.data = self.lfs.get(0)
             self.pr_load(self.data)
-            tname = lfs.name[0]
+            tname = self.lfs.name[0]
             print(f'\n{tname}')
             if tname != name:
                 print(f'\033[31mname need correction\033[0m')
@@ -2231,17 +2232,18 @@ class file_loader(ABC):
                 print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'JSON Name'))
             st.put('Loaded')
         elif '.txt' in tbasename:
-            self.data = lfs.get(0)
+            self.data = self.lfs.get(0)
             self.pr_load(self.data)
             st.put('Loaded')
         elif '.npz' in tbasename:
-            self.data = lfs.get(0)
+            self.data = self.lfs.get(0)
             self.pr_load(self.data)
-            tname = lfs.name[0]
+            tname = self.lfs.name[0]
             st.put('Loaded')
         else:
             st.put('')
         tname, tbasename, tpath = None, None, None
+        self.pars()
     
     @abstractmethod
     def call_cec(self, g: tk.Misc, lfs: FileSequence) -> FileSequence:
