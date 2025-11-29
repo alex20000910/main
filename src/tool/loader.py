@@ -1,5 +1,4 @@
 from MDC_cut_utility import *
-from CEC import call_cec
 import os, inspect
 import sys, shutil
 from typing import Literal, Any, override
