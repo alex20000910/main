@@ -178,7 +178,9 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
         self.colormap_name = tk.StringVar(value="custom_cmap")
         self.bind('<Configure>', self.on_configure)
         self._draw_ui()
-
+        set_center(master, self, 0, 0)
+        self.update()
+        
     def on_configure(self, event):
         if self.winfo_width() != self.winfo_reqwidth() or self.winfo_height() != self.winfo_reqheight():
             self.geometry(f"{self.winfo_reqwidth()}x{self.winfo_reqheight()}")

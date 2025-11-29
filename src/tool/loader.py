@@ -1,4 +1,5 @@
 from MDC_cut_utility import *
+from CEC import call_cec
 import os, inspect
 import sys, shutil
 from typing import Literal, Any, override
@@ -8,6 +9,7 @@ import h5py
 import json
 import zarr
 from tkinterdnd2 import DND_FILES
+import queue
 
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
@@ -289,7 +291,7 @@ def get_cec_params(path_to_file: str) -> tuple:
             sym = 1
     return angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym
 
-def get_cec_attr(path_to_file: str, f: h5py.File | Any, name: str, cmap: str, app_pars: Any) -> tuple[str, str, str, str, str, str]:
+def get_cec_attr(path_to_file: str, f: h5py.File | Any) -> tuple[str, str, str, str, str, str]:
     '''
     Call the CEC window.
 
@@ -344,27 +346,6 @@ def get_cec_attr(path_to_file: str, f: h5py.File | Any, name: str, cmap: str, ap
     Dwell = td.attrs['Dwell']
     Iterations = td.attrs['Iterations']
     Slit = td.attrs['Slit']
-        # if f_npz is False:
-        #     f_npz = True
-        #     args = get_cec_params(f)
-        #     try:
-        #         cec = CEC(g, lf_path, mode='load', cmap=cmap, app_pars=app_pars)
-        #         cec.load(*args, name, path_to_file)
-        #     except:
-        #         cec = CEC(g, tlfpath, mode='load', cmap=cmap, app_pars=app_pars)
-        #         cec.load(*args, name, path_to_file)
-    # except Exception as ecp:
-    #     if f_npz is False:
-    #         f_npz = True
-    #         if app_pars:
-    #             windll.user32.ShowWindow(app_pars.hwnd, 9)
-    #             windll.user32.SetForegroundWindow(app_pars.hwnd)
-    #         print(f"An error occurred: {ecp}")
-    #         print('\033[31mPath not found:\033[34m')
-    #         print(lf_path)
-    #         print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
-    #         message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
-    #         messagebox.showwarning("Warning", message)
     return PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath
 
 def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
@@ -382,7 +363,6 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
         cec = kwargs['cec']
         f_npz = kwargs['f_npz']
         cmap = kwargs['cmap']
-        app_pars = kwargs['app_pars']
     else:
         cec = None
         f_npz = True
@@ -480,7 +460,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
                 if f_npz is False:
                     f_npz = True
                     cec = 'CEC_Object'
-                PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f, name, cmap, app_pars)
+                PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
                 cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
             
         a = np.linspace(a_low, a_high, a_num)
@@ -535,17 +515,16 @@ def load_npz(path_to_file: str, **kwargs) -> xr.DataArray:
         cec = kwargs['cec']
         f_npz = kwargs['f_npz']
         cmap = kwargs['cmap']
-        app_pars = kwargs['app_pars']
     else:
         cec = None
         f_npz = True
     name = os.path.basename(path_to_file).split('.npz')[0]
     f = np.load(path_to_file)
+    PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
     if 'cec' in kwargs and 'f_npz' in kwargs:
         if f_npz is False:
             f_npz = True
             cec = 'CEC_Object'
-        PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f, name, cmap, app_pars)
         cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
     
     data = f['data']
@@ -645,12 +624,12 @@ class loadfiles(FileSequence):
             try:
                 if '.npz' in os.path.basename(v):
                     if self.cec is None:
-                        data, self.cec, self.f_npz_, self.cec_pars = load_npz(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap, app_pars=self.app_pars)
+                        data, self.cec, self.f_npz_, self.cec_pars = load_npz(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap)
                     else:
                         data = load_npz(v)
                 else:
                     if self.cec is None:
-                        data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap, app_pars=self.app_pars)
+                        data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap)
                     else:
                         data = load_h5(v)
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
@@ -2187,3 +2166,132 @@ class tkDnD_loader(ABC):
                 return out
             
         return ''
+
+class loader(ABC):
+    def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, name: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar):
+        self.files = files
+        self.lfs = lfs
+        self.k_offset = k_offset
+        self.data, self.rdd, self.fpr, self.lfs = None, None, None, None
+        
+        if len(files) > 0:
+            clear(lfs)
+            lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
+            if lfs.cec_pars:
+                lfs = call_cec(g, lfs)
+            tpath = lfs.path[0]
+            b_name.config(state='normal')
+            b_excitation.config(state='normal')
+            b_desc.config(state='normal')
+            self.rdd = tpath
+            self.fpr = 0
+            self.batch_master()
+            if lfs.f_npz[0]:self.npzf = True
+            else:self.npzf = False
+            if self.npzf:
+                koffset.config(state='normal')
+                k_offset.set('0')
+                koffset.config(state='disable')
+            else:
+                koffset.config(state='normal')
+                self.set_k_offset()
+        else:
+            if lfs is None:
+                b_name.config(state='disable')
+                b_excitation.config(state='disable')
+                b_desc.config(state='disable')
+            else:
+                self.rdd = path
+            st.put('')
+            return
+        
+        limg.config(image=img[np.random.randint(len(img))])
+        tbasename = os.path.basename(tpath)
+        if '.h5' in tbasename:
+            self.data = lfs.get(0)  # data save as xarray.DataArray format
+            self.pr_load(self.data)
+            tname = lfs.name[0]
+            print(f'\n{tname}')
+            if tname != name:
+                print(f'\033[31mname need correction\033[0m')
+                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'H5 Name', name))
+            else:
+                print('Name is correct')
+                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'H5 Name'))
+            st.put('Loaded')
+        elif '.json' in tbasename:
+            self.data = lfs.get(0)
+            self.pr_load(self.data)
+            tname = lfs.name[0]
+            print(f'\n{tname}')
+            if tname != name:
+                print(f'\033[31mname need correction\033[0m')
+                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'JSON Name', name))
+            else:
+                print('Name is correct')
+                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'JSON Name'))
+            st.put('Loaded')
+        elif '.txt' in tbasename:
+            self.data = lfs.get(0)
+            self.pr_load(self.data)
+            st.put('Loaded')
+        elif '.npz' in tbasename:
+            self.data = lfs.get(0)
+            self.pr_load(self.data)
+            tname = lfs.name[0]
+            st.put('Loaded')
+        else:
+            st.put('')
+        tname, tbasename, tpath = None, None, None
+    
+    @abstractmethod
+    def pr_load(self, data: xr.DataArray):
+        pass
+    
+    @abstractmethod
+    def change_file(self, *args):
+        pass
+    
+    @abstractmethod
+    def tools(self, *args):
+        pass
+    
+    @abstractmethod
+    def set_k_offset(self):
+        # if 'ko' in globals():
+        #     self.k_offset.set(ko)
+        # else:
+        #     self.k_offset.set('0')
+        pass
+    
+    @abstractmethod
+    def batch_master(self):
+        # global b_tools, l_name, namevar, nlist
+        # if len(self.files) > 1:  #mulitple files
+        #     if len(self.lfs.n)>0:self.lfs.sort='no'
+        #     if 'b_tools' in globals() and 'l_name' in globals():
+        #         b_tools.grid_forget()
+        #         l_name.grid_forget()
+        #     b_tools = tk.Button(self.fr_tool, text='Batch Master', command=self.tools, width=12, height=1, font=('Arial', self.size(12), "bold"), bg='white')
+        #     b_tools.grid(row=0, column=0)
+        #     nlist = self.lfs.name
+        #     namevar = tk.StringVar(value=nlist[0])
+        #     l_name = tk.OptionMenu(self.fr_tool, namevar, *nlist, command=self.change_file)
+        #     if len(namevar.get()) >30:
+        #         l_name.config(font=('Arial', self.size(11), "bold"))
+        #     elif len(namevar.get()) >20:
+        #         l_name.config(font=('Arial', self.size(12), "bold"))
+        #     else:
+        #         l_name.config(font=('Arial', self.size(14), "bold"))
+        #     l_name.grid(row=0, column=1)
+        # else:   #single file
+        #     if 'b_tools' in globals() and 'l_name' in globals():
+        #         b_tools.grid_forget()
+        #         l_name.grid_forget()
+        pass
+    
+    @abstractmethod
+    def pars(self):
+        # global data, rdd, fpr, lfs, npzf
+        # data, rdd, fpr, lfs, npzf = self.data, self.rdd, self.fpr, self.lfs, self.npzf
+        pass

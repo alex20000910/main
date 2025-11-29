@@ -396,7 +396,7 @@ except ModuleNotFoundError:
 
 try:
     from MDC_cut_utility import *
-    from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, load_h5, load_json, load_npz, load_txt
+    from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
@@ -437,6 +437,62 @@ if __name__ == '__main__':
         def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
             load(drop, files)
 
+    class loader(loader):
+        def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, name: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar):
+            super().__init__(files, path, cmap, name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
+        
+        @override
+        def pr_load(self, data: xr.DataArray):
+            pr_load(data)
+        
+        @override
+        def change_file(self, *args):
+            change_file()
+            
+        @override
+        def tools(self, *args):
+            tools()
+        
+        @override
+        def set_k_offset(self):
+            if 'ko' in globals():
+                self.k_offset.set(ko)
+            else:
+                self.k_offset.set('0')
+        
+        @override
+        def batch_master(self):
+            global b_tools, l_name, namevar, nlist
+            if len(self.files) > 1:  #mulitple files
+                if len(self.lfs.n)>0:self.lfs.sort='no'
+                if 'b_tools' in globals() and 'l_name' in globals():
+                    b_tools.grid_forget()
+                    l_name.grid_forget()
+                b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
+                b_tools.grid(row=0, column=0)
+                nlist = self.lfs.name
+                namevar = tk.StringVar(value=nlist[0])
+                l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
+                if len(namevar.get()) >30:
+                    l_name.config(font=('Arial', size(11), "bold"))
+                elif len(namevar.get()) >20:
+                    l_name.config(font=('Arial', size(12), "bold"))
+                else:
+                    l_name.config(font=('Arial', size(14), "bold"))
+                l_name.grid(row=0, column=1)
+            else:   #single file
+                if 'b_tools' in globals() and 'l_name' in globals():
+                    b_tools.grid_forget()
+                    l_name.grid_forget()
+        
+        @override
+        def pars(self):
+            global data, rdd, fpr, lfs, npzf
+            npzf = self.npzf
+            for i, j in zip([data, rdd, fpr, lfs], [self.data, self.rdd, self.fpr, self.lfs]):
+                if j: i = j
+            
+    
     class G_emode(EmodeWindow):
         def __init__(self, parent: tk.Misc | None = None, bg: str='white', vfe: float=21.2, scale: float=1.0, *args, **kwargs):
             super().__init__(parent, bg, vfe, scale)
@@ -1499,8 +1555,6 @@ def def_cmap():
         CE.destroy()
         clear(CE)
     CE = ColormapEditor(g, scale)
-    set_center(g, CE, 0, 0)
-    CE.update()
 
 @pool_protect
 def pr_load(data: xr.DataArray):
@@ -1565,112 +1619,113 @@ fpr = 0
 
 @pool_protect
 def o_load(drop=False, files=''):
-    global data, h, m, limg, img, rdd, path, st, fpr, lfs, l_name, namevar, nlist, b_tools, f_npz, npzf
+    global data, limg, rdd, st, fpr, lfs, l_name, namevar, nlist, b_tools, npzf
     if not drop:
         files = fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     files = tkDnD.load_raw(files)
-    if len(files) > 0:
-        f_npz = False   # initial value to determine if operate CEC when loaded npz (prevent from endless calling CEC during loadfiles() process)
-        clear(lfs)
-        lfs = loadfiles(files, name='internal', cmap=value3.get(), app_pars=app_pars)
-        if lfs.cec_pars:
-            lfs = call_cec(g, lfs)
-        tpath = lfs.path[0]
-        b_name.config(state='normal')
-        b_excitation.config(state='normal')
-        b_desc.config(state='normal')
-        rdd = tpath
-        fpr = 0
-        if len(files) > 1:  #mulitple files
-            if len(lfs.n)>0:lfs.sort='no'
-            try:
-                b_tools.grid_forget()
-                l_name.grid_forget()
-            except:
-                pass
-            b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
-            b_tools.grid(row=0, column=0)
-            nlist = lfs.name
-            namevar = tk.StringVar(value=nlist[0])
-            l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
-            if len(namevar.get()) >30:
-                l_name.config(font=('Arial', size(11), "bold"))
-            elif len(namevar.get()) >20:
-                l_name.config(font=('Arial', size(12), "bold"))
-            else:
-                l_name.config(font=('Arial', size(14), "bold"))
-            l_name.grid(row=0, column=1)
-        else:   #single file
-            try:
-                b_tools.grid_forget()
-                l_name.grid_forget()
-            except:
-                pass
-        if lfs.f_npz[0]:npzf = True
-        else:npzf = False
-        if npzf:
-            koffset.config(state='normal')
-            k_offset.set('0')
-            koffset.config(state='disable')
-        else:
-            koffset.config(state='normal')
-            try:
-                k_offset.set(ko)
-            except:
-                k_offset.set('0')
-    else:
-        if lfs is None:
-            b_name.config(state='disable')
-            b_excitation.config(state='disable')
-            b_desc.config(state='disable')
-        else:
-            rdd = path
-        st.put('')
-        return
+    l = loader(files, path, value3.get(), name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
+    l.pars()
+    # if len(files) > 0:
+    #     clear(lfs)
+    #     lfs = loadfiles(files, name='internal', cmap=value3.get(), app_pars=app_pars)
+    #     if lfs.cec_pars:
+    #         lfs = call_cec(g, lfs)
+    #     tpath = lfs.path[0]
+    #     b_name.config(state='normal')
+    #     b_excitation.config(state='normal')
+    #     b_desc.config(state='normal')
+    #     rdd = tpath
+    #     fpr = 0
+    #     if len(files) > 1:  #mulitple files
+    #         if len(lfs.n)>0:lfs.sort='no'
+    #         try:
+    #             b_tools.grid_forget()
+    #             l_name.grid_forget()
+    #         except:
+    #             pass
+    #         b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
+    #         b_tools.grid(row=0, column=0)
+    #         nlist = lfs.name
+    #         namevar = tk.StringVar(value=nlist[0])
+    #         l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
+    #         if len(namevar.get()) >30:
+    #             l_name.config(font=('Arial', size(11), "bold"))
+    #         elif len(namevar.get()) >20:
+    #             l_name.config(font=('Arial', size(12), "bold"))
+    #         else:
+    #             l_name.config(font=('Arial', size(14), "bold"))
+    #         l_name.grid(row=0, column=1)
+    #     else:   #single file
+    #         try:
+    #             b_tools.grid_forget()
+    #             l_name.grid_forget()
+    #         except:
+    #             pass
+    #     if lfs.f_npz[0]:npzf = True
+    #     else:npzf = False
+    #     if npzf:
+    #         koffset.config(state='normal')
+    #         k_offset.set('0')
+    #         koffset.config(state='disable')
+    #     else:
+    #         koffset.config(state='normal')
+    #         try:
+    #             k_offset.set(ko)
+    #         except:
+    #             k_offset.set('0')
+    # else:
+    #     if lfs is None:
+    #         b_name.config(state='disable')
+    #         b_excitation.config(state='disable')
+    #         b_desc.config(state='disable')
+    #     else:
+    #         rdd = path
+    #     st.put('')
+    #     return
     
-    limg.config(image=img[np.random.randint(len(img))])
-    tbasename = os.path.basename(tpath)
-    if '.h5' in tbasename:
-        data = lfs.get(0)  # data save as xarray.DataArray format
-        pr_load(data)
-        tname = lfs.name[0]
-        print(f'\n{tname}')
-        if tname != name:
-            print(f'\033[31mname need correction\033[0m')
-            print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'H5 Name', name))
-        else:
-            print('Name is correct')
-            print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'H5 Name'))
-        st.put('Loaded')
-    elif '.json' in tbasename:
-        data = lfs.get(0)
-        pr_load(data)
-        tname = lfs.name[0]
-        print(f'\n{tname}')
-        if tname != name:
-            print(f'\033[31mname need correction\033[0m')
-            print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'JSON Name', name))
-        else:
-            print('Name is correct')
-            print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'JSON Name'))
-        st.put('Loaded')
-    elif '.txt' in tbasename:
-        data = lfs.get(0)
-        pr_load(data)
-        st.put('Loaded')
-    elif '.npz' in tbasename:
-        data = lfs.get(0)
-        pr_load(data)
-        tname = lfs.name[0]
-        st.put('Loaded')
-    else:
-        st.put('')
-        pass
-    #   print Attributes
-    tname, tbasename, tpath = None, None, None
-    return
+    # limg.config(image=img[np.random.randint(len(img))])
+    # tbasename = os.path.basename(tpath)
+    # if '.h5' in tbasename:
+    #     data = lfs.get(0)  # data save as xarray.DataArray format
+    #     pr_load(data)
+    #     tname = lfs.name[0]
+    #     print(f'\n{tname}')
+    #     if tname != name:
+    #         print(f'\033[31mname need correction\033[0m')
+    #         print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'H5 Name', name))
+    #     else:
+    #         print('Name is correct')
+    #         print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'H5 Name'))
+    #     st.put('Loaded')
+    # elif '.json' in tbasename:
+    #     data = lfs.get(0)
+    #     pr_load(data)
+    #     tname = lfs.name[0]
+    #     print(f'\n{tname}')
+    #     if tname != name:
+    #         print(f'\033[31mname need correction\033[0m')
+    #         print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'JSON Name', name))
+    #     else:
+    #         print('Name is correct')
+    #         print(f'\033[32m%9s: {tname}\n\033[32m%9s: {name}\033[0m'%('Path Name', 'JSON Name'))
+    #     st.put('Loaded')
+    # elif '.txt' in tbasename:
+    #     data = lfs.get(0)
+    #     pr_load(data)
+    #     st.put('Loaded')
+    # elif '.npz' in tbasename:
+    #     data = lfs.get(0)
+    #     pr_load(data)
+    #     tname = lfs.name[0]
+    #     st.put('Loaded')
+    # else:
+    #     st.put('')
+    #     pass
+    # #   print Attributes
+    # tname, tbasename, tpath = None, None, None
+    # return
 
 
 @pool_protect
@@ -5664,6 +5719,7 @@ if __name__ == '__main__':
     g.update()
     if lfs is not None: # CEC loaded old data to show the cutting rectangle
         if lfs.cec is not None:
+            lfs.cec.tlg.lift()
             lfs.cec.tlg.focus_force()
     version_check(g, scale, cdir, app_name, __version__, hwnd)
     # g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
