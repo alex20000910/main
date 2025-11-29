@@ -560,7 +560,7 @@ class add_lb():
         return
 
 
-def call_cec(g: tk.Misc, lfs: FileSequence):
+def call_cec(g: tk.Misc, lfs: FileSequence) -> FileSequence:
     app_pars = lfs.app_pars
     path_to_file, name, lf_path, tlfpath, cmap = lfs.cec_pars.path_to_file, lfs.cec_pars.name, lfs.cec_pars.lf_path, lfs.cec_pars.tlfpath, lfs.cec_pars.cmap
     lfs.cec = None

@@ -437,10 +437,14 @@ if __name__ == '__main__':
         def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
             load(drop, files)
 
-    class loader(file_loader):
+    class main_loader(file_loader):
         def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, name: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar):
             super().__init__(files, path, cmap, name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
         
+        @override
+        def call_cec(self, g, lfs):
+            return call_cec(g, lfs)
+
         @override
         def pr_load(self, data: xr.DataArray):
             pr_load(data)
@@ -491,7 +495,6 @@ if __name__ == '__main__':
             npzf = self.npzf
             for i, j in zip([data, rdd, fpr, lfs], [self.data, self.rdd, self.fpr, self.lfs]):
                 if j: i = j
-            
     
     class G_emode(EmodeWindow):
         def __init__(self, parent: tk.Misc | None = None, bg: str='white', vfe: float=21.2, scale: float=1.0, *args, **kwargs):
@@ -1625,7 +1628,7 @@ def o_load(drop=False, files=''):
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     files = tkDnD.load_raw(files)
-    l = loader(files, path, value3.get(), name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
+    l = main_loader(files, path, value3.get(), name, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset)
     l.pars()
     # if len(files) > 0:
     #     clear(lfs)

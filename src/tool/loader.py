@@ -2178,7 +2178,7 @@ class file_loader(ABC):
             clear(lfs)
             lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
             if lfs.cec_pars:
-                lfs = call_cec(g, lfs)
+                lfs = self.call_cec(g, lfs)
             tpath = lfs.path[0]
             b_name.config(state='normal')
             b_excitation.config(state='normal')
@@ -2245,6 +2245,10 @@ class file_loader(ABC):
         tname, tbasename, tpath = None, None, None
     
     @abstractmethod
+    def call_cec(self, g: tk.Misc, lfs: FileSequence) -> FileSequence:
+        pass
+    
+    @abstractmethod
     def pr_load(self, data: xr.DataArray):
         pass
     
@@ -2258,40 +2262,12 @@ class file_loader(ABC):
     
     @abstractmethod
     def set_k_offset(self):
-        # if 'ko' in globals():
-        #     self.k_offset.set(ko)
-        # else:
-        #     self.k_offset.set('0')
         pass
     
     @abstractmethod
     def batch_master(self):
-        # global b_tools, l_name, namevar, nlist
-        # if len(self.files) > 1:  #mulitple files
-        #     if len(self.lfs.n)>0:self.lfs.sort='no'
-        #     if 'b_tools' in globals() and 'l_name' in globals():
-        #         b_tools.grid_forget()
-        #         l_name.grid_forget()
-        #     b_tools = tk.Button(self.fr_tool, text='Batch Master', command=self.tools, width=12, height=1, font=('Arial', self.size(12), "bold"), bg='white')
-        #     b_tools.grid(row=0, column=0)
-        #     nlist = self.lfs.name
-        #     namevar = tk.StringVar(value=nlist[0])
-        #     l_name = tk.OptionMenu(self.fr_tool, namevar, *nlist, command=self.change_file)
-        #     if len(namevar.get()) >30:
-        #         l_name.config(font=('Arial', self.size(11), "bold"))
-        #     elif len(namevar.get()) >20:
-        #         l_name.config(font=('Arial', self.size(12), "bold"))
-        #     else:
-        #         l_name.config(font=('Arial', self.size(14), "bold"))
-        #     l_name.grid(row=0, column=1)
-        # else:   #single file
-        #     if 'b_tools' in globals() and 'l_name' in globals():
-        #         b_tools.grid_forget()
-        #         l_name.grid_forget()
         pass
     
     @abstractmethod
     def pars(self):
-        # global data, rdd, fpr, lfs, npzf
-        # data, rdd, fpr, lfs, npzf = self.data, self.rdd, self.fpr, self.lfs, self.npzf
         pass
