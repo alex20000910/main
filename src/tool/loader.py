@@ -2297,3 +2297,71 @@ class file_loader(ABC):
     @abstractmethod
     def pars(self):
         pass
+
+class data_loader(ABC):
+    def __init__(self, menu1: tk.OptionMenu, menu2: tk.OptionMenu, menu3: tk.OptionMenu, in_fit: tk.Entry, b_fit: tk.Button, l_path: tk.Text, info: tk.Text, cdir: str, lfs: FileSequence):
+        self.menu1, self.menu2, self.menu3 = menu1, menu2, menu3
+        self.in_fit, self.b_fit = in_fit, b_fit
+        self.l_path = l_path
+        self.info = info
+        self.cdir = cdir
+        self.lfs = lfs
+        self.name, self.dvalue, self.e_photon, self.description, self.dpath = None, None, None, None, None
+        
+    def pr_load(self, data: xr.DataArray):
+        dvalue = list(data.attrs.values())
+        dpath = dvalue[14]
+        st=''
+        lst=[]
+        print()
+        for _ in data.attrs.keys():
+            if _ == 'Description':
+                ts=str(data.attrs[_])
+                ts=ts.replace('\n\n\n','\n').replace('\n\n','\n')
+                t=ts.split('\n')
+                st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                     ')
+                lst.append(len(' : '+t[0]))
+                for i in range(1,len(t)):
+                    lst.append(len('              '+t[i]))
+                print(_,':', data.attrs[_].replace('\n','\n              '))
+            elif _ == 'Path':
+                pass
+            else:
+                st+=str(_)+' : '+str(data.attrs[_])+'\n'
+                lst.append(len(str(_)+' : '+str(data.attrs[_])))
+                print(_,':', data.attrs[_])
+        print()
+        self.l_path.config(width=max(lst), state='normal')
+        self.l_path.delete(1.0, tk.END)
+        self.l_path.insert(tk.END, dpath)
+        self.l_path.see(1.0)
+        self.l_path.config(state='disabled')
+        self.info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
+        if len(st.split('\n'))>24:
+            self.info.config(height=24, width=max(lst)+1, state='normal')
+        self.info.insert(tk.END, '\n'+st+'\n')
+        self.info.update()
+        self.info.see(tk.END)
+        self.info.config(state='disabled')
+        ev, phi = data.indexes.values()
+        ev = np.float64(ev)
+        phi = np.float64(phi)
+        name=dvalue[0]
+        e_photon=np.float64(dvalue[3].split(' ')[0])
+        lensmode=dvalue[8]
+        description=dvalue[13]
+        for i in ['\n\n\n\n\n','\n\n\n\n','\n\n\n','\n\n']:
+            description=description.replace(i,'\n')
+        if lensmode=='Transmission':
+            for i in [self.menu1, self.menu2, self.menu3, self.in_fit, self.b_fit]:
+                i.config(state='disabled')
+        else:
+            for i in [self.menu1, self.menu2, self.menu3, self.in_fit, self.b_fit]:
+                i.config(state='normal')
+        self.name, self.dvalue, self.e_photon, self.description, self.dpath, self.ev, self.phi = name, dvalue, e_photon, description, dpath, ev, phi
+        os.chdir(self.cdir)
+        np.savez(os.path.join(self.cdir, '.MDC_cut', 'rd.npz'), path=dpath, lpath=[i for i in self.lfs.path])
+    
+    @abstractmethod
+    def pars(self):
+        pass

@@ -396,7 +396,7 @@ except ModuleNotFoundError:
 
 try:
     from MDC_cut_utility import *
-    from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, load_h5, load_json, load_npz, load_txt
+    from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
     if __name__ == '__main__':
         from tool.SO_Fitter import SO_Fitter
@@ -435,7 +435,17 @@ if __name__ == '__main__':
         @override
         def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
             load(drop, files)
+    
+    class DataLoader(data_loader):
+        def __init__(self, menu1: tk.OptionMenu, menu2: tk.OptionMenu, menu3: tk.OptionMenu, in_fit: tk.Entry, b_fit: tk.Button, l_path: tk.Text, info: tk.Text, cdir: str, lfs: FileSequence):
+            super().__init__(menu1, menu2, menu3, in_fit, b_fit, l_path, info, cdir, lfs)
 
+        @override
+        def pars(self):
+            global name,dvalue,e_photon,description,dpath,ev,phi
+            for i, j in zip(['name','dvalue','e_photon','description','dpath', 'ev', 'phi'], [self.name, self.dvalue, self.e_photon, self.description, self.dpath, self.ev, self.phi]):
+                set_globals(j, i)
+            
     class main_loader(file_loader):
         def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar, fr_tool: tk.Frame, b_tools: tk.Button, l_name: tk.OptionMenu, scale: float):
             super().__init__(files, path, cmap, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale)
@@ -470,9 +480,6 @@ if __name__ == '__main__':
         
         @override
         def pars(self):
-            def set_globals(var, glob):
-                if var is not None:
-                    globals()[glob] = var
             for i, j in zip(['data', 'rdd', 'fpr', 'lfs', 'npzf', 'nlist', 'namevar'], [self.data, self.rdd, self.fpr, self.lfs, self.npzf, self.nlist, self.namevar]):
                 set_globals(j, i)
     
@@ -1547,7 +1554,7 @@ def def_cmap():
 
 @pool_protect
 def pr_load(data: xr.DataArray):
-    global name,optionList,optionList1,optionList2,menu1,menu2,menu3,b_fit,dvalue,e_photon,lensmode,description,tst,lst,dpath
+    global name,dvalue,e_photon,description,dpath
     dvalue = list(data.attrs.values())
     dpath = dvalue[14]
     st=''
@@ -1571,10 +1578,9 @@ def pr_load(data: xr.DataArray):
             lst.append(len(str(_)+' : '+str(data.attrs[_])))
             print(_,':', data.attrs[_])
     print()
-    tst=st
     l_path.config(width=max(lst), state='normal')
     l_path.delete(1.0, tk.END)
-    l_path.insert(tk.END,dpath)
+    l_path.insert(tk.END, dpath)
     l_path.see(1.0)
     l_path.config(state='disabled')
     info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
@@ -1601,8 +1607,7 @@ def pr_load(data: xr.DataArray):
         for i in [menu1, menu2, menu3, in_fit, b_fit]:
             i.config(state='normal')
     os.chdir(cdir)
-    np.savez(os.path.join(cdir, '.MDC_cut', 'rd.npz'), path=dpath, name=name, lpath=[i for i in lfs.path], ev=ev,
-             phi=phi, st=st, lst=lst)
+    np.savez(os.path.join(cdir, '.MDC_cut', 'rd.npz'), path=dpath, lpath=[i for i in lfs.path])
 
 fpr = 0
 
@@ -5006,12 +5011,7 @@ if __name__ == '__main__':
     try:
         with np.load(os.path.join('.MDC_cut', 'rd.npz'), 'rb') as ff:
             path = str(ff['path'])
-            name = str(ff['name'])
             lpath = ff['lpath']
-            ev = ff['ev']
-            phi = ff['phi']
-            st = str(ff['st'])
-            lst = ff['lst']
             print('\n\033[90mRaw Data preloaded:\033[0m\n\n')
             lfs = loadfiles(lpath, init=True, name='internal', cmap=value3.get(), app_pars=app_pars)
             if lfs.cec_pars:
@@ -5551,7 +5551,8 @@ if __name__ == '__main__':
         b_excitation.config(state='disable')
         b_desc.config(state='disable')
     if data is not None:
-        pr_load(data)
+        Data_Loader = DataLoader(menu1, menu2, menu3, in_fit, b_fit, l_path, info, cdir, lfs)
+        Data_Loader.pr_load(data)
         b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
         nlist = lfs.name
         namevar = tk.StringVar(value=nlist[0])
