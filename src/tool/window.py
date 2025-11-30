@@ -1,10 +1,12 @@
 from MDC_cut_utility import RestrictedToplevel, IconManager, set_center, clear, on_configure
+import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py, json
 import os
 import tkinter as tk
+from tkinter import filedialog as fd
 from threading import Thread
 from abc import ABC, abstractmethod
 from tkinter import colorchooser, messagebox
@@ -163,11 +165,16 @@ class EmodeWindow(RestrictedToplevel, ABC):
         return(int(self.scale*size))
 
 class ColormapEditorWindow(tk.Toplevel, ABC):
-    def __init__(self, master: tk.Misc | None = None, scale: float = 1.0):
-        super().__init__()
+    def __init__(self, master: tk.Misc | None, scale: float, optionList3: list[str], value3: tk.StringVar, setcmap: tk.OptionMenu, cmlf: tk.Frame, cdir: str):
+        super().__init__(master)
         set_center(master, self, 0, 0)
         self.master = master
         self.scale = scale
+        self.optionList3 = optionList3
+        self.value3 = value3
+        self.setcmap = setcmap
+        self.cmlf = cmlf
+        self.cdir = cdir
         self.title("Colormap Editor")
         self.colors = ['#0000ff', '#00ff00', '#ff0000']  # default three colors
         self.scales = [0, 0.5, 1]
@@ -297,13 +304,76 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
             top.destroy()
         top.protocol("WM_DELETE_WINDOW", on_close)
 
-    @abstractmethod
     def register_and_save(self):
-        pass
+        cmap = self.get_colormap()
+        if cmap is None:
+            return
+        name = self.colormap_name.get()
+        # Register to matplotlib colormap
+        matplotlib.colormaps.register(cmap, name=name, force=True)
+        messagebox.showinfo("Colormap", f"Colormap '{name}' has been registered to matplotlib.")
+        self.optionList3 = [name, 'prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
+        self.setcmap.grid_forget()
+        self.value3.set(name)
+        self.setcmap = tk.OptionMenu(self.cmlf, self.value3, *self.optionList3)
+        self.setcmap.grid(row=0, column=1)
+        self.master.update()
+        # Save file
+        data = {
+            "colors": np.array(self.colors),
+            "scales": np.array(self.scales),
+            "vmin": self.vmin.get(),
+            "vmax": self.vmax.get(),
+            "name": name
+        }
+        save_path = fd.asksaveasfilename(
+            title="Save custom colormap",
+            defaultextension=".npz",
+            filetypes=[("NumPy zip", "*.npz")],
+            initialdir=self.cdir,
+            initialfile=f"{name}.npz"
+        )
+        np.savez(save_path, **data)
+        np.savez(os.path.join(self.cdir,".MDC_cut","colormaps.npz"), **data)
+        if save_path:
+            messagebox.showinfo("Colormap", f"Colormap has been saved to:\n{save_path}")
     
-    @abstractmethod
     def load_colormap(self):
-        pass
+        # Load npz file
+        load_dir = self.cdir
+        file_path = fd.askopenfilename(
+            title="Select custom colormap file",
+            filetypes=[("NumPy zip", "*.npz")],
+            initialdir=load_dir if os.path.exists(load_dir) else "."
+        )
+        if not file_path:
+            self.focus_set()
+            return
+        try:
+            data = np.load(file_path, allow_pickle=True)
+            self.colors = list(data["colors"])
+            self.scales = list(data["scales"])
+            self.vmin.set(float(data["vmin"]))
+            self.vmax.set(float(data["vmax"]))
+            self.colormap_name.set(str(data["name"]))
+            self._draw_ui()
+            messagebox.showinfo("Colormap", f"Colormap loaded: {self.colormap_name.get()}")
+            cmap = self.get_colormap()
+            if cmap is None:
+                return
+            name = self.colormap_name.get()
+            # Register to matplotlib colormap
+            matplotlib.colormaps.register(cmap, name=name, force=True)
+            self.optionList3.append(name)
+            self.setcmap.grid_forget()
+            self.value3.set(name)
+            self.setcmap = tk.OptionMenu(self.cmlf, self.value3, *self.optionList3)
+            self.setcmap.grid(row=0, column=1)
+            self.master.update()
+            np.savez(os.path.join(self.cdir,".MDC_cut","colormaps.npz"), **data)
+            self.focus_set()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load: {e}")
 
 class c_attr_window(RestrictedToplevel, ABC):
     def __init__(self, parent: tk.Misc | None = None, dpath: str='', attr: float|str='', scale: float=1.0):
@@ -333,13 +403,34 @@ class c_attr_window(RestrictedToplevel, ABC):
     def size(self, s: int=16)->int:
         return int(self.scale*s)
     
+    
+    def attr_save_str(self, *e):
+        self.data = None
+        s=self.string
+        if s:
+            tbasename = os.path.basename(self.dpath)
+            if '.h5' in tbasename:
+                self.attr_h5(s)
+                self.data = self.load_h5(self.dpath)  # data save as xarray.DataArray format
+                self.pr_load(self.data)
+            elif '.json' in tbasename:
+                self.attr_json(s)
+                self.data = self.load_json(self.dpath)
+                self.pr_load(self.data)
+            elif '.npz' in tbasename:
+                self.attr_npz(s)
+                self.data = self.load_npz(self.dpath)
+                self.pr_load(self.data)
+        self.pars()
+        self.destroy()
+    
+    @abstractmethod
+    def pars(self):
+        pass
+    
     @property
     @abstractmethod
     def string(self) -> str:
-        pass
-    
-    @abstractmethod
-    def attr_save_str(self, *e):
         pass
     
     @abstractmethod
@@ -374,7 +465,6 @@ class c_attr_window(RestrictedToplevel, ABC):
 class c_excitation_window(c_attr_window):
     def __init__(self, parent: tk.Misc | None = None, dpath: str='', e_photon: float=1000.0, scale: float=1.0):
         super().__init__(parent, dpath=dpath, attr=e_photon, scale=scale)
-        self.win_par = (parent, dpath, e_photon, scale)
         self.t_in.config(height=1, width=60, font=('Arial', self.size(16)))
         self.bind('<Return>', self.attr_save_str)
         self.t_in.bind('<Return>', self.attr_save_str)
@@ -475,6 +565,22 @@ class c_name_window(c_attr_window):
         with open(self.dpath, 'w') as f:
             json.dump(data, f, indent=2)
             print("Modified:", data['Region']['Name'])
+    
+    @override
+    def attr_npz(self, s:str):
+        os.chdir(os.path.dirname(self.dpath))
+        old_name = os.path.basename(self.dpath)
+        new_name = s+'.npz'
+        try:
+            os.rename(old_name, new_name)
+            print(f"File renamed from {old_name} to {new_name}")
+            self.dpath = os.path.normpath(os.path.dirname(self.dpath)+'/'+s+'.npz')
+        except FileNotFoundError:
+            print(f"File {old_name} not found.")
+        except PermissionError:
+            print(f"Permission denied to rename {old_name}.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
 class c_description_window(c_attr_window):
     def __init__(self, parent: tk.Misc | None = None, dpath: str='', description: str='', scale: float=1.0):

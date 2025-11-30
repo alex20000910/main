@@ -563,6 +563,16 @@ class add_lb():
                     self.name[i] = selected_item.replace('\n', '')
         return
 
+def find_path(path: list[str]) -> bool:
+    f = True
+    if len(path) > 2:
+        for p in path:
+            if not os.path.exists(p):
+                f = False
+                break
+    else:
+        f = False
+    return f
 
 def call_cec(g: tk.Misc, lfs: FileSequence) -> FileSequence:
     app_pars = lfs.app_pars
@@ -570,20 +580,31 @@ def call_cec(g: tk.Misc, lfs: FileSequence) -> FileSequence:
     lfs.cec = None
     try:
         args = get_cec_params(path_to_file)
-        try:
+        if find_path(lf_path):
             lfs.cec = CEC(g, lf_path, mode='load', cmap=cmap, app_pars=app_pars)
             lfs.cec.load(*args, name, path_to_file)
-        except:
+        elif find_path(tlfpath):
             lfs.cec = CEC(g, tlfpath, mode='load', cmap=cmap, app_pars=app_pars)
             lfs.cec.load(*args, name, path_to_file)
-    except Exception as ecp:
+        else:
+            raise FileNotFoundError
+    except FileNotFoundError:
         if app_pars:
             windll.user32.ShowWindow(app_pars.hwnd, 9)
             windll.user32.SetForegroundWindow(app_pars.hwnd)
-        print(f"An error occurred: {ecp}")
         print('\033[31mPath not found:\033[34m')
         print(lf_path)
         print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
         message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
         messagebox.showwarning("Warning", message)
+    except Exception as ecp:
+        if app_pars:
+            windll.user32.ShowWindow(app_pars.hwnd, 9)
+            windll.user32.SetForegroundWindow(app_pars.hwnd)
+        print(f"An error occurred: {ecp}")
+        message = f"An error occurred:\n{ecp}"
+        messagebox.showerror("Error", message)
+        lfs.cec.tlg.destroy()
+        clear(lfs.cec)
+        lfs.cec = None
     return lfs

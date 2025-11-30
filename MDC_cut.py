@@ -516,24 +516,8 @@ if __name__ == '__main__':
             super().__init__(parent, dpath, attr, scale)
         
         @override
-        def attr_save_str(self, *e):
-            global data
-            s=self.string
-            if s:
-                tbasename = os.path.basename(self.dpath)
-                if '.h5' in tbasename:
-                    self.attr_h5(s)
-                    data = self.load_h5(self.dpath)  # data save as xarray.DataArray format
-                    self.pr_load(data)
-                elif '.json' in tbasename:
-                    self.attr_json(s)
-                    data = self.load_json(self.dpath)
-                    self.pr_load(data)
-                elif '.npz' in tbasename:
-                    self.attr_npz(s)
-                    data = self.load_npz(self.dpath)
-                    self.pr_load(data)
-            self.destroy()
+        def pars(self):
+            set_globals(self.data, 'data')
         
         @override
         def pr_load(self, data):
@@ -562,7 +546,6 @@ if __name__ == '__main__':
                 return s
             except Exception as e:
                 messagebox.showerror("Error", f"{e}\nPlease enter a valid number for Excitation Energy.")
-                # c_excitation(*self.win_par)
                 c_excitation()
                 return ''
 
@@ -571,22 +554,9 @@ if __name__ == '__main__':
             super().__init__(g, dpath, name, scale)
             
         @override
-        def attr_npz(self, s:str):
-            global dpath
-            os.chdir(os.path.dirname(self.dpath))
-            old_name = os.path.basename(self.dpath)
-            new_name = s+'.npz'
-            try:
-                os.rename(old_name, new_name)
-                print(f"File renamed from {old_name} to {new_name}")
-                self.dpath = os.path.normpath(os.path.dirname(self.dpath)+'/'+s+'.npz')
-                dpath = self.dpath
-            except FileNotFoundError:
-                print(f"File {old_name} not found.")
-            except PermissionError:
-                print(f"Permission denied to rename {old_name}.")
-            except Exception as e:
-                print(f"An error occurred: {e}")
+        def pars(self):
+            for i, j in zip(['data', 'dpath'], [self.data, self.dpath]):
+                set_globals(j, i)
 
     class c_description(c_description_window, c_attr):
         def __init__(self):
@@ -594,85 +564,8 @@ if __name__ == '__main__':
 
     class ColormapEditor(ColormapEditorWindow):
         def __init__(self):
-            super().__init__(g, scale)
-            
-        @override
-        def register_and_save(self):
-            global optionList3, value3, setcmap
-            cmap = self.get_colormap()
-            if cmap is None:
-                return
-            name = self.colormap_name.get()
-            # Register to matplotlib colormap
-            matplotlib.colormaps.register(cmap, name=name, force=True)
-            messagebox.showinfo("Colormap", f"Colormap '{name}' has been registered to matplotlib.")
-            if colormap_name:
-                optionList3 = [name, 'prevac_cmap', colormap_name, 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
-            else:
-                optionList3 = [name, 'prevac_cmap', 'terrain', 'custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'viridis', 'turbo', 'inferno', 'plasma', 'copper', 'grey', 'bwr']
-            setcmap.grid_forget()
-            value3.set(name)
-            setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
-            setcmap.grid(row=0, column=1)
-            g.update()
-            # Save file
-            data = {
-                "colors": np.array(self.colors),
-                "scales": np.array(self.scales),
-                "vmin": self.vmin.get(),
-                "vmax": self.vmax.get(),
-                "name": name
-            }
-            save_path = fd.asksaveasfilename(
-                title="Save custom colormap",
-                defaultextension=".npz",
-                filetypes=[("NumPy zip", "*.npz")],
-                initialdir=cdir,
-                initialfile=f"{name}.npz"
-            )
-            np.savez(save_path, **data)
-            np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
-            if save_path:
-                messagebox.showinfo("Colormap", f"Colormap has been saved to:\n{save_path}")
-
-        @override
-        def load_colormap(self):
-            global optionList3, value3, setcmap
-            # Load npz file
-            load_dir = cdir
-            file_path = fd.askopenfilename(
-                title="Select custom colormap file",
-                filetypes=[("NumPy zip", "*.npz")],
-                initialdir=load_dir if os.path.exists(load_dir) else "."
-            )
-            if not file_path:
-                return
-            try:
-                data = np.load(file_path, allow_pickle=True)
-                self.colors = list(data["colors"])
-                self.scales = list(data["scales"])
-                self.vmin.set(float(data["vmin"]))
-                self.vmax.set(float(data["vmax"]))
-                self.colormap_name.set(str(data["name"]))
-                self._draw_ui()
-                messagebox.showinfo("Colormap", f"Colormap loaded: {self.colormap_name.get()}")
-                cmap = self.get_colormap()
-                if cmap is None:
-                    return
-                name = self.colormap_name.get()
-                # Register to matplotlib colormap
-                matplotlib.colormaps.register(cmap, name=name, force=True)
-                optionList3.append(name)
-                setcmap.grid_forget()
-                value3.set(name)
-                setcmap = tk.OptionMenu(cmlf, value3, *optionList3)
-                setcmap.grid(row=0, column=1)
-                g.update()
-                np.savez(os.path.join(cdir,".MDC_cut","colormaps.npz"), **data)
-                
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to load: {e}")
-
+            super().__init__(g, scale, optionList3, value3, setcmap, cmlf, cdir)
+    
     class version_check(VersionCheckWindow):
         def __init__(self):
             super().__init__(g, scale, cdir, app_name, __version__, hwnd)
@@ -5078,7 +4971,7 @@ if __name__ == '__main__':
         mpl.colormaps.register(pr_cmap, force=True)
         print('\033[90mLast User Defined Colormap preloaded\033[0m')
     except:
-        pr_cmap = None
+        pr_cmap, colormap_name = None, ''
         pass
 
     emf='KE'
