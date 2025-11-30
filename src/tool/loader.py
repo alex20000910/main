@@ -2062,7 +2062,7 @@ class tkDnD_loader(ABC):
     Attributes:
         root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
     """
-    def __init__(self, root=None):
+    def __init__(self, root: tk.Misc | None = None):
         if root is not None:
             self.root = root
             root.drop_target_register(DND_FILES)
@@ -2224,7 +2224,7 @@ class file_loader(ABC):
                 self.rdd = path
             st.put('')
             return
-        
+        self.b_tools, self.l_name = b_tools, l_name
         self.pars()
         limg.config(image=img[np.random.randint(len(img))])
         tbasename = os.path.basename(tpath)
@@ -2359,6 +2359,7 @@ class data_loader(ABC):
             for i in [self.menu1, self.menu2, self.menu3, self.in_fit, self.b_fit]:
                 i.config(state='normal')
         self.name, self.dvalue, self.e_photon, self.description, self.dpath, self.ev, self.phi = name, dvalue, e_photon, description, dpath, ev, phi
+        self.pars()
         os.chdir(self.cdir)
         np.savez(os.path.join(self.cdir, '.MDC_cut', 'rd.npz'), path=dpath, lpath=[i for i in self.lfs.path])
     

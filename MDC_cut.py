@@ -355,6 +355,10 @@ def pool_protect(func):
             func(*args, **kwargs)
     return wrapper
 
+def set_globals(var, glob):
+    if var is not None:
+        globals()[glob] = var
+
 try:
     import matplotlib
     matplotlib.use('TkAgg')
@@ -429,26 +433,26 @@ if __name__ == '__main__':
         Attributes:
             root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
         """
-        def __init__(self, root=None, *args, **kwargs):
+        def __init__(self, root: tk.Misc):
             super().__init__(root)
         
         @override
         def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
             load(drop, files)
     
-    class DataLoader(data_loader):
-        def __init__(self, menu1: tk.OptionMenu, menu2: tk.OptionMenu, menu3: tk.OptionMenu, in_fit: tk.Entry, b_fit: tk.Button, l_path: tk.Text, info: tk.Text, cdir: str, lfs: FileSequence):
+    class pr_load(data_loader):
+        def __init__(self, data: xr.DataArray):
             super().__init__(menu1, menu2, menu3, in_fit, b_fit, l_path, info, cdir, lfs)
+            self.pr_load(data)
 
         @override
         def pars(self):
-            global name,dvalue,e_photon,description,dpath,ev,phi
             for i, j in zip(['name','dvalue','e_photon','description','dpath', 'ev', 'phi'], [self.name, self.dvalue, self.e_photon, self.description, self.dpath, self.ev, self.phi]):
                 set_globals(j, i)
             
     class main_loader(file_loader):
-        def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar, fr_tool: tk.Frame, b_tools: tk.Button, l_name: tk.OptionMenu, scale: float):
-            super().__init__(files, path, cmap, lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale)
+        def __init__(self, files: tuple[str]|Literal['']):
+            super().__init__(files, path, value3.get(), lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale)
         
         @property
         @override
@@ -480,12 +484,12 @@ if __name__ == '__main__':
         
         @override
         def pars(self):
-            for i, j in zip(['data', 'rdd', 'fpr', 'lfs', 'npzf', 'nlist', 'namevar'], [self.data, self.rdd, self.fpr, self.lfs, self.npzf, self.nlist, self.namevar]):
+            for i, j in zip(['data', 'rdd', 'fpr', 'lfs', 'npzf', 'b_tools', 'l_name', 'nlist', 'namevar'], [self.data, self.rdd, self.fpr, self.lfs, self.npzf, self.b_tools, self.l_name, self.nlist, self.namevar]):
                 set_globals(j, i)
     
     class G_emode(EmodeWindow):
-        def __init__(self, parent: tk.Misc | None = None, bg: str='white', vfe: float=21.2, scale: float=1.0, *args, **kwargs):
-            super().__init__(parent, bg, vfe, scale)
+        def __init__(self):
+            super().__init__(g, vfe, scale)
             
         @override
         def save_fe(self, *args):
@@ -499,11 +503,17 @@ if __name__ == '__main__':
             except:
                 messagebox.showwarning("Warning","Invalid Input\n"+str(sys.exc_info()[1]))
                 self.destroy()
-                gfe = G_emode(g, bg='white', vfe=vfe, scale=scale)
+                gfe = G_emode()
     
     class c_attr(c_attr_window):
-        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', attr: float|str='', scale: float=1.0, *args, **kwargs):
-            super().__init__(parent, bg, dpath, attr, scale)
+        def __init__(self, parent: tk.Misc | None = None, dpath: str='', attr: float|str='', scale: float=1.0):
+            '''
+            Parameters
+            ----------
+            attr : float | str
+                Attribute value to be set (e.g., e_photon, name, description).
+            '''
+            super().__init__(parent, dpath, attr, scale)
         
         @override
         def attr_save_str(self, *e):
@@ -542,8 +552,8 @@ if __name__ == '__main__':
             return load_npz(path)
 
     class c_excitation(c_excitation_window, c_attr):
-        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', e_photon: float=1000.0, scale: float=1.0, *args, **kwargs):
-            super().__init__(parent, bg, dpath, e_photon, scale)
+        def __init__(self):
+            super().__init__(g, dpath, e_photon, scale)
         
         @override
         def check_string(self, s:str) -> str:
@@ -552,12 +562,13 @@ if __name__ == '__main__':
                 return s
             except Exception as e:
                 messagebox.showerror("Error", f"{e}\nPlease enter a valid number for Excitation Energy.")
-                c_excitation(*self.win_par)
+                # c_excitation(*self.win_par)
+                c_excitation()
                 return ''
 
     class c_name(c_name_window, c_attr):
-        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', name: str='', scale: float=1.0, *args, **kwargs):
-            super().__init__(parent, bg, dpath, name, scale)
+        def __init__(self):
+            super().__init__(g, dpath, name, scale)
             
         @override
         def attr_npz(self, s:str):
@@ -578,12 +589,12 @@ if __name__ == '__main__':
                 print(f"An error occurred: {e}")
 
     class c_description(c_description_window, c_attr):
-        def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0, *args, **kwargs):
-            super().__init__(parent, bg, dpath, description, scale)
+        def __init__(self):
+            super().__init__(g, dpath, description, scale)
 
     class ColormapEditor(ColormapEditorWindow):
-        def __init__(self, parent: tk.Misc | None = None, scale: float = 1.0):
-            super().__init__(parent, scale)
+        def __init__(self):
+            super().__init__(g, scale)
             
         @override
         def register_and_save(self):
@@ -663,8 +674,8 @@ if __name__ == '__main__':
                 messagebox.showerror("Error", f"Failed to load: {e}")
 
     class version_check(VersionCheckWindow):
-        def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, cdir: str='', app_name: str='', __version__: str='', hwnd: int=0):
-            super().__init__(master, scale, cdir, app_name, __version__, hwnd)
+        def __init__(self):
+            super().__init__(g, scale, cdir, app_name, __version__, hwnd)
         
         @override
         def get_src(self, ver: bool = False):
@@ -683,8 +694,8 @@ if __name__ == '__main__':
             plot1()
 
     class plot1_window_MDC_curves(Plot1Window_MDC_curves, plot1_window):
-        def __init__(self, parent: tk.Misc | None, scale: float, d: int, l: int, p: int):
-            super().__init__(parent, scale, d, l, p)
+        def __init__(self, d: int, l: int, p: int):
+            super().__init__(g, scale, d, l, p)
 
         @override
         def chf(self):
@@ -707,8 +718,8 @@ if __name__ == '__main__':
                 self.plot1()
 
     class plot1_window_Second_Derivative(Plot1Window_Second_Derivative, plot1_window):
-        def __init__(self, parent: tk.Misc | None, scale: float, im_kernel: int):
-            super().__init__(parent, scale, im_kernel)
+        def __init__(self, im_kernel: int):
+            super().__init__(g, scale, im_kernel)
         
         @override
         def chf(self):
@@ -729,8 +740,8 @@ if __name__ == '__main__':
                 self.plot1()
     
     class plot3_window(Plot3Window):
-        def __init__(self, parent: tk.Misc | None, scale: float, fev: list, fk: list):
-            super().__init__(parent, scale, fev, fk)
+        def __init__(self, fev: list, fk: list):
+            super().__init__(g, scale, fev, fk)
         
         @override
         def ini(self):
@@ -789,11 +800,11 @@ def emode():
     if emf=='KE':
         emf='BE'
         b_emode.config(text='B.E.')
-        gfe = G_emode(g, bg='white', vfe=vfe, scale=scale)
+        gfe = G_emode()
     else:
         emf='KE'
         b_emode.config(text='K.E.')
-        gfe = G_emode(g, bg='white', vfe=vfe, scale=scale)
+        gfe = G_emode()
 
 def patch_origin():
     threading.Thread(target=f_patch_origin,daemon=True).start()
@@ -1243,7 +1254,7 @@ def cexcitation():
     if 'gcestr' in globals():
         gcestr.destroy()
         clear(gcestr)
-    gcestr = c_excitation(g, 'white', dpath, e_photon, scale)
+    gcestr = c_excitation()
 
 @pool_protect
 def cname():
@@ -1251,7 +1262,7 @@ def cname():
     messagebox.showwarning("Warning","允許中文、符號")
     if 'gcstr' in globals():
         gcstr.destroy()
-    gcstr = c_name(g, 'white', dpath, name, scale)
+    gcstr = c_name()
 
 @pool_protect
 def desc():
@@ -1259,7 +1270,7 @@ def desc():
     messagebox.showwarning("Warning","允許中文、符號")
     if 'gstr' in globals():
         gstr.destroy()
-    gstr=c_description(g, 'white', dpath, description, scale)
+    gstr=c_description()
 
 def view_3d(*e):
     DataViewer_PyQt5()
@@ -1438,11 +1449,12 @@ def calculator(*e):
 
 @pool_protect
 def scroll(event):
-    if len(lfs.name) >1:
-        if event.delta>0:
-            cf_up()
-        elif event.delta<0:
-            cf_down()
+    if lfs is not None:
+        if len(lfs.name) >1:
+            if event.delta>0:
+                cf_up()
+            elif event.delta<0:
+                cf_down()
 
 @pool_protect
 def cf_up(*args):
@@ -1550,64 +1562,7 @@ def def_cmap():
     if 'CE' in globals():
         CE.destroy()
         clear(CE)
-    CE = ColormapEditor(g, scale)
-
-@pool_protect
-def pr_load(data: xr.DataArray):
-    global name,dvalue,e_photon,description,dpath
-    dvalue = list(data.attrs.values())
-    dpath = dvalue[14]
-    st=''
-    lst=[]
-    print()
-    for _ in data.attrs.keys():
-        if _ == 'Description':
-            ts=str(data.attrs[_])
-            ts=ts.replace('\n\n\n','\n').replace('\n\n','\n')
-            t=ts.split('\n')
-            st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                     ')
-            # st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                         ')
-            lst.append(len(' : '+t[0]))
-            for i in range(1,len(t)):
-                lst.append(len('              '+t[i]))
-            print(_,':', data.attrs[_].replace('\n','\n              '))
-        elif _ == 'Path':
-            pass
-        else:
-            st+=str(_)+' : '+str(data.attrs[_])+'\n'
-            lst.append(len(str(_)+' : '+str(data.attrs[_])))
-            print(_,':', data.attrs[_])
-    print()
-    l_path.config(width=max(lst), state='normal')
-    l_path.delete(1.0, tk.END)
-    l_path.insert(tk.END, dpath)
-    l_path.see(1.0)
-    l_path.config(state='disabled')
-    info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
-    if len(st.split('\n'))>24:
-        info.config(height=24, width=max(lst)+1, state='normal')
-    info.insert(tk.END, '\n'+st+'\n')
-    info.update()
-    info.see(tk.END)
-    info.config(state='disabled')
-    global ev, phi
-    ev, phi = data.indexes.values()
-    ev = np.float64(ev)
-    phi = np.float64(phi)
-    name=dvalue[0]
-    e_photon=np.float64(dvalue[3].split(' ')[0])
-    lensmode=dvalue[8]
-    description=dvalue[13]
-    for i in ['\n\n\n\n\n','\n\n\n\n','\n\n\n','\n\n']:
-        description=description.replace(i,'\n')
-    if lensmode=='Transmission':
-        for i in [menu1, menu2, menu3, in_fit, b_fit]:
-            i.config(state='disabled')
-    else:
-        for i in [menu1, menu2, menu3, in_fit, b_fit]:
-            i.config(state='normal')
-    os.chdir(cdir)
-    np.savez(os.path.join(cdir, '.MDC_cut', 'rd.npz'), path=dpath, lpath=[i for i in lfs.path])
+    CE = ColormapEditor()
 
 fpr = 0
 
@@ -1618,14 +1573,13 @@ def o_load(drop=False, files=''):
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
     files = tkDnD.load_raw(files)
-    main_loader(files, path, value3.get(), lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale)
+    main_loader(files)
 
 @pool_protect
 def o_ecut():
     global data, ev, phi, mfpath, limg, img, name, rdd, st
     limg.config(image=img[np.random.randint(len(img))])
     mfpath = ''
-    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
     os.chdir(os.path.dirname(rdd))
     try:
         ndir = os.path.dirname(rdd)
@@ -1646,9 +1600,7 @@ def o_ecut():
         path = 'ecut_%.3f.txt' % ev[n]
         mfpath += path
         pbar.update(1)
-        # print(n+1,'/',len(ev))
         if (n+1) % (len(ev)//100) == 0:
-            # print(str(round((n+1)/len(ev)*100))+'%'+' ('+str(len(ev))+')')
             st.put(str(round((n+1)/len(ev)*100))+'%'+' ('+str(len(ev))+')')
         f = open(path, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         f.write('#Wave Vector'+'\t'+'#Intensity'+'\n')
@@ -1657,7 +1609,6 @@ def o_ecut():
         f.close()
     os.chdir(cdir)
     np.savez(os.path.join(cdir, '.MDC_cut', 'mfpath.npz'), mfpath=mfpath)
-    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
     os.chdir(os.path.dirname(rdd))
     pbar.close()
     print('Done')
@@ -1668,7 +1619,6 @@ def o_angcut():
     global data, ev, phi, efpath, limg, img, name, rdd, st
     limg.config(image=img[np.random.randint(len(img))])
     efpath = ''
-    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
     os.chdir(os.path.dirname(rdd))
     try:
         ndir = os.path.dirname(rdd)
@@ -1688,9 +1638,7 @@ def o_angcut():
         path = 'angcut_%.5d.txt' % (phi[n]*1000)
         efpath += path
         pbar.update(1)
-        # print(n+1,'/',len(phi))
         if (n+1) % (len(phi)//100) == 0:
-            # print(str(round((n+1)/len(phi)*100))+'%'+' ('+str(len(phi))+')')
             st.put(str(round((n+1)/len(phi)*100))+'%'+' ('+str(len(phi))+')')
         f = open(path, 'w', encoding='utf-8')  # tab 必須使用 '\t' 不可"\t"
         f.write('#Wave Vector'+'\t'+'#Intensity'+'\n')
@@ -1699,7 +1647,6 @@ def o_angcut():
         f.close()
     os.chdir(cdir)
     np.savez(os.path.join(cdir, '.MDC_cut', 'efpath.npz'), efpath=efpath)
-    # os.chdir(rdd.removesuffix(rdd.split('/')[-1]))
     os.chdir(os.path.dirname(rdd))
     pbar.close()
     print('Done')
@@ -4548,9 +4495,9 @@ def plot1(*e):
     if 'gg' in globals():
         gg.destroy()
     if 'MDC Curves' in value.get():
-        gg = plot1_window_MDC_curves(g, scale, d, l, p)
+        gg = plot1_window_MDC_curves(d, l, p)
     elif value.get() == 'Second Derivative':
-        gg = plot1_window_Second_Derivative(g, scale, im_kernel)
+        gg = plot1_window_Second_Derivative(im_kernel)
     else:
         t8 = threading.Thread(target=o_plot1)
         t8.daemon = True
@@ -4569,7 +4516,7 @@ def plot3(*e):
     if 'gg' in globals():
         gg.destroy()
     if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
-        gg = plot3_window(g, scale, fev, fk)
+        gg = plot3_window(fev, fk)
     else:
         t10 = threading.Thread(target=o_plot3)
         t10.daemon = True
@@ -5551,8 +5498,7 @@ if __name__ == '__main__':
         b_excitation.config(state='disable')
         b_desc.config(state='disable')
     if data is not None:
-        Data_Loader = DataLoader(menu1, menu2, menu3, in_fit, b_fit, l_path, info, cdir, lfs)
-        Data_Loader.pr_load(data)
+        pr_load(data)
         b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
         nlist = lfs.name
         namevar = tk.StringVar(value=nlist[0])
@@ -5609,7 +5555,7 @@ if __name__ == '__main__':
         if lfs.cec is not None:
             lfs.cec.tlg.lift()
             lfs.cec.tlg.focus_force()
-    version_check(g, scale, cdir, app_name, __version__, hwnd)
+    version_check()
     # g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
     g_mem = psutil.Process(os.getpid()).memory_info().rss / 1024**3  # Main GUI memory in GB
     app_pars.g_mem = g_mem

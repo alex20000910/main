@@ -1003,6 +1003,3 @@ def filter(y, a, b):
         a, b = b, a  # Ensure a is less than or equal to b
     return np.array([x for x in y if a <= x <= b]), np.array([i for i, x in enumerate(y) if a <= x <= b])
 
-def set_globals(var, glob):
-    if var is not None:
-        globals()[glob] = var

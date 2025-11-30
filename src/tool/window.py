@@ -130,8 +130,8 @@ SOFTWARE."""
 
 
 class EmodeWindow(RestrictedToplevel, ABC):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', vfe: float=21.2, scale: float=1.0):
-        super().__init__(parent, bg=bg)
+    def __init__(self, parent: tk.Misc | None = None, vfe: float=21.2, scale: float=1.0):
+        super().__init__(parent, bg='white')
         self.vfe = vfe
         self.scale = scale
         v_fe = tk.StringVar(value=str(vfe))
@@ -306,8 +306,8 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
         pass
 
 class c_attr_window(RestrictedToplevel, ABC):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', attr: float|str='', scale: float=1.0):
-        super().__init__(parent, bg=bg)
+    def __init__(self, parent: tk.Misc | None = None, dpath: str='', attr: float|str='', scale: float=1.0):
+        super().__init__(parent, bg='white')
         self.scale = scale
         self.dpath = dpath
         self.title('Attributes Editor')
@@ -372,9 +372,9 @@ class c_attr_window(RestrictedToplevel, ABC):
         pass
 
 class c_excitation_window(c_attr_window):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', e_photon: float=1000.0, scale: float=1.0):
-        super().__init__(parent, bg=bg, dpath=dpath, attr=e_photon, scale=scale)
-        self.win_par = (parent, bg, dpath, e_photon, scale)
+    def __init__(self, parent: tk.Misc | None = None, dpath: str='', e_photon: float=1000.0, scale: float=1.0):
+        super().__init__(parent, dpath=dpath, attr=e_photon, scale=scale)
+        self.win_par = (parent, dpath, e_photon, scale)
         self.t_in.config(height=1, width=60, font=('Arial', self.size(16)))
         self.bind('<Return>', self.attr_save_str)
         self.t_in.bind('<Return>', self.attr_save_str)
@@ -431,8 +431,8 @@ class c_excitation_window(c_attr_window):
         print(f"Modified .npz file saved to {self.dpath}")
         
 class c_name_window(c_attr_window):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', name: str='', scale: float=1.0):
-        super().__init__(parent, bg=bg, dpath=dpath, attr=name, scale=scale)
+    def __init__(self, parent: tk.Misc | None = None, dpath: str='', name: str='', scale: float=1.0):
+        super().__init__(parent, dpath=dpath, attr=name, scale=scale)
         self.t_in.config(height=1, width=60, bd=5, padx=10, pady=10, font=('Arial', self.size(20)))
         self.bind('<Return>', self.attr_save_str)
         self.t_in.bind('<Return>', self.attr_save_str)
@@ -477,8 +477,8 @@ class c_name_window(c_attr_window):
             print("Modified:", data['Region']['Name'])
 
 class c_description_window(c_attr_window):
-    def __init__(self, parent: tk.Misc | None = None, bg: str='white', dpath: str='', description: str='', scale: float=1.0):
-        super().__init__(parent, bg=bg, dpath=dpath, attr=description, scale=scale)
+    def __init__(self, parent: tk.Misc | None = None, dpath: str='', description: str='', scale: float=1.0):
+        super().__init__(parent, dpath=dpath, attr=description, scale=scale)
         self.t_in.config(height=10, width=50, bd=5, padx=10, pady=10, font=('Arial', self.size(16)))
         self.show()
     
