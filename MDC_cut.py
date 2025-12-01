@@ -3981,7 +3981,6 @@ def exp(*e):
 
 
 def move(event):
-    global xdata, ydata, x1, y1, x2, y2
     if event.xdata != None:
         out.get_tk_widget().config(cursor="crosshair")
         try:
@@ -4143,13 +4142,16 @@ def press(event):
 
 
 def release(event):
-    global x2, y2, mof, tb0, tb0_, tb1, tb1_, tb2, out, ao, bo
+    global mof, tb0, tb0_, tb1, tb1_, tb2, out, ao, bo
     try:
         out.get_tk_widget().delete('rec')
     except:
         pass
     if event.button == 1 and mof == -1 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
         x2, y2 = event.xdata, event.ydata
+        if x1 is None or x2 is None:
+            mof = 1
+            return
         if value2.get() == '---Plot3---':
             if ao:
                 ao.set_xlim(sorted([x1, x2]))
@@ -4916,6 +4918,22 @@ if __name__ == '__main__':
             print('\033[90mEDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
+        ko = ''
+        fphi = []
+        epos = []
+        ffphi = []
+        efwhm = []
+        fk = []
+        emin = []
+        emax = []
+        semin = []
+        semax = []
+        seaa1 = []
+        seaa2 = []
+        sefp = []
+        sefi = []
+        # seresult = []
+        # secst = []
         print('\033[90mNo EDC fitted data preloaded (Casa)\033[0m')
 
     try:
@@ -4952,10 +4970,10 @@ if __name__ == '__main__':
         kmax = []
         skmin = []
         skmax = []
-        smfp = []
-        smfi = []
         smaa1 = []
         smaa2 = []
+        smfp = []
+        smfi = []
         smresult = []
         smcst = []
         print('\033[90mNo MDC fitted data preloaded (Casa)\033[0m')
