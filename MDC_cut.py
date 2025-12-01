@@ -71,7 +71,7 @@ import tkinter as tk
 from tkinter import filedialog as fd
 import io
 from base64 import b64decode
-import queue, time
+import queue
 import threading
 import warnings
 import sys, shutil

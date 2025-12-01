@@ -895,7 +895,7 @@ class motion:
                                 self.tb0 = self.bo.scatter(self.pos, self.vfe-self.fev, marker='.',
                                                 s=0.3, c='black')
                         if self.mf == 1:
-                            tb0_.remove()
+                            self.tb0_.remove()
                             ophimin = np.arcsin(
                                 (self.rpos-self.fwhm/2)/np.sqrt(2*m*self.fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
                             ophimax = np.arcsin(
