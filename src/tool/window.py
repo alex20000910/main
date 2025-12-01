@@ -819,14 +819,6 @@ class Plot1Window(RestrictedToplevel, IconManager, ABC):
     @abstractmethod
     def chf(self):
         pass
-    
-    @abstractmethod
-    def o_plot1(self):
-        pass
-    
-    @abstractmethod
-    def plot1(self, *e):
-        pass
 
 class Plot1Window_MDC_curves(Plot1Window):
     def __init__(self, master: tk.Misc | None, scale: float, d: int, l: int, p: int):
@@ -988,8 +980,4 @@ class Plot3Window(RestrictedToplevel, IconManager, ABC):
     
     @abstractmethod
     def chf(self):
-        pass
-    
-    @abstractmethod
-    def o_plot3(self):
         pass

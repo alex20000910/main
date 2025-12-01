@@ -4,12 +4,17 @@ import threading
 from ctypes import windll
 from abc import ABC, abstractmethod
 import numpy as np
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.collections import PathCollection
+from matplotlib.lines import Line2D
+from matplotlib.axes._axes import Axes
 import xarray as xr
 from PIL import Image, ImageTk
 import win32clipboard
 import cv2
 import psutil
 from base64 import b64decode
+from typing import Literal
 
 class CEC_Object(ABC):
     @abstractmethod
@@ -619,318 +624,326 @@ def save(format='{self.suffix}'):
 '''
         return body
 
-class motion(ABC):
-    def __init__(self, scale, value: tk.StringVar, value1: tk.StringVar, value2: tk.StringVar,
-                 ao, out, data: xr.DataArray, emf, pos, fwhm) -> None:
+class motion:
+    def __init__(self, scale, value: tk.StringVar, value1: tk.StringVar, value2: tk.StringVar, k_offset: tk.StringVar,
+                 be: np.ndarray, k: np.ndarray, bb_offset: tk.StringVar, bbk_offset: tk.StringVar,
+                 ao: Axes, bo: Axes, out: FigureCanvasTkAgg, figy: float|int,
+                 rcx: Axes, rcy: Axes, xdata: tk.Label, ydata: tk.Label,
+                 emf: Literal['KE', 'BE'], data: xr.DataArray, vfe: float, ev: np.ndarray, phi: np.ndarray,
+                 pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
+                 epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
+                 mp: int, ep: int, mf: int, ef: int, xl: tuple[float], yl: tuple[float],
+                 tb0: PathCollection, tb0_: PathCollection, tb1: PathCollection, tb1_: PathCollection, tb2: Line2D
+                 ) -> None:
         self.mof = 1
         self.scale = scale
+        self.value, self.value1, self.value2, self.k_offset = value, value1, value2, k_offset
+        self.be, self.k, self.bb_offset, self.bbk_offset = be, k, bb_offset, bbk_offset
+        self.ao, self.bo, self.out, self.figy = ao, bo, out, figy
+        self.rcx, self.rcy, self.xdata, self.ydata, self.emf = rcx, rcy, xdata, ydata, emf
+        self.data, self.vfe, self.ev, self.phi = data, vfe, ev, phi
+        self.pos, self.fwhm, self.rpos, self.ophi, self.fev = pos, fwhm, rpos, ophi, fev
+        self.epos, self.efwhm, self.fk, self.ffphi, self.fphi = epos, efwhm, fk, ffphi, fphi
+        self.mp, self.ep, self.mf, self.ef, self.xl, self.yl = mp, ep, mf, ef, xl, yl
+        self.tb0, self.tb0_, self.tb1, self.tb1_, self.tb2 = tb0, tb0_, tb1, tb1_, tb2
     
     def size(self, s: int) -> int:
         return int(self.scale*s)
     
     def move(self, event):
-        global xdata, ydata, x1, y1, x2, y2
         if event.xdata != None:
-            out.get_tk_widget().config(cursor="crosshair")
+            self.out.get_tk_widget().config(cursor="crosshair")
             try:
-                out.get_tk_widget().delete('rec')
+                self.out.get_tk_widget().delete('rec')
             except:
                 pass
-            if self.mof == -1 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
-                x2, y2 = event.xdata, event.ydata
+            if self.mof == -1 and self.value1.get() == '---Plot2---' and self.value2.get() != 'Real & Imaginary' and 'KK Transform' not in self.value2.get() and 'MDC Curves' not in self.value.get():
                 px2, py2 = event.x, event.y
-                out.get_tk_widget().create_rectangle((px1, int(figy*100)-py1), (px2, int(figy*100)-py2),
+                self.out.get_tk_widget().create_rectangle((self.px1, int(self.figy*100)-self.py1), (px2, int(self.figy*100)-py2),
                                                     outline='black', width=2, tag='rec')
-            if value.get() == 'Raw Data':
+            if self.value.get() == 'Raw Data':
                 if event.inaxes:
                     cxdata = event.xdata
                     cydata = event.ydata
-                    xf = (cxdata >= ao.get_xlim()[0] and cxdata <= ao.get_xlim()[1])
-                    if emf=='KE':
-                        yf = (cydata >= ao.get_ylim()[0] and cydata <= ao.get_ylim()[1])
+                    xf = (cxdata >= self.ao.get_xlim()[0] and cxdata <= self.ao.get_xlim()[1])
+                    if self.emf=='KE':
+                        yf = (cydata >= self.ao.get_ylim()[0] and cydata <= self.ao.get_ylim()[1])
                     else:
-                        yf = (cydata <= ao.get_ylim()[0] and cydata >= ao.get_ylim()[1])
+                        yf = (cydata <= self.ao.get_ylim()[0] and cydata >= self.ao.get_ylim()[1])
                     if xf and yf:
-                        if emf=='KE':
-                            dx = data.sel(
-                                eV=cydata, method='nearest').to_numpy().reshape(len(phi))
+                        if self.emf=='KE':
+                            dx = self.data.sel(
+                                eV=cydata, method='nearest').to_numpy().reshape(len(self.ophi))
                         else:
-                            dx = data.sel(
-                                eV=vfe-cydata, method='nearest').to_numpy().reshape(len(phi))
-                        dy = data.sel(
-                            phi=cxdata, method='nearest').to_numpy().reshape(len(ev))
-                        # try:
-                        #     x.remove()
-                        #     y.remove()
-                        # except:
-                        #     pass
-                        # x=a.axvline(cxdata,color='r')
-                        # y=a.axhline(cydata,color='r')
-                        rcx.clear()
-                        rcy.clear()
-                        rcx.set_title('            Raw Data', font='Arial', fontsize=size(16))
-                        rcx.plot(phi, dx, c='black')
-                        if emf=='KE':
-                            rcy.plot(dy, ev, c='black')
+                            dx = self.data.sel(
+                                eV=self.vfe-cydata, method='nearest').to_numpy().reshape(len(self.phi))
+                        dy = self.data.sel(
+                            phi=cxdata, method='nearest').to_numpy().reshape(len(self.ev))
+                        self.rcx.clear()
+                        self.rcy.clear()
+                        self.rcx.set_title('            Raw Data', font='Arial', fontsize=self.size(16))
+                        self.rcx.plot(self.phi, dx, c='black')
+                        if self.emf=='KE':
+                            self.rcy.plot(dy, self.ev, c='black')
                         else:
-                            rcy.plot(dy, vfe-ev, c='black')
-                        rcx.set_xticks([])
-                        rcy.set_yticks([])
-                        rcx.set_xlim(ao.get_xlim())
-                        rcy.set_ylim(ao.get_ylim())
-                        out.draw()
-            xdata.config(text='xdata:'+str(' %.3f' % event.xdata))
-            ydata.config(text='ydata:'+str(' %.3f' % event.ydata))
+                            self.rcy.plot(dy, self.vfe-self.ev, c='black')
+                        self.rcx.set_xticks([])
+                        self.rcy.set_yticks([])
+                        self.rcx.set_xlim(self.ao.get_xlim())
+                        self.rcy.set_ylim(self.ao.get_ylim())
+                        self.out.draw()
+            self.xdata.config(text='xdata:'+str(' %.3f' % event.xdata))
+            self.ydata.config(text='ydata:'+str(' %.3f' % event.ydata))
         else:
-            if value.get() == 'Raw Data':
-                rcx.clear()
-                rcy.clear()
-                rcx.set_xticks([])
-                rcx.set_yticks([])
-                rcy.set_xticks([])
-                rcy.set_yticks([])
-                rcx.set_title('            Raw Data', font='Arial', fontsize=size(16))
-                out.draw()
-            out.get_tk_widget().config(cursor="")
-            xdata.config(text='xdata:')
-            ydata.config(text='ydata:')
-    self.mof = 1
-
+            if self.value.get() == 'Raw Data':
+                self.rcx.clear()
+                self.rcy.clear()
+                self.rcx.set_xticks([])
+                self.rcx.set_yticks([])
+                self.rcy.set_xticks([])
+                self.rcy.set_yticks([])
+                self.rcx.set_title('            Raw Data', font='Arial', fontsize=self.size(16))
+                self.out.draw()
+            self.out.get_tk_widget().config(cursor="")
+            self.xdata.config(text='xdata:')
+            self.ydata.config(text='ydata:')
 
     def press(self, event):
-        global x1, y1, mof, px1, py1, ao, bo, out, tb0, tb0_, tb1, tb1_, tb2
+        # global x1, y1, mof, px1, py1, ao, bo, out, tb0, tb0_, tb1, tb1_, tb2
+        m, h = 9.10938356*10**-31, 6.62607015*10**-34
         if event.button == 1:
-            x1, y1 = event.xdata, event.ydata
-            if value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
-                px1, py1 = event.x, event.y
+            self.x1, self.y1 = event.xdata, event.ydata
+            if self.value1.get() == '---Plot2---' and self.value2.get() != 'Real & Imaginary' and 'KK Transform' not in self.value2.get() and 'MDC Curves' not in self.value.get():
+                self.px1, self.py1 = event.x, event.y
                 self.mof = -1
-        elif event.button == 3 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
-            if value2.get() == '---Plot3---':
-                if ao:
-                    ao.set_xlim(xl)
-                    ao.set_ylim(yl)
-                    out.draw()
+        elif event.button == 3 and self.value1.get() == '---Plot2---' and self.value2.get() != 'Real & Imaginary' and 'KK Transform' not in self.value2.get() and 'MDC Curves' not in self.value.get():
+            if self.value2.get() == '---Plot3---':
+                if self.ao:
+                    self.ao.set_xlim(self.xl)
+                    self.ao.set_ylim(self.yl)
+                    self.out.draw()
             else:
-                bo.set_xlim(xl)
-                bo.set_ylim(yl)
+                self.bo.set_xlim(self.xl)
+                self.bo.set_ylim(self.yl)
                 try:
-                    if mp == 1:
-                        tb0.remove()
-                        if emf=='KE':
-                            tb0 = bo.scatter(pos, fev, marker='.', s=scale*scale*0.3, c='black')
+                    if self.mp == 1:
+                        self.tb0.remove()
+                        if self.emf=='KE':
+                            self.tb0 = self.bo.scatter(self.pos, self.fev, marker='.', s=self.scale*self.scale*0.3, c='black')
                         else:
-                            tb0 = bo.scatter(pos, vfe-fev, marker='.', s=scale*scale*0.3, c='black')
+                            self.tb0 = self.bo.scatter(self.pos, self.vfe-self.fev, marker='.', s=self.scale*self.scale*0.3, c='black')
                             
-                    if mf == 1:
-                        tb0_.remove()
+                    if self.mf == 1:
+                        self.tb0_.remove()
                         ophimin = np.arcsin(
-                            (rpos-fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                            (self.rpos-self.fwhm/2)/np.sqrt(2*m*self.fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
                         ophimax = np.arcsin(
-                            (rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
-                        posmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
-                            (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                        posmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
-                            (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-                        if emf=='KE':
-                            tb0_ = bo.scatter([posmin, posmax], [
-                                            fev, fev], marker='|', c='grey', s=scale*scale*10, alpha=0.8)
+                            (self.rpos+self.fwhm/2)/np.sqrt(2*m*self.fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                        posmin = np.sqrt(2*m*self.fev*1.602176634*10**-19)*np.sin(
+                            (np.float64(self.k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
+                        posmax = np.sqrt(2*m*self.fev*1.602176634*10**-19)*np.sin(
+                            (np.float64(self.k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
+                        if self.emf=='KE':
+                            self.tb0_ = self.bo.scatter([posmin, posmax], [
+                                            self.fev, self.fev], marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)
                         else:
-                            tb0_ = bo.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=scale*scale*10, alpha=0.8)
+                            self.tb0_ = self.bo.scatter([posmin, posmax], [self.vfe-self.fev, self.vfe-self.fev], marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)
                 except:
                     pass
                 try:
-                    if ep == 1:
-                        tb1.remove()
-                        if emf=='KE':
-                            tb1 = bo.scatter(fk, epos, marker='.', s=scale*scale*0.3, c='black')
+                    if self.ep == 1:
+                        self.tb1.remove()
+                        if self.emf=='KE':
+                            self.tb1 = self.bo.scatter(self.fk, self.epos, marker='.', s=self.scale*self.scale*0.3, c='black')
                         else:
-                            tb1 = bo.scatter(fk, vfe-epos, marker='.', s=scale*scale*0.3, c='black')
+                            self.tb1 = self.bo.scatter(self.fk, self.vfe-self.epos, marker='.', s=self.scale*self.scale*0.3, c='black')
                             
-                    if ef == 1:
-                        tb1_.remove()
-                        eposmin = epos-efwhm/2
-                        eposmax = epos+efwhm/2
-                        if emf=='KE':
-                            tb1_ = bo.scatter(
-                                [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=scale*scale*10, alpha=0.8)
+                    if self.ef == 1:
+                        self.tb1_.remove()
+                        eposmin = self.epos-self.efwhm/2
+                        eposmax = self.epos+self.efwhm/2
+                        if self.emf=='KE':
+                            self.tb1_ = self.bo.scatter(
+                                [self.fk, self.fk], [eposmin, eposmax], marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
                         else:
-                            tb1_ = bo.scatter(
-                                [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=scale*scale*10, alpha=0.8)
+                            self.tb1_ = self.bo.scatter(
+                                [self.fk, self.fk], [self.vfe-eposmin, self.vfe-eposmax], marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
                 except:
                     pass
                 try:
-                    if value2.get() == 'Data Plot with Pos and Bare Band':
-                        tb2.remove()
-                        if emf=='KE':
-                            tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be -
-                                        np.float64(bb_offset.get()))/1000+vfe, linewidth=scale*0.3, c='red', linestyle='--')
+                    if self.value2.get() == 'Data Plot with Pos and Bare Band':
+                        self.tb2.remove()
+                        if self.emf=='KE':
+                            self.tb2, = self.bo.plot(self.k*np.float64(self.bbk_offset.get()), (self.be -
+                                        np.float64(self.bb_offset.get()))/1000+self.vfe, linewidth=self.scale*0.3, c='red', linestyle='--')
                         else:
                             print('plotting bb0')
-                            tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
-                                        np.float64(bb_offset.get()))/1000, linewidth=scale*0.3, c='red', linestyle='--')
+                            self.tb2, = self.bo.plot(self.k*np.float64(self.bbk_offset.get()), (-self.be +
+                                        np.float64(self.bb_offset.get()))/1000, linewidth=self.scale*0.3, c='red', linestyle='--')
                             print('plotted bb0')
                 except:
                     pass
-                out.draw()
+                self.out.draw()
             self.mof = 1
 
 
     def release(self, event):
-        global mof, tb0, tb0_, tb1, tb1_, tb2, out, ao, bo
+        # global mof, tb0, tb0_, tb1, tb1_, tb2, out, ao, bo
+        m, h = 9.10938356*10**-31, 6.62607015*10**-34
         try:
-            out.get_tk_widget().delete('rec')
+            self.out.get_tk_widget().delete('rec')
         except:
             pass
-        if event.button == 1 and self.mof == -1 and value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' not in value.get():
+        if event.button == 1 and self.mof == -1 and self.value1.get() == '---Plot2---' and self.value2.get() != 'Real & Imaginary' and 'KK Transform' not in self.value2.get() and 'MDC Curves' not in self.value.get():
             x2, y2 = event.xdata, event.ydata
-            if x1 is None or x2 is None:
+            if self.x1 is None or x2 is None:
                 self.mof = 1
                 return
-            if value2.get() == '---Plot3---':
-                if ao:
-                    ao.set_xlim(sorted([x1, x2]))
-                    if emf=='KE':    
-                        ao.set_ylim(sorted([y1, y2]))
+            if self.value2.get() == '---Plot3---':
+                if self.ao:
+                    self.ao.set_xlim(sorted([self.x1, x2]))
+                    if self.emf=='KE':    
+                        self.ao.set_ylim(sorted([self.y1, y2]))
                     else:
-                        ao.set_ylim(sorted([y1, y2], reverse=True))
-                    out.draw()
+                        self.ao.set_ylim(sorted([self.y1, y2], reverse=True))
+                    self.out.draw()
             else:
-                bo.set_xlim(sorted([x1, x2]))
-                if emf=='KE':    
-                    bo.set_ylim(sorted([y1, y2]))
+                self.bo.set_xlim(sorted([self.x1, x2]))
+                if self.emf=='KE':    
+                    self.bo.set_ylim(sorted([self.y1, y2]))
                 else:
-                    bo.set_ylim(sorted([y1, y2], reverse=True))
-                if abs(x1-x2) < (xl[1]-xl[0])/3*2 or abs(y1-y2) < (yl[1]-yl[0])/3*2:
+                    self.bo.set_ylim(sorted([self.y1, y2], reverse=True))
+                if abs(self.x1-x2) < (self.xl[1]-self.xl[0])/3*2 or abs(self.y1-y2) < (self.yl[1]-self.yl[0])/3*2:
                     try:
-                        if mp == 1:
-                            tb0.remove()
-                        if mf == 1:
-                            tb0_.remove()
+                        if self.mp == 1:
+                            self.tb0.remove()
+                        if self.mf == 1:
+                            self.tb0_.remove()
                     except:
                         pass
                     try:
-                        if ep == 1:
-                            tb1.remove()
-                        if ef == 1:
-                            tb1_.remove()
+                        if self.ep == 1:
+                            self.tb1.remove()
+                        if self.ef == 1:
+                            self.tb1_.remove()
                     except:
                         pass
                     try:
-                        tb2.remove()
+                        self.tb2.remove()
                     except:
                         pass
-                    if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
+                    if self.value2.get() == 'Data Plot with Pos' or self.value2.get() == 'Data Plot with Pos and Bare Band':
                         try:
-                            if mp == 1:
-                                if emf=='KE':
-                                    tb0 = bo.scatter(
-                                        pos, fev, marker='.', s=scale*scale*30, c='black')
+                            if self.mp == 1:
+                                if self.emf=='KE':
+                                    self.tb0 = self.bo.scatter(
+                                        self.pos, self.fev, marker='.', s=self.scale*self.scale*30, c='black')
                                 else:
-                                    tb0 = bo.scatter(
-                                        pos, vfe-fev, marker='.', s=scale*scale*30, c='black')
-                            if mf == 1:
+                                    self.tb0 = self.bo.scatter(
+                                        self.pos, self.vfe-self.fev, marker='.', s=self.scale*self.scale*30, c='black')
+                            if self.mf == 1:
                                 ophimin = np.arcsin(
-                                    (rpos-fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                                    (self.rpos-self.fwhm/2)/np.sqrt(2*m*self.fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
                                 ophimax = np.arcsin(
-                                    (rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
-                                posmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
-                                    (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                                posmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
-                                    (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-                                if emf=='KE':
-                                    tb0_ = bo.scatter([posmin, posmax], [
-                                                    fev, fev], marker='|', c='grey', s=scale*scale*50, alpha=0.8)
+                                    (self.rpos+self.fwhm/2)/np.sqrt(2*m*self.fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                                posmin = np.sqrt(2*m*self.fev*1.602176634*10**-19)*np.sin(
+                                    (np.float64(self.k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
+                                posmax = np.sqrt(2*m*self.fev*1.602176634*10**-19)*np.sin(
+                                    (np.float64(self.k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
+                                if self.emf=='KE':
+                                    self.tb0_ = self.bo.scatter([posmin, posmax], [
+                                                    self.fev, self.fev], marker='|', c='grey', s=self.scale*self.scale*50, alpha=0.8)
                                 else:
-                                    tb0_ = bo.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=scale*scale*50, alpha=0.8)
+                                    self.tb0_ = self.bo.scatter([posmin, posmax], [self.vfe-self.fev, self.vfe-self.fev], marker='|', c='grey', s=self.scale*self.scale*50, alpha=0.8)
 
                         except:
                             pass
                         try:
-                            if ep == 1:
-                                if emf=='KE':
-                                    tb1 = bo.scatter(
-                                        fk, epos, marker='.', s=scale*scale*30, c='black')
+                            if self.ep == 1:
+                                if self.emf=='KE':
+                                    self.tb1 = self.bo.scatter(
+                                        self.fk, self.epos, marker='.', s=self.scale*self.scale*30, c='black')
                                 else:
-                                    tb1 = bo.scatter(
-                                        fk, vfe-epos, marker='.', s=scale*scale*30, c='black')
-                            if ef == 1:
-                                eposmin = epos-efwhm/2
-                                eposmax = epos+efwhm/2
-                                if emf=='KE':
-                                    tb1_ = bo.scatter(
-                                        [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=scale*scale*50, alpha=0.8)
+                                    self.tb1 = self.bo.scatter(
+                                        self.fk, self.vfe-self.epos, marker='.', s=self.scale*self.scale*30, c='black')
+                            if self.ef == 1:
+                                eposmin = self.epos-self.efwhm/2
+                                eposmax = self.epos+self.efwhm/2
+                                if self.emf=='KE':
+                                    self.tb1_ = self.bo.scatter(
+                                        [self.fk, self.fk], [eposmin, eposmax], marker='_', c='grey', s=self.scale*self.scale*50, alpha=0.8)
                                 else:
-                                    tb1_ = bo.scatter(
-                                    [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=scale*scale*50, alpha=0.8)
+                                    self.tb1_ = self.bo.scatter(
+                                    [self.fk, self.fk], [self.vfe-eposmin, self.vfe-eposmax], marker='_', c='grey', s=self.scale*self.scale*50, alpha=0.8)
                         except:
                             pass
-                        if value2.get() == 'Data Plot with Pos and Bare Band':
-                            if emf=='KE':
-                                tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be -
-                                            np.float64(bb_offset.get()))/1000+vfe, linewidth=scale*5, c='red', linestyle='--')
+                        if self.value2.get() == 'Data Plot with Pos and Bare Band':
+                            if self.emf=='KE':
+                                self.tb2, = self.bo.plot(self.k*np.float64(self.bbk_offset.get()), (self.be -
+                                            np.float64(self.bb_offset.get()))/1000+self.vfe, linewidth=self.scale*5, c='red', linestyle='--')
                             else:
-                                tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
-                                            np.float64(bb_offset.get()))/1000, linewidth=scale*5, c='red', linestyle='--')
+                                self.tb2, = self.bo.plot(self.k*np.float64(self.bbk_offset.get()), (-self.be +
+                                            np.float64(self.bb_offset.get()))/1000, linewidth=self.scale*5, c='red', linestyle='--')
                 else:
                     try:
-                        if mp == 1:
-                            tb0.remove()
-                            if emf=='KE':
-                                tb0 = bo.scatter(pos, fev, marker='.',
+                        if self.mp == 1:
+                            self.tb0.remove()
+                            if self.emf=='KE':
+                                self.tb0 = self.bo.scatter(self.pos, self.fev, marker='.',
                                                 s=0.3, c='black')
                             else:
-                                tb0 = bo.scatter(pos, vfe-fev, marker='.',
+                                self.tb0 = self.bo.scatter(self.pos, self.vfe-self.fev, marker='.',
                                                 s=0.3, c='black')
-                        if mf == 1:
+                        if self.mf == 1:
                             tb0_.remove()
                             ophimin = np.arcsin(
-                                (rpos-fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                                (self.rpos-self.fwhm/2)/np.sqrt(2*m*self.fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
                             ophimax = np.arcsin(
-                                (rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
-                            posmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
-                                (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
-                            posmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
-                                (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-                            if emf=='KE':
-                                tb0_ = bo.scatter([posmin, posmax], [
-                                                fev, fev], marker='|', c='grey', s=scale*scale*10, alpha=0.8)
+                                (self.rpos+self.fwhm/2)/np.sqrt(2*m*self.fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                            posmin = np.sqrt(2*m*self.fev*1.602176634*10**-19)*np.sin(
+                                (np.float64(self.k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
+                            posmax = np.sqrt(2*m*self.fev*1.602176634*10**-19)*np.sin(
+                                (np.float64(self.k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
+                            if self.emf=='KE':
+                                self.tb0_ = self.bo.scatter([posmin, posmax], [
+                                                self.fev, self.fev], marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)
                             else:
-                                tb0_ = bo.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=scale*scale*10, alpha=0.8)
+                                self.tb0_ = self.bo.scatter([posmin, posmax], [self.vfe-self.fev, self.vfe-self.fev], marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)
                     except:
                         pass
                     try:
-                        if ep == 1:
-                            tb1.remove()
-                            if emf=='KE':
-                                tb1 = bo.scatter(fk, epos, marker='.',
+                        if self.ep == 1:
+                            self.tb1.remove()
+                            if self.emf=='KE':
+                                self.tb1 = self.bo.scatter(self.fk, self.epos, marker='.',
                                                 s=0.3, c='black')
                             else:
-                                tb1 = bo.scatter(fk, vfe-epos, marker='.',
+                                self.tb1 = self.bo.scatter(self.fk, self.vfe-self.epos, marker='.',
                                             s=0.3, c='black')
-                        if ef == 1:
-                            tb1_.remove()
-                            eposmin = epos-efwhm/2
-                            eposmax = epos+efwhm/2
-                            if emf=='KE':
-                                tb1_ = bo.scatter(
-                                    [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=scale*scale*10, alpha=0.8)
+                        if self.ef == 1:
+                            self.tb1_.remove()
+                            eposmin = self.epos-self.efwhm/2
+                            eposmax = self.epos+self.efwhm/2
+                            if self.emf=='KE':
+                                self.tb1_ = self.bo.scatter(
+                                    [self.fk, self.fk], [eposmin, eposmax], marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
                             else:
-                                tb1_ = bo.scatter(
-                                    [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=scale*scale*10, alpha=0.8)
+                                self.tb1_ = self.bo.scatter(
+                                    [self.fk, self.fk], [self.vfe-eposmin, self.vfe-eposmax], marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
                     except:
                         pass
                     try:
-                        if value2.get() == 'Data Plot with Pos and Bare Band':
-                            tb2.remove()
-                            if emf=='KE':
-                                tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be+np.float64(
-                                    bb_offset.get()))/1000+vfe, linewidth=scale*0.3, c='red', linestyle='--')
+                        if self.value2.get() == 'Data Plot with Pos and Bare Band':
+                            self.tb2.remove()
+                            if self.emf=='KE':
+                                self.tb2, = self.bo.plot(self.k*np.float64(self.bbk_offset.get()), (self.be+np.float64(
+                                    self.bb_offset.get()))/1000+self.vfe, linewidth=self.scale*0.3, c='red', linestyle='--')
                             else:
-                                tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be+np.float64(
-                                    bb_offset.get()))/1000, linewidth=scale*0.3, c='red', linestyle='--')
+                                self.tb2, = self.bo.plot(self.k*np.float64(self.bbk_offset.get()), (self.be+np.float64(
+                                    self.bb_offset.get()))/1000, linewidth=self.scale*0.3, c='red', linestyle='--')
                     except:
                         pass
-                out.draw()
+                self.out.draw()
             self.mof = 1
 
 def on_configure(g, *e):
