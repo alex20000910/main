@@ -673,7 +673,7 @@ class motion:
                     if xf and yf:
                         if self.emf=='KE':
                             dx = self.data.sel(
-                                eV=cydata, method='nearest').to_numpy().reshape(len(self.ophi))
+                                eV=cydata, method='nearest').to_numpy().reshape(len(self.phi))
                         else:
                             dx = self.data.sel(
                                 eV=self.vfe-cydata, method='nearest').to_numpy().reshape(len(self.phi))
@@ -709,7 +709,6 @@ class motion:
             self.ydata.config(text='ydata:')
 
     def press(self, event):
-        # global x1, y1, mof, px1, py1, ao, bo, out, tb0, tb0_, tb1, tb1_, tb2
         m, h = 9.10938356*10**-31, 6.62607015*10**-34
         if event.button == 1:
             self.x1, self.y1 = event.xdata, event.ydata
@@ -786,9 +785,7 @@ class motion:
                 self.out.draw()
             self.mof = 1
 
-
     def release(self, event):
-        # global mof, tb0, tb0_, tb1, tb1_, tb2, out, ao, bo
         m, h = 9.10938356*10**-31, 6.62607015*10**-34
         try:
             self.out.get_tk_widget().delete('rec')

@@ -756,7 +756,7 @@ class CalculatorWindow(tk.Toplevel):
         self.calk.set('0')
         self.calk.trace_add('write', self.cal)
         self.cale = tk.StringVar()
-        self.cale.set('0')
+        self.cale.set('21.2')
         self.cale.trace_add('write', self.cal)
         self.calken = tk.Entry(fr, font=("Arial", self.size(18), "bold"),
                         width=15, textvariable=self.calk, bd=9)

@@ -738,6 +738,10 @@ def pre_process(input):
 
 def gui_exp_origin(*e):
     global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,l1,b3,origin_func
+    if data is None:
+        st.put('No data loaded!')
+        messagebox.showwarning("Warning","No data loaded!")
+        return
     limg.config(image=img[np.random.randint(len(img))])
     if 'gori' in globals():
         gori.destroy()
@@ -1293,6 +1297,10 @@ def send_to_clipboard(clip_type, data):
             
 @pool_protect
 def trans_plot(*e):
+    if data is None:
+        st.put('No data loaded!')
+        messagebox.showwarning("Warning","No data loaded!")
+        return
     global gtp
     gtp=RestrictedToplevel(g)
     gtp.title('Spectrogram')
@@ -1473,6 +1481,10 @@ def o_load(drop=False, files=''):
 @pool_protect
 def o_ecut():
     global data, ev, phi, mfpath, limg, img, name, rdd, st
+    if data is None:
+        st.put('No data loaded!')
+        messagebox.showwarning("Warning","No data loaded!")
+        return
     limg.config(image=img[np.random.randint(len(img))])
     mfpath = ''
     os.chdir(os.path.dirname(rdd))
@@ -1510,8 +1522,13 @@ def o_ecut():
     st.put('Done')
 
 
+@pool_protect
 def o_angcut():
     global data, ev, phi, efpath, limg, img, name, rdd, st
+    if data is None:
+        st.put('No data loaded!')
+        messagebox.showwarning("Warning","No data loaded!")
+        return
     limg.config(image=img[np.random.randint(len(img))])
     efpath = ''
     os.chdir(os.path.dirname(rdd))
@@ -1549,6 +1566,10 @@ def o_angcut():
 
 @pool_protect
 def cmfit(*e):
+    if data is None:
+        st.put('No data loaded!')
+        messagebox.showwarning("Warning","No data loaded!")
+        return
     import tool.MDC_Fitter
     from tool.MDC_Fitter import mgg as mgg
     if mgg is None:
@@ -1565,6 +1586,10 @@ def cmfit(*e):
 
 @pool_protect
 def cefit(*e):
+    if data is None:
+        st.put('No data loaded!')
+        messagebox.showwarning("Warning","No data loaded!")
+        return
     import tool.EDC_Fitter
     from tool.EDC_Fitter import egg as egg
     if egg is None:
@@ -3046,6 +3071,10 @@ def cut_select(event):
 
 def exp(*e):
     global value, value1, value2, value3, data, ev, phi, mx, my, mz, mfpath, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax, annot
+    if data is None:
+        st.put('No data loaded!')
+        messagebox.showwarning("Warning","No data loaded!")
+        return
     limg.config(image=img[np.random.randint(len(img))])
     selectors = []
     cursor = []
@@ -4568,11 +4597,11 @@ if __name__ == '__main__':
                 else:
                     print(_,':', data.attrs[_].replace('\n','\n              '))
             dvalue = list(data.attrs.values())
-            lensmode = dvalue[8]
             rdd = path  # old version data path
             dpath = path    # new version data path
+            name, e_photon, description = dvalue[0], float(dvalue[3].split()[0]), dvalue[13]
     except:
-        data, lfs = None, None
+        data, lfs, name, description, e_photon = None, None, None, None, None
         print('\033[90mNo Raw Data preloaded\033[0m')
 
     try:
