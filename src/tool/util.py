@@ -8,6 +8,9 @@ from matplotlib.text import Annotation
 from PIL import Image, ImageTk
 from base64 import b64decode
 from typing import Literal
+from tkinter import messagebox
+import queue
+import gc, tqdm
 
 class app_param:
     def __init__(self, hwnd=None, scale=None, dpi=None, bar_pos=None, g_mem=None):
@@ -1215,3 +1218,349 @@ class exp_motion:
         # self.f.canvas.draw_idle()
         copy_to_clipboard(self.f)
         self.f.show()
+
+class plots_util(ABC):
+    def __init__(self, scale: float, value: tk.StringVar, value1: tk.StringVar, value2: tk.StringVar, value3: tk.StringVar,
+                 be: np.ndarray, k: np.ndarray, k_offset: tk.StringVar, bb_offset: tk.StringVar, bbk_offset: tk.StringVar, b_sw: tk.Button,
+                 limg: tk.Label, img: list[tk.PhotoImage], st: queue.Queue, im_kernel: int,
+                 optionList: list[str], optionList1: list[str], optionList2: list[str],
+                 emf: Literal['KE', 'BE'], data: xr.DataArray, vfe: float, ev: np.ndarray, phi: np.ndarray,
+                 pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
+                 epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
+                 mp: int, ep: int, mf: int, ef: int, npzf: bool, fig: Figure, out: FigureCanvasTkAgg,
+                 d: int, l: int, p: int
+                 ):
+        self.scale, self.value, self.value1, self.value2, self.value3 = scale, value, value1, value2, value3
+        self.be, self.k, self.k_offset, self.bb_offset, self.bbk_offset, self.b_sw = be, k, k_offset, bb_offset, bbk_offset, b_sw
+        self.limg, self.img, self.st, self.im_kernel = limg, img, st, im_kernel
+        self.optionList, self.optionList1, self.optionList2 = optionList, optionList1, optionList2
+        self.emf, self.data, self.vfe, self.ev, self.phi = emf, data, vfe, ev, phi
+        self.pos, self.fwhm, self.rpos, self.ophi, self.fev = pos, fwhm, rpos, ophi, fev
+        self.epos, self.efwhm, self.fk, self.ffphi, self.fphi = epos, efwhm, fk, ffphi, fphi
+        self.mp, self.ep, self.mf, self.ef, self.npzf = mp, ep, mf, ef, npzf
+        self.fig, self.out = fig, out
+        self.d, self.l, self.p = d, l, p
+        self.rcx, self.rcy, self.acb = None, None, None
+
+    @abstractmethod
+    def pars(self):
+        pass
+
+    @abstractmethod
+    def show_version(self):
+        pass
+    
+    @abstractmethod
+    def laplacian_filter(self, data, im_kernel):
+        pass
+    
+    @abstractmethod
+    def main_plot_bind(self):
+        pass
+    
+    @abstractmethod
+    def climon(self):
+        pass
+    
+    @abstractmethod
+    def climoff(self):
+        pass
+    
+    def size(self, s: int) -> int:
+        return int(self.scale*s)
+    
+    def rplot(self, f, canvas):
+        """
+        Plot the raw data on a given canvas.
+
+        Parameters
+        -----
+            f (Figure object): The figure object on which the plot will be created.
+            canvas (Canvas object): The canvas object on which the plot will be drawn.
+
+        Returns
+        -----
+            None
+        """
+        # global h0, ao, xl, yl, rcx, rcy, acb
+        data, ev, phi, value3, ev, phi, vfe = self.data, self.ev, self.phi, self.value3, self.ev, self.phi, self.vfe
+        emf, npzf = self.emf, self.npzf
+        
+        ao = f.add_axes([0.13, 0.1, 0.6, 0.65])
+        rcx = f.add_axes([0.13, 0.78, 0.6, 0.15])
+        rcy = f.add_axes([0.75, 0.1, 0.12, 0.65])
+        acb = f.add_axes([0.9, 0.1, 0.02, 0.65])
+        rcx.set_xticks([])
+        rcx.set_yticks([])
+        rcy.set_xticks([])
+        rcy.set_yticks([])
+        if emf=='KE':
+            tx, ty = np.meshgrid(phi, ev)
+        else:
+            tx, ty = np.meshgrid(phi, vfe-ev)
+        tz = data.to_numpy()
+        # h1 = a.scatter(tx,ty,c=tz,marker='o',s=scale*scale*0.9,cmap=value3.get());
+        h0 = ao.pcolormesh(tx, ty, tz, cmap=value3.get())
+        f.colorbar(h0, cax=acb, orientation='vertical')
+        # a.set_title('Raw Data',font='Arial',fontsize=self.size(16))
+        rcx.set_title('            Raw Data', font='Arial', fontsize=self.size(16))
+        if npzf:ao.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(12))
+        else:ao.set_xlabel('Angle (deg)', font='Arial', fontsize=self.size(12))
+        if emf=='KE':
+            ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=self.size(12))
+        else:
+            ao.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=self.size(12))
+            ao.invert_yaxis()
+        xl = ao.get_xlim()
+        yl = ao.get_ylim()
+        canvas.draw()
+        
+        self.h0, self.ao, self.xl, self.yl, self.rcx, self.rcy, self.acb = h0, ao, xl, yl, rcx, rcy, acb
+    
+    def o_plot1(self):
+        # global pflag, h0, ao, xl, yl
+        value, value1, value2, value3 = self.value, self.value1, self.value2, self.value3
+        data, ev, phi, vfe, fig, out = self.data, self.ev, self.phi, self.vfe, self.fig, self.out
+        k_offset = self.k_offset
+        limg, img, optionList, st, b_sw = self.limg, self.img, self.optionList, self.st, self.b_sw
+        emf, npzf, im_kernel = self.emf, self.npzf, self.im_kernel
+        d, l, p = self.d, self.l, self.p
+        m, h = 9.1093837015e-31, 6.62607015e-34
+        
+        if value.get() in optionList:
+            try:
+                b_sw.grid_remove()
+            except:
+                pass
+            limg.config(image=img[np.random.randint(len(img))])
+            print('Plotting...')
+            st.put('Plotting...')
+            pflag = 1
+            value1.set('---Plot2---')
+            value2.set('---Plot3---')
+            fig.clear()
+            if data is None:
+                messagebox.showwarning("Warning","Please load Raw Data")
+                print('Please load Raw Data')
+                st.put('Please load Raw Data')
+                self.show_version()
+                return
+            if value.get() == 'Raw Data':
+                self.rplot(fig, out)
+            else:
+                if value.get() == 'First Derivative':   #axis: phi
+                    ao = fig.subplots()
+                    pz = np.diff(smooth(data.to_numpy()))/np.diff(phi)
+                    if emf=='KE':
+                        px, py = np.meshgrid(phi[0:-1]+np.diff(phi)/2, ev)
+                        tev = py.copy()
+                    else:
+                        px, py = np.meshgrid(phi[0:-1]+np.diff(phi)/2, vfe-ev)
+                        tev = vfe-py.copy()
+                    if npzf:
+                        px = phi[0:-1]+np.diff(phi)/2
+                    else:
+                        px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px+np.diff(phi)/2)/180*np.pi)*10**-10/(h/2/np.pi)
+                    h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
+                    cb = fig.colorbar(h0)
+                    cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                    
+                # if value.get() == 'First Derivative':    #axis: eV
+                #     ao = fig.subplots()
+                #     pz = np.diff(smooth(data.to_numpy().transpose()))/np.diff(ev)
+                #     pz = pz.transpose()
+                #     if emf=='KE':
+                #         px, py = np.meshgrid(phi, ev[0:-1]+np.diff(ev)/2)
+                #         tev = py.copy()
+                #     else:
+                #         px, py = np.meshgrid(phi, vfe-ev[0:-1]-np.diff(ev)/2)
+                #         tev = vfe-py.copy()
+                #     px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                #     h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
+                #     cb = fig.colorbar(h0)
+                #     cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                
+                elif value.get() == 'Second Derivative':    #axis: phi, eV
+                    ao = fig.subplots()                
+                    pz = self.laplacian_filter(data.to_numpy(), im_kernel)
+                    if emf=='KE':
+                        px, py = np.meshgrid(phi, ev)
+                        tev = py.copy()
+                    else:
+                        px, py = np.meshgrid(phi, vfe-ev)
+                        tev = vfe-py.copy()
+                    if npzf:
+                        px = phi
+                    else:
+                        px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                    
+                    h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
+                    cb = fig.colorbar(h0)
+                    cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                else:
+                    if 'MDC Curves' not in value.get():
+                        fig.clear()
+                        ao = fig.subplots()
+                    elif value.get() == 'MDC Curves':
+                        fig.clear()
+                        ao = fig.add_axes([0.2, 0.13, 0.5, 0.8])
+                    else:
+                        fig.clear()
+                        at = fig.add_axes([0.25, 0.13, 0.5, 0.8])
+                        at.set_xticks([])
+                        at.set_yticks([])
+                        ao = fig.add_axes([0.1, 0.13, 0.4, 0.8])
+                        ao1 = fig.add_axes([0.5, 0.13, 0.4, 0.8])
+                    if value.get() == 'E-k Diagram':
+                        # h1=a.scatter(mx,my,c=mz,marker='o',s=scale*scale*0.9,cmap=value3.get());
+                        if emf=='KE':
+                            px, py = np.meshgrid(phi, ev)
+                            tev = py.copy()
+                        else:
+                            px, py = np.meshgrid(phi, vfe-ev)
+                            tev = vfe-py.copy()
+                        if npzf:
+                            px = phi
+                        else:
+                            px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                        pz = data.to_numpy()
+                        h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
+                        cb = fig.colorbar(h0)
+                        cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                        
+                    elif value.get() == 'MDC Normalized':
+                        pbar = tqdm.tqdm(
+                            total=len(ev)-1, desc='MDC Normalized', colour='red')
+                        for n in range(len(ev)-1):
+                            ecut = data.sel(eV=ev[n], method='nearest')
+                            if npzf:
+                                x = phi
+                            else:
+                                x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
+                                (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
+                            y = ecut.to_numpy().reshape(len(ecut))
+                            # mz[len(phi)*n:len(phi)*(n+1)]=np.array(y,dtype=float)
+                            # mx[len(phi)*n:len(phi)*(n+1)]=x
+                            # ty=np.arange(len(x), dtype=float)
+                            # my[len(phi)*n:len(phi)*(n+1)]=np.full_like(ty, ev[n])
+                            # a.scatter(x,np.full_like(ty, ev[n]),c=np.array(y,dtype=int),marker='o',s=scale*scale*0.9,cmap=value3.get());
+                            if emf=='KE':
+                                px, py = np.meshgrid(x, ev[n:(n+2)])
+                            else:
+                                px, py = np.meshgrid(x, vfe-ev[n:(n+2)])
+                            ao.pcolormesh(px, py, np.full_like(
+                                np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
+                            pbar.update(1)
+                            # print(str(round((n+1)/(len(ev)-1)*100))+'%'+' ('+str(len(ev)-1)+')')
+                            st.put(str(round((n+1)/(len(ev)-1)*100)) +
+                                '%'+' ('+str(len(ev)-1)+')')
+                        pbar.close()
+                    elif value.get() == 'MDC Curves':
+                        pbar = tqdm.tqdm(
+                            total=len(ev)//d, desc='MDC', colour='red')
+                        y = np.zeros([len(ev),len(phi)],dtype=float)
+                        for n in range(len(ev)):
+                            ecut = data.sel(eV=ev[n], method='nearest')
+                            if npzf:
+                                x = phi
+                            else:
+                                x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
+                                (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
+                            y[n][:] = ecut.to_numpy().reshape(len(ecut))
+                        for n in range(len(ev)//d):
+                            yy=y[n*d][:]+n*np.max(y)/d
+                            yy=smooth(yy,l,p)
+                            ao.plot(x, yy, c='black')
+                            pbar.update(1)
+                            # print(str(round((n+1)/(len(ev))*100))+'%'+' ('+str(len(ev))+')')
+                            st.put(str(round((n+1)/(len(ev)//d)*100)) +
+                                '%'+' ('+str(len(ev)//d)+')')
+                        pbar.close()
+                    elif value.get() == 'E-k with MDC Curves':
+                        pbar = tqdm.tqdm(
+                            total=len(ev)//d, desc='MDC', colour='red')
+                        y = np.zeros([len(ev),len(phi)],dtype=float)
+                        for n in range(len(ev)):
+                            ecut = data.sel(eV=ev[n], method='nearest')
+                            if npzf:
+                                x = phi
+                            else:
+                                x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
+                                (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
+                            y[n][:] = ecut.to_numpy().reshape(len(ecut))
+                        for n in range(len(ev)//d):
+                            yy=y[n*d][:]+n*np.max(y)/d
+                            yy=smooth(yy,l,p)
+                            ao1.plot(x, yy, c='black')
+                            pbar.update(1)
+                            # print(str(round((n+1)/(len(ev))*100))+'%'+' ('+str(len(ev))+')')
+                            st.put(str(round((n+1)/(len(ev)//d)*100)) +
+                                '%'+' ('+str(len(ev)//d)+')')
+                        pbar.close()
+                        if emf=='KE':
+                            px, py = np.meshgrid(phi, ev)
+                            tev = py.copy()
+                        else:
+                            px, py = np.meshgrid(phi, vfe-ev)
+                            tev = vfe-py.copy()
+                        if npzf:
+                            px = phi
+                        else:
+                            px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                        pz = data.to_numpy()
+                        h0 = ao.pcolormesh(px, py, pz, cmap=value3.get())
+                        ylb=ao1.twinx()
+                        ylb.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=self.size(14))
+                        ylb.set_yticklabels([])
+                        # cb = fig.colorbar(h0, ax=ao1)
+                        # cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                if 'E-k with' not in value.get():
+                    ao.set_title(value.get(), font='Arial', fontsize=self.size(16))
+                else:
+                    at.set_title(value.get(), font='Arial', fontsize=self.size(18))
+                ao.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                if 'MDC Curves' not in value.get():
+                    if emf=='KE':
+                        ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=self.size(14))
+                    else:
+                        ao.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=self.size(14))
+                        ao.invert_yaxis()
+                else:
+                    if 'E-k with' in value.get():
+                        if emf=='KE':
+                            ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=self.size(14))
+                            ao.set_ylim([ev[0], ev[n*d]])
+                        else:
+                            ao.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=self.size(14))
+                            ao.invert_yaxis()
+                            ao.set_ylim([vfe-ev[0], vfe-ev[n*d]])
+                        ao1.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                        ao1.set_yticklabels([])
+                        ao1.set_xlim([min(x), max(x)])
+                        ao1.set_ylim([0, np.max(n*np.max(y)/d)])
+                    else:
+                        ylr=ao.twinx()
+                        ao.set_yticklabels([])
+                        ao.set_ylabel('Intensity (a.u.)', font='Arial', fontsize=self.size(14))
+                        ylr.set_ylabel(r'$\longleftarrow$ Binding Energy', font='Arial', fontsize=self.size(14))
+                        ylr.set_yticklabels([])
+                        ao.set_xlim([min(x), max(x)])
+                        ao.set_ylim([0, np.max(n*np.max(y)/d)])
+                    
+                xl = ao.get_xlim()
+                yl = ao.get_ylim()
+            try:
+                if value.get() != 'MDC Normalized' and value.get() != 'MDC Curves':
+                    self.climon()
+                    out.draw()
+                else:
+                    self.climoff()
+                    out.draw()
+            except:
+                pass
+            print('Done')
+            st.put('Done')
+            self.pflag, self.h0, self.ao, self.xl, self.yl = pflag, h0, ao, xl, yl
+            self.pars()
+            self.main_plot_bind()
+            gc.collect()

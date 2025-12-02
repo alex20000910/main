@@ -409,7 +409,7 @@ try:
     from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
     if __name__ == '__main__':
-        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin, motion, exp_motion
+        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin, motion, exp_motion, plots_util
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
@@ -681,6 +681,47 @@ if __name__ == '__main__':
                  epos, efwhm, fk, ffphi, fphi,
                  mp, ep, mf, ef, xl, yl,
                  posmin, posmax, eposmin, eposmax)
+
+    class PlotsUtil(plots_util):
+        def __init__(self):
+            var_list = ['scale', 'value', 'value1', 'value2', 'value3', 'be', 'k', 'k_offset', 'bb_offset', 'bbk_offset', 'b_sw',
+                        'limg', 'img', 'st', 'im_kernel', 'optionList', 'optionList1', 'optionList2', 'emf', 'data', 'vfe', 'ev', 'phi',
+                        'pos', 'fwhm', 'rpos', 'ophi', 'fev', 'epos', 'efwhm', 'fk', 'ffphi', 'fphi', 'mp', 'ep', 'mf', 'ef', 'npzf', 'fig', 'out',
+                        'd', 'l', 'p']
+            for i in var_list:
+                init_globals(i)
+            super().__init__(scale, value, value1, value2, value3, be, k, k_offset, bb_offset, bbk_offset, b_sw,
+                             limg, img, st, im_kernel, optionList, optionList1, optionList2,
+                             emf, data, vfe, ev, phi,
+                             pos, fwhm, rpos, ophi, fev,
+                             epos, efwhm, fk, ffphi, fphi,
+                             mp, ep, mf, ef, npzf, fig, out, d, l, p)
+
+        @override
+        def pars(self):
+            var_list = ['h0', 'ao', 'xl', 'yl', 'rcx', 'rcy', 'acb', 'pflag']
+            for i, j in zip(var_list, [self.h0, self.ao, self.xl, self.yl, self.rcx, self.rcy, self.acb, self.pflag]):
+                set_globals(j, i)
+            
+        @override
+        def show_version(self):
+            show_version()
+        
+        @override
+        def laplacian_filter(self, data, im_kernel):
+            return laplacian_filter(data, im_kernel)
+        
+        @override
+        def main_plot_bind(self):
+            main_plot_bind()
+        
+        @override
+        def climon(self):
+            climon()
+        
+        @override
+        def climoff(self):
+            climoff()
 
 @pool_protect
 def f_help(*e):
@@ -1915,6 +1956,10 @@ def laplacian_filter(data, kernel_size=17):
 
 @pool_protect
 def o_plot1(*e):
+    global pl
+    pl=PlotsUtil()
+    pl.o_plot1()
+    return
     global value, value1, value2, data, ev, phi, mfpath, fig, out, pflag, k_offset, value3, limg, img, optionList, h0, ao, xl, yl, st
     if value.get() in optionList:
         try:
