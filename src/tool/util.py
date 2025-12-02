@@ -1286,7 +1286,6 @@ class plots_util(ABC):
         -----
             None
         """
-        # global h0, ao, xl, yl, rcx, rcy, acb
         data, ev, phi, value3, ev, phi, vfe = self.data, self.ev, self.phi, self.value3, self.ev, self.phi, self.vfe
         emf, npzf = self.emf, self.npzf
         
@@ -1323,7 +1322,7 @@ class plots_util(ABC):
         self.pars()
     
     def o_plot1(self):
-        # global pflag, h0, ao, xl, yl
+        h0 = None
         value, value1, value2, value3 = self.value, self.value1, self.value2, self.value3
         data, ev, phi, vfe, fig, out = self.data, self.ev, self.phi, self.vfe, self.fig, self.out
         k_offset = self.k_offset
@@ -1563,7 +1562,8 @@ class plots_util(ABC):
                 else:
                     self.climoff()
                     out.draw()
-            except:
+            except Exception as e:
+                print(e)
                 pass
             print('Done')
             st.put('Done')
