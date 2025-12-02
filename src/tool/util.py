@@ -599,31 +599,33 @@ class motion:
                                 eV=self.vfe-cydata, method='nearest').to_numpy().reshape(len(self.phi))
                         dy = self.data.sel(
                             phi=cxdata, method='nearest').to_numpy().reshape(len(self.ev))
-                        self.rcx.clear()
-                        self.rcy.clear()
-                        self.rcx.set_title('            Raw Data', font='Arial', fontsize=self.size(16))
-                        self.rcx.plot(self.phi, dx, c='black')
-                        if self.emf=='KE':
-                            self.rcy.plot(dy, self.ev, c='black')
-                        else:
-                            self.rcy.plot(dy, self.vfe-self.ev, c='black')
-                        self.rcx.set_xticks([])
-                        self.rcy.set_yticks([])
-                        self.rcx.set_xlim(self.ao.get_xlim())
-                        self.rcy.set_ylim(self.ao.get_ylim())
+                        if self.rcx is not None:
+                            self.rcx.clear()
+                            self.rcy.clear()
+                            self.rcx.set_title('            Raw Data', font='Arial', fontsize=self.size(16))
+                            self.rcx.plot(self.phi, dx, c='black')
+                            if self.emf=='KE':
+                                self.rcy.plot(dy, self.ev, c='black')
+                            else:
+                                self.rcy.plot(dy, self.vfe-self.ev, c='black')
+                            self.rcx.set_xticks([])
+                            self.rcy.set_yticks([])
+                            self.rcx.set_xlim(self.ao.get_xlim())
+                            self.rcy.set_ylim(self.ao.get_ylim())
                         self.out.draw()
             self.xdata.config(text='xdata:'+str(' %.3f' % event.xdata))
             self.ydata.config(text='ydata:'+str(' %.3f' % event.ydata))
         else:
             if self.value.get() == 'Raw Data':
-                self.rcx.clear()
-                self.rcy.clear()
-                self.rcx.set_xticks([])
-                self.rcx.set_yticks([])
-                self.rcy.set_xticks([])
-                self.rcy.set_yticks([])
-                self.rcx.set_title('            Raw Data', font='Arial', fontsize=self.size(16))
-                self.out.draw()
+                if self.rcx is not None:
+                    self.rcx.clear()
+                    self.rcy.clear()
+                    self.rcx.set_xticks([])
+                    self.rcx.set_yticks([])
+                    self.rcy.set_xticks([])
+                    self.rcy.set_yticks([])
+                    self.rcx.set_title('            Raw Data', font='Arial', fontsize=self.size(16))
+                    self.out.draw()
             self.out.get_tk_widget().config(cursor="")
             self.xdata.config(text='xdata:')
             self.ydata.config(text='ydata:')
@@ -1186,8 +1188,9 @@ class exp_motion:
             self.x = self.a.axvline(event.xdata, color='red')
             self.y = self.a.axhline(event.ydata, color='red')
         elif event.button == 1 and not self.cf:
-            self.x.remove()
-            self.y.remove()
+            if self.x:
+                self.x.remove()
+                self.y.remove()
             self.x = self.a.axvline(event.xdata, color='red')
             self.y = self.a.axhline(event.ydata, color='red')
             if self.emf=='KE':
@@ -1213,8 +1216,9 @@ class exp_motion:
 
         elif event.button == 3:
             self.cf = True
-            self.x.remove()
-            self.y.remove()
+            if self.x:
+                self.x.remove()
+                self.y.remove()
         # self.f.canvas.draw_idle()
         copy_to_clipboard(self.f)
         self.f.show()
@@ -1315,7 +1319,8 @@ class plots_util(ABC):
         yl = ao.get_ylim()
         canvas.draw()
         
-        self.h0, self.ao, self.xl, self.yl, self.rcx, self.rcy, self.acb = h0, ao, xl, yl, rcx, rcy, acb
+        self.h0, self.ao, self.xl, self.yl, self.rcx, self.rcy, self.acb, self.pflag = h0, ao, xl, yl, rcx, rcy, acb, 1
+        self.pars()
     
     def o_plot1(self):
         # global pflag, h0, ao, xl, yl
@@ -1550,6 +1555,8 @@ class plots_util(ABC):
                 xl = ao.get_xlim()
                 yl = ao.get_ylim()
             try:
+                self.pflag, self.h0, self.ao, self.xl, self.yl = pflag, h0, ao, xl, yl
+                self.pars()
                 if value.get() != 'MDC Normalized' and value.get() != 'MDC Curves':
                     self.climon()
                     out.draw()
@@ -1560,7 +1567,5 @@ class plots_util(ABC):
                 pass
             print('Done')
             st.put('Done')
-            self.pflag, self.h0, self.ao, self.xl, self.yl = pflag, h0, ao, xl, yl
-            self.pars()
             self.main_plot_bind()
             gc.collect()

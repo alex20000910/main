@@ -691,6 +691,7 @@ if __name__ == '__main__':
                         'd', 'l', 'p']
             for i in var_list:
                 init_globals(i)
+            print('instantiating PlotsUtil')
             super().__init__(scale, value, value1, value2, value3, be, k, k_offset, bb_offset, bbk_offset, b_sw,
                              limg, img, st, im_kernel, optionList, optionList1, optionList2,
                              emf, data, vfe, ev, phi,
@@ -1957,9 +1958,6 @@ def laplacian_filter(data, kernel_size=17):
 
 @pool_protect
 def o_plot1(*e):
-    global pl
-    pl=PlotsUtil()
-    pl.o_plot1()
     return
     global value, value1, value2, data, ev, phi, mfpath, fig, out, pflag, k_offset, value3, limg, img, optionList, h0, ao, xl, yl, st
     if value.get() in optionList:
@@ -3788,7 +3786,8 @@ def plot1(*e):
     elif value.get() == 'Second Derivative':
         gg = plot1_window_Second_Derivative(im_kernel)
     else:
-        t8 = threading.Thread(target=o_plot1)
+        pl=PlotsUtil()
+        t8 = threading.Thread(target=pl.o_plot1)
         t8.daemon = True
         t8.start()
 
@@ -4777,6 +4776,7 @@ if __name__ == '__main__':
             koffset.config(state='disabled')
     else:
         b_tools, l_name, ev, phi = None, None, None, None
+    pl = PlotsUtil()
     print(f"\033[36mVersion: {__version__}")
     print(f"Release Date: {__release_date__}\n\033[0m")
     g.bind('<Configure>', lambda event: on_configure(g, event))
