@@ -664,6 +664,22 @@ if __name__ == '__main__':
                  epos, efwhm, fk, ffphi, fphi,
                  mp, ep, mf, ef, xl, yl,
                  tb0, tb0_, tb1, tb1_, tb2)
+    
+    class ExpMotion(exp_motion):
+        def __init__(self):
+            var_list = ['scale', 'value', 'value1', 'value2', 'k_offset', 'be', 'k', 'bb_offset', 'bbk_offset', 'a', 'a0', 'f', 'f0', 'h1', 'h2', 'acx', 'acy', 'annot', 'emf', 'data', 'vfe', 'ev', 'phi', 'pos', 'fwhm', 'rpos', 'ophi', 'fev', 'epos', 'efwhm', 'fk', 'ffphi', 'fphi', 'mp', 'ep', 'mf', 'ef', 'xl', 'yl', 'ta0', 'ta0_', 'ta1', 'ta1_', 'ta2', 'posmin', 'posmax', 'eposmin', 'eposmax']
+            for i in var_list:
+                init_globals(i)
+            super().__init__(scale, value, value1, value2, k_offset,
+                 be, k, bb_offset, bbk_offset,
+                 a, a0, f, f0, h1, h2,
+                 acx, acy, annot,
+                 emf, data, vfe, ev, phi,
+                 pos, fwhm, rpos, ophi, fev,
+                 epos, efwhm, fk, ffphi, fphi,
+                 mp, ep, mf, ef, xl, yl,
+                 ta0, ta0_, ta1, ta1_, ta2,
+                 posmin, posmax, eposmin, eposmax)
 
 @pool_protect
 def f_help(*e):
@@ -1180,23 +1196,19 @@ def DataViewer_PyQt5():
     threading.Thread(target=j,daemon=True).start()
 
 @pool_protect
-def set_window_background(g):
-    """設定視窗背景圖片"""
-    try:
-        # 載入圖片
-        bg_image = Image.open(io.BytesIO(b64decode(icon.icon)))
-        bg_image = bg_image.resize((800, 600), Image.Resampling.LANCZOS)
-        bg_photo = ImageTk.PhotoImage(bg_image)
-        
-        # 創建背景 Label
-        bg_label = tk.Label(g, image=bg_photo)
-        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        bg_label.image = bg_photo  # 保持引用
-        
-        return bg_label
-    except Exception as e:
-        print(f"Fail to load background image: {e}")
-        return None
+def show_version():
+    global ax
+    ax = fig.subplots()
+    tim = np.asarray(Image.open(tdata), dtype=np.uint8)
+    ax.imshow(tim, aspect='equal', alpha=0.4)
+    fontdict = {
+    'fontsize': size(40),
+    'fontweight': 'bold',
+    'fontname': 'Arial'
+    }
+    ax.text(tim.shape[0]/2, tim.shape[1]/2, f"Version: {__version__}\n\nRelease Date: {__release_date__}", fontdict=fontdict, color='black', ha='center', va='center')
+    ax.axis('off')
+    out.draw()
 
 class Button(tk.Button):
     """自定義按鈕類別，增加背景顏色"""
@@ -1740,16 +1752,6 @@ def o_reload(*e):
     ophimax = np.arcsin((rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
     kmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin((np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
     kmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin((np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
-    # okmphi = np.arcsin(kmin/np.sqrt(2*m*fev*1.602176634*10**-19) /
-    #                    10**-10*(h/2/np.pi))*180/np.pi
-    # kmin = np.sqrt(2*m*fev*1.602176634*10**-19) * \
-    #     np.sin((np.float64(k_offset.get())+okmphi) /
-    #            180*np.pi)*10**-10/(h/2/np.pi)
-    # okMphi = np.arcsin(kmax/np.sqrt(2*m*fev*1.602176634*10**-19) /
-    #                    10**-10*(h/2/np.pi))*180/np.pi
-    # kmax = np.sqrt(2*m*fev*1.602176634*10**-19) * \
-    #     np.sin((np.float64(k_offset.get())+okMphi) /
-    #            180*np.pi)*10**-10/(h/2/np.pi)
     os.chdir(cdir)
     try:
         np.savez(os.path.join(cdir, '.MDC_cut', 'mfit.npz'), ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
@@ -1874,19 +1876,11 @@ def o_expte():
 def o_bareband():
     file = fd.askopenfilename(title="Select TXT file",
                               filetypes=(("TXT files", "*.txt"),))
-    # global be,k,rx,ry,ix,iy,limg,img
     global be, k, limg, img, st, bpath
     if len(file) > 0:
         bpath = file
         print('Loading...')
         st.put('Loading...')
-        # t_k = []
-        # t_ke = []
-        # with open(file) as f:
-        #     for i, line in enumerate(f):
-        #         if i != 0:  # ignore 1st row data (index = 0)
-        #             t_k.append(line.split('\t')[0])
-        #             t_ke.append(line.split('\t')[1].replace('\n', ''))
         try:
             d=np.loadtxt(file,delimiter='\t',encoding='utf-8',dtype=float,skiprows=1,usecols=(0,1))
         except UnicodeError:
@@ -1919,34 +1913,6 @@ def laplacian_filter(data, kernel_size=17):
     return laplacian
 
 @pool_protect
-def sdgd_filter(data, phi, ev):
-    # not used
-    
-    # 計算數據的梯度
-    grad_phi = np.diff(smooth(data))/np.diff(phi)
-    grad_ev = np.diff(smooth(data.transpose(),l=40))/np.diff(ev)
-    grad_ev = grad_ev.transpose()
-
-    # 計算梯度方向
-    # magnitude = np.sqrt(grad_phi**2 + grad_ev**2)
-    # direction = np.arctan2(grad_ev, grad_phi)
-
-    # 計算梯度方向上的二階導數
-    grad_phi_phi = np.diff(smooth(grad_phi))/np.diff(phi[0:-1])
-    grad_ev_ev = np.diff(smooth(grad_ev.transpose(),l=40))/np.diff(ev[0:-1])
-    grad_ev_ev = grad_ev_ev.transpose()
-    grad_phi_ev = np.diff(smooth(grad_phi.transpose(),l=40))/np.diff(ev)
-    grad_phi_ev = grad_phi_ev.transpose()
-    a=grad_phi_phi[0:-2,:]*grad_phi[0:-2,0:-1]**2
-    b=2*grad_phi_ev[0:-1,0:-1]*grad_phi[0:-2,0:-1]*grad_ev[0:-1,0:-2]
-    c=grad_ev_ev[:,0:-2]*grad_ev[0:-1,0:-2]**2
-    # 計算 SDGD
-    sdgd = -(a + b + c)/(grad_phi[0:-2,0:-1]**2 + grad_ev[0:-1,0:-2]**2)
-    # sdgd = grad_phi_phi[0:-2,:]
-    # sdgd = -grad_ev_ev[:,0:-2]
-    return sdgd
-
-@pool_protect
 def o_plot1(*e):
     global value, value1, value2, data, ev, phi, mfpath, fig, out, pflag, k_offset, value3, limg, img, optionList, h0, ao, xl, yl, st
     if value.get() in optionList:
@@ -1964,8 +1930,11 @@ def o_plot1(*e):
         try:
             ev
         except:
+            messagebox.showwarning("Warning","Please load Raw Data")
             print('Please load Raw Data')
             st.put('Please load Raw Data')
+            show_version()
+            return
         if value.get() == 'Raw Data':
             rplot(fig, out)
         else:
@@ -2184,7 +2153,6 @@ def o_plot1(*e):
         main_plot_bind()
         gc.collect()
 
-
 @pool_protect
 def o_plot2(*e):
     global fig, out, fwhm, fev, pos, value, value1, value2, k, be, rx, ry, ix, iy, pflag, limg, img, bb_offset, bbk_offset, optionList1, st
@@ -2270,8 +2238,11 @@ def o_plot2(*e):
                             # interp x into be,k set
                             np.float64(bb_offset.get()))
             except:
+                messagebox.showwarning("Warning", "Please load Bare Band file")
                 print('Please load Bare Band file')
                 st.put('Please load Bare Band file')
+                show_version()
+                return
             a = fig.subplots(2, 1)
             a[0].set_title('Real Part', font='Arial', fontsize=size(18))
             a[0].plot(x, -(x+yy), c='black', linestyle='-', marker='.')
@@ -2311,8 +2282,11 @@ def o_plot2(*e):
                 y = interp(x, k*np.float64(bbk_offset.get()),
                            -be+np.float64(bb_offset.get()))
             except:
+                messagebox.showwarning("Warning", "Please load Bare Band file")
                 print('Please load Bare Band file')
                 st.put('Please load Bare Band file')
+                show_version()
+                return
             xx = np.diff(x)
             yy = np.diff(y)
 
@@ -2416,8 +2390,11 @@ def o_plot3(*e):
                 ix = xx
                 iy = yy
             except:
+                messagebox.showwarning("Warning", "Please load Bare Band file")
                 print('Please load Bare Band file')
                 st.put('Please load Bare Band file')
+                show_version()
+                return
         if value2.get() == 'Real & Imaginary':
             a = fig.subplots(2, 1)
             a[0].set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=size(18))
@@ -2672,21 +2649,15 @@ def o_plot3(*e):
                     
             except:
                 pass
-            try:
-                if value2.get() == 'Data Plot with Pos and Bare Band':
-                    if emf=='KE':
-                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be -
-                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=scale*0.3, c='red', linestyle='--')
-                    else:
-                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
-                                np.float64(bb_offset.get()))/1000, linewidth=scale*0.3, c='red', linestyle='--')
-                    bo.set_xlim(txl)
-                    bo.set_ylim(tyl)
-            except:
-                bo.set_title('Data Plot with Pos w/o Bare Band',
-                             font='Arial', fontsize=size(18))
-                print('Please load Bare Band file')
-                st.put('Please load Bare Band file')
+            if value2.get() == 'Data Plot with Pos and Bare Band':
+                if emf=='KE':
+                    tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be -
+                                np.float64(bb_offset.get()))/1000+vfe, linewidth=scale*0.3, c='red', linestyle='--')
+                else:
+                    tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
+                            np.float64(bb_offset.get()))/1000, linewidth=scale*0.3, c='red', linestyle='--')
+                bo.set_xlim(txl)
+                bo.set_ylim(tyl)
             if emf=='BE':
                 bo.invert_yaxis()
         try:
@@ -2707,367 +2678,6 @@ def o_plot3(*e):
 
 
 props = dict(facecolor='green', alpha=0.3)
-
-
-def select_callback(eclick, erelease):
-    """
-    Callback for line selection.
-
-    *eclick* and *erelease* are the press and release events.
-    """
-    global ta0, ta0_, ta1, ta1_, ta2, a, f
-    x1, y1 = eclick.xdata, eclick.ydata
-    x2, y2 = erelease.xdata, erelease.ydata
-    if eclick.button == 1:
-        a.set_xlim(sorted([x1, x2]))
-        if emf=='KE':
-            a.set_ylim(sorted([y1, y2]))
-        else:
-            a.set_ylim(sorted([y1, y2], reverse=True))
-        f.show()
-        if abs(x1-x2) < (xl[1]-xl[0])/3*2 or abs(y1-y2) < (yl[1]-yl[0])/3*2:
-            try:
-                if mp == 1:
-                    ta0.remove()
-                if mf == 1:
-                    ta0_.remove()
-            except:
-                pass
-            try:
-                if ep == 1:
-                    ta1.remove()
-                if ef == 1:
-                    ta1_.remove()
-            except:
-                pass
-            try:
-                ta2.remove()
-            except:
-                pass
-            if value2.get() == 'Data Plot with Pos and Bare Band' or value2.get() == 'Data Plot with Pos':
-                try:
-                    if mp == 1:
-                        if emf=='KE':
-                            ta0 = a.scatter(pos, fev, marker='.', s=scale*scale*30, c='black')
-                        else:
-                            ta0 = a.scatter(pos, vfe-fev, marker='.', s=scale*scale*30, c='black')
-                    if mf == 1:
-                        if emf=='KE':
-                            ta0_ = a.scatter([posmin, posmax], [
-                                         fev, fev], marker='|', c='grey', s=scale*scale*50, alpha=0.8)
-                        else:
-                            ta0_ = a.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=scale*scale*50, alpha=0.8)
-                except:
-                    pass
-                try:
-                    if ep == 1:
-                        if emf=='KE':
-                            ta1 = a.scatter(fk, epos, marker='.', s=scale*scale*30, c='black')
-                        else:
-                            ta1 = a.scatter(fk, vfe-epos, marker='.', s=scale*scale*30, c='black')
-                            
-                    if ef == 1:
-                        if emf=='KE':
-                            ta1_ = a.scatter(
-                                [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=scale*scale*50, alpha=0.8)
-                        else:
-                            ta1_ = a.scatter(
-                                [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=scale*scale*50, alpha=0.8)
-                except:
-                    pass
-
-                if value2.get() == 'Data Plot with Pos and Bare Band':
-                    if emf=='KE':
-                        ta2, = a.plot(k*np.float64(bbk_offset.get()), (be -
-                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=scale*2, c='red', linestyle='--')
-                    else:
-                        ta2, = a.plot(k*np.float64(bbk_offset.get()), (-be +
-                                    np.float64(bb_offset.get()))/1000, linewidth=scale*2, c='red', linestyle='--')
-            f.show()
-        else:
-            try:
-                if mp == 1:
-                    ta0.remove()
-                    if emf=='KE':
-                        ta0 = a.scatter(pos, fev, marker='.', s=scale*scale*0.3, c='black')
-                    else:
-                        ta0 = a.scatter(pos, vfe-fev, marker='.', s=scale*scale*0.3, c='black')
-                        
-                if mf == 1:
-                    ta0_.remove()
-                    if emf=='KE':
-                        ta0_ = a.scatter([posmin, posmax], [fev, fev],
-                                        marker='|', c='grey', s=scale*scale*10, alpha=0.8)
-                    else:
-                        ta0_ = a.scatter([posmin, posmax], [vfe-fev, vfe-fev],
-                                        marker='|', c='grey', s=scale*scale*10, alpha=0.8)
-            except:
-                pass
-            try:
-                if ep == 1:
-                    ta1.remove()
-                    if emf=='KE':
-                        ta1 = a.scatter(fk, epos, marker='.', s=scale*scale*0.3, c='black')
-                    else:
-                        ta1 = a.scatter(fk, vfe-epos, marker='.', s=scale*scale*0.3, c='black')
-                        
-                if ef == 1:
-                    ta1_.remove()
-                    if emf=='KE':
-                        ta1_ = a.scatter([fk, fk], [eposmin, eposmax],
-                                     marker='_', c='grey', s=scale*scale*10, alpha=0.8)
-                    else:
-                        ta1_ = a.scatter([fk, fk], [vfe-eposmin, vfe-eposmax],
-                                     marker='_', c='grey', s=scale*scale*10, alpha=0.8)
-            except:
-                pass
-            try:
-                if value2.get() == 'Data Plot with Pos and Bare Band':
-                    ta2.remove()
-                    if emf =='KE':
-                        ta2, = a.plot(k*np.float64(bbk_offset.get()), (be -
-                                  np.float64(bb_offset.get()))/1000+vfe, linewidth=scale*0.3, c='red', linestyle='--')
-                    else:
-                        ta2, = a.plot(k*np.float64(bbk_offset.get()), (-be +
-                                  np.float64(bb_offset.get()))/1000, linewidth=scale*0.3, c='red', linestyle='--')
-            except:
-                pass
-            f.show()
-    else:
-        a.set_xlim(xl)
-        a.set_ylim(yl)
-        try:
-            if mp == 1:
-                ta0.remove()
-                if emf=='KE':
-                    ta0 = a.scatter(pos, fev, marker='.', s=scale*scale*0.3, c='black')
-                else:
-                    ta0 = a.scatter(pos, vfe-fev, marker='.', s=scale*scale*0.3, c='black')
-                    
-            if mf == 1:
-                ta0_.remove()
-                if emf=='KE':
-                    ta0_ = a.scatter([posmin, posmax], [fev, fev],
-                                 marker='|', c='grey', s=scale*scale*10, alpha=0.8)
-                else:
-                    ta0_ = a.scatter([posmin, posmax], [vfe-fev, vfe-fev],
-                                 marker='|', c='grey', s=scale*scale*10, alpha=0.8)
-        except:
-            pass
-        try:
-            if ep == 1:
-                ta1.remove()
-                if emf=='KE':
-                    ta1 = a.scatter(fk, epos, marker='.', s=scale*scale*0.3, c='black')
-                else:
-                    ta1 = a.scatter(fk, vfe-epos, marker='.', s=scale*scale*0.3, c='black')
-                    
-            if ef == 1:
-                ta1_.remove()
-                if emf=='KE':
-                    ta1_ = a.scatter([fk, fk], [eposmin, eposmax],
-                                 marker='_', c='grey', s=scale*scale*10, alpha=0.8)
-                else:
-                    ta1_ = a.scatter([fk, fk], [vfe-eposmin, vfe-eposmax],
-                                 marker='_', c='grey', s=scale*scale*10, alpha=0.8)
-        except:
-            pass
-        try:
-            if value2.get() == 'Data Plot with Pos and Bare Band':
-                ta2.remove()
-                if emf=='KE':
-                    ta2, = a.plot(k*np.float64(bbk_offset.get()), (be -
-                                np.float64(bb_offset.get()))/1000+vfe, linewidth=scale*0.3, c='red', linestyle='--')
-                else:
-                    ta2, = a.plot(k*np.float64(bbk_offset.get()), (-be +
-                              np.float64(bb_offset.get()))/1000, linewidth=scale*0.3, c='red', linestyle='--')
-        except:
-            pass
-        f.show()
-    # print(f"({x1:3.2f}, {y1:3.2f}) --> ({x2:3.2f}, {y2:3.2f})")
-    # print(f"The buttons you used were: {eclick.button} {erelease.button}")
-# def toggle_selector(event):
-#     print('Key pressed.')
-#     if event.key == 't':
-#         for selector in selectors:
-#             name = type(selector).__name__
-#             if selector.active:
-#                 print(f'{name} deactivated.')
-#                 selector.set_active(False)
-#             else:
-#                 print(f'{name} activated.')
-#                 selector.set_active(True)
-
-
-def cur_move(event):
-    global f, a, xx, yy
-    if event.inaxes == a and event.xdata is not None and event.ydata is not None:
-        f.canvas.get_tk_widget().config(cursor="crosshair")
-        try:
-            xx.remove()
-            yy.remove()
-        except:
-            pass
-        xx=a.axvline(event.xdata, color='red')
-        yy=a.axhline(event.ydata, color='red')
-    f.show()
-    
-
-def cur_on_move(event):
-    if event.inaxes == a and event.xdata is not None and event.ydata is not None:
-        annot.xy = (event.xdata, event.ydata)
-        text = f"x={event.xdata:.3f}\ny={event.ydata:.3f}"
-        annot.set_text(text)
-        # 取得座標軸範圍
-        xlim = a.get_xlim()
-        ylim = a.get_ylim()
-        # 設定 annotation 方向
-        offset_x, offset_y = 20, 20
-        # 靠近右邊界
-        if event.xdata > xlim[1] - (xlim[1]-xlim[0])*0.15:
-            offset_x = -60
-        # 靠近左邊界
-        elif event.xdata < xlim[0] + (xlim[1]-xlim[0])*0.15:
-            offset_x = 20
-        # 靠近上邊界
-        if event.ydata > ylim[1] - (ylim[1]-ylim[0])*0.15:
-            offset_y = -40
-        # 靠近下邊界
-        elif event.ydata < ylim[0] + (ylim[1]-ylim[0])*0.15:
-            offset_y = 20
-        annot.set_position((offset_x, offset_y))
-        annot.set_visible(True)
-        f.canvas.draw_idle()
-    else:
-        annot.set_visible(False)
-        f.canvas.draw_idle()
-
-def onselect(xmin, xmax):
-    global f, f0, h1, h2
-    if xmin > xmax:
-        xmin, xmax = xmax, xmin
-    # vcmin.set(xmin)
-    # vcmax.set(xmax)
-    h2.set_clim(xmin, xmax)
-    # f0.canvas.draw_idle()
-    f0.show()
-    h1.set_clim(xmin, xmax)
-    # f.canvas.draw_idle()
-    f.show()
-
-
-def onmove_callback(xmin, xmax):
-    global f, f0, h1, h2
-    if xmin > xmax:
-        xmin, xmax = xmax, xmin
-    # vcmin.set(xmin)
-    # vcmax.set(xmax)
-    h2.set_clim(xmin, xmax)
-    # f0.canvas.draw_idle()
-    f0.show()
-    h1.set_clim(xmin, xmax)
-    # f.canvas.draw_idle()
-    f.show()
-
-cf = True
-
-def cut_move(event):
-    global cxdata, cydata, acx, acy, a, f, xx ,yy
-    # ,x,y
-    f.canvas.get_tk_widget().config(cursor="")
-    if event.inaxes:
-        cxdata = event.xdata
-        cydata = event.ydata
-        xf = (cxdata >= a.get_xlim()[0] and cxdata <= a.get_xlim()[1])
-        if emf=='KE':
-            yf = (cydata >= a.get_ylim()[0] and cydata <= a.get_ylim()[1])
-        else:
-            yf = (cydata <= a.get_ylim()[0] and cydata >= a.get_ylim()[1])
-        if xf and yf:
-            f.canvas.get_tk_widget().config(cursor="crosshair")
-            try:
-                xx.remove()
-                yy.remove()
-            except:
-                pass
-            xx=a.axvline(cxdata,color='r')
-            yy=a.axhline(cydata,color='r')
-            if cf:
-                if emf=='KE':
-                    dx = data.sel(
-                        eV=cydata, method='nearest').to_numpy().reshape(len(phi))
-                else:
-                    dx = data.sel(eV=vfe-cydata, method='nearest').to_numpy().reshape(len(phi))
-                dy = data.sel(
-                    phi=cxdata, method='nearest').to_numpy().reshape(len(ev))
-                acx.clear()
-                acy.clear()
-                acx.set_title('                Raw Data', font='Arial', fontsize=size(18))
-                acx.plot(phi, dx, c='black')
-                if emf=='KE':
-                    acy.plot(dy, ev, c='black')
-                else:
-                    acy.plot(dy, vfe-ev, c='black')
-                acx.set_xticks([])
-                acy.set_yticks([])
-                acx.set_xlim(a.get_xlim())
-                acy.set_ylim(a.get_ylim())
-                # f.canvas.draw_idle()
-    else:
-        try:
-            if cf:
-                acx.clear()
-                acy.clear()
-                acx.set_title('                Raw Data', font='Arial', fontsize=size(18))
-                acx.set_xticks([])
-                acx.set_yticks([])
-                acy.set_xticks([])
-                acy.set_yticks([])
-            xx.remove()
-            yy.remove()
-        except:
-            pass
-    f.show()
-
-def cut_select(event):
-    global cf, a, f, x, y, acx, acy
-    if event.button == 1 and cf:
-        cf = False
-        x = a.axvline(event.xdata, color='red')
-        y = a.axhline(event.ydata, color='red')
-    elif event.button == 1 and not cf:
-        x.remove()
-        y.remove()
-        x = a.axvline(event.xdata, color='red')
-        y = a.axhline(event.ydata, color='red')
-        if emf=='KE':
-            dx = data.sel(eV=event.ydata,
-                        method='nearest').to_numpy().reshape(len(phi))
-        else:
-            dx = data.sel(eV=vfe-event.ydata,
-                        method='nearest').to_numpy().reshape(len(phi))
-        dy = data.sel(phi=event.xdata,
-                      method='nearest').to_numpy().reshape(len(ev))
-        acx.clear()
-        acy.clear()
-        acx.set_title('                Raw Data', font='Arial', fontsize=size(18))
-        acx.plot(phi, dx, c='black')
-        if emf=='KE':
-            acy.plot(dy, ev, c='black')
-        else:
-            acy.plot(dy, vfe-ev, c='black')
-        acx.set_xticks([])
-        acy.set_yticks([])
-        acx.set_xlim(a.get_xlim())
-        acy.set_ylim(a.get_ylim())
-
-    elif event.button == 3:
-        cf = True
-        x.remove()
-        y.remove()
-    # f.canvas.draw_idle()
-    copy_to_clipboard(ff=f)
-    f.show()
 
 def exp(*e):
     global value, value1, value2, value3, data, ev, phi, mx, my, mz, mfpath, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax, annot
@@ -3096,14 +2706,6 @@ def exp(*e):
             a0 = plt.axes([0.13, 0.45, 0.8, 0.5])
             a1 = plt.axes([0.13, 0.08, 0.8, 0.2])
             a0.set_title('Drag to select specific region', font='Arial', fontsize=size(18))
-            selectors.append(RectangleSelector(
-                a0, select_callback,
-                useblit=True,
-                button=[1, 3],  # disable middle button
-                minspanx=5, minspany=5,
-                spancoords='pixels',
-                interactive=True,
-                props=props))
             # f0.canvas.mpl_connect('key_press_event',toggle_selector)
         if value.get() != 'Raw Data' and 'MDC Curves' not in value.get():
             f, a = plt.subplots(dpi=150)
@@ -3123,8 +2725,6 @@ def exp(*e):
             acx = plt.axes([0.13, 0.73, 0.55, 0.18])
             acy = plt.axes([0.7, 0.1, 0.15, 0.6])
             eacb = plt.axes([0.87, 0.1, 0.02, 0.6])
-            plt.connect('motion_notify_event', cut_move)
-            plt.connect('button_press_event', cut_select)
             if emf=='KE':
                 mx, my = np.meshgrid(phi, ev)
             else:
@@ -3135,11 +2735,9 @@ def exp(*e):
                 "", xy=(0,0), xytext=(20,20), textcoords="offset points",
                 bbox=dict(boxstyle="round", fc="w", alpha=0.6),
                 fontsize=size(14)
-                # fontsize=size(12),
                 # arrowprops=dict(arrowstyle="->")
             )
             annot.set_visible(False)
-            f.canvas.mpl_connect('motion_notify_event', cur_on_move)
             if emf=='KE':
                 yl = a.get_ylim()
             else:
@@ -3161,13 +2759,17 @@ def exp(*e):
             a1.set_xlabel('Intensity')
             a1.set_ylabel('Counts')
             a1.set_title('Drag to Select the range of Intensity ')
+            Exp_Motion = ExpMotion()
+            plt.connect('motion_notify_event', Exp_Motion.cut_move)
+            plt.connect('button_press_event', Exp_Motion.cut_select)
+            f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_on_move)
             selectors.append(SpanSelector(
                 a1,
-                onselect,
+                Exp_Motion.onselect,
                 "horizontal",
                 useblit=True,
                 props=dict(alpha=0.3, facecolor="tab:blue"),
-                onmove_callback=onmove_callback,
+                onmove_callback=Exp_Motion.onmove_callback,
                 interactive=True,
                 drag_from_anywhere=True,
                 snap_values=n[1]
@@ -3190,12 +2792,9 @@ def exp(*e):
                 "", xy=(0,0), xytext=(20,20), textcoords="offset points",
                 bbox=dict(boxstyle="round", fc="w", alpha=0.6),
                 fontsize=size(12)
-                # fontsize=size(12),
                 # arrowprops=dict(arrowstyle="->")
             )
             annot.set_visible(False)
-            f.canvas.mpl_connect('motion_notify_event', cur_move)
-            f.canvas.mpl_connect('motion_notify_event', cur_on_move)
             if emf=='KE':
                 yl = a.get_ylim()
             else:
@@ -3212,13 +2811,16 @@ def exp(*e):
             a1.set_xlabel('Intensity')
             a1.set_ylabel('Counts')
             a1.set_title('Drag to Select the range of Intensity ')
+            Exp_Motion = ExpMotion()
+            f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_move)
+            f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_on_move)
             selectors.append(SpanSelector(
                 a1,
-                onselect,
+                Exp_Motion.onselect,
                 "horizontal",
                 useblit=True,
                 props=dict(alpha=0.3, facecolor="tab:blue"),
-                onmove_callback=onmove_callback,
+                onmove_callback=Exp_Motion.onmove_callback,
                 interactive=True,
                 drag_from_anywhere=True,
                 snap_values=n[1]
@@ -3242,12 +2844,9 @@ def exp(*e):
                 "", xy=(0,0), xytext=(20,20), textcoords="offset points",
                 bbox=dict(boxstyle="round", fc="w", alpha=0.6),
                 fontsize=size(12)
-                # fontsize=size(12),
                 # arrowprops=dict(arrowstyle="->")
             )
             annot.set_visible(False)
-            f.canvas.mpl_connect('motion_notify_event', cur_move)
-            f.canvas.mpl_connect('motion_notify_event', cur_on_move)
             if emf=='KE':
                 yl = a.get_ylim()
             else:
@@ -3264,13 +2863,16 @@ def exp(*e):
             a1.set_xlabel('Intensity')
             a1.set_ylabel('Counts')
             a1.set_title('Drag to Select the range of Intensity ')
+            Exp_Motion = ExpMotion()
+            f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_move)
+            f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_on_move)
             selectors.append(SpanSelector(
                 a1,
-                onselect,
+                Exp_Motion.onselect,
                 "horizontal",
                 useblit=True,
                 props=dict(alpha=0.3, facecolor="tab:blue"),
-                onmove_callback=onmove_callback,
+                onmove_callback=Exp_Motion.onmove_callback,
                 interactive=True,
                 drag_from_anywhere=True,
                 snap_values=n[1]
@@ -3295,12 +2897,9 @@ def exp(*e):
                     "", xy=(0,0), xytext=(20,20), textcoords="offset points",
                     bbox=dict(boxstyle="round", fc="w", alpha=0.6),
                     fontsize=size(12)
-                    # fontsize=size(12),
                     # arrowprops=dict(arrowstyle="->")
                 )
                 annot.set_visible(False)
-                f.canvas.mpl_connect('motion_notify_event', cur_move)
-                f.canvas.mpl_connect('motion_notify_event', cur_on_move)
                 if emf=='KE':
                     yl = a.get_ylim()
                 else:
@@ -3318,13 +2917,16 @@ def exp(*e):
                 a1.set_xlabel('Intensity')
                 a1.set_ylabel('Counts')
                 a1.set_title('Drag to Select the range of Intensity ')
+                Exp_Motion = ExpMotion()
+                f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_move)
+                f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_on_move)
                 selectors.append(SpanSelector(
                     a1,
-                    onselect,
+                    Exp_Motion.onselect,
                     "horizontal",
                     useblit=True,
                     props=dict(alpha=0.3, facecolor="tab:blue"),
-                    onmove_callback=onmove_callback,
+                    onmove_callback=Exp_Motion.onmove_callback,
                     interactive=True,
                     drag_from_anywhere=True,
                     snap_values=n[1]
@@ -3360,12 +2962,12 @@ def exp(*e):
                     "", xy=(0,0), xytext=(20,20), textcoords="offset points",
                     bbox=dict(boxstyle="round", fc="w", alpha=0.6),
                     fontsize=size(12)
-                    # fontsize=size(12),
                     # arrowprops=dict(arrowstyle="->")
                 )
                 annot.set_visible(False)
-                f.canvas.mpl_connect('motion_notify_event', cur_move)
-                f.canvas.mpl_connect('motion_notify_event', cur_on_move)
+                Exp_Motion = ExpMotion()
+                f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_move)
+                f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_on_move)
             elif value.get() == 'MDC Curves':
                 y = np.zeros([len(ev),len(phi)],dtype=float)
                 for n in range(len(ev)):
@@ -3482,6 +3084,15 @@ def exp(*e):
             # a0.set_xticklabels(labels=a0.get_xticklabels(), fontsize=size(14))
         # a.set_xticklabels(labels=a.get_xticklabels(),fontsize=size(10))
         # a.set_yticklabels(labels=a.get_yticklabels(),fontsize=size(10))
+        if 'MDC Curves' not in value.get():
+            selectors.append(RectangleSelector(
+                a0, Exp_Motion.select_callback,
+                useblit=True,
+                button=[1, 3],  # disable middle button
+                minspanx=5, minspany=5,
+                spancoords='pixels',
+                interactive=True,
+                props=props))
     if pflag == 2:
         f, a = plt.subplots(2, 1, dpi=150)
         if value1.get() == 'MDC fitted Data':
@@ -3790,14 +3401,6 @@ def exp(*e):
             a0 = plt.axes([0.13, 0.45, 0.8, 0.5])
             a1 = plt.axes([0.13, 0.08, 0.8, 0.2])
             a0.set_title('Drag to select specific region', font='Arial', fontsize=size(18))
-            selectors.append(RectangleSelector(
-                a0, select_callback,
-                useblit=True,
-                button=[1, 3],  # disable middle button
-                minspanx=5, minspany=5,
-                spancoords='pixels',
-                interactive=True,
-                props=props))
             # f0.canvas.mpl_connect('key_press_event',toggle_selector)
             f, a = plt.subplots(dpi=150)
             if emf=='KE':
@@ -3931,17 +3534,6 @@ def exp(*e):
             a1.set_xlabel('Intensity')
             a1.set_ylabel('Counts')
             a1.set_title('Drag to Select the range of Intensity ')
-            selectors.append(SpanSelector(
-                a1,
-                onselect,
-                "horizontal",
-                useblit=True,
-                props=dict(alpha=0.3, facecolor="tab:blue"),
-                onmove_callback=onmove_callback,
-                interactive=True,
-                drag_from_anywhere=True,
-                snap_values=n[1]
-            ))
             try:
                 if value2.get() == 'Data Plot with Pos and Bare Band':
                     if emf=='KE':
@@ -3955,7 +3547,11 @@ def exp(*e):
                         a0.plot(k*np.float64(bbk_offset.get()), (-be +
                                 np.float64(bb_offset.get()))/1000, linewidth=scale*0.3, c='red', linestyle='--')
             except:
-                pass
+                messagebox.showwarning("Warning", "Please load bare band file")
+                print('Please load Bare Band file')
+                st.put('Please load Bare Band file')
+                show_version()
+                return
             if emf=='BE':
                 a.invert_yaxis()
                 a0.invert_yaxis()
@@ -3964,12 +3560,31 @@ def exp(*e):
                 "", xy=(0,0), xytext=(20,20), textcoords="offset points",
                 bbox=dict(boxstyle="round", fc="w", alpha=0.6),
                 fontsize=size(12)
-                # fontsize=size(12),
                 # arrowprops=dict(arrowstyle="->")
             )
             annot.set_visible(False)
-            f.canvas.mpl_connect('motion_notify_event', cur_move)
-            f.canvas.mpl_connect('motion_notify_event', cur_on_move)
+            Exp_Motion = ExpMotion()
+            f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_move)
+            f.canvas.mpl_connect('motion_notify_event', Exp_Motion.cur_on_move)
+            selectors.append(RectangleSelector(
+                a0, Exp_Motion.select_callback,
+                useblit=True,
+                button=[1, 3],  # disable middle button
+                minspanx=5, minspany=5,
+                spancoords='pixels',
+                interactive=True,
+                props=props))
+            selectors.append(SpanSelector(
+                a1,
+                Exp_Motion.onselect,
+                "horizontal",
+                useblit=True,
+                props=dict(alpha=0.3, facecolor="tab:blue"),
+                onmove_callback=Exp_Motion.onmove_callback,
+                interactive=True,
+                drag_from_anywhere=True,
+                snap_values=n[1]
+            ))
     try:
         if value1.get() == '---Plot2---' and value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get() and 'MDC Curves' != value.get():
             try:
@@ -5063,24 +4678,13 @@ if __name__ == '__main__':
 
     figfr = tk.Frame(fr_main, bg='white')
     figfr.grid(row=0, column=1, sticky='nsew')
-    global figy
     figy = 8.5 if osf<=100 else 8.25 if osf<=150 else 8
     figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
     fig = Figure(figsize=(figx*scale, figy*scale), layout='constrained')
     out = FigureCanvasTkAgg(fig, master=figfr)
     out.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     ao = None
-    ax= fig.subplots()
-    tim = np.asarray(Image.open(tdata), dtype=np.uint8)
-    ax.imshow(tim, aspect='equal', alpha=0.4)
-    fontdict = {
-    'fontsize': size(40),
-    'fontweight': 'bold',
-    'fontname': 'Arial'
-}
-    ax.text(tim.shape[0]/2, tim.shape[1]/2, f"Version: {__version__}\n\nRelease Date: {__release_date__}", fontdict=fontdict, color='black', ha='center', va='center')
-    ax.axis('off')
-    out.draw()
+    show_version()
 
     xydata = tk.Frame(figfr, bg='white')
     xydata.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -5159,7 +4763,7 @@ if __name__ == '__main__':
             k_offset.set('0')
             koffset.config(state='disabled')
     else:
-        b_tools, l_name = None, None
+        b_tools, l_name, ev, phi = None, None, None, None
     # from tool.MDC_Fitter import gl1, gl2, fgl2
     print(f"\033[36mVersion: {__version__}")
     print(f"Release Date: {__release_date__}\n\033[0m")

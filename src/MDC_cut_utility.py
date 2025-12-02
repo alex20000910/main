@@ -5,9 +5,11 @@ from ctypes import windll
 from abc import ABC, abstractmethod
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.collections import PathCollection
+from matplotlib.collections import PathCollection, QuadMesh
 from matplotlib.lines import Line2D
 from matplotlib.axes._axes import Axes
+from matplotlib.figure import Figure
+from matplotlib.text import Annotation
 import xarray as xr
 from PIL import Image, ImageTk
 import win32clipboard
@@ -625,7 +627,7 @@ def save(format='{self.suffix}'):
         return body
 
 class motion:
-    def __init__(self, scale, value: tk.StringVar, value1: tk.StringVar, value2: tk.StringVar, k_offset: tk.StringVar,
+    def __init__(self, scale: float, value: tk.StringVar, value1: tk.StringVar, value2: tk.StringVar, k_offset: tk.StringVar,
                  be: np.ndarray, k: np.ndarray, bb_offset: tk.StringVar, bbk_offset: tk.StringVar,
                  ao: Axes, bo: Axes, out: FigureCanvasTkAgg, figy: float|int,
                  rcx: Axes, rcy: Axes, xdata: tk.Label, ydata: tk.Label,
@@ -640,8 +642,8 @@ class motion:
         self.value, self.value1, self.value2, self.k_offset = value, value1, value2, k_offset
         self.be, self.k, self.bb_offset, self.bbk_offset = be, k, bb_offset, bbk_offset
         self.ao, self.bo, self.out, self.figy = ao, bo, out, figy
-        self.rcx, self.rcy, self.xdata, self.ydata, self.emf = rcx, rcy, xdata, ydata, emf
-        self.data, self.vfe, self.ev, self.phi = data, vfe, ev, phi
+        self.rcx, self.rcy, self.xdata, self.ydata = rcx, rcy, xdata, ydata
+        self.emf, self.data, self.vfe, self.ev, self.phi = emf, data, vfe, ev, phi
         self.pos, self.fwhm, self.rpos, self.ophi, self.fev = pos, fwhm, rpos, ophi, fev
         self.epos, self.efwhm, self.fk, self.ffphi, self.fphi = epos, efwhm, fk, ffphi, fphi
         self.mp, self.ep, self.mf, self.ef, self.xl, self.yl = mp, ep, mf, ef, xl, yl
@@ -770,7 +772,7 @@ class motion:
                 except:
                     pass
                 try:
-                    if self.value2.get() == 'Data Plot with Pos and Bare Band':
+                    if self.value2.get() == 'Data Plot with Pos and Bare Band' and self.k is not None:
                         self.tb2.remove()
                         if self.emf=='KE':
                             self.tb2, = self.bo.plot(self.k*np.float64(self.bbk_offset.get()), (self.be -
@@ -874,7 +876,7 @@ class motion:
                                     [self.fk, self.fk], [self.vfe-eposmin, self.vfe-eposmax], marker='_', c='grey', s=self.scale*self.scale*50, alpha=0.8)
                         except:
                             pass
-                        if self.value2.get() == 'Data Plot with Pos and Bare Band':
+                        if self.value2.get() == 'Data Plot with Pos and Bare Band' and self.k is not None:
                             if self.emf=='KE':
                                 self.tb2, = self.bo.plot(self.k*np.float64(self.bbk_offset.get()), (self.be -
                                             np.float64(self.bb_offset.get()))/1000+self.vfe, linewidth=self.scale*5, c='red', linestyle='--')
@@ -930,7 +932,7 @@ class motion:
                     except:
                         pass
                     try:
-                        if self.value2.get() == 'Data Plot with Pos and Bare Band':
+                        if self.value2.get() == 'Data Plot with Pos and Bare Band' and self.k is not None:
                             self.tb2.remove()
                             if self.emf=='KE':
                                 self.tb2, = self.bo.plot(self.k*np.float64(self.bbk_offset.get()), (self.be+np.float64(
@@ -942,6 +944,363 @@ class motion:
                         pass
                 self.out.draw()
             self.mof = 1
+
+class exp_motion:
+    def __init__(self, scale: float, value: tk.StringVar, value1: tk.StringVar, value2: tk.StringVar, k_offset: tk.StringVar,
+                 be: np.ndarray, k: np.ndarray, bb_offset: tk.StringVar, bbk_offset: tk.StringVar,
+                 a: Axes, a0: Axes,f: Figure, f0: Figure, h1: QuadMesh, h2: QuadMesh,
+                 acx: Axes, acy: Axes, annot: Annotation,
+                 emf: Literal['KE', 'BE'], data: xr.DataArray, vfe: float, ev: np.ndarray, phi: np.ndarray,
+                 pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
+                 epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
+                 mp: int, ep: int, mf: int, ef: int, xl: tuple[float], yl: tuple[float],
+                 ta0: PathCollection, ta0_: PathCollection, ta1: PathCollection, ta1_: PathCollection, ta2: Line2D,
+                 posmin: np.ndarray, posmax: np.ndarray, eposmin: np.ndarray, eposmax: np.ndarray
+                 ) -> None:
+        self.cf = True
+        self.scale = scale
+        self.value, self.value1, self.value2, self.k_offset = value, value1, value2, k_offset
+        self.be, self.k, self.bb_offset, self.bbk_offset = be, k, bb_offset, bbk_offset
+        self.a, self.a0, self.f, self.f0, self.h1, self.h2 = a, a0, f, f0, h1, h2
+        self.acx, self.acy, self.annot = acx, acy, annot
+        self.emf, self.data, self.vfe, self.ev, self.phi = emf, data, vfe, ev, phi
+        self.pos, self.fwhm, self.rpos, self.ophi, self.fev = pos, fwhm, rpos, ophi, fev
+        self.epos, self.efwhm, self.fk, self.ffphi, self.fphi = epos, efwhm, fk, ffphi, fphi
+        self.mp, self.ep, self.mf, self.ef, self.xl, self.yl = mp, ep, mf, ef, xl, yl
+        self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = ta0, ta0_, ta1, ta1_, ta2
+        self.posmin, self.posmax, self.eposmin, self.eposmax = posmin, posmax, eposmin, eposmax
+    
+    def size(self, s: int) -> int:
+        return int(self.scale*s)
+        
+    def select_callback(self, eclick, erelease):
+        """
+        Callback for line selection.
+
+        *eclick* and *erelease* are the press and release events.
+        """
+        x1, y1 = eclick.xdata, eclick.ydata
+        x2, y2 = erelease.xdata, erelease.ydata
+        if eclick.button == 1:
+            self.a.set_xlim(sorted([x1, x2]))
+            if self.emf=='KE':
+                self.a.set_ylim(sorted([y1, y2]))
+            else:
+                self.a.set_ylim(sorted([y1, y2], reverse=True))
+            self.f.show()
+            if abs(x1-x2) < (self.xl[1]-self.xl[0])/3*2 or abs(y1-y2) < (self.yl[1]-self.yl[0])/3*2:
+                try:
+                    if self.mp == 1:
+                        self.ta0.remove()
+                    if self.mf == 1:
+                        self.ta0_.remove()
+                except:
+                    pass
+                try:
+                    if self.ep == 1:
+                        self.ta1.remove()
+                    if self.ef == 1:
+                        self.ta1_.remove()
+                except:
+                    pass
+                try:
+                    self.ta2.remove()
+                except:
+                    pass
+                if self.value2.get() == 'Data Plot with Pos and Bare Band' or self.value2.get() == 'Data Plot with Pos':
+                    try:
+                        if self.mp == 1:
+                            if self.emf=='KE':
+                                self.ta0 = self.a.scatter(self.pos, self.fev, marker='.', s=self.scale*self.scale*30, c='black')
+                            else:
+                                self.ta0 = self.a.scatter(self.pos, self.vfe-self.fev, marker='.', s=self.scale*self.scale*30, c='black')
+                        if self.mf == 1:
+                            if self.emf=='KE':
+                                self.ta0_ = self.a.scatter([self.posmin, self.posmax], [
+                                            self.fev, self.fev], marker='|', c='grey', s=self.scale*self.scale*50, alpha=0.8)
+                            else:
+                                self.ta0_ = self.a.scatter([self.posmin, self.posmax], [self.vfe-self.fev, self.vfe-self.fev], marker='|', c='grey', s=self.scale*self.scale*50, alpha=0.8)
+                    except:
+                        pass
+                    try:
+                        if self.ep == 1:
+                            if self.emf=='KE':
+                                self.ta1 = self.a.scatter(self.fk, self.epos, marker='.', s=self.scale*self.scale*30, c='black')
+                            else:
+                                self.ta1 = self.a.scatter(self.fk, self.vfe-self.epos, marker='.', s=self.scale*self.scale*30, c='black')
+                                
+                        if self.ef == 1:
+                            if self.emf=='KE':
+                                self.ta1_ = self.a.scatter(
+                                    [self.fk, self.fk], [self.eposmin, self.eposmax], marker='_', c='grey', s=self.scale*self.scale*50, alpha=0.8)
+                            else:
+                                self.ta1_ = self.a.scatter(
+                                    [self.fk, self.fk], [self.vfe-self.eposmin, self.vfe-self.eposmax], marker='_', c='grey', s=self.scale*self.scale*50, alpha=0.8)
+                    except:
+                        pass
+
+                    if self.value2.get() == 'Data Plot with Pos and Bare Band' and self.k is not None:
+                        if self.emf=='KE':
+                            self.ta2, = self.a.plot(self.k*np.float64(self.bbk_offset.get()), (self.be -
+                                        np.float64(self.bb_offset.get()))/1000+self.vfe, linewidth=self.scale*2, c='red', linestyle='--')
+                        else:
+                            self.ta2, = self.a.plot(self.k*np.float64(self.bbk_offset.get()), (-self.be +
+                                        np.float64(self.bb_offset.get()))/1000, linewidth=self.scale*2, c='red', linestyle='--')
+                self.f.show()
+            else:
+                try:
+                    if self.mp == 1:
+                        self.ta0.remove()
+                        if self.emf=='KE':
+                            self.ta0 = self.a.scatter(self.pos, self.fev, marker='.', s=self.scale*self.scale*0.3, c='black')
+                        else:
+                            self.ta0 = self.a.scatter(self.pos, self.vfe-self.fev, marker='.', s=self.scale*self.scale*0.3, c='black')
+                            
+                    if self.mf == 1:
+                        self.ta0_.remove()
+                        if self.emf=='KE':
+                            self.ta0_ = self.a.scatter([self.posmin, self.posmax], [self.fev, self.fev],
+                                            marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+                        else:
+                            self.ta0_ = self.a.scatter([self.posmin, self.posmax], [self.vfe-self.fev, self.vfe-self.fev],
+                                            marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+                except:
+                    pass
+                try:
+                    if self.ep == 1:
+                        self.ta1.remove()
+                        if self.emf=='KE':
+                            self.ta1 = self.a.scatter(self.fk, self.epos, marker='.', s=self.scale*self.scale*0.3, c='black')
+                        else:
+                            self.ta1 = self.a.scatter(self.fk, self.vfe-self.epos, marker='.', s=self.scale*self.scale*0.3, c='black')
+                            
+                    if self.ef == 1:
+                        self.ta1_.remove()
+                        if self.emf=='KE':
+                            self.ta1_ = self.a.scatter([self.fk, self.fk], [self.eposmin, self.eposmax],
+                                        marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+                        else:
+                            self.ta1_ = self.a.scatter([self.fk, self.fk], [self.vfe-self.eposmin, self.vfe-self.eposmax],
+                                        marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+                except:
+                    pass
+                try:
+                    if self.value2.get() == 'Data Plot with Pos and Bare Band' and self.k is not None:
+                        self.ta2.remove()
+                        if self.emf =='KE':
+                            self.ta2, = self.a.plot(self.k*np.float64(self.bbk_offset.get()), (self.be -
+                                    np.float64(self.bb_offset.get()))/1000+self.vfe, linewidth=self.scale*0.3, c='red', linestyle='--')
+                        else:
+                            self.ta2, = self.a.plot(self.k*np.float64(self.bbk_offset.get()), (-self.be +
+                                    np.float64(self.bb_offset.get()))/1000, linewidth=self.scale*0.3, c='red', linestyle='--')
+                except:
+                    pass
+                self.f.show()
+        else:
+            self.a.set_xlim(self.xl)
+            self.a.set_ylim(self.yl)
+            try:
+                if self.mp == 1:
+                    self.ta0.remove()
+                    if self.emf=='KE':
+                        self.ta0 = self.a.scatter(self.pos, self.fev, marker='.', s=self.scale*self.scale*0.3, c='black')
+                    else:
+                        self.ta0 = self.a.scatter(self.pos, self.vfe-self.fev, marker='.', s=self.scale*self.scale*0.3, c='black')
+                        
+                if self.mf == 1:
+                    self.ta0_.remove()
+                    if self.emf=='KE':
+                        self.ta0_ = self.a.scatter([self.posmin, self.posmax], [self.fev, self.fev],
+                                    marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+                    else:
+                        self.ta0_ = self.a.scatter([self.posmin, self.posmax], [self.vfe-self.fev, self.vfe-self.fev],
+                                    marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+            except:
+                pass
+            try:
+                if self.ep == 1:
+                    self.ta1.remove()
+                    if self.emf=='KE':
+                        self.ta1 = self.a.scatter(self.fk, self.epos, marker='.', s=self.scale*self.scale*0.3, c='black')
+                    else:
+                        self.ta1 = self.a.scatter(self.fk, self.vfe-self.epos, marker='.', s=self.scale*self.scale*0.3, c='black')
+                        
+                if self.ef == 1:
+                    self.ta1_.remove()
+                    if self.emf=='KE':
+                        self.ta1_ = self.a.scatter([self.fk, self.fk], [self.eposmin, self.eposmax],
+                                    marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+                    else:
+                        self.ta1_ = self.a.scatter([self.fk, self.fk], [self.vfe-self.eposmin, self.vfe-self.eposmax],
+                                    marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+            except:
+                pass
+            try:
+                if self.value2.get() == 'Data Plot with Pos and Bare Band' and self.k is not None:
+                    self.ta2.remove()
+                    if self.emf=='KE':
+                        self.ta2, = self.a.plot(self.k*np.float64(self.bbk_offset.get()), (self.be -
+                                    np.float64(self.bb_offset.get()))/1000+self.vfe, linewidth=self.scale*0.3, c='red', linestyle='--')
+                    else:
+                        self.ta2, = self.a.plot(self.k*np.float64(self.bbk_offset.get()), (-self.be +
+                                np.float64(self.bb_offset.get()))/1000, linewidth=self.scale*0.3, c='red', linestyle='--')
+            except:
+                pass
+            self.f.show()
+
+    def cur_move(self, event):
+        if event.inaxes == self.a and event.xdata is not None and event.ydata is not None:
+            self.f.canvas.get_tk_widget().config(cursor="crosshair")
+            try:
+                self.xx.remove()
+                self.yy.remove()
+            except:
+                pass
+            self.xx=self.a.axvline(event.xdata, color='red')
+            self.yy=self.a.axhline(event.ydata, color='red')
+        self.f.show()
+        
+
+    def cur_on_move(self, event):
+        if event.inaxes == self.a and event.xdata is not None and event.ydata is not None:
+            self.annot.xy = (event.xdata, event.ydata)
+            text = f"x={event.xdata:.3f}\ny={event.ydata:.3f}"
+            self.annot.set_text(text)
+            # 取得座標軸範圍
+            xlim = self.a.get_xlim()
+            ylim = self.a.get_ylim()
+            # 設定 annotation 方向
+            offset_x, offset_y = 20, 20
+            # 靠近右邊界
+            if event.xdata > xlim[1] - (xlim[1]-xlim[0])*0.15:
+                offset_x = -60
+            # 靠近左邊界
+            elif event.xdata < xlim[0] + (xlim[1]-xlim[0])*0.15:
+                offset_x = 20
+            # 靠近上邊界
+            if event.ydata > ylim[1] - (ylim[1]-ylim[0])*0.15:
+                offset_y = -40
+            # 靠近下邊界
+            elif event.ydata < ylim[0] + (ylim[1]-ylim[0])*0.15:
+                offset_y = 20
+            self.annot.set_position((offset_x, offset_y))
+            self.annot.set_visible(True)
+            self.f.canvas.draw_idle()
+        else:
+            self.annot.set_visible(False)
+            self.f.canvas.draw_idle()
+
+    def onselect(self, xmin, xmax):
+        if xmin > xmax:
+            xmin, xmax = xmax, xmin
+        self.h2.set_clim(xmin, xmax)
+        self.f0.show()
+        self.h1.set_clim(xmin, xmax)
+        self.f.show()
+
+
+    def onmove_callback(self, xmin, xmax):
+        if xmin > xmax:
+            xmin, xmax = xmax, xmin
+        self.h2.set_clim(xmin, xmax)
+        self.f0.show()
+        self.h1.set_clim(xmin, xmax)
+        self.f.show()
+
+    def cut_move(self, event):
+        self.f.canvas.get_tk_widget().config(cursor="")
+        if event.inaxes:
+            cxdata = event.xdata
+            cydata = event.ydata
+            xf = (cxdata >= self.a.get_xlim()[0] and cxdata <= self.a.get_xlim()[1])
+            if self.emf=='KE':
+                yf = (cydata >= self.a.get_ylim()[0] and cydata <= self.a.get_ylim()[1])
+            else:
+                yf = (cydata <= self.a.get_ylim()[0] and cydata >= self.a.get_ylim()[1])
+            if xf and yf:
+                self.f.canvas.get_tk_widget().config(cursor="crosshair")
+                try:
+                    self.xx.remove()
+                    self.yy.remove()
+                except:
+                    pass
+                self.xx=self.a.axvline(cxdata,color='r')
+                self.yy=self.a.axhline(cydata,color='r')
+                if self.cf:
+                    if self.emf=='KE':
+                        dx = self.data.sel(
+                            eV=cydata, method='nearest').to_numpy().reshape(len(self.phi))
+                    else:
+                        dx = self.data.sel(eV=self.vfe-cydata, method='nearest').to_numpy().reshape(len(self.phi))
+                    dy = self.data.sel(
+                        phi=cxdata, method='nearest').to_numpy().reshape(len(self.ev))
+                    self.acx.clear()
+                    self.acy.clear()
+                    self.acx.set_title('                Raw Data', font='Arial', fontsize=self.size(18))
+                    self.acx.plot(self.phi, dx, c='black')
+                    if self.emf=='KE':
+                        self.acy.plot(dy, self.ev, c='black')
+                    else:
+                        self.acy.plot(dy, self.vfe-self.ev, c='black')
+                    self.acx.set_xticks([])
+                    self.acy.set_yticks([])
+                    self.acx.set_xlim(self.a.get_xlim())
+                    self.acy.set_ylim(self.a.get_ylim())
+                    # self.f.canvas.draw_idle()
+        else:
+            try:
+                if self.cf:
+                    self.acx.clear()
+                    self.acy.clear()
+                    self.acx.set_title('                Raw Data', font='Arial', fontsize=self.size(18))
+                    self.acx.set_xticks([])
+                    self.acx.set_yticks([])
+                    self.acy.set_xticks([])
+                    self.acy.set_yticks([])
+                self.xx.remove()
+                self.yy.remove()
+            except:
+                pass
+        self.f.show()
+
+    def cut_select(self, event):
+        if event.button == 1 and self.cf:
+            self.cf = False
+            self.x = self.a.axvline(event.xdata, color='red')
+            self.y = self.a.axhline(event.ydata, color='red')
+        elif event.button == 1 and not self.cf:
+            self.x.remove()
+            self.y.remove()
+            self.x = self.a.axvline(event.xdata, color='red')
+            self.y = self.a.axhline(event.ydata, color='red')
+            if self.emf=='KE':
+                dx = self.data.sel(eV=event.ydata,
+                            method='nearest').to_numpy().reshape(len(self.phi))
+            else:
+                dx = self.data.sel(eV=self.vfe-event.ydata,
+                            method='nearest').to_numpy().reshape(len(self.phi))
+            dy = self.data.sel(phi=event.xdata,
+                        method='nearest').to_numpy().reshape(len(self.ev))
+            self.acx.clear()
+            self.acy.clear()
+            self.acx.set_title('                Raw Data', font='Arial', fontsize=self.size(18))
+            self.acx.plot(self.phi, dx, c='black')
+            if self.emf=='KE':
+                self.acy.plot(dy, self.ev, c='black')
+            else:
+                self.acy.plot(dy, self.vfe-self.ev, c='black')
+            self.acx.set_xticks([])
+            self.acy.set_yticks([])
+            self.acx.set_xlim(self.a.get_xlim())
+            self.acy.set_ylim(self.a.get_ylim())
+
+        elif event.button == 3:
+            self.cf = True
+            self.x.remove()
+            self.y.remove()
+        # self.f.canvas.draw_idle()
+        copy_to_clipboard(self.f)
+        self.f.show()
 
 def on_configure(g, *e):
     if g.winfo_width() < g.winfo_reqwidth() or g.winfo_height() < g.winfo_reqheight():
