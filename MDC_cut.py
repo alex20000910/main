@@ -701,7 +701,19 @@ if __name__ == '__main__':
                              mp, ep, mf, ef, npzf, fig, out, d, l, p)
 
         @override
-        def pars(self):
+        def pars1(self):
+            var_list = ['h0', 'ao', 'xl', 'yl', 'rcx', 'rcy', 'acb', 'pflag']
+            for i, j in zip(var_list, [self.h0, self.ao, self.xl, self.yl, self.rcx, self.rcy, self.acb, self.pflag]):
+                set_globals(j, i)
+                
+        @override
+        def pars2(self):
+            var_list = ['rx', 'ry', 'ix', 'iy', 'pflag']
+            for i, j in zip(var_list, [self.rx, self.ry, self.ix, self.iy, self.pflag]):
+                set_globals(j, i)
+                
+        @override
+        def pars3(self):
             var_list = ['h0', 'ao', 'xl', 'yl', 'rcx', 'rcy', 'acb', 'pflag']
             for i, j in zip(var_list, [self.h0, self.ao, self.xl, self.yl, self.rcx, self.rcy, self.acb, self.pflag]):
                 set_globals(j, i)
@@ -1963,6 +1975,9 @@ def o_plot2(*e):
     global fig, out, fwhm, fev, pos, value, value1, value2, k, be, rx, ry, ix, iy, pflag, limg, img, bb_offset, bbk_offset, optionList1, st
     if 'gg' in globals():
         gg.destroy()
+    pl=PlotsUtil()
+    pl.o_plot2()
+    return
     if value1.get() in optionList1:
         try:
             b_sw.grid_remove()

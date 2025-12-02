@@ -1247,7 +1247,15 @@ class plots_util(ABC):
         self.rcx, self.rcy, self.acb = None, None, None
 
     @abstractmethod
-    def pars(self):
+    def pars1(self):
+        pass
+    
+    @abstractmethod
+    def pars2(self):
+        pass
+    
+    @abstractmethod
+    def pars3(self):
         pass
 
     @abstractmethod
@@ -1302,7 +1310,7 @@ class plots_util(ABC):
         else:
             tx, ty = np.meshgrid(phi, vfe-ev)
         tz = data.to_numpy()
-        # h1 = a.scatter(tx,ty,c=tz,marker='o',s=scale*scale*0.9,cmap=value3.get());
+        # h1 = a.scatter(tx,ty,c=tz,marker='o',s=self.scale*self.scale*0.9,cmap=value3.get());
         h0 = ao.pcolormesh(tx, ty, tz, cmap=value3.get())
         f.colorbar(h0, cax=acb, orientation='vertical')
         # a.set_title('Raw Data',font='Arial',fontsize=self.size(16))
@@ -1319,10 +1327,10 @@ class plots_util(ABC):
         canvas.draw()
         
         self.h0, self.ao, self.xl, self.yl, self.rcx, self.rcy, self.acb, self.pflag = h0, ao, xl, yl, rcx, rcy, acb, 1
-        self.pars()
+        self.pars1()
     
     def o_plot1(self):
-        h0 = None
+        h0, pflag = None, 1
         value, value1, value2, value3 = self.value, self.value1, self.value2, self.value3
         data, ev, phi, vfe, fig, out = self.data, self.ev, self.phi, self.vfe, self.fig, self.out
         k_offset = self.k_offset
@@ -1416,7 +1424,7 @@ class plots_util(ABC):
                         ao = fig.add_axes([0.1, 0.13, 0.4, 0.8])
                         ao1 = fig.add_axes([0.5, 0.13, 0.4, 0.8])
                     if value.get() == 'E-k Diagram':
-                        # h1=a.scatter(mx,my,c=mz,marker='o',s=scale*scale*0.9,cmap=value3.get());
+                        # h1=a.scatter(mx,my,c=mz,marker='o',s=self.scale*self.scale*0.9,cmap=value3.get());
                         if emf=='KE':
                             px, py = np.meshgrid(phi, ev)
                             tev = py.copy()
@@ -1447,7 +1455,7 @@ class plots_util(ABC):
                             # mx[len(phi)*n:len(phi)*(n+1)]=x
                             # ty=np.arange(len(x), dtype=float)
                             # my[len(phi)*n:len(phi)*(n+1)]=np.full_like(ty, ev[n])
-                            # a.scatter(x,np.full_like(ty, ev[n]),c=np.array(y,dtype=int),marker='o',s=scale*scale*0.9,cmap=value3.get());
+                            # a.scatter(x,np.full_like(ty, ev[n]),c=np.array(y,dtype=int),marker='o',s=self.scale*self.scale*0.9,cmap=value3.get());
                             if emf=='KE':
                                 px, py = np.meshgrid(x, ev[n:(n+2)])
                             else:
@@ -1555,7 +1563,7 @@ class plots_util(ABC):
                 yl = ao.get_ylim()
             try:
                 self.pflag, self.h0, self.ao, self.xl, self.yl = pflag, h0, ao, xl, yl
-                self.pars()
+                self.pars1()
                 if value.get() != 'MDC Normalized' and value.get() != 'MDC Curves':
                     self.climon()
                     out.draw()
@@ -1567,5 +1575,191 @@ class plots_util(ABC):
                 pass
             print('Done')
             st.put('Done')
+            self.main_plot_bind()
+            gc.collect()
+
+    def o_plot2(self):
+        global fig, out, fwhm, fev, pos, value, value1, value2, k, be, rx, ry, ix, iy, pflag, limg, img, bb_offset, bbk_offset, optionList1, st
+        rx, ry, ix, iy, pflag = None, None, None, None, 2
+        value, value1, value2 = self.value, self.value1, self.value2
+        vfe, fig, out = self.vfe, self.fig, self.out
+        limg, img, st, b_sw = self.limg, self.img, self.st, self.b_sw
+        pos, fwhm, fev = self.pos, self.fwhm, self.fev
+        epos, efwhm, fk = self.epos, self.efwhm, self.fk
+        k, be = self.k, self.be
+        bb_offset, bbk_offset = self.bb_offset, self.bbk_offset
+        optionList1 = self.optionList1
+        if value1.get() in optionList1:
+            try:
+                b_sw.grid_remove()
+            except:
+                pass
+            limg.config(image=img[np.random.randint(len(img))])
+            print('Plotting...')
+            st.put('Plotting...')
+            pflag = 2
+            value.set('---Plot1---')
+            value2.set('---Plot3---')
+            fig.clear()
+            self.climoff()
+            if value1.get() == 'MDC fitted Data':
+                try:
+                    x = (vfe-fev)*1000
+                    # y = (fwhm*6.626*10**-34/2/3.1415926/(10**-10))**2/2/(9.11*10**-31)/(1.602176634*10**-19)*1000
+                except:
+                    print(r'Please Load MDC fitted file')
+                    st.put(r'Please Load MDC fitted file')
+                try:
+                    a = fig.subplots(2, 1)
+                    a[0].set_title('MDC Fitting Result', font='Arial', fontsize=self.size(18))
+                    a[0].set_xlabel('Binding Energy (meV)',
+                                    font='Arial', fontsize=self.size(14))
+                    a[0].set_ylabel(
+                        r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                    a[0].tick_params(direction='in')
+                    a[0].scatter(x, pos, c='black', s=self.scale*self.scale*5)
+
+                    a[1].set_xlabel('Binding Energy (meV)',
+                                    font='Arial', fontsize=self.size(14))
+                    a[1].set_ylabel(
+                        r'FWHM ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                    a[1].tick_params(direction='in')
+                    a[1].scatter(x, fwhm, c='black', s=self.scale*self.scale*5)
+                    
+                    a[0].invert_xaxis()
+                    a[1].invert_xaxis()
+                except:
+                    print('Please load MDC fitted file')
+                    st.put('Please load MDC fitted file')
+            elif value1.get() == 'EDC fitted Data':
+                try:
+                    x = fk
+                except:
+                    print(r'Please Load EDC fitted file')
+                    st.put(r'Please Load EDC fitted file')
+                try:
+                    a = fig.subplots(2, 1)
+                    a[0].set_title('EDC Fitting Result', font='Arial', fontsize=self.size(18))
+                    a[0].set_xlabel(
+                        r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                    a[0].set_ylabel('Binding Energy (meV)',
+                                    font='Arial', fontsize=self.size(14))
+                    a[0].tick_params(direction='in')
+                    a[0].scatter(x, (vfe-epos)*1000, c='black', s=self.scale*self.scale*5)
+
+                    a[1].set_xlabel(
+                        r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                    a[1].set_ylabel('FWHM (meV)', font='Arial', fontsize=self.size(14))
+                    a[1].tick_params(direction='in')
+                    a[1].scatter(x, efwhm*1000, c='black', s=self.scale*self.scale*5)
+                    
+                    a[0].invert_yaxis()
+                except:
+                    print('Please load EDC fitted file')
+                    st.put('Please load EDC fitted file')
+            elif value1.get() == 'Real Part':
+                try:
+                    x = (vfe-fev)*1000
+                    y = pos
+                except:
+                    print('Please load MDC fitted file')
+                    st.put('Please load MDC fitted file')
+                try:
+                    yy = interp(y, k*np.float64(bbk_offset.get()), be -
+                                # interp x into be,k set
+                                np.float64(bb_offset.get()))
+                except:
+                    messagebox.showwarning("Warning", "Please load Bare Band file")
+                    print('Please load Bare Band file')
+                    st.put('Please load Bare Band file')
+                    self.show_version()
+                    return
+                a = fig.subplots(2, 1)
+                a[0].set_title('Real Part', font='Arial', fontsize=self.size(18))
+                a[0].plot(x, -(x+yy), c='black', linestyle='-', marker='.')
+
+                rx = x
+                ry = -(x+yy)
+                a[0].tick_params(direction='in')
+                a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=self.size(14))
+                a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=self.size(14))
+
+                h1 = a[1].scatter(y, x, c='black', s=self.scale*self.scale*5)
+                h2 = a[1].scatter(k*np.float64(bbk_offset.get()),
+                                -be+np.float64(bb_offset.get()), c='red', s=self.scale*self.scale*5)
+
+                a[1].legend([h1, h2], ['fitted data', 'bare band'])
+                a[1].tick_params(direction='in')
+                a[1].set_ylabel('Binding Energy (meV)', font='Arial', fontsize=self.size(14))
+                a[1].set_xlabel(
+                    r'Pos ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                
+                a[0].invert_xaxis()
+                a[1].invert_yaxis()
+
+                # a[0].set_xlim([-1000,50])
+                # a[0].set_ylim([-100,500])
+                # a[1].set_ylim([-600,200])
+                # a[1].set_xlim([-0.05,0.05])
+            elif value1.get() == 'Imaginary Part':
+                try:
+                    tbe = (vfe-fev)*1000
+                except:
+                    print(r'Please Load MDC fitted file')
+                    st.put(r'Please Load MDC fitted file')
+                try:
+                    x = interp(tbe, -be+np.float64(bb_offset.get()),
+                            k*np.float64(bbk_offset.get()))
+                    y = interp(x, k*np.float64(bbk_offset.get()),
+                            -be+np.float64(bb_offset.get()))
+                except:
+                    messagebox.showwarning("Warning", "Please load Bare Band file")
+                    print('Please load Bare Band file')
+                    st.put('Please load Bare Band file')
+                    self.show_version()
+                    return
+                xx = np.diff(x)
+                yy = np.diff(y)
+
+                # eliminate vf in gap
+                for i in range(len(yy)):
+                    if yy[i]/xx[i] > 20000:
+                        yy[i] = 0
+                v = yy/xx
+                # v = np.append(v, v[-1])  # fermi velocity
+                try:
+                    v=interp(pos,x[0:-1]+xx/2,v)
+                    yy = np.abs(v*fwhm/2)
+                except:
+                    print('Please load MDC fitted file')
+                    st.put('Please load MDC fitted file')
+                xx = tbe
+                ax = fig.subplots(2, 1)
+                a = ax[0]
+                b = ax[1]
+                a.set_title('Imaginary Part', font='Arial', fontsize=self.size(18))
+                a.plot(xx, yy, c='black', linestyle='-', marker='.')
+
+                ix = xx
+                iy = yy
+                a.tick_params(direction='in')
+                a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=self.size(14))
+                a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=self.size(14))
+
+                x = (vfe-fev)*1000
+                y = fwhm
+                b.plot(x, y, c='black', linestyle='-', marker='.')
+                b.tick_params(direction='in')
+                b.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=self.size(14))
+                b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
+                            font='Arial', fontsize=self.size(14))
+                
+                a.invert_xaxis()
+                b.invert_xaxis()
+            out.draw()
+            print('Done')
+            st.put('Done')
+            self.rx, self.ry, self.ix, self.iy, self.pflag = rx, ry, ix, iy, pflag
+            self.pars2()
             self.main_plot_bind()
             gc.collect()
