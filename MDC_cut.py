@@ -249,6 +249,7 @@ def get_src(ver=False):
            r"https://github.com/alex20000910/main/blob/update/src/viridis_2D.otp",
            r"https://github.com/alex20000910/main/blob/update/src/MDC_cut_utility.py",
            r"https://github.com/alex20000910/main/blob/update/src/tool/__init__.py",
+           r"https://github.com/alex20000910/main/blob/update/src/tool/util.py",
            r"https://github.com/alex20000910/main/blob/update/src/tool/loader.py",
            r"https://github.com/alex20000910/main/blob/update/src/tool/spectrogram.py",
            r"https://github.com/alex20000910/main/blob/update/src/tool/SO_Fitter.py",
@@ -408,6 +409,7 @@ try:
     from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
     if __name__ == '__main__':
+        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin, motion, exp_motion
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
@@ -4344,40 +4346,6 @@ if __name__ == '__main__':
     except:
         vfe=21.2
 
-    '''
-    try:
-        with np.load(os.path.join('.MDC_cut', 'efpara.npz'),'rb') as f:
-            rdd=f['path']
-            fphi=f['fphi']
-            efwhm=f['efwhm']
-            epos=f['epos']
-            semin=f['semin']
-            semax=f['semax']
-            seaa1=f['seaa1']
-            seaa2=f['seaa2']
-            sefp=f['sefp']
-            sefi=f['sefi']
-            print('EDC Fitted Data preloaded')
-    except:
-        print('No EDC fitted data preloaded')
-        
-    try:
-        with np.load(os.path.join('.MDC_cut', 'mfpara.npz'),'rb') as f:
-            rdd=f['path']
-            fev=f['fev']
-            fwhm=f['fwhm']
-            pos=f['pos']
-            skmin=f['skmin']
-            skmax=f['skmax']
-            smaa1=f['smaa1']
-            smaa2=f['smaa2']
-            smfp=f['smfp']
-            smfi=f['smfi']
-            print('MDC Fitted Data preloaded')
-    except:
-        print('No MDC fitted data preloaded')
-    '''
-
     icon = IconManager()
     g.iconphoto(True, tk.PhotoImage(data=b64decode(icon.icon)))
 
@@ -4763,7 +4731,6 @@ if __name__ == '__main__':
             koffset.config(state='disabled')
     else:
         b_tools, l_name, ev, phi = None, None, None, None
-    # from tool.MDC_Fitter import gl1, gl2, fgl2
     print(f"\033[36mVersion: {__version__}")
     print(f"Release Date: {__release_date__}\n\033[0m")
     g.bind('<Configure>', lambda event: on_configure(g, event))

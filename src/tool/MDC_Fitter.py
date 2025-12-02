@@ -1,16 +1,11 @@
 from MDC_cut_utility import *
-import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from ctypes import windll
-from abc import ABC, abstractmethod
-import threading
 from lmfit import Parameters, Minimizer
 from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
 import copy

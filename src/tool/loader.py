@@ -1,4 +1,5 @@
 from MDC_cut_utility import *
+from .util import app_param
 import os, inspect
 import sys, shutil
 from typing import Literal, Any, override
