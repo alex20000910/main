@@ -690,7 +690,7 @@ if __name__ == '__main__':
             var_list = ['scale', 'value', 'value1', 'value2', 'value3', 'be', 'k', 'k_offset', 'bb_offset', 'bbk_offset', 'b_sw',
                         'limg', 'img', 'st', 'im_kernel', 'optionList', 'optionList1', 'optionList2', 'emf', 'data', 'vfe', 'ev', 'phi',
                         'pos', 'fwhm', 'rpos', 'ophi', 'fev', 'epos', 'efwhm', 'fk', 'ffphi', 'fphi', 'mp', 'ep', 'mf', 'ef', 'npzf', 'fig', 'out',
-                        'd', 'l', 'p']
+                        'd', 'l', 'p', 'dl', 'rx', 'ry', 'ix', 'iy']
             for i in var_list:
                 init_globals(i)
             super().__init__(scale, value, value1, value2, value3, be, k, k_offset, bb_offset, bbk_offset, b_sw,
@@ -698,7 +698,7 @@ if __name__ == '__main__':
                              emf, data, vfe, ev, phi,
                              pos, fwhm, rpos, ophi, fev,
                              epos, efwhm, fk, ffphi, fphi,
-                             mp, ep, mf, ef, npzf, fig, out, d, l, p)
+                             mp, ep, mf, ef, npzf, fig, out, d, l, p, dl, rx, ry, ix, iy)
 
         @override
         def pars1(self):
@@ -714,8 +714,8 @@ if __name__ == '__main__':
                 
         @override
         def pars3(self):
-            var_list = ['h0', 'ao', 'xl', 'yl', 'rcx', 'rcy', 'acb', 'pflag']
-            for i, j in zip(var_list, [self.h0, self.ao, self.xl, self.yl, self.rcx, self.rcy, self.acb, self.pflag]):
+            var_list = ['bo', 'h0', 'xl', 'yl', 'posmin', 'posmax', 'eposmin', 'eposmax', 'pflag']
+            for i, j in zip(var_list, [self.bo, self.h0, self.xl, self.yl, self.posmin, self.posmax, self.eposmin, self.eposmax, self.pflag]):
                 set_globals(j, i)
             
         @override
@@ -1977,184 +1977,14 @@ def o_plot2(*e):
         gg.destroy()
     pl=PlotsUtil()
     pl.o_plot2()
-    return
-    if value1.get() in optionList1:
-        try:
-            b_sw.grid_remove()
-        except:
-            pass
-        limg.config(image=img[np.random.randint(len(img))])
-        print('Plotting...')
-        st.put('Plotting...')
-        pflag = 2
-        value.set('---Plot1---')
-        value2.set('---Plot3---')
-        fig.clear()
-        climoff()
-        if value1.get() == 'MDC fitted Data':
-            try:
-                x = (vfe-fev)*1000
-                # y = (fwhm*6.626*10**-34/2/3.1415926/(10**-10))**2/2/(9.11*10**-31)/(1.602176634*10**-19)*1000
-            except:
-                print(r'Please Load MDC fitted file')
-                st.put(r'Please Load MDC fitted file')
-            try:
-                a = fig.subplots(2, 1)
-                a[0].set_title('MDC Fitting Result', font='Arial', fontsize=size(18))
-                a[0].set_xlabel('Binding Energy (meV)',
-                                font='Arial', fontsize=size(14))
-                a[0].set_ylabel(
-                    r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=size(14))
-                a[0].tick_params(direction='in')
-                a[0].scatter(x, pos, c='black', s=scale*scale*5)
-
-                a[1].set_xlabel('Binding Energy (meV)',
-                                font='Arial', fontsize=size(14))
-                a[1].set_ylabel(
-                    r'FWHM ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=size(14))
-                a[1].tick_params(direction='in')
-                a[1].scatter(x, fwhm, c='black', s=scale*scale*5)
-                
-                a[0].invert_xaxis()
-                a[1].invert_xaxis()
-            except:
-                print('Please load MDC fitted file')
-                st.put('Please load MDC fitted file')
-        elif value1.get() == 'EDC fitted Data':
-            try:
-                x = fk
-            except:
-                print(r'Please Load EDC fitted file')
-                st.put(r'Please Load EDC fitted file')
-            try:
-                a = fig.subplots(2, 1)
-                a[0].set_title('EDC Fitting Result', font='Arial', fontsize=size(18))
-                a[0].set_xlabel(
-                    r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=size(14))
-                a[0].set_ylabel('Binding Energy (meV)',
-                                font='Arial', fontsize=size(14))
-                a[0].tick_params(direction='in')
-                a[0].scatter(x, (vfe-epos)*1000, c='black', s=scale*scale*5)
-
-                a[1].set_xlabel(
-                    r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=size(14))
-                a[1].set_ylabel('FWHM (meV)', font='Arial', fontsize=size(14))
-                a[1].tick_params(direction='in')
-                a[1].scatter(x, efwhm*1000, c='black', s=scale*scale*5)
-                
-                a[0].invert_yaxis()
-            except:
-                print('Please load EDC fitted file')
-                st.put('Please load EDC fitted file')
-        elif value1.get() == 'Real Part':
-            try:
-                x = (vfe-fev)*1000
-                y = pos
-            except:
-                print('Please load MDC fitted file')
-                st.put('Please load MDC fitted file')
-            try:
-                yy = interp(y, k*np.float64(bbk_offset.get()), be -
-                            # interp x into be,k set
-                            np.float64(bb_offset.get()))
-            except:
-                messagebox.showwarning("Warning", "Please load Bare Band file")
-                print('Please load Bare Band file')
-                st.put('Please load Bare Band file')
-                show_version()
-                return
-            a = fig.subplots(2, 1)
-            a[0].set_title('Real Part', font='Arial', fontsize=size(18))
-            a[0].plot(x, -(x+yy), c='black', linestyle='-', marker='.')
-
-            rx = x
-            ry = -(x+yy)
-            a[0].tick_params(direction='in')
-            a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=size(14))
-            a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=size(14))
-
-            h1 = a[1].scatter(y, x, c='black', s=scale*scale*5)
-            h2 = a[1].scatter(k*np.float64(bbk_offset.get()),
-                              -be+np.float64(bb_offset.get()), c='red', s=scale*scale*5)
-
-            a[1].legend([h1, h2], ['fitted data', 'bare band'])
-            a[1].tick_params(direction='in')
-            a[1].set_ylabel('Binding Energy (meV)', font='Arial', fontsize=size(14))
-            a[1].set_xlabel(
-                r'Pos ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=size(14))
-            
-            a[0].invert_xaxis()
-            a[1].invert_yaxis()
-
-            # a[0].set_xlim([-1000,50])
-            # a[0].set_ylim([-100,500])
-            # a[1].set_ylim([-600,200])
-            # a[1].set_xlim([-0.05,0.05])
-        elif value1.get() == 'Imaginary Part':
-            try:
-                tbe = (vfe-fev)*1000
-            except:
-                print(r'Please Load MDC fitted file')
-                st.put(r'Please Load MDC fitted file')
-            try:
-                x = interp(tbe, -be+np.float64(bb_offset.get()),
-                           k*np.float64(bbk_offset.get()))
-                y = interp(x, k*np.float64(bbk_offset.get()),
-                           -be+np.float64(bb_offset.get()))
-            except:
-                messagebox.showwarning("Warning", "Please load Bare Band file")
-                print('Please load Bare Band file')
-                st.put('Please load Bare Band file')
-                show_version()
-                return
-            xx = np.diff(x)
-            yy = np.diff(y)
-
-            # eliminate vf in gap
-            for i in range(len(yy)):
-                if yy[i]/xx[i] > 20000:
-                    yy[i] = 0
-            v = yy/xx
-            # v = np.append(v, v[-1])  # fermi velocity
-            try:
-                v=interp(pos,x[0:-1]+xx/2,v)
-                yy = np.abs(v*fwhm/2)
-            except:
-                print('Please load MDC fitted file')
-                st.put('Please load MDC fitted file')
-            xx = tbe
-            ax = fig.subplots(2, 1)
-            a = ax[0]
-            b = ax[1]
-            a.set_title('Imaginary Part', font='Arial', fontsize=size(18))
-            a.plot(xx, yy, c='black', linestyle='-', marker='.')
-
-            ix = xx
-            iy = yy
-            a.tick_params(direction='in')
-            a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=size(14))
-            a.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=size(14))
-
-            x = (vfe-fev)*1000
-            y = fwhm
-            b.plot(x, y, c='black', linestyle='-', marker='.')
-            b.tick_params(direction='in')
-            b.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=size(14))
-            b.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)',
-                         font='Arial', fontsize=size(14))
-            
-            a.invert_xaxis()
-            b.invert_xaxis()
-        out.draw()
-        print('Done')
-        st.put('Done')
-        main_plot_bind()
-        gc.collect()
 
 
 @pool_protect
 def o_plot3(*e):
-    global fig, out, rx, ry, ix, iy, fwhm, pos, value, value1, value2, pflag, k, be, k_offset, value3, limg, img, bb_offset, bbk_offset, optionList2, h0, bo, xl, yl, posmin, posmax, eposmin, eposmax, tb0, tb0_, tb1, tb1_, tb2, st, dl, b_sw
+    # global fig, out, rx, ry, ix, iy, fwhm, pos, value, value1, value2, pflag, k, be, k_offset, value3, limg, img, bb_offset, bbk_offset, optionList2, h0, bo, xl, yl, posmin, posmax, eposmin, eposmax, tb0, tb0_, tb1, tb1_, tb2, st, dl, b_sw
+    pl=PlotsUtil()
+    pl.o_plot3()
+    return
     if value2.get() in optionList2:
         limg.config(image=img[np.random.randint(len(img))])
         print('Plotting...')

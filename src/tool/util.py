@@ -11,6 +11,7 @@ from typing import Literal
 from tkinter import messagebox
 import queue
 import gc, tqdm
+from scipy.signal import hilbert
 
 class app_param:
     def __init__(self, hwnd=None, scale=None, dpi=None, bar_pos=None, g_mem=None):
@@ -1232,7 +1233,8 @@ class plots_util(ABC):
                  pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
                  epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
                  mp: int, ep: int, mf: int, ef: int, npzf: bool, fig: Figure, out: FigureCanvasTkAgg,
-                 d: int, l: int, p: int
+                 d: int, l: int, p: int, dl: int,
+                 rx: np.ndarray, ry: np.ndarray, ix: np.ndarray, iy: np.ndarray
                  ):
         self.scale, self.value, self.value1, self.value2, self.value3 = scale, value, value1, value2, value3
         self.be, self.k, self.k_offset, self.bb_offset, self.bbk_offset, self.b_sw = be, k, k_offset, bb_offset, bbk_offset, b_sw
@@ -1243,7 +1245,8 @@ class plots_util(ABC):
         self.epos, self.efwhm, self.fk, self.ffphi, self.fphi = epos, efwhm, fk, ffphi, fphi
         self.mp, self.ep, self.mf, self.ef, self.npzf = mp, ep, mf, ef, npzf
         self.fig, self.out = fig, out
-        self.d, self.l, self.p = d, l, p
+        self.d, self.l, self.p, self.dl = d, l, p, dl
+        self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
         self.rcx, self.rcy, self.acb = None, None, None
 
     @abstractmethod
@@ -1761,5 +1764,364 @@ class plots_util(ABC):
             st.put('Done')
             self.rx, self.ry, self.ix, self.iy, self.pflag = rx, ry, ix, iy, pflag
             self.pars2()
+            self.main_plot_bind()
+            gc.collect()
+
+    def o_plot3(self):
+        global fig, out, rx, ry, ix, iy, fwhm, pos, value, value1, value2, pflag, k, be, k_offset, value3, limg, img, bb_offset, bbk_offset, optionList2, h0, bo, xl, yl, posmin, posmax, eposmin, eposmax, tb0, tb0_, tb1, tb1_, tb2, st, dl, b_sw
+        bo, h0, xl, yl, posmin, posmax, eposmin, eposmax, pflag = None, None, None, None, None, None, None, None, 3
+        tb0, tb0_, tb1, tb1_, tb2 = None, None, None, None, None
+        value, value1, value2, value3 = self.value, self.value1, self.value2, self.value3
+        vfe, fig, out = self.vfe, self.fig, self.out
+        limg, img, st, b_sw = self.limg, self.img, self.st, self.b_sw
+        data, ev, phi = self.data, self.ev, self.phi
+        emf, npzf = self.emf, self.npzf
+        mf, ef, mp, ep = self.mf, self.ef, self.mp, self.ep
+        rx, ry, ix, iy = self.rx, self.ry, self.ix, self.iy
+        pos, fwhm, fev = self.pos, self.fwhm, self.fev
+        epos, efwhm, fk = self.epos, self.efwhm, self.fk
+        rpos, ophi = self.rpos, self.ophi
+        k, be = self.k, self.be
+        k_offset, bb_offset, bbk_offset = self.k_offset, self.bb_offset, self.bbk_offset
+        optionList2 = self.optionList2
+        m, h = 9.1093837015e-31, 6.62607015e-34
+        if value2.get() in optionList2:
+            limg.config(image=img[np.random.randint(len(img))])
+            print('Plotting...')
+            st.put('Plotting...')
+            pflag = 3
+            value.set('---Plot1---')
+            value1.set('---Plot2---')
+            fig.clear()
+            ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
+                            10**-10*(h/2/np.pi))*180/np.pi
+            pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
+                np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+            try:
+                x = (vfe-fev)*1000
+                y = pos
+            except:
+                print('Please load MDC fitted file')
+                st.put('Please load MDC fitted file')
+            if 'Data Plot with Pos' in value2.get():
+                try:
+                    b_sw.grid_remove()
+                except:
+                    pass
+            else:
+                try:
+                    b_sw.grid(row=0, column=4)
+                except:
+                    pass    
+            if value2.get() != 'Data Plot with Pos':
+                try:
+                    yy = interp(y, k*np.float64(bbk_offset.get()), be -
+                                # interp x into be,k set
+                                np.float64(bb_offset.get()))
+                    rx = x
+                    ry = -(x+yy)
+                    tbe = (vfe-fev)*1000
+                    x = interp(tbe, -be+np.float64(bb_offset.get()),
+                            k*np.float64(bbk_offset.get()))
+                    y = interp(x, k*np.float64(bbk_offset.get()),
+                            -be+np.float64(bb_offset.get()))
+                    xx = np.diff(x)
+                    yy = np.diff(y)
+
+                    # eliminate vf in gap
+                    for i in range(len(yy)):
+                        if yy[i]/xx[i] > 20000:
+                            yy[i] = 0
+                    v = yy/xx
+                    # v = np.append(v, v[-1])  # fermi velocity
+                    v=interp(pos,x[0:-1]+xx/2,v)
+                    yy = np.abs(v*fwhm/2)
+                    xx = tbe
+                    ix = xx
+                    iy = yy
+                except:
+                    messagebox.showwarning("Warning", "Please load Bare Band file")
+                    print('Please load Bare Band file')
+                    st.put('Please load Bare Band file')
+                    self.show_version()
+                    return
+            if value2.get() == 'Real & Imaginary':
+                a = fig.subplots(2, 1)
+                a[0].set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=self.size(18))
+                if dl==0:
+                    a[0].scatter(rx, ry, edgecolors='black', c='w')
+                elif dl==1:
+                    a[0].plot(rx, ry, c='black')
+                elif dl==2:
+                    a[0].plot(rx, ry, c='black', linestyle='-', marker='.')
+                a[0].tick_params(direction='in')
+                a[0].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=self.size(14))
+                a[0].set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=self.size(14))
+                if dl==0:
+                    a[1].scatter(ix, iy, edgecolors='black', c='w')
+                elif dl==1:
+                    a[1].plot(ix, iy, c='black')
+                elif dl==2:
+                    a[1].plot(ix, iy, c='black', linestyle='-', marker='.')
+                a[1].tick_params(direction='in')
+                a[1].set_xlabel('Binding Energy (meV)', font='Arial', fontsize=self.size(14))
+                a[1].set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=self.size(14))
+                a[0].invert_xaxis()
+                a[1].invert_xaxis()
+            elif 'KK Transform' in value2.get():
+                ################################################################################## Hilbert Transform
+                ##################################################################################
+                tbe = (vfe-fev)*1000
+                
+                ix=(tbe-tbe[-1])*-1
+                cix=np.append(ix+ix[0],ix)
+                tix=cix[0:len(cix)-1]*-1
+                # kx=ix
+                kx = np.append(cix,tix[::-1])
+                ky = np.linspace(0, 1, len(kx))
+                ciy=np.append(iy*0+np.mean(iy),iy)
+                tiy=ciy[0:len(ciy)-1]
+                ciy = np.append(ciy,tiy[::-1])
+
+                #for imaginary part
+                ix=(tbe-tbe[-1])*-1
+                cix=np.append(ix+ix[0],ix)
+                tix=cix[0:len(cix)-1]*-1
+                kx = np.append(cix,tix[::-1])
+                ky = np.linspace(0, 1, len(kx))
+                cry=np.append(ry*0,ry)
+                tcry=cry[0:len(cry)-1]*-1
+                cry = np.append(cry,tcry[::-1])
+
+                # Hilbert transform
+                analytic_signal_r = hilbert(cry)
+                amplitude_envelope_r = np.abs(analytic_signal_r)
+                instantaneous_phase_r = np.unwrap(np.angle(analytic_signal_r))
+                instantaneous_frequency_r = np.diff(instantaneous_phase_r) / (2.0 * np.pi)
+
+                analytic_signal_i = hilbert(ciy)
+                amplitude_envelope_i = np.abs(analytic_signal_i)
+                instantaneous_phase_i = np.unwrap(np.angle(analytic_signal_i))
+                instantaneous_frequency_i = np.diff(instantaneous_phase_i) / (2.0 * np.pi)
+
+                # Reconstructed real and imaginary parts
+                reconstructed_real = np.imag(analytic_signal_i)
+                reconstructed_imag = -np.imag(analytic_signal_r)
+                ################################################################################## # Export data points as txt files
+                ##################################################################################
+                
+                # np.savetxt('re_sigma.txt', np.column_stack((tbe, ry)), delimiter='\t', header='Binding Energy (meV)\tRe Sigma (meV)', comments='')
+                # np.savetxt('kk_re_sigma.txt', np.column_stack((tbe, reconstructed_real[len(ix):2*len(ix)])), delimiter='\t', header='Binding Energy (meV)\tRe Sigma KK (meV)', comments='')
+                # np.savetxt('im_sigma.txt', np.column_stack((tbe, iy)), delimiter='\t', header='Binding Energy (meV)\tIm Sigma (meV)', comments='')
+                # np.savetxt('kk_im_sigma.txt', np.column_stack((tbe, reconstructed_imag[len(ix):2*len(ix)])), delimiter='\t', header='Binding Energy (meV)\tIm Sigma KK (meV)', comments='')
+                
+                ##################################################################################
+                ################################################################################## # Export data points as txt files
+                    # Plot
+                if 'Real Part' not in value2.get() and 'Imaginary Part' not in value2.get():
+                    ax = fig.subplots(2, 1)
+                    a = ax[0]
+                    b = ax[1]
+                    # Plot imaginary data and its Hilbert transformation
+                    a.set_title(r'Self Energy $\Sigma$', font='Arial', fontsize=self.size(18))
+                    if dl==0:
+                        a.scatter(tbe, ry, edgecolors='black', c='w', label=r'Re $\Sigma$')
+                        a.scatter(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    elif dl==1:
+                        a.plot(tbe, ry, c='black', label=r'Re $\Sigma$')
+                        a.plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    elif dl==2:
+                        a.plot(tbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                        a.plot(tbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                    a.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=self.size(14))
+                    a.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=self.size(14))
+                    a.legend()
+                    if dl==0:
+                        b.scatter(tbe, iy, edgecolors='black', c='w', label=r'Im $\Sigma$')
+                        b.scatter(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    elif dl==1:
+                        b.plot(tbe, iy, c='black', label=r'Im $\Sigma$')
+                        b.plot(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    elif dl==2:
+                        b.plot(tbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                        b.plot(tbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                    b.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=self.size(14))
+                    b.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=self.size(14))
+                    b.legend()
+                    a.invert_xaxis()
+                    b.invert_xaxis()
+                elif 'Real Part' in value2.get():
+                    ax = fig.subplots()
+                    ttbe=tbe/1000
+                    if 'nd' in value2.get():
+                        ax.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=self.size(20))
+                        ty=np.diff(smooth(ry,20,3))/np.diff(ttbe)
+                        if dl==0:
+                            ax.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Re $\Sigma$')
+                        elif dl==1:
+                            ax.plot(ttbe[0:-1], ty, c='black', label=r'Re $\Sigma$')
+                        elif dl==2:
+                            ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                        ax.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=self.size(18))
+                        ax.set_ylabel(r'$2^{nd} der. Re \Sigma$', font='Arial', fontsize=self.size(18))
+                        ax.set_xticklabels(ax.get_xticklabels(),fontsize=self.size(16))
+                        ax.set_yticks([0])
+                        ax.set_yticklabels(ax.get_yticklabels(),fontsize=self.size(16))
+                    else:
+                        ax.set_title(r'Self Energy $\Sigma$ Real Part', font='Arial', fontsize=self.size(20))
+                        if dl==0:
+                            ax.scatter(ttbe, ry, edgecolors='black', c='w', label=r'Re $\Sigma$')
+                            ax.scatter(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                        elif dl==1:
+                            ax.plot(ttbe, ry, c='black', label=r'Re $\Sigma$')
+                            ax.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                        elif dl==2:
+                            ax.plot(ttbe, ry, c='black', linestyle='-', marker='.', label=r'Re $\Sigma$')
+                            ax.plot(ttbe, reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Re $\Sigma_{KK}$=KK(Im $\Sigma$)')
+                        ax.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=self.size(18))
+                        ax.set_ylabel(r'Re $\Sigma$ (meV)', font='Arial', fontsize=self.size(18))
+                        ax.set_xticklabels(ax.get_xticklabels(),fontsize=self.size(16))
+                        ax.set_yticklabels(ax.get_yticklabels(),fontsize=self.size(16))
+                        l=ax.legend(fontsize=self.size(16))
+                        l.draw_frame(False)
+                    ax.invert_xaxis()
+                elif 'Imaginary Part' in value2.get():
+                    ax = fig.subplots()
+                    ttbe=tbe/1000
+                    if 'st' in value2.get():
+                        ax.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=self.size(20))
+                        ty=np.diff(smooth(iy,20,3))/np.diff(ttbe)
+                        if dl==0:
+                            ax.scatter(ttbe[0:-1], ty, edgecolors='black', c='w', label=r'Im $\Sigma$')
+                        elif dl==1:
+                            ax.plot(ttbe[0:-1], ty, c='black', label=r'Im $\Sigma$')
+                        elif dl==2:
+                            ax.plot(ttbe[0:-1], ty, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                        ax.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=self.size(18))
+                        ax.set_ylabel(r'$1^{st} der. Im \Sigma$', font='Arial', fontsize=self.size(18))
+                        ax.set_xticklabels(ax.get_xticklabels(),fontsize=self.size(16))
+                        ax.set_yticks([0])
+                        ax.set_yticklabels(ax.get_yticklabels(),fontsize=self.size(16))
+                    else:
+                        ax.set_title(r'Self Energy $\Sigma$ Imaginary Part', font='Arial', fontsize=self.size(20))
+                        if dl==0:
+                            ax.scatter(ttbe, iy, edgecolors='black', c='w', label=r'Im $\Sigma$')
+                            ax.scatter(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), edgecolors='red', c='w', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                        elif dl==1:
+                            ax.plot(ttbe, iy, c='black', label=r'Im $\Sigma$')
+                            ax.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                        elif dl==2:
+                            ax.plot(ttbe, iy, c='black', linestyle='-', marker='.', label=r'Im $\Sigma$')
+                            ax.plot(ttbe, reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])), c='red', linestyle='-', marker='.', label=r'Im $\Sigma_{KK}$=KK(Re $\Sigma$)')
+                        ax.set_xlabel('Binding Energy (eV)', font='Arial', fontsize=self.size(18))
+                        ax.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=self.size(18))
+                        ax.set_xticklabels(ax.get_xticklabels(),fontsize=self.size(16))
+                        ax.set_yticklabels(ax.get_yticklabels(),fontsize=self.size(16))
+                        l=ax.legend(fontsize=self.size(16))
+                        l.draw_frame(False)
+                    ax.invert_xaxis()
+                ##################################################################################
+                ################################################################################## Hilbert Transform
+
+            elif value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
+                bo = fig.subplots()
+                if emf=='KE':
+                    px, py = np.meshgrid(phi, ev)
+                    tev = py.copy()
+                else:
+                    px, py =np.meshgrid(phi, vfe-ev)
+                    tev = vfe-py.copy()
+                if npzf:
+                    px = phi
+                else:
+                    px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                pz = data.to_numpy()
+                h0 = bo.pcolormesh(px, py, pz, cmap=value3.get())
+                txl = bo.get_xlim()
+                tyl = bo.get_ylim()
+                cb = fig.colorbar(h0)
+                # cb.set_ticklabels(cb.get_ticks(), font='Arial', fontsize=self.size(14), minor=False)
+                cb.set_ticklabels(cb.get_ticks(), font='Arial')
+                
+                #   MDC Norm
+                # for i in range(len(ev)):
+                #     b.scatter(mx[len(phi)*i:len(phi)*(i+1)],my[len(phi)*i:len(phi)*(i+1)],c=mz[len(phi)*i:len(phi)*(i+1)],marker='o',s=self.scale*self.scale*0.9,cmap='viridis',alpha=0.3)
+                # a.set_title('MDC Normalized')
+                bo.set_title(value2.get(), font='Arial', fontsize=self.size(18))
+                # a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)',fontsize=self.size(14))
+                # a.set_ylabel('Kinetic Energy (eV)',fontsize=self.size(14))
+                bo.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(16))
+                if emf=='KE':
+                    bo.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=self.size(16))
+                else:
+                    bo.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=self.size(16))
+                # b.set_xticklabels(labels=b.get_xticklabels(),fontsize=self.size(14))
+                # b.set_yticklabels(labels=b.get_yticklabels(),fontsize=self.size(14))
+                try:
+                    if mp == 1:
+                        if emf=='KE':
+                            tb0 = bo.scatter(pos, fev, marker='.', s=self.scale*self.scale*0.3, c='black')
+                        else:
+                            tb0 = bo.scatter(pos, vfe-fev, marker='.', s=self.scale*self.scale*0.3, c='black')
+                    if mf == 1:
+                        ophimin = np.arcsin(
+                            (rpos-fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                        ophimax = np.arcsin(
+                            (rpos+fwhm/2)/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+                        posmin = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
+                            (np.float64(k_offset.get())+ophimin)/180*np.pi)*10**-10/(h/2/np.pi)
+                        posmax = np.sqrt(2*m*fev*1.602176634*10**-19)*np.sin(
+                            (np.float64(k_offset.get())+ophimax)/180*np.pi)*10**-10/(h/2/np.pi)
+                        if emf=='KE':
+                            tb0_ = bo.scatter([posmin, posmax], [
+                                            fev, fev], marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+                        else:
+                            tb0_ = bo.scatter([posmin, posmax], [vfe-fev, vfe-fev], marker='|', c='grey', s=self.scale*self.scale*10, alpha=0.8)    
+                except:
+                    pass
+                try:
+                    if ep == 1:
+                        if emf=='KE':
+                            tb1 = bo.scatter(fk, epos, marker='.', s=self.scale*self.scale*0.3, c='black')
+                        else:
+                            tb1 = bo.scatter(fk, vfe-epos, marker='.', s=self.scale*self.scale*0.3, c='black')
+                    if ef == 1:
+                        eposmin = epos-efwhm/2
+                        eposmax = epos+efwhm/2
+                        if emf=='KE':
+                            tb1_ = bo.scatter(
+                                [fk, fk], [eposmin, eposmax], marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+                        else:
+                            tb1_ = bo.scatter(
+                                [fk, fk], [vfe-eposmin, vfe-eposmax], marker='_', c='grey', s=self.scale*self.scale*10, alpha=0.8)
+                        
+                except:
+                    pass
+                if value2.get() == 'Data Plot with Pos and Bare Band':
+                    if emf=='KE':
+                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (be -
+                                    np.float64(bb_offset.get()))/1000+vfe, linewidth=self.scale*0.3, c='red', linestyle='--')
+                    else:
+                        tb2, = bo.plot(k*np.float64(bbk_offset.get()), (-be +
+                                np.float64(bb_offset.get()))/1000, linewidth=self.scale*0.3, c='red', linestyle='--')
+                    bo.set_xlim(txl)
+                    bo.set_ylim(tyl)
+                if emf=='BE':
+                    bo.invert_yaxis()
+            try:
+                if value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get():
+                    xl = bo.get_xlim()
+                    yl = bo.get_ylim()
+                    self.climon()
+                    out.draw()
+                else:
+                    self.climoff()
+                    out.draw()
+            except:
+                pass
+            print('Done')
+            st.put('Done')
+            self.bo, self.h0, self.xl, self.yl, self.posmin, self.posmax, self.eposmin, self.eposmax, self.pflag = bo, h0, xl, yl, posmin, posmax, eposmin, eposmax, pflag
+            self.pars3()
             self.main_plot_bind()
             gc.collect()
