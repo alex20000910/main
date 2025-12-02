@@ -413,7 +413,8 @@ try:
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
-except ImportError:
+except ImportError as e:
+    print(e)
     print('Some source files missing. Downloading...')
     get_src()
 

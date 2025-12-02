@@ -1,4 +1,5 @@
-from MDC_cut_utility import RestrictedToplevel, IconManager, set_center, clear, on_configure
+from MDC_cut_utility import RestrictedToplevel, set_center, clear, on_configure
+from .util import IconManager
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
