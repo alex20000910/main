@@ -667,7 +667,7 @@ if __name__ == '__main__':
     
     class ExpMotion(exp_motion):
         def __init__(self):
-            var_list = ['scale', 'value', 'value1', 'value2', 'k_offset', 'be', 'k', 'bb_offset', 'bbk_offset', 'a', 'a0', 'f', 'f0', 'h1', 'h2', 'acx', 'acy', 'annot', 'emf', 'data', 'vfe', 'ev', 'phi', 'pos', 'fwhm', 'rpos', 'ophi', 'fev', 'epos', 'efwhm', 'fk', 'ffphi', 'fphi', 'mp', 'ep', 'mf', 'ef', 'xl', 'yl', 'ta0', 'ta0_', 'ta1', 'ta1_', 'ta2', 'posmin', 'posmax', 'eposmin', 'eposmax']
+            var_list = ['scale', 'value', 'value1', 'value2', 'k_offset', 'be', 'k', 'bb_offset', 'bbk_offset', 'a', 'a0', 'f', 'f0', 'h1', 'h2', 'acx', 'acy', 'annot', 'emf', 'data', 'vfe', 'ev', 'phi', 'pos', 'fwhm', 'rpos', 'ophi', 'fev', 'epos', 'efwhm', 'fk', 'ffphi', 'fphi', 'mp', 'ep', 'mf', 'ef', 'xl', 'yl', 'posmin', 'posmax', 'eposmin', 'eposmax']
             for i in var_list:
                 init_globals(i)
             super().__init__(scale, value, value1, value2, k_offset,
@@ -678,7 +678,6 @@ if __name__ == '__main__':
                  pos, fwhm, rpos, ophi, fev,
                  epos, efwhm, fk, ffphi, fphi,
                  mp, ep, mf, ef, xl, yl,
-                 ta0, ta0_, ta1, ta1_, ta2,
                  posmin, posmax, eposmin, eposmax)
 
 @pool_protect

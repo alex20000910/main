@@ -954,7 +954,6 @@ class exp_motion:
                  pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
                  epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
                  mp: int, ep: int, mf: int, ef: int, xl: tuple[float], yl: tuple[float],
-                 ta0: PathCollection, ta0_: PathCollection, ta1: PathCollection, ta1_: PathCollection, ta2: Line2D,
                  posmin: np.ndarray, posmax: np.ndarray, eposmin: np.ndarray, eposmax: np.ndarray
                  ) -> None:
         self.cf = True
@@ -967,8 +966,8 @@ class exp_motion:
         self.pos, self.fwhm, self.rpos, self.ophi, self.fev = pos, fwhm, rpos, ophi, fev
         self.epos, self.efwhm, self.fk, self.ffphi, self.fphi = epos, efwhm, fk, ffphi, fphi
         self.mp, self.ep, self.mf, self.ef, self.xl, self.yl = mp, ep, mf, ef, xl, yl
-        self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = ta0, ta0_, ta1, ta1_, ta2
         self.posmin, self.posmax, self.eposmin, self.eposmax = posmin, posmax, eposmin, eposmax
+        self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = None, None, None, None, None
     
     def size(self, s: int) -> int:
         return int(self.scale*s)
