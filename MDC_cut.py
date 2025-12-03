@@ -410,7 +410,7 @@ try:
     from tool.spectrogram import spectrogram, lfs_exp_casa
     from tool.util import laplacian_filter
     if __name__ == '__main__':
-        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin, motion, plots_util, exp_util
+        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin_util, motion, plots_util, exp_util
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
@@ -582,6 +582,25 @@ if __name__ == '__main__':
         @override
         def get_src(self, ver: bool = False):
             get_src(ver)
+    
+    class origin(origin_util):
+        def __init__(self):
+            var_list = ['be', 'k', 'k_offset', 'bb_offset', 'bbk_offset',
+                        'limg', 'img', 'st', 'im_kernel', 'emf', 'data', 'vfe', 'ev', 'phi',
+                        'pos', 'fwhm', 'rpos', 'ophi', 'fev',
+                        'epos', 'efwhm', 'fk', 'ffphi', 'fphi',
+                        'cdir', 'dpath', 'bpath', 'app_name', 'npzf',
+                        'gori', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10', 'v11']
+            for i in var_list:
+                init_globals(i)
+            super().__init__(be, k,
+                 k_offset, bb_offset, bbk_offset,
+                 limg, img, st, im_kernel,
+                 emf, data, vfe, ev, phi,
+                 pos, fwhm, rpos, ophi, fev,
+                 epos, efwhm, fk, ffphi, fphi,
+                 cdir, dpath, bpath, app_name, npzf,
+                 gori, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11)
     
     class plot1_window(Plot1Window):
         def __init__(self, parent: tk.Misc | None, scale: float):
@@ -843,8 +862,9 @@ def gui_exp_origin(*e):
     limg.config(image=img[np.random.randint(len(img))])
     if 'gori' in globals():
         gori.destroy()
-    origin_func = origin()
     gori=RestrictedToplevel(g,bg='white')
+    v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
+    origin_func = origin()
     gori.title('Export to Origin')
     l1=tk.Label(gori,text=f"{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.{origin_func.suffix}",font=('Arial', size(10), "bold"),bg='white',wraplength=600)
     l1.grid(row=0,column=0)
@@ -852,8 +872,7 @@ def gui_exp_origin(*e):
     # b1.grid(row=1,column=0)
     fr=tk.Frame(gori,bg='white')
     fr.grid(row=2,column=0)
-    pr_exp_origin()
-    v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
+    origin_func.pr_exp_origin()
     c1=tk.Checkbutton(fr,text='E-Phi (Raw Data)',variable=v1,font=('Arial', size(18), "bold"),bg='white')
     if npzf:c1.config(text='E-k (Sliced Data)')
     c1.grid(row=0,column=0,sticky='w')
@@ -879,13 +898,13 @@ def gui_exp_origin(*e):
     c11.grid(row=10,column=0,sticky='w')
     fr_exp=tk.Frame(fr,bg='white')
     fr_exp.grid(row=11,column=0)
-    b2=tk.Button(fr_exp,text='Export',command=exp_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
+    b2=tk.Button(fr_exp,text='Export',command=origin_func.exp_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
     b2.pack(side='left')
     b3=tk.Button(fr_exp,text=f'(.{origin_func.suffix})',command=ch_suffix, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
     b3.pack(side='right')
     cl=[c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
     for i in range(len(cl)):
-        if i in no:
+        if i in origin_func.no:
             cl[i].deselect()
             cl[i].config(state='disabled')
         else:
@@ -894,309 +913,10 @@ def gui_exp_origin(*e):
     if npzf:
         c2.deselect()
         c2.config(state='disabled')
-    gori.bind('<Return>', exp_origin)
+    gori.bind('<Return>', origin_func.exp_origin)
     set_center(g, gori, 0, 0)
     gori.focus_set()
     gori.limit_bind()
-    
-def pr_exp_origin():
-    global cmdlist, no
-    ex_raw,ex_ek,ex_mp,ex_mf,ex_ep,ex_ef,ex_ser,ex_sei,ex_dpp,ex_dppbb,ex_sd='','','','','','','','','','',''
-    cmdlist=dict({0:f'{ex_raw}',1:f'{ex_ek}',2:f'{ex_mp}',3:f'{ex_mf}',4:f'{ex_ep}',5:f'{ex_ef}',6:f'{ex_ser}',7:f'{ex_sei}',8:f'{ex_dpp}',9:f'{ex_dppbb}',10:f'{ex_sd}'})
-    no=[]
-    try:
-        cmdlist[0]=f'''plot2d()\n'''
-    except:
-        no.append(0)
-    try:
-        cmdlist[1]=f'''plot2d(title='E-k (Processed Data)')\n'''
-    except:
-        no.append(1)
-    try:
-        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
-                        10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
-            np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-        cmdlist[2]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
-'''
-    except:
-        no.append(2)
-    try:
-        cmdlist[3]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(fwhm)}, title='MDC Fit FWHM', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
-'''
-    except:
-        no.append(3)
-    try:
-        cmdlist[4]=rf'''plot1d(x={pre_process(fk)}, y1={pre_process((vfe-epos)*1000)}, title='EDC Fit Position', xlabel='k', ylabel='Binding Energy', xunit=r"2\g(p)Å\+(-1)", yunit='meV')
-'''
-    except:
-        no.append(4)
-    try:
-        cmdlist[5]=rf'''plot1d(x={pre_process(fk)}, y1={pre_process(efwhm)}, title='EDC Fit FWHM', xlabel='k', ylabel='Binding Energy', xunit=r"2\g(p)Å\+(-1)", yunit='meV')
-'''
-    except:
-        no.append(5)
-    try:
-        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
-                        10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
-            np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-        x = (vfe-fev)*1000
-        y = pos
-        yy = interp(pos, k*np.float64(bbk_offset.get()), be -
-                    # interp x into be,k set
-                    np.float64(bb_offset.get()))
-        x = (vfe-fev)*1000
-        rx = x
-        ry = -(x+yy)
-        tbe = (vfe-fev)*1000
-        x = interp(tbe, -be+np.float64(bb_offset.get()),
-                    k*np.float64(bbk_offset.get()))
-        y = interp(x, k*np.float64(bbk_offset.get()),
-                    -be+np.float64(bb_offset.get()))
-        xx = np.diff(x)
-        yy = np.diff(y)
-
-        # eliminate vf in gap
-        for i in range(len(yy)):
-            if yy[i]/xx[i] > 20000:
-                yy[i] = 0
-        v = yy/xx
-        # v = np.append(v, v[-1])  # fermi velocity
-        v=interp(pos,x[0:-1]+xx/2,v)
-        yy = np.abs(v*fwhm/2)
-        xx = tbe
-
-        ix = xx
-        iy = yy
-        ix=(tbe-tbe[-1])*-1
-        cix=np.append(ix+ix[0],ix)
-        tix=cix[0:len(cix)-1]*-1
-        # kx=ix
-        kx = np.append(cix,tix[::-1])
-        ky = np.linspace(0, 1, len(kx))
-        ciy=np.append(iy*0+np.mean(iy),iy)
-        tiy=ciy[0:len(ciy)-1]
-        ciy = np.append(ciy,tiy[::-1])
-
-        #for imaginary part
-        ix=(tbe-tbe[-1])*-1
-        cix=np.append(ix+ix[0],ix)
-        tix=cix[0:len(cix)-1]*-1
-        kx = np.append(cix,tix[::-1])
-        ky = np.linspace(0, 1, len(kx))
-        cry=np.append(ry*0,ry)
-        tcry=cry[0:len(cry)-1]*-1
-        cry = np.append(cry,tcry[::-1])
-
-        # Hilbert transform
-        analytic_signal_r = hilbert(cry)
-        analytic_signal_i = hilbert(ciy)
-        # Reconstructed real and imaginary parts
-        reconstructed_real = np.imag(analytic_signal_i)
-        reconstructed_imag = -np.imag(analytic_signal_r)
-        cmdlist[6]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(-1*((vfe-fev)*1000+interp(pos, k*np.float64(bbk_offset.get()), be - np.float64(bb_offset.get()))))}, y2={pre_process(reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])))}, title='Self Energy Real Part', xlabel='Binding Energy', ylabel=r"Re \g(S)", ylabel1=r"Re \g(S)", ylabel2=r"Re \g(S)\-(KK)=KK(Im \g(S))", xunit='meV', yunit='meV')
-'''
-    except:
-        no.append(6)
-    try:
-        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
-                        10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
-            np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-        x = (vfe-fev)*1000
-        y = pos
-        yy = interp(pos, k*np.float64(bbk_offset.get()), be -
-                    # interp x into be,k set
-                    np.float64(bb_offset.get()))
-        x = (vfe-fev)*1000
-        rx = x
-        ry = -(x+yy)
-        tbe = (vfe-fev)*1000
-        x = interp(tbe, -be+np.float64(bb_offset.get()),
-                    k*np.float64(bbk_offset.get()))
-        y = interp(x, k*np.float64(bbk_offset.get()),
-                    -be+np.float64(bb_offset.get()))
-        xx = np.diff(x)
-        yy = np.diff(y)
-
-        # eliminate vf in gap
-        for i in range(len(yy)):
-            if yy[i]/xx[i] > 20000:
-                yy[i] = 0
-        v = yy/xx
-        # v = np.append(v, v[-1])  # fermi velocity
-        v=interp(pos,x[0:-1]+xx/2,v)
-        yy = np.abs(v*fwhm/2)
-        xx = tbe
-
-        ix = xx
-        iy = yy
-        ix=(tbe-tbe[-1])*-1
-        cix=np.append(ix+ix[0],ix)
-        tix=cix[0:len(cix)-1]*-1
-        # kx=ix
-        kx = np.append(cix,tix[::-1])
-        ky = np.linspace(0, 1, len(kx))
-        ciy=np.append(iy*0+np.mean(iy),iy)
-        tiy=ciy[0:len(ciy)-1]
-        ciy = np.append(ciy,tiy[::-1])
-
-        #for imaginary part
-        ix=(tbe-tbe[-1])*-1
-        cix=np.append(ix+ix[0],ix)
-        tix=cix[0:len(cix)-1]*-1
-        kx = np.append(cix,tix[::-1])
-        ky = np.linspace(0, 1, len(kx))
-        cry=np.append(ry*0,ry)
-        tcry=cry[0:len(cry)-1]*-1
-        cry = np.append(cry,tcry[::-1])
-
-        # Hilbert transform
-        analytic_signal_r = hilbert(cry)
-        analytic_signal_i = hilbert(ciy)
-        # Reconstructed real and imaginary parts
-        reconstructed_real = np.imag(analytic_signal_i)
-        reconstructed_imag = -np.imag(analytic_signal_r)
-        cmdlist[7]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(iy)}, y2={pre_process(reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])))}, title='Self Energy Imaginary Part', xlabel='Binding Energy', ylabel=r"Im \g(S)", ylabel1=r"Im \g(S)", ylabel2=r"Im \g(S)\-(KK)=KK(Re \g(S))", xunit='meV', yunit='meV')
-'''
-    except:
-        no.append(7)
-    try:
-        x1 = pos
-        if emf=='KE':
-            y1=np.float64(fev)
-        else:
-            y1= vfe-np.float64(fev)
-        cmdlist[8]=f'''plot2d(title='Data plot with pos')\n'''
-    except:
-        no.append(8)
-    try:
-        x2 = k*float(bbk_offset.get())
-        if emf=='KE':
-            y2 = (be - float(bb_offset.get()))/1000+vfe
-        else:
-            y2 = (-be + float(bb_offset.get()))/1000
-        cmdlist[9]=f'''plot2d(title='Data plot with pos & bare band')\n'''
-    except:
-        no.append(9)
-    try:
-        cmdlist[10]=f'''plot2d(title='Second Derivative (Processed Data)')\n'''
-    except:
-        no.append(10)
-        
-def exp_origin(*e):
-    global origin_func
-    origin_temp_var = f'''from {app_name} import *
-import originpro as op
-
-cdir = r"{cdir}"
-npzf = {npzf}
-dpath = r"{dpath}"      # Data Path
-emf = r"{emf}"             # Energy Mode: KE or BE
-ko = {k_offset.get()}
-bbo = {bb_offset.get()}
-bbk = {bbk_offset.get()}
-vfe = {vfe}
-im_kernel = {im_kernel}     # Gaussian Filter Kernel Size
-nan = np.nan
-'''
-    try:
-        origin_temp_var += f'''
-bpath = r"{bpath}"         # Bare Band Path
-be = np.float64({pre_process(be)})
-k = np.float64({pre_process(k)})
-'''
-    except:
-        origin_temp_var += f'''
-bpath = None
-'''
-    try:
-        ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
-                        10**-10*(h/2/np.pi))*180/np.pi
-        pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
-            np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-        origin_temp_var += f'''
-fev = np.float64({pre_process(np.asarray(fev, dtype=np.float64))})
-pos = np.float64({pre_process(np.asarray(pos, dtype=np.float64))})
-fwhm = np.float64({pre_process(np.asarray(fwhm, dtype=np.float64))})
-'''
-    except: pass
-    try:
-        ffphi = np.float64(k_offset.get())+fphi
-        fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
-            np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
-        origin_temp_var += f'''
-fk = np.float64({pre_process(np.asarray(fk, dtype=np.float64))})
-epos = np.float64({pre_process(np.asarray(epos, dtype=np.float64))})
-efwhm = np.float64({pre_process(np.asarray(efwhm, dtype=np.float64))})
-'''
-    except: pass
-    if '.h5' in os.path.basename(dpath):
-        tload = f'''
-data = load_h5(dpath)        
-'''
-    elif '.json' in os.path.basename(dpath):
-        tload = f'''
-data = load_json(dpath)
-'''
-    elif '.txt' in os.path.basename(dpath):
-        tload = f'''
-data = load_txt(dpath)
-'''
-    elif '.npz' in os.path.basename(dpath):
-        tload = f'''
-data = load_npz(dpath)
-'''
-    origin_temp_var += tload
-    origin_temp_var += f'''
-dvalue = list(data.attrs.values())
-dkey = list(data.attrs.keys())
-ev, phi = data.indexes.values()
-ev, phi = np.float64(ev), np.float64(phi)
-
-if emf=='KE':
-    le_mode='Kinetic Energy'
-    tx, ty = np.meshgrid(phi, ev)
-    tev = ty.copy()
-else:
-    le_mode='Binding Energy'
-    tx, ty = np.meshgrid(phi, vfe-ev)
-    tev = vfe-ty.copy()
-tz = data.to_numpy()
-sdz = laplacian_filter(data.to_numpy(), im_kernel)
-'''
-    origin_temp_exec = r'''
-op.new()
-op.set_show(True)
-
-'''
-    origin_temp_save = r'''
-note()
-save()
-'''
-    cl=[v1.get(),v2.get(),v3.get(),v4.get(),v5.get(),v6.get(),v7.get(),v8.get(),v9.get(),v10.get(),v11.get()]
-    gori.destroy()
-    for i in cmdlist.keys():
-        if cl[i]==1:
-            origin_temp_exec+=cmdlist[i]
-        
-    with open(cdir+os.sep+'origin_temp.py', 'w', encoding='utf-8') as f:
-        f.write(origin_temp_var+origin_func.func+origin_temp_exec+origin_temp_save)
-    f.close()
-    origin_func = None
-    def j():
-        # os.system(f'code {cdir+r"\origin_temp.py"}')
-        limg.config(image=img[np.random.randint(len(img))])
-        print('Exporting to Origin...')
-        st.put('Exporting to Origin...')
-        temp=os.sep+"origin_temp.py"
-        os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{cdir+temp}"')
-        os.system(f'del "{cdir+temp}"')
-        limg.config(image=img[np.random.randint(len(img))])
-        print('Exported to Origin')
-        st.put('Exported to Origin')
-    threading.Thread(target=j,daemon=True).start()
 
 @pool_protect
 def cexcitation():
