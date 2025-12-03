@@ -655,12 +655,12 @@ if __name__ == '__main__':
     
     class MainMotion(motion):
         def __init__(self):
-            var_list = ['scale', 'value', 'value1', 'value2', 'k_offset', 'be', 'k', 'bb_offset', 'bbk_offset', 'ao', 'bo', 'out', 'figy', 'rcx', 'rcy', 'xdata', 'ydata', 'emf', 'data', 'vfe', 'ev', 'phi', 'pos', 'fwhm', 'rpos', 'ophi', 'fev', 'epos', 'efwhm', 'fk', 'ffphi', 'fphi', 'mp', 'ep', 'mf', 'ef', 'xl', 'yl', 'tb0', 'tb0_', 'tb1', 'tb1_', 'tb2']
+            var_list = ['scale', 'value', 'value1', 'value2', 'k_offset', 'be', 'k', 'bb_offset', 'bbk_offset', 'ao', 'out', 'figy', 'rcx', 'rcy', 'xdata', 'ydata', 'emf', 'data', 'vfe', 'ev', 'phi', 'pos', 'fwhm', 'rpos', 'ophi', 'fev', 'epos', 'efwhm', 'fk', 'ffphi', 'fphi', 'mp', 'ep', 'mf', 'ef', 'xl', 'yl', 'tb0', 'tb0_', 'tb1', 'tb1_', 'tb2']
             for i in var_list:
                 init_globals(i)
             super().__init__(scale, value, value1, value2, k_offset,
                  be, k, bb_offset, bbk_offset,
-                 ao, bo, out, figy,
+                 ao, out, figy,
                  rcx, rcy, xdata, ydata,
                  emf, data, vfe, ev, phi,
                  pos, fwhm, rpos, ophi, fev,
@@ -700,8 +700,8 @@ if __name__ == '__main__':
 
         @override
         def pars1(self):
-            var_list = ['h0', 'ao', 'xl', 'yl', 'rcx', 'rcy', 'acb', 'pflag']
-            for i, j in zip(var_list, [self.h0, self.ao, self.xl, self.yl, self.rcx, self.rcy, self.acb, self.pflag]):
+            var_list = ['h0', 'ao', 'xl', 'yl', 'pflag', 'rcx', 'rcy', 'acb']
+            for i, j in zip(var_list, [self.h0, self.ao, self.xl, self.yl, self.pflag, self.rcx, self.rcy, self.acb]):
                 set_globals(j, i)
                 
         @override
@@ -712,8 +712,8 @@ if __name__ == '__main__':
                 
         @override
         def pars3(self):
-            var_list = ['bo', 'h0', 'xl', 'yl', 'pflag', 'tb0', 'tb0_', 'tb1', 'tb1_', 'tb2']
-            for i, j in zip(var_list, [self.bo, self.h0, self.xl, self.yl, self.pflag, self.tb0, self.tb0_, self.tb1, self.tb1_, self.tb2]):
+            var_list = ['h0', 'ao', 'xl', 'yl', 'pflag', 'tb0', 'tb0_', 'tb1', 'tb1_', 'tb2']
+            for i, j in zip(var_list, [self.h0, self.ao, self.xl, self.yl, self.pflag, self.tb0, self.tb0_, self.tb1, self.tb1_, self.tb2]):
                 set_globals(j, i)
             
         @override
@@ -3947,6 +3947,7 @@ if __name__ == '__main__':
     out = FigureCanvasTkAgg(fig, master=figfr)
     out.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     ao = None
+    tb0, tb0_, tb1, tb1_, tb2 = None, None, None, None, None
     show_version()
 
     xydata = tk.Frame(figfr, bg='white')
