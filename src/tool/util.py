@@ -6,7 +6,6 @@ from matplotlib.lines import Line2D
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation
-from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.widgets import SpanSelector
 from matplotlib.widgets import RectangleSelector
 from PIL import Image, ImageTk

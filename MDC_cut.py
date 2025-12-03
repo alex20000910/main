@@ -373,8 +373,8 @@ try:
     from matplotlib.figure import Figure
     if __name__ == '__main__':
         from matplotlib.colors import LinearSegmentedColormap
-        from matplotlib.widgets import SpanSelector
-        from matplotlib.widgets import RectangleSelector
+        # from matplotlib.widgets import SpanSelector
+        # from matplotlib.widgets import RectangleSelector
         import matplotlib as mpl
         # from matplotlib.widgets import Cursor
         # from matplotlib.widgets import Slider
