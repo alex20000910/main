@@ -1078,6 +1078,13 @@ class exp_motion:
                 pass
             self.xx=self.a.axvline(event.xdata, color='red')
             self.yy=self.a.axhline(event.ydata, color='red')
+        else:
+            self.f.canvas.get_tk_widget().config(cursor="")
+            try:
+                self.xx.remove()
+                self.yy.remove()
+            except:
+                pass
         self.f.show()
         
 
@@ -1247,7 +1254,6 @@ class plots_util(ABC):
         self.fig, self.out = fig, out
         self.d, self.l, self.p, self.dl = d, l, p, dl
         self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
-        self.rcx, self.rcy, self.acb = None, None, None
 
     @abstractmethod
     def pars1(self):
@@ -1333,7 +1339,9 @@ class plots_util(ABC):
         self.pars1()
     
     def o_plot1(self):
-        h0, pflag = None, 1
+        self.rcx, self.rcy, self.acb = None, None, None
+        h0, pflag = '', 1
+        ao, xl, yl = None, None, None
         value, value1, value2, value3 = self.value, self.value1, self.value2, self.value3
         data, ev, phi, vfe, fig, out = self.data, self.ev, self.phi, self.vfe, self.fig, self.out
         k_offset = self.k_offset
@@ -1564,17 +1572,16 @@ class plots_util(ABC):
                     
                 xl = ao.get_xlim()
                 yl = ao.get_ylim()
-            try:
                 self.pflag, self.h0, self.ao, self.xl, self.yl = pflag, h0, ao, xl, yl
                 self.pars1()
+            try:
                 if value.get() != 'MDC Normalized' and value.get() != 'MDC Curves':
                     self.climon()
                     out.draw()
                 else:
                     self.climoff()
                     out.draw()
-            except Exception as e:
-                print(e)
+            except:
                 pass
             print('Done')
             st.put('Done')
@@ -1582,7 +1589,6 @@ class plots_util(ABC):
             gc.collect()
 
     def o_plot2(self):
-        global fig, out, fwhm, fev, pos, value, value1, value2, k, be, rx, ry, ix, iy, pflag, limg, img, bb_offset, bbk_offset, optionList1, st
         rx, ry, ix, iy, pflag = None, None, None, None, 2
         value, value1, value2 = self.value, self.value1, self.value2
         vfe, fig, out = self.vfe, self.fig, self.out
@@ -1610,63 +1616,64 @@ class plots_util(ABC):
                     x = (vfe-fev)*1000
                     # y = (fwhm*6.626*10**-34/2/3.1415926/(10**-10))**2/2/(9.11*10**-31)/(1.602176634*10**-19)*1000
                 except:
+                    messagebox.showwarning("Warning", "Please load MDC fitted file")
                     print(r'Please Load MDC fitted file')
                     st.put(r'Please Load MDC fitted file')
-                try:
-                    a = fig.subplots(2, 1)
-                    a[0].set_title('MDC Fitting Result', font='Arial', fontsize=self.size(18))
-                    a[0].set_xlabel('Binding Energy (meV)',
-                                    font='Arial', fontsize=self.size(14))
-                    a[0].set_ylabel(
-                        r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
-                    a[0].tick_params(direction='in')
-                    a[0].scatter(x, pos, c='black', s=self.scale*self.scale*5)
+                    self.show_version()
+                    return
+                a = fig.subplots(2, 1)
+                a[0].set_title('MDC Fitting Result', font='Arial', fontsize=self.size(18))
+                a[0].set_xlabel('Binding Energy (meV)',
+                                font='Arial', fontsize=self.size(14))
+                a[0].set_ylabel(
+                    r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                a[0].tick_params(direction='in')
+                a[0].scatter(x, pos, c='black', s=self.scale*self.scale*5)
 
-                    a[1].set_xlabel('Binding Energy (meV)',
-                                    font='Arial', fontsize=self.size(14))
-                    a[1].set_ylabel(
-                        r'FWHM ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
-                    a[1].tick_params(direction='in')
-                    a[1].scatter(x, fwhm, c='black', s=self.scale*self.scale*5)
-                    
-                    a[0].invert_xaxis()
-                    a[1].invert_xaxis()
-                except:
-                    print('Please load MDC fitted file')
-                    st.put('Please load MDC fitted file')
+                a[1].set_xlabel('Binding Energy (meV)',
+                                font='Arial', fontsize=self.size(14))
+                a[1].set_ylabel(
+                    r'FWHM ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                a[1].tick_params(direction='in')
+                a[1].scatter(x, fwhm, c='black', s=self.scale*self.scale*5)
+                
+                a[0].invert_xaxis()
+                a[1].invert_xaxis()
             elif value1.get() == 'EDC fitted Data':
                 try:
-                    x = fk
+                    x = fk + 0
                 except:
+                    messagebox.showwarning("Warning", "Please load EDC fitted file")
                     print(r'Please Load EDC fitted file')
                     st.put(r'Please Load EDC fitted file')
-                try:
-                    a = fig.subplots(2, 1)
-                    a[0].set_title('EDC Fitting Result', font='Arial', fontsize=self.size(18))
-                    a[0].set_xlabel(
-                        r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
-                    a[0].set_ylabel('Binding Energy (meV)',
-                                    font='Arial', fontsize=self.size(14))
-                    a[0].tick_params(direction='in')
-                    a[0].scatter(x, (vfe-epos)*1000, c='black', s=self.scale*self.scale*5)
+                    self.show_version()
+                    return
+                a = fig.subplots(2, 1)
+                a[0].set_title('EDC Fitting Result', font='Arial', fontsize=self.size(18))
+                a[0].set_xlabel(
+                    r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                a[0].set_ylabel('Binding Energy (meV)',
+                                font='Arial', fontsize=self.size(14))
+                a[0].tick_params(direction='in')
+                a[0].scatter(x, (vfe-epos)*1000, c='black', s=self.scale*self.scale*5)
 
-                    a[1].set_xlabel(
-                        r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
-                    a[1].set_ylabel('FWHM (meV)', font='Arial', fontsize=self.size(14))
-                    a[1].tick_params(direction='in')
-                    a[1].scatter(x, efwhm*1000, c='black', s=self.scale*self.scale*5)
-                    
-                    a[0].invert_yaxis()
-                except:
-                    print('Please load EDC fitted file')
-                    st.put('Please load EDC fitted file')
+                a[1].set_xlabel(
+                    r'Position ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(14))
+                a[1].set_ylabel('FWHM (meV)', font='Arial', fontsize=self.size(14))
+                a[1].tick_params(direction='in')
+                a[1].scatter(x, efwhm*1000, c='black', s=self.scale*self.scale*5)
+                
+                a[0].invert_yaxis()
             elif value1.get() == 'Real Part':
                 try:
                     x = (vfe-fev)*1000
                     y = pos
                 except:
+                    messagebox.showwarning("Warning", "Please load MDC fitted file")
                     print('Please load MDC fitted file')
                     st.put('Please load MDC fitted file')
+                    self.show_version()
+                    return
                 try:
                     yy = interp(y, k*np.float64(bbk_offset.get()), be -
                                 # interp x into be,k set
@@ -1708,8 +1715,11 @@ class plots_util(ABC):
                 try:
                     tbe = (vfe-fev)*1000
                 except:
+                    messagebox.showwarning("Warning", "Please load MDC fitted file")
                     print(r'Please Load MDC fitted file')
                     st.put(r'Please Load MDC fitted file')
+                    self.show_version()
+                    return
                 try:
                     x = interp(tbe, -be+np.float64(bb_offset.get()),
                             k*np.float64(bbk_offset.get()))
@@ -1730,12 +1740,8 @@ class plots_util(ABC):
                         yy[i] = 0
                 v = yy/xx
                 # v = np.append(v, v[-1])  # fermi velocity
-                try:
-                    v=interp(pos,x[0:-1]+xx/2,v)
-                    yy = np.abs(v*fwhm/2)
-                except:
-                    print('Please load MDC fitted file')
-                    st.put('Please load MDC fitted file')
+                v=interp(pos,x[0:-1]+xx/2,v)
+                yy = np.abs(v*fwhm/2)
                 xx = tbe
                 ax = fig.subplots(2, 1)
                 a = ax[0]
@@ -1768,14 +1774,13 @@ class plots_util(ABC):
             gc.collect()
 
     def o_plot3(self):
-        global fig, out, rx, ry, ix, iy, fwhm, pos, value, value1, value2, pflag, k, be, k_offset, value3, limg, img, bb_offset, bbk_offset, optionList2, h0, bo, xl, yl, posmin, posmax, eposmin, eposmax, tb0, tb0_, tb1, tb1_, tb2, st, dl, b_sw
-        bo, h0, xl, yl, posmin, posmax, eposmin, eposmax, pflag = None, None, None, None, None, None, None, None, 3
+        bo, h0, xl, yl, pflag = None, '', None, None, 3
         tb0, tb0_, tb1, tb1_, tb2 = None, None, None, None, None
         value, value1, value2, value3 = self.value, self.value1, self.value2, self.value3
         vfe, fig, out = self.vfe, self.fig, self.out
         limg, img, st, b_sw = self.limg, self.img, self.st, self.b_sw
         data, ev, phi = self.data, self.ev, self.phi
-        emf, npzf = self.emf, self.npzf
+        emf, npzf, dl = self.emf, self.npzf, self.dl
         mf, ef, mp, ep = self.mf, self.ef, self.mp, self.ep
         rx, ry, ix, iy = self.rx, self.ry, self.ix, self.iy
         pos, fwhm, fev = self.pos, self.fwhm, self.fev
@@ -2109,9 +2114,14 @@ class plots_util(ABC):
                 if emf=='BE':
                     bo.invert_yaxis()
             try:
+                self.tb0, self.tb0_, self.tb1, self.tb1_, self.tb2 = tb0, tb0_, tb1, tb1_, tb2
+                self.bo, self.h0, self.xl, self.yl, self.pflag = bo, h0, xl, yl, pflag
+                self.pars3()
                 if value2.get() != 'Real & Imaginary' and 'KK Transform' not in value2.get():
                     xl = bo.get_xlim()
                     yl = bo.get_ylim()
+                    self.xl, self.yl = xl, yl
+                    self.pars3()
                     self.climon()
                     out.draw()
                 else:
@@ -2121,7 +2131,5 @@ class plots_util(ABC):
                 pass
             print('Done')
             st.put('Done')
-            self.bo, self.h0, self.xl, self.yl, self.posmin, self.posmax, self.eposmin, self.eposmax, self.pflag = bo, h0, xl, yl, posmin, posmax, eposmin, eposmax, pflag
-            self.pars3()
             self.main_plot_bind()
             gc.collect()
