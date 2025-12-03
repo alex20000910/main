@@ -410,7 +410,7 @@ try:
     from tool.spectrogram import spectrogram, lfs_exp_casa
     from tool.util import laplacian_filter
     if __name__ == '__main__':
-        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin, motion, exp_motion, plots_util, exp_util
+        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin, motion, plots_util, exp_util
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
@@ -668,21 +668,6 @@ if __name__ == '__main__':
                  epos, efwhm, fk, ffphi, fphi,
                  mp, ep, mf, ef, xl, yl,
                  tb0, tb0_, tb1, tb1_, tb2)
-    
-    class ExpMotion(exp_motion):
-        def __init__(self):
-            var_list = ['scale', 'value', 'value1', 'value2', 'k_offset', 'be', 'k', 'bb_offset', 'bbk_offset', 'a', 'a0', 'f', 'f0', 'h1', 'h2', 'acx', 'acy', 'annot', 'emf', 'data', 'vfe', 'ev', 'phi', 'pos', 'fwhm', 'rpos', 'ophi', 'fev', 'epos', 'efwhm', 'fk', 'ffphi', 'fphi', 'mp', 'ep', 'mf', 'ef', 'xl', 'yl', 'posmin', 'posmax', 'eposmin', 'eposmax']
-            for i in var_list:
-                init_globals(i)
-            super().__init__(scale, value, value1, value2, k_offset,
-                 be, k, bb_offset, bbk_offset,
-                 a, a0, f, f0, h1, h2,
-                 acx, acy, annot,
-                 emf, data, vfe, ev, phi,
-                 pos, fwhm, rpos, ophi, fev,
-                 epos, efwhm, fk, ffphi, fphi,
-                 mp, ep, mf, ef, xl, yl,
-                 posmin, posmax, eposmin, eposmax)
 
     class ExpUtil(exp_util):
         def __init__(self):
@@ -2989,6 +2974,9 @@ if __name__ == '__main__':
     out.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     ao = None
     tb0, tb0_, tb1, tb1_, tb2 = None, None, None, None, None
+    pflag = 0
+    xl, yl, rcx, rcy = None, None, None, None
+    rx, ry, ix, iy = None, None, None, None
     show_version()
 
     xydata = tk.Frame(figfr, bg='white')
