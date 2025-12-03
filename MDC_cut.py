@@ -408,8 +408,9 @@ try:
     from MDC_cut_utility import *
     from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
+    from tool.util import laplacian_filter
     if __name__ == '__main__':
-        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin, motion, exp_motion, plots_util
+        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin, motion, exp_motion, plots_util, exp_util
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
@@ -683,6 +684,41 @@ if __name__ == '__main__':
                  mp, ep, mf, ef, xl, yl,
                  posmin, posmax, eposmin, eposmax)
 
+    class ExpUtil(exp_util):
+        def __init__(self, scale: float, value: tk.StringVar, value1: tk.StringVar, value2: tk.StringVar, value3: tk.StringVar, k_offset: tk.StringVar,
+                 be: np.ndarray, k: np.ndarray, bb_offset: tk.StringVar, bbk_offset: tk.StringVar,
+                 emf: Literal['KE', 'BE'], data: xr.DataArray, vfe: float, ev: np.ndarray, phi: np.ndarray,
+                 pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
+                 epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
+                 mp: int, ep: int, mf: int, ef: int, xl: tuple[float], yl: tuple[float],
+                 cm: tk.DoubleVar, cM: tk.DoubleVar, vcmin: tk.DoubleVar, vcmax: tk.DoubleVar, dl: int,
+                 st: queue.Queue, pflag: int, limg: tk.Label, img: list[tk.PhotoImage],
+                 d: int, l: int, p: int, npzf: bool, im_kernel: int
+                 ):
+            var_list = ['scale', 'value', 'value1', 'value2', 'value3', 'k_offset', 'be', 'k', 'bb_offset', 'bbk_offset',
+                        'emf', 'data', 'vfe', 'ev', 'phi',
+                        'pos', 'fwhm', 'rpos', 'ophi', 'fev',
+                        'epos', 'efwhm', 'fk', 'ffphi', 'fphi',
+                        'mp', 'ep', 'mf', 'ef', 'xl', 'yl', 'cm', 'cM', 'vcmin', 'vcmax', 'dl', 'st',
+                        'pflag', 'limg', 'img', 'd', 'l', 'p', 'npzf', 'im_kernel']
+            for i in var_list:
+                init_globals(i)
+            super().__init__(scale, value, value1, value2, value3, k_offset,
+                             be, k, bb_offset, bbk_offset,
+                             emf, data, vfe, ev, phi,
+                             pos, fwhm, rpos, ophi, fev,
+                             epos, efwhm, fk, ffphi, fphi,
+                             mp, ep, mf, ef, xl, yl, cm, cM, vcmin, vcmax, dl, st,
+                             pflag, limg, img, d, l, p, npzf, im_kernel)
+        
+        @override
+        def show_info(self):
+            show_info()
+            
+        @override
+        def show_version(self):
+            show_version()
+    
     class PlotsUtil(plots_util):
         def __init__(self):
             var_list = ['scale', 'value', 'value1', 'value2', 'value3', 'be', 'k', 'k_offset', 'bb_offset', 'bbk_offset', 'b_sw',
@@ -719,10 +755,6 @@ if __name__ == '__main__':
         @override
         def show_version(self):
             show_version()
-        
-        @override
-        def laplacian_filter(self, data, im_kernel):
-            return laplacian_filter(data, im_kernel)
         
         @override
         def main_plot_bind(self):
@@ -1179,52 +1211,6 @@ save()
         print('Exported to Origin')
         st.put('Exported to Origin')
     threading.Thread(target=j,daemon=True).start()
-
-def rplot(f, canvas):
-    """
-    Plot the raw data on a given canvas.
-
-    Parameters
-    -----
-        f (Figure object): The figure object on which the plot will be created.
-        canvas (Canvas object): The canvas object on which the plot will be drawn.
-
-    Returns
-    -----
-        None
-    """
-    global data, ev, phi, value3, h0, ao, xl, yl, rcx, rcy, acb
-    ao = f.add_axes([0.13, 0.1, 0.6, 0.65])
-    rcx = f.add_axes([0.13, 0.78, 0.6, 0.15])
-    rcy = f.add_axes([0.75, 0.1, 0.12, 0.65])
-    acb = f.add_axes([0.9, 0.1, 0.02, 0.65])
-    rcx.set_xticks([])
-    rcx.set_yticks([])
-    rcy.set_xticks([])
-    rcy.set_yticks([])
-    if emf=='KE':
-        tx, ty = np.meshgrid(phi, ev)
-    else:
-        tx, ty = np.meshgrid(phi, vfe-ev)
-    tz = data.to_numpy()
-    # h1 = a.scatter(tx,ty,c=tz,marker='o',s=scale*scale*0.9,cmap=value3.get());
-    h0 = ao.pcolormesh(tx, ty, tz, cmap=value3.get())
-    f.colorbar(h0, cax=acb, orientation='vertical')
-    # a.set_title('Raw Data',font='Arial',fontsize=size(16))
-    rcx.set_title('            Raw Data', font='Arial', fontsize=size(16))
-    if npzf:ao.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=size(12))
-    else:ao.set_xlabel('Angle (deg)', font='Arial', fontsize=size(12))
-    if emf=='KE':
-        ao.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=size(12))
-    else:
-        ao.set_ylabel('Binding Energy (eV)', font='Arial', fontsize=size(12))
-        ao.invert_yaxis()
-    xl = ao.get_xlim()
-    yl = ao.get_ylim()
-    np.save('raw_data.npy',tz.T/np.max(tz))
-    # a.set_xticklabels(labels=a.get_xticklabels(),font='Arial',fontsize=size(10));
-    # a.set_yticklabels(labels=a.get_yticklabels(),font='Arial',fontsize=size(10));
-    canvas.draw()
 
 @pool_protect
 def cexcitation():
@@ -1958,17 +1944,6 @@ def o_bareband():
         limg.config(image=img[np.random.randint(len(img))])
         print('No file selected')
         st.put('No file selected')
-        
-def im_smooth(data, kernel_size=17):
-    return GaussianBlur(data, (kernel_size, kernel_size), 0)
-
-def laplacian_operation(data):
-    return -Laplacian(data, CV_64F)
-
-def laplacian_filter(data, kernel_size=17):
-    im=im_smooth(data, kernel_size)
-    laplacian=laplacian_operation(im)
-    return laplacian
 
 @pool_protect
 def o_plot1():
@@ -1985,11 +1960,13 @@ def o_plot3():
 props = dict(facecolor='green', alpha=0.3)
 
 def exp(*e):
-    global value, value1, value2, value3, data, ev, phi, mx, my, mz, mfpath, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax, annot
+    # global value, value1, value2, value3, data, ev, phi, mx, my, mz, mfpath, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax, annot
     if data is None:
         st.put('No data loaded!')
         messagebox.showwarning("Warning","No data loaded!")
         return
+    ExpUtil().exp()
+    return
     limg.config(image=img[np.random.randint(len(img))])
     selectors = []
     cursor = []
