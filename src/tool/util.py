@@ -1271,6 +1271,11 @@ class plots_util(ABC):
         self.fig, self.out = fig, out
         self.d, self.l, self.p, self.dl = d, l, p, dl
         self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
+        self.warn_str = ''
+
+    @abstractmethod
+    def pars_warn(self):
+        pass
 
     @abstractmethod
     def pars1(self):
@@ -1377,6 +1382,8 @@ class plots_util(ABC):
             fig.clear()
             if data is None:
                 messagebox.showwarning("Warning","Please load Raw Data")
+                self.warn_str = "Please load Raw Data"
+                self.pars_warn()
                 print('Please load Raw Data')
                 st.put('Please load Raw Data')
                 self.show_version()
@@ -1630,6 +1637,8 @@ class plots_util(ABC):
                     # y = (fwhm*6.626*10**-34/2/3.1415926/(10**-10))**2/2/(9.11*10**-31)/(1.602176634*10**-19)*1000
                 except:
                     messagebox.showwarning("Warning", "Please load MDC fitted file")
+                    self.warn_str = "Please load MDC fitted file"
+                    self.pars_warn()
                     print(r'Please Load MDC fitted file')
                     st.put(r'Please Load MDC fitted file')
                     self.show_version()
@@ -1657,6 +1666,8 @@ class plots_util(ABC):
                     x = fk + 0
                 except:
                     messagebox.showwarning("Warning", "Please load EDC fitted file")
+                    self.warn_str = "Please load EDC fitted file"
+                    self.pars_warn()
                     print(r'Please Load EDC fitted file')
                     st.put(r'Please Load EDC fitted file')
                     self.show_version()
@@ -1683,6 +1694,8 @@ class plots_util(ABC):
                     y = pos
                 except:
                     messagebox.showwarning("Warning", "Please load MDC fitted file")
+                    self.warn_str = "Please load MDC fitted file"
+                    self.pars_warn()
                     print('Please load MDC fitted file')
                     st.put('Please load MDC fitted file')
                     self.show_version()
@@ -1693,6 +1706,8 @@ class plots_util(ABC):
                                 np.float64(bb_offset.get()))
                 except:
                     messagebox.showwarning("Warning", "Please load Bare Band file")
+                    self.warn_str = "Please load Bare Band file"
+                    self.pars_warn()
                     print('Please load Bare Band file')
                     st.put('Please load Bare Band file')
                     self.show_version()
@@ -1729,6 +1744,8 @@ class plots_util(ABC):
                     tbe = (vfe-fev)*1000
                 except:
                     messagebox.showwarning("Warning", "Please load MDC fitted file")
+                    self.warn_str = "Please load MDC fitted file"
+                    self.pars_warn()
                     print(r'Please Load MDC fitted file')
                     st.put(r'Please Load MDC fitted file')
                     self.show_version()
@@ -1740,6 +1757,8 @@ class plots_util(ABC):
                             -be+np.float64(bb_offset.get()))
                 except:
                     messagebox.showwarning("Warning", "Please load Bare Band file")
+                    self.warn_str = "Please load Bare Band file"
+                    self.pars_warn()
                     print('Please load Bare Band file')
                     st.put('Please load Bare Band file')
                     self.show_version()
@@ -1859,6 +1878,8 @@ class plots_util(ABC):
                     iy = yy
                 except:
                     messagebox.showwarning("Warning", "Please load Bare Band file")
+                    self.warn_str = "Please load Bare Band file"
+                    self.pars_warn()
                     print('Please load Bare Band file')
                     st.put('Please load Bare Band file')
                     self.show_version()
@@ -2186,7 +2207,6 @@ class exp_util(exp_motion):
         pass
     
     def exp(self):
-        # global value, value1, value2, value3, data, ev, phi, mx, my, mz, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax, annot
         def size(s):
             return int(s*self.scale)
         m, h = 9.1093837015e-31, 6.62607015e-34
