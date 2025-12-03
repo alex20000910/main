@@ -685,16 +685,7 @@ if __name__ == '__main__':
                  posmin, posmax, eposmin, eposmax)
 
     class ExpUtil(exp_util):
-        def __init__(self, scale: float, value: tk.StringVar, value1: tk.StringVar, value2: tk.StringVar, value3: tk.StringVar, k_offset: tk.StringVar,
-                 be: np.ndarray, k: np.ndarray, bb_offset: tk.StringVar, bbk_offset: tk.StringVar,
-                 emf: Literal['KE', 'BE'], data: xr.DataArray, vfe: float, ev: np.ndarray, phi: np.ndarray,
-                 pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
-                 epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
-                 mp: int, ep: int, mf: int, ef: int, xl: tuple[float], yl: tuple[float],
-                 cm: tk.DoubleVar, cM: tk.DoubleVar, vcmin: tk.DoubleVar, vcmax: tk.DoubleVar, dl: int,
-                 st: queue.Queue, pflag: int, limg: tk.Label, img: list[tk.PhotoImage],
-                 d: int, l: int, p: int, npzf: bool, im_kernel: int
-                 ):
+        def __init__(self):
             var_list = ['scale', 'value', 'value1', 'value2', 'value3', 'k_offset', 'be', 'k', 'bb_offset', 'bbk_offset',
                         'emf', 'data', 'vfe', 'ev', 'phi',
                         'pos', 'fwhm', 'rpos', 'ophi', 'fev',
@@ -710,6 +701,12 @@ if __name__ == '__main__':
                              epos, efwhm, fk, ffphi, fphi,
                              mp, ep, mf, ef, xl, yl, cm, cM, vcmin, vcmax, dl, st,
                              pflag, limg, img, d, l, p, npzf, im_kernel)
+        
+        @override
+        def pars(self):
+            var_list = ['f', 'f0', 'h1', 'h2']
+            for i, j in zip(var_list, [self.f, self.f0, self.h1, self.h2]):
+                set_globals(j, i)
         
         @override
         def show_info(self):

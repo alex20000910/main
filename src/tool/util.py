@@ -2174,6 +2174,10 @@ class exp_util(exp_motion):
         self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = None, None, None, None, None
     
     @abstractmethod
+    def pars(self):
+        pass
+    
+    @abstractmethod
     def show_info(self):
         pass
     
@@ -2182,7 +2186,7 @@ class exp_util(exp_motion):
         pass
     
     def exp(self):
-        global value, value1, value2, value3, data, ev, phi, mx, my, mz, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax, annot
+        # global value, value1, value2, value3, data, ev, phi, mx, my, mz, fev, fwhm, pos, k, be, rx, ry, ix, iy, pflag, k_offset, limg, img, bb_offset, bbk_offset, h1, h2, a0, a, b, f0, f, selectors, acx, acy, posmin, posmax, eposmin, eposmax, annot
         def size(s):
             return int(s*self.scale)
         m, h = 9.1093837015e-31, 6.62607015e-34
@@ -2202,14 +2206,19 @@ class exp_util(exp_motion):
         cm, cM, vcmin, vcmax, dl = self.cm, self.cM, self.vcmin, self.vcmax, self.dl
         d, l, p, npzf, im_kernel = self.d, self.l, self.p, self.npzf, self.im_kernel
         scale = self.scale
+        posmin, posmax, eposmin, eposmax = None, None, None, None
+        rx, ry, ix, iy = None, None, None, None
+        a, a0 = None, None
+        acx, acy, annot = None, None, None
+        ta0, ta0_, ta1, ta1_, ta2 = None, None, None, None, None
         
         props = dict(facecolor='green', alpha=0.3)
         
         limg.config(image=img[np.random.randint(len(img))])
         selectors = []
         cursor = []
-        h1 = []
-        h2 = []
+        h1 = ''
+        h2 = ''
         f = []
         f0 = []
         try:
@@ -2279,6 +2288,12 @@ class exp_util(exp_motion):
                 a1.set_xlabel('Intensity')
                 a1.set_ylabel('Counts')
                 a1.set_title('Drag to Select the range of Intensity ')
+                self.a, self.a0, self.f, self.f0, self.h1, self.h2 = a, a0, f, f0, h1, h2
+                self.acx, self.acy, self.annot = acx, acy, annot
+                self.posmin, self.posmax, self.eposmin, self.eposmax = posmin, posmax, eposmin, eposmax
+                self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = ta0, ta0_, ta1, ta1_, ta2
+                self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
+                self.pars()
                 # Exp_Motion = ExpMotion()
                 f.canvas.mpl_connect('motion_notify_event', self.cut_move)
                 f.canvas.mpl_connect('button_press_event', self.cut_select)
@@ -2331,6 +2346,12 @@ class exp_util(exp_motion):
                 a1.set_xlabel('Intensity')
                 a1.set_ylabel('Counts')
                 a1.set_title('Drag to Select the range of Intensity ')
+                self.a, self.a0, self.f, self.f0, self.h1, self.h2 = a, a0, f, f0, h1, h2
+                self.acx, self.acy, self.annot = acx, acy, annot
+                self.posmin, self.posmax, self.eposmin, self.eposmax = posmin, posmax, eposmin, eposmax
+                self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = ta0, ta0_, ta1, ta1_, ta2
+                self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
+                self.pars()
                 # Exp_Motion = ExpMotion()
                 f.canvas.mpl_connect('motion_notify_event', self.cur_move)
                 f.canvas.mpl_connect('motion_notify_event', self.cur_on_move)
@@ -2383,6 +2404,12 @@ class exp_util(exp_motion):
                 a1.set_xlabel('Intensity')
                 a1.set_ylabel('Counts')
                 a1.set_title('Drag to Select the range of Intensity ')
+                self.a, self.a0, self.f, self.f0, self.h1, self.h2 = a, a0, f, f0, h1, h2
+                self.acx, self.acy, self.annot = acx, acy, annot
+                self.posmin, self.posmax, self.eposmin, self.eposmax = posmin, posmax, eposmin, eposmax
+                self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = ta0, ta0_, ta1, ta1_, ta2
+                self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
+                self.pars()
                 # Exp_Motion = ExpMotion()
                 f.canvas.mpl_connect('motion_notify_event', self.cur_move)
                 f.canvas.mpl_connect('motion_notify_event', self.cur_on_move)
@@ -2437,6 +2464,12 @@ class exp_util(exp_motion):
                     a1.set_xlabel('Intensity')
                     a1.set_ylabel('Counts')
                     a1.set_title('Drag to Select the range of Intensity ')
+                    self.a, self.a0, self.f, self.f0, self.h1, self.h2 = a, a0, f, f0, h1, h2
+                    self.acx, self.acy, self.annot = acx, acy, annot
+                    self.posmin, self.posmax, self.eposmin, self.eposmax = posmin, posmax, eposmin, eposmax
+                    self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = ta0, ta0_, ta1, ta1_, ta2
+                    self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
+                    self.pars()
                     # Exp_Motion = ExpMotion()
                     f.canvas.mpl_connect('motion_notify_event', self.cur_move)
                     f.canvas.mpl_connect('motion_notify_event', self.cur_on_move)
@@ -2485,6 +2518,12 @@ class exp_util(exp_motion):
                         # arrowprops=dict(arrowstyle="->")
                     )
                     annot.set_visible(False)
+                    self.a, self.a0, self.f, self.f0, self.h1, self.h2 = a, a0, f, f0, h1, h2
+                    self.acx, self.acy, self.annot = acx, acy, annot
+                    self.posmin, self.posmax, self.eposmin, self.eposmax = posmin, posmax, eposmin, eposmax
+                    self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = ta0, ta0_, ta1, ta1_, ta2
+                    self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
+                    self.pars()
                     # Exp_Motion = ExpMotion()
                     f.canvas.mpl_connect('motion_notify_event', self.cur_move)
                     f.canvas.mpl_connect('motion_notify_event', self.cur_on_move)
@@ -3088,6 +3127,7 @@ class exp_util(exp_motion):
                 self.posmin, self.posmax, self.eposmin, self.eposmax = posmin, posmax, eposmin, eposmax
                 self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = ta0, ta0_, ta1, ta1_, ta2
                 self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
+                self.pars()
                 # Exp_Motion = ExpMotion()
                 f.canvas.mpl_connect('motion_notify_event', self.cur_move)
                 f.canvas.mpl_connect('motion_notify_event', self.cur_on_move)
