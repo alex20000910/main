@@ -28,6 +28,9 @@ def laplacian_filter(data, kernel_size=17):
     laplacian=laplacian_operation(im)
     return laplacian
 
+def pre_process(input):
+            return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
+
 class app_param:
     def __init__(self, hwnd=None, scale=None, dpi=None, bar_pos=None, g_mem=None):
         self.hwnd = hwnd
@@ -91,6 +94,12 @@ class EDC_param:
         self.seaa2 = seaa2
         # self.seresult = seresult
         # self.secst = secst
+
+class Button(tk.Button):
+    """white background button"""
+    def __init__(self, master=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.config(bg="white")
 
 class MenuIconManager:
     def __init__(self, scale, ScaleFactor, odpi, dpi):
@@ -243,17 +252,13 @@ class MenuIconManager:
     def get_giant_icon(self, name):
         return self.giant_icons.get(name)
 
-class ToolTip:
-    icon: MenuIconManager=None   #MenuIconManager()
-    scaled_font_size=16
-    def __init__(self, widget, text: str, accelerator=None):
-        if not isinstance(self.icon, MenuIconManager):
-            input(f'{self.icon} is not MenuIconManager instance!\nAssign MenuIconManager instance to MDC_cut_utility.ToolTip.icon\nPress Enter to continue...')
-            raise AttributeError("None does not have attribute 'get_giant_icon'!\nAssign MenuIconManager instance to ToolTip.icon")
+class ToolTip_util:
+    def __init__(self, widget, text: str, accelerator=None, icon: MenuIconManager=None, scaled_font_size: int=16):
         self.widget = widget
         self.text = text
         self.tooltip = None
         self.widget_text = self.widget.cget('text') if accelerator is None else self.widget.cget('text') + ' (' + accelerator + ')'
+        self.icon, self.scaled_font_size = icon, scaled_font_size
         
         self.dict = {'Load Raw Data': 'raw_data',
                     'Load MDC Fitted File': 'mdc_fitted_file',
@@ -403,7 +408,7 @@ class origin_util:
                  pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
                  epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
                  cdir: str, dpath: str, bpath: str, app_name: str, npzf: bool,
-                 gori: tk.Misc, v1: tk.IntVar, v2: tk.IntVar, v3: tk.IntVar, v4: tk.IntVar, v5: tk.IntVar, v6: tk.IntVar,
+                 g: tk.Tk, gori: tk.Toplevel, v1: tk.IntVar, v2: tk.IntVar, v3: tk.IntVar, v4: tk.IntVar, v5: tk.IntVar, v6: tk.IntVar,
                  v7: tk.IntVar, v8: tk.IntVar, v9: tk.IntVar, v10: tk.IntVar, v11: tk.IntVar) -> None:
         self.suffix = 'opju'
         self.be, self.k = be, k
@@ -414,19 +419,20 @@ class origin_util:
         self.fev, self.epos, self.efwhm = fev, epos, efwhm
         self.fk, self.ffphi, self.fphi = fk, ffphi, fphi
         self.cdir, self.dpath, self.bpath, self.app_name, self.npzf = cdir, dpath, bpath, app_name, npzf
-        self.gori = gori
+        self.g, self.gori = g, gori
         self.v1, self.v2, self.v3 = v1, v2, v3
         self.v4, self.v5, self.v6 = v4, v5, v6
         self.v7, self.v8, self.v9 = v7, v8, v9
         self.v10, self.v11 = v10, v11
     
-    def ch_suffix(self, dpath, label: tk.Label, button: tk.Button) -> None:
+    def ch_suffix(self, dpath, label: tk.Label, button: tk.Button, *event) -> None:
         if self.suffix == 'opj':
             self.suffix = 'opju'
         else:
             self.suffix = 'opj'
         button.config(text=f'(.{self.suffix})')
         label.config(text=f"{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.{self.suffix}")
+        set_center(self.g, self.gori, 0, 0)
     
     @property
     def func(self) -> str:
@@ -582,9 +588,6 @@ def save(format='{self.suffix}'):
         return body
     
     def pr_exp_origin(self) -> None:
-        # global cmdlist, no
-        def pre_process(input):
-            return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
         ex_raw,ex_ek,ex_mp,ex_mf,ex_ep,ex_ef,ex_ser,ex_sei,ex_dpp,ex_dppbb,ex_sd='','','','','','','','','','',''
         cmdlist=dict({0:f'{ex_raw}',1:f'{ex_ek}',2:f'{ex_mp}',3:f'{ex_mf}',4:f'{ex_ep}',5:f'{ex_ef}',6:f'{ex_ser}',7:f'{ex_sei}',8:f'{ex_dpp}',9:f'{ex_dppbb}',10:f'{ex_sd}'})
         no=[]
@@ -779,8 +782,6 @@ def save(format='{self.suffix}'):
         self.cmdlist, self.no = cmdlist, no
             
     def exp_origin(self, *e):
-        def pre_process(input):
-            return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
         app_name, cdir, npzf, bpath, dpath, emf = self.app_name, self.cdir, self.npzf, self.bpath, self.dpath, self.emf
         pos, fwhm, rpos = self.pos, self.fwhm, self.rpos
         be, k, vfe = self.be, self.k, self.vfe
@@ -903,6 +904,32 @@ save()
             limg.config(image=img[np.random.randint(len(img))])
             print('Exported to Origin')
             st.put('Exported to Origin')
+        threading.Thread(target=j,daemon=True).start()
+
+    def patch_origin(self, *e):
+        limg, img, st = self.limg, self.img, self.st
+        limg.config(image=img[np.random.randint(len(img))])
+        def j():
+            print('Patching OriginPro...')
+            st.put('Patching OriginPro...')
+            exe=rf"\Origin.exe"
+            cmd=f'start "" cmd /C "dir "{exe}" /s"'
+            result = os.popen(cmd)
+            context = result.read()
+            for line in context.splitlines():
+                if '的目錄' in line or 'Directory of' in line:
+                    path = line.removeprefix('Directory of ')
+                    path = line.removesuffix(' 的目錄')
+                    path = path.removeprefix(" ")
+                    path = rf"{path}"
+                    path = rf"{path}{exe}"
+                    if path.split(os.sep)[-2] != 'Crack':
+                        ori_temp_path = path.removesuffix(os.sep+path.split(os.sep)[-1])
+                        print('Origin Path: '+ori_temp_path)
+                        os.system(f"\"{path}\"")
+            result.close()
+            print('Patching OriginPro...Done')
+            st.put('Patching OriginPro...Done')
         threading.Thread(target=j,daemon=True).start()
 
 class motion:
@@ -2584,10 +2611,7 @@ class exp_util(exp_motion):
         h2 = ''
         f = []
         f0 = []
-        try:
-            if pflag:
-                pass
-        except NameError:
+        if pflag == 0:
             print('Choose a plot type first')
             st.put('Choose a plot type first')
             return

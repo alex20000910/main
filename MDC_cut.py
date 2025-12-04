@@ -84,6 +84,8 @@ import subprocess
 import argparse
 import importlib
 from typing import override, Literal
+
+from pydash import set_
     
 VERSION = sys.version.split()[0]
 VERSION = int(''.join(VERSION.split('.')))
@@ -408,9 +410,9 @@ try:
     from MDC_cut_utility import *
     from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
-    from tool.util import laplacian_filter
+    from tool.util import laplacian_filter  # for originpro: from MDC_cut import *
     if __name__ == '__main__':
-        from tool.util import app_param, MDC_param, EDC_param, MenuIconManager, ToolTip, IconManager, origin_util, motion, plots_util, exp_util
+        from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
@@ -514,6 +516,11 @@ if __name__ == '__main__':
                 self.destroy()
                 gfe = G_emode()
     
+    class ToolTip(ToolTip_util):
+        def __init__(self, widget: tk.Widget, text: str, accelerator=None):
+            super().__init__(widget, text, accelerator,
+                             icon_manager, scaled_font_size)
+        
     class c_attr(c_attr_window):
         def __init__(self, parent: tk.Misc | None = None, dpath: str='', attr: float|str='', scale: float=1.0):
             '''
@@ -590,7 +597,7 @@ if __name__ == '__main__':
                         'pos', 'fwhm', 'rpos', 'ophi', 'fev',
                         'epos', 'efwhm', 'fk', 'ffphi', 'fphi',
                         'cdir', 'dpath', 'bpath', 'app_name', 'npzf',
-                        'gori', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10', 'v11']
+                        'g', 'gori', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10', 'v11']
             for i in var_list:
                 init_globals(i)
             super().__init__(be, k,
@@ -600,7 +607,7 @@ if __name__ == '__main__':
                  pos, fwhm, rpos, ophi, fev,
                  epos, efwhm, fk, ffphi, fphi,
                  cdir, dpath, bpath, app_name, npzf,
-                 gori, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11)
+                 g, gori, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11)
     
     class plot1_window(Plot1Window):
         def __init__(self, parent: tk.Misc | None, scale: float):
@@ -818,91 +825,44 @@ def emode():
         b_emode.config(text='K.E.')
         gfe = G_emode()
 
-def patch_origin():
-    threading.Thread(target=f_patch_origin,daemon=True).start()
-
-def f_patch_origin():
-    limg.config(image=img[np.random.randint(len(img))])
-########################### patching ############################
-    print('Patching OriginPro...')
-    st.put('Patching OriginPro...')
-    exe=rf"\Origin.exe" # OriginPro Patching file
-    cmd=f'start "" cmd /C "dir "{exe}" /s"'
-    result = os.popen(cmd) # 返回的結果是一個<class 'os._wrap_close'>對象，需要讀取後才能處理
-    context = result.read()
-    for line in context.splitlines():
-        if '的目錄' in line or 'Directory of' in line:
-            path = line.removeprefix('Directory of ')
-            path = line.removesuffix(' 的目錄')
-            # print(line)
-            # print(path)
-            path = path.removeprefix(" ")
-            path = rf"{path}"
-            path = rf"{path}{exe}"
-            if path.split(os.sep)[-2] != 'Crack':
-                ori_temp_path = path.removesuffix(os.sep+path.split(os.sep)[-1])
-                print('Origin Path: '+ori_temp_path)
-                os.system(f"\"{path}\"")
-    result.close()
-    print('Patching OriginPro...Done')
-    st.put('Patching OriginPro...Done')
-########################### patching ############################
-def ch_suffix(*e):
-    origin_func.ch_suffix(dpath, l1, b3)
-
-def pre_process(input):
-    return str(input).replace(' ',', ').replace(', , , , ,',',').replace(', , , ,',',').replace(', , ,',',').replace(', ,',',').replace('[, ','[').replace(', ]',']')
-
+@pool_protect
 def gui_exp_origin(*e):
     global gori,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,l1,b3,origin_func
     if data is None:
         st.put('No data loaded!')
         messagebox.showwarning("Warning","No data loaded!")
         return
+    def set_Checkbutton(frame, text, variable, row):
+        Checkbutton = tk.Checkbutton(frame,text=text,variable=variable,font=('Arial', size(18), "bold"),bg='white')
+        Checkbutton.grid(row=row,column=0,sticky='w')
+        return Checkbutton
     limg.config(image=img[np.random.randint(len(img))])
     if 'gori' in globals():
         gori.destroy()
     gori=RestrictedToplevel(g,bg='white')
     v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11=tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar(),tk.IntVar()
+    var=[v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11]
+    text=['E-Phi (Raw Data)','E-k (Processed Data)','MDC Fit Position','MDC Fit FWHM','EDC Fit Position','EDC Fit FWHM','Self Energy Real Part','Self Energy Imaginary Part','Data plot with pos','Data plot with pos & bare band','Second Derivative']
     origin_func = origin()
     gori.title('Export to Origin')
     l1=tk.Label(gori,text=f"{dpath.removesuffix('.h5').removesuffix('.json').removesuffix('.txt')}.{origin_func.suffix}",font=('Arial', size(10), "bold"),bg='white',wraplength=600)
     l1.grid(row=0,column=0)
-    b1=tk.Button(gori,text='Patch Origin',command=patch_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
+    b1=tk.Button(gori,text='Patch Origin',command=origin_func.patch_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
     # b1.grid(row=1,column=0)
     fr=tk.Frame(gori,bg='white')
     fr.grid(row=2,column=0)
     origin_func.pr_exp_origin()
-    c1=tk.Checkbutton(fr,text='E-Phi (Raw Data)',variable=v1,font=('Arial', size(18), "bold"),bg='white')
-    if npzf:c1.config(text='E-k (Sliced Data)')
-    c1.grid(row=0,column=0,sticky='w')
-    c2=tk.Checkbutton(fr,text='E-k (Processed Data)',variable=v2,font=('Arial', size(18), "bold"),bg='white')
-    c2.grid(row=1,column=0,sticky='w')
-    c3=tk.Checkbutton(fr,text='MDC Fit Position',variable=v3,font=('Arial', size(18), "bold"),bg='white')
-    c3.grid(row=2,column=0,sticky='w')
-    c4=tk.Checkbutton(fr,text='MDC Fit FWHM',variable=v4,font=('Arial', size(18), "bold"),bg='white')
-    c4.grid(row=3,column=0,sticky='w')
-    c5=tk.Checkbutton(fr,text='EDC Fit Position',variable=v5,font=('Arial', size(18), "bold"),bg='white')
-    c5.grid(row=4,column=0,sticky='w')
-    c6=tk.Checkbutton(fr,text='EDC Fit FWHM',variable=v6,font=('Arial', size(18), "bold"),bg='white')
-    c6.grid(row=5,column=0,sticky='w')
-    c7=tk.Checkbutton(fr,text='Self Energy Real Part',variable=v7,font=('Arial', size(18), "bold"),bg='white')
-    c7.grid(row=6,column=0,sticky='w')
-    c8=tk.Checkbutton(fr,text='Self Energy Imaginary Part',variable=v8,font=('Arial', size(18), "bold"),bg='white')
-    c8.grid(row=7,column=0,sticky='w')
-    c9=tk.Checkbutton(fr,text='Data plot with pos',variable=v9,font=('Arial', size(18), "bold"),bg='white')
-    c9.grid(row=8,column=0,sticky='w')
-    c10=tk.Checkbutton(fr,text='Data plot with pos & bare band',variable=v10,font=('Arial', size(18), "bold"),bg='white')
-    c10.grid(row=9,column=0,sticky='w')
-    c11=tk.Checkbutton(fr,text='Second Derivative',variable=v11,font=('Arial', size(18), "bold"),bg='white')
-    c11.grid(row=10,column=0,sticky='w')
+    cl=[]
+    for i in range(len(var)):
+        cl.append(set_Checkbutton(fr, text[i], var[i], i))
+    if npzf:cl[0].config(text='E-k (Sliced Data)')
     fr_exp=tk.Frame(fr,bg='white')
     fr_exp.grid(row=11,column=0)
     b2=tk.Button(fr_exp,text='Export',command=origin_func.exp_origin, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
     b2.pack(side='left')
-    b3=tk.Button(fr_exp,text=f'(.{origin_func.suffix})',command=ch_suffix, width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
+    b3=tk.Button(fr_exp,text=f'(.{origin_func.suffix})', width=15, height=1, font=('Arial', size(18), "bold"), bg='white', bd=5)
+    b3.config(command=lambda: origin_func.ch_suffix(dpath, l1,  b3))
     b3.pack(side='right')
-    cl=[c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
     for i in range(len(cl)):
         if i in origin_func.no:
             cl[i].deselect()
@@ -911,8 +871,8 @@ def gui_exp_origin(*e):
             cl[i].config(state='normal')
             cl[i].select()
     if npzf:
-        c2.deselect()
-        c2.config(state='disabled')
+        cl[1].deselect()
+        cl[1].config(state='disabled')
     gori.bind('<Return>', origin_func.exp_origin)
     set_center(g, gori, 0, 0)
     gori.focus_set()
@@ -966,58 +926,18 @@ def show_version():
     ax.axis('off')
     out.draw()
 
-class Button(tk.Button):
-    """自定義按鈕類別，增加背景顏色"""
-    def __init__(self, master=None, **kwargs):
-        super().__init__(master, **kwargs)
-        self.config(bg="white")
-
-def poly_smooth(x, y, order=6,xx=None):
-    """
-    Polynomial fitting and smoothing.
-    
-    Parameters
-    ----------
-        x (array-like): 1D array
-        y (array-like): 1D array
-        order (int): default=6
-        xx (array-like): 1D array, interpolation points, default: None
-    Returns
-    -------
-        y (np.ndarray) : Smoothed or interpolated y values.
-    """
-    coeffs = np.polyfit(x, y, order)
-    if xx is None:
-        y = np.polyval(coeffs, x)
-    else:
-        y = np.polyval(coeffs, xx)
-    return y
-
 @pool_protect
 def show_info():
-    # 創建自定義窗口
-    info_window = tk.Toplevel()
+    info_window = RestrictedToplevel(g)
     info_window.title("Information")
-    
-    # 添加信息標籤
-    l = tk.Label(info_window, text="Graph copied to clipboard", font=("Arial", size(30), "bold"),fg='red')
-    l.pack(pady=5)
+    tk.Label(info_window, text="Graph copied to clipboard", font=("Arial", size(30), "bold"),fg='red').pack(pady=5)
     label = tk.Label(info_window, text="window closed in 3 second", font=("Arial", size(20)))
     label.pack(pady=5)
-
+    set_center(g, info_window, 0, 0)
     info_window.update()
-    w= info_window.winfo_reqwidth()
-    h= info_window.winfo_reqheight()
-    info_window.geometry(f"{w}x{h}+{screen_width//2-w//2}+{screen_height//2-h//2}")
-    
-    # 設置計時器，3 秒後自動關閉窗口
-    info_window.update()
-    info_window.after(1000, label.config(text="window closed in 2 second"))
-    info_window.update()
-    info_window.after(1000, label.config(text="window closed in 1 second"))
-    info_window.update()
-    info_window.after(1000, label.config(text="window closed in 0 second"))
-    info_window.update()
+    for i in range(3, 0, -1):
+        info_window.after(1000, label.config(text=f"window closed in {i-1} second"))
+        info_window.update()
     info_window.destroy()
     
 @pool_protect
@@ -2027,8 +1947,6 @@ if __name__ == '__main__':
     default_font = ('Arial', scaled_font_size)
     g.option_add('*Font', default_font)
     icon_manager = MenuIconManager(scale=scale, ScaleFactor=ScaleFactor, odpi=odpi, dpi=dpi)
-    ToolTip.icon = icon_manager
-    ToolTip.scaled_font_size = scaled_font_size
     
     g.geometry(f'1900x1080+0+{sc_y}')
     g.title('MDC cut')
@@ -2292,80 +2210,37 @@ if __name__ == '__main__':
     try:
         with np.load(os.path.join('.MDC_cut', 'efit.npz'), 'rb') as f:
             ko = str(f['ko'])
-            fphi = f['fphi']
-            epos = f['epos']
-            ffphi = f['ffphi']
-            efwhm = f['efwhm']
-            fk = f['fk']
-            emin = f['emin']
-            emax = f['emax']
-            semin = f['semin']
-            semax = f['semax']
-            seaa1 = f['seaa1']
-            seaa2 = f['seaa2']
-            sefp = f['sefp']
-            sefi = f['sefi']
+            fphi, epos, ffphi, efwhm, fk = f['fphi'], f['epos'], f['ffphi'], f['efwhm'], f['fk']
+            emin, emax, semin, semax = f['emin'], f['emax'], f['semin'], f['semax']
+            seaa1, seaa2, sefp, sefi = f['seaa1'], f['seaa2'], f['sefp'], f['sefi']
             print('\033[90mEDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
         ko = ''
-        fphi = []
-        epos = []
-        ffphi = []
-        efwhm = []
-        fk = []
-        emin = []
-        emax = []
-        semin = []
-        semax = []
-        seaa1 = []
-        seaa2 = []
-        sefp = []
-        sefi = []
-        # seresult = []
-        # secst = []
+        fphi, epos, ffphi, efwhm, fk = [], [], [], [], []
+        emin, emax, semin, semax = [], [], [], []
+        seaa1, seaa2, sefp, sefi = [], [], [], []
+        # seresult, secst = [], []
         print('\033[90mNo EDC fitted data preloaded (Casa)\033[0m')
 
     try:
         with np.load(os.path.join('.MDC_cut', 'mfit.npz'), 'rb') as f:
             ko = str(f['ko'])
-            fev = f['fev']
-            rpos = f['rpos']
-            ophi = f['ophi']
-            fwhm = f['fwhm']
-            pos = f['pos']
-            kmin = f['kmin']
-            kmax = f['kmax']
-            skmin = f['skmin']
-            skmax = f['skmax']
-            smaa1 = f['smaa1']
-            smaa2 = f['smaa2']
-            smfp = f['smfp']
-            smfi = f['smfi']
+            fev, rpos, ophi, fwhm, pos = f['fev'], f['rpos'], f['ophi'], f['fwhm'], f['pos']
+            kmin, kmax, skmin, skmax = f['kmin'], f['kmax'], f['skmin'], f['skmax']
+            smaa1, smaa2, smfp, smfi = f['smaa1'], f['smaa2'], f['smfp'], f['smfi']
             try:
-                smresult = f['smresult']
-                smcst = f['smcst']
+                smresult, smcst = f['smresult'], f['smcst']
                 print('\033[90mMDC Fitted Data preloaded (lmfit)\033[0m')
             except:
                 print('\033[90mMDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
         ko = ''
-        fev = []
-        rpos = []
-        ophi = []
-        fwhm = []
-        pos = []
-        kmin = []
-        kmax = []
-        skmin = []
-        skmax = []
-        smaa1 = []
-        smaa2 = []
-        smfp = []
-        smfi = []
-        smresult = []
-        smcst = []
+        fev, rpos, ophi, fwhm, pos = [], [], [], [], []
+        kmin, kmax, skmin, skmax = [], [], [], []
+        smaa1, smaa2, smfp, smfi = [], [], [], []
+        smresult, smcst = [], []
         print('\033[90mNo MDC fitted data preloaded (Casa)\033[0m')
 
     try:

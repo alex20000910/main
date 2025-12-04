@@ -469,3 +469,24 @@ def filter(y, a, b):
         a, b = b, a  # Ensure a is less than or equal to b
     return np.array([x for x in y if a <= x <= b]), np.array([i for i, x in enumerate(y) if a <= x <= b])
 
+def poly_smooth(x, y, order=6,xx=None):
+    """
+    Polynomial fitting and smoothing.
+    
+    Parameters
+    ----------
+        x (array-like): 1D array
+        y (array-like): 1D array
+        order (int): default=6
+        xx (array-like): 1D array, interpolation points, default: None
+    Returns
+    -------
+        y (np.ndarray) : Smoothed or interpolated y values.
+    """
+    coeffs = np.polyfit(x, y, order)
+    if xx is None:
+        y = np.polyval(coeffs, x)
+    else:
+        y = np.polyval(coeffs, xx)
+    return y
+
