@@ -391,7 +391,7 @@ try:
     import win32clipboard
     if __name__ == '__main__':
         import originpro as op
-    from cv2 import Laplacian, GaussianBlur, CV_64F
+    from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
     import psutil
     if __name__ == '__main__':
         import cpuinfo

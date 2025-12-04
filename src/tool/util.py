@@ -1,3 +1,4 @@
+from operator import le
 from MDC_cut_utility import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -15,13 +16,22 @@ from tkinter import messagebox
 import queue
 import gc, tqdm
 from scipy.signal import hilbert
-from cv2 import Laplacian, GaussianBlur, CV_64F
+from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
         
 def im_smooth(data, kernel_size=17):
     return GaussianBlur(data, (kernel_size, kernel_size), 0)
 
 def laplacian_operation(data):
-    return -Laplacian(data, CV_64F)
+    try:
+        out = -Laplacian(data, CV_64F)
+    except:
+        try:
+            out = -Laplacian(data.astype('float32'), CV_32F)
+        except Exception as err:
+            out = data*0
+            print('Laplacian filter error(Second Derivative)')
+            print(err)
+    return out
 
 def laplacian_filter(data, kernel_size=17):
     im=im_smooth(data, kernel_size)
@@ -627,6 +637,8 @@ def save(format='{self.suffix}'):
         except:
             no.append(4)
         try:
+            if len(efwhm)==0:
+                raise ValueError("efwhm is empty")
             cmdlist[5]=rf'''plot1d(x={pre_process(fk)}, y1={pre_process(efwhm)}, title='EDC Fit FWHM', xlabel='k', ylabel='Binding Energy', xunit=r"2\g(p)Å\+(-1)", yunit='meV')
 '''
         except:
@@ -758,11 +770,8 @@ def save(format='{self.suffix}'):
         except:
             no.append(7)
         try:
-            x1 = pos
-            if emf=='KE':
-                y1=np.float64(fev)
-            else:
-                y1= vfe-np.float64(fev)
+            if len(pos)==0:
+                raise ValueError("pos is empty")
             cmdlist[8]=f'''plot2d(title='Data plot with pos')\n'''
         except:
             no.append(8)
