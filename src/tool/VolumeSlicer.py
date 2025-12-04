@@ -1,10 +1,12 @@
 from MDC_cut_utility import *
+from .util import app_param
 from .SO_Fitter import SO_Fitter
 import os, inspect
 import sys, shutil
 from multiprocessing import Pool
 import threading
 import tkinter as tk
+from tkinter import messagebox
 from tkinter import filedialog as fd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -1780,7 +1782,7 @@ class VolumeSlicer(tk.Frame):
                 c = (xlim[0]+xlim[1])/2
                 xlim = [float(c-d), float(c+d)]
                 print(f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
-                tk.messagebox.showwarning("Warning",f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
+                messagebox.showwarning("Warning",f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
                 self.focus_set()
             r1 = np.linspace(xlim[0], xlim[1], int(self.density/180*(xlim[1]-xlim[0]))*4)
             phi = np.linspace(ylim[0], ylim[1], int(self.density/180*(ylim[1]-ylim[0]))*4)

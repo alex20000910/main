@@ -1,4 +1,5 @@
-from MDC_cut_utility import RestrictedToplevel, FileSequence, CEC_Object, app_param, clear, set_entry_value, set_center
+from MDC_cut_utility import RestrictedToplevel, FileSequence, CEC_Object, clear, set_entry_value, set_center
+from .util import app_param
 from .loader import loadfiles, get_cec_params
 from .VolumeSlicer import VolumeSlicer
 import os
@@ -261,15 +262,20 @@ class CEC(loadfiles, CEC_Object):
             self.gg.destroy()
         self.__prework()
         self.tlg.focus_set()
-        for i in loadfiles.__dict__:
-            if i not in ['path', 'r1']:
-                try:
-                    setattr(self, i, None)
-                except: # property does not have setter
+        try:
+            self.lb.listbox.focus_set()
+        except:
+            pass
+        if f:
+            for i in loadfiles.__dict__:
+                if i not in ['path', 'r1']:
                     try:
-                        self.i = None
-                    except:
-                        pass
+                        setattr(self, i, None)
+                    except: # property does not have setter
+                        try:
+                            self.i = None
+                        except:
+                            pass
                     
     def __check_file(self):
         self.gg = RestrictedToplevel(self.g, bg='white')
@@ -357,7 +363,6 @@ class CEC(loadfiles, CEC_Object):
         self.f1 = False
         self.gg.bind('<Return>', self.__check)
         set_center(self.g, self.gg, 0, 0)
-        self.gg.focus_set()
         self.gg.limit_bind()
         return
         
@@ -421,7 +426,6 @@ class CEC(loadfiles, CEC_Object):
             self.f2 = False
             self.gg.bind('<Return>', self.__check)
             set_center(self.g, self.gg ,0 ,0)
-            self.gg.focus_set()
             self.gg.limit_bind()
         else:
             self.__check(f=True)
@@ -531,6 +535,7 @@ class add_lb():
         if listbox.size() > 0:
             listbox.select_set(0)
             listbox.event_generate('<<ListboxSelect>>')
+        self.listbox = listbox
         return
         
     def __on_up(self, event, lb, l):
@@ -559,27 +564,48 @@ class add_lb():
                     self.name[i] = selected_item.replace('\n', '')
         return
 
+def find_path(path: list[str]) -> bool:
+    f = True
+    if len(path) > 2:
+        for p in path:
+            if not os.path.exists(p):
+                f = False
+                break
+    else:
+        f = False
+    return f
 
-def call_cec(g, lfs: FileSequence):
+def call_cec(g: tk.Misc, lfs: FileSequence) -> FileSequence:
     app_pars = lfs.app_pars
     path_to_file, name, lf_path, tlfpath, cmap = lfs.cec_pars.path_to_file, lfs.cec_pars.name, lfs.cec_pars.lf_path, lfs.cec_pars.tlfpath, lfs.cec_pars.cmap
     lfs.cec = None
     try:
         args = get_cec_params(path_to_file)
-        try:
+        if find_path(lf_path):
             lfs.cec = CEC(g, lf_path, mode='load', cmap=cmap, app_pars=app_pars)
             lfs.cec.load(*args, name, path_to_file)
-        except:
+        elif find_path(tlfpath):
             lfs.cec = CEC(g, tlfpath, mode='load', cmap=cmap, app_pars=app_pars)
             lfs.cec.load(*args, name, path_to_file)
-    except Exception as ecp:
+        else:
+            raise FileNotFoundError
+    except FileNotFoundError:
         if app_pars:
             windll.user32.ShowWindow(app_pars.hwnd, 9)
             windll.user32.SetForegroundWindow(app_pars.hwnd)
-        print(f"An error occurred: {ecp}")
         print('\033[31mPath not found:\033[34m')
         print(lf_path)
         print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
         message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
         messagebox.showwarning("Warning", message)
+    except Exception as ecp:
+        if app_pars:
+            windll.user32.ShowWindow(app_pars.hwnd, 9)
+            windll.user32.SetForegroundWindow(app_pars.hwnd)
+        print(f"An error occurred: {ecp}")
+        message = f"An error occurred:\n{ecp}"
+        messagebox.showerror("Error", message)
+        lfs.cec.tlg.destroy()
+        clear(lfs.cec)
+        lfs.cec = None
     return lfs

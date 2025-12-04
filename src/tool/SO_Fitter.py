@@ -1,4 +1,5 @@
-from MDC_cut_utility import app_param, clear
+from MDC_cut_utility import clear
+from .util import app_param
 import tkinter as tk
 import numpy as np
 import matplotlib.pyplot as plt

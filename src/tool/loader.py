@@ -1,4 +1,5 @@
 from MDC_cut_utility import *
+from .util import app_param
 import os, inspect
 import sys, shutil
 from typing import Literal, Any, override
@@ -7,8 +8,8 @@ import xarray as xr
 import h5py
 import json
 import zarr
-from PIL import ImageTk
-from tkinter import filedialog as fd
+from tkinterdnd2 import DND_FILES
+import queue
 
 def load_txt(path_to_file: str) -> xr.DataArray:    #for BiSe txt files 
 #Liu, J. N., Yang, X., Xue, H., Gai, X. S., Sun, R., Li, Y., ... & Cheng, Z. H. (2023). Surface coupling in Bi2Se3 ultrathin films by screened Coulomb interaction. Nature Communications, 14(1), 4424.
@@ -290,7 +291,7 @@ def get_cec_params(path_to_file: str) -> tuple:
             sym = 1
     return angle, cx, cy, cdx, cdy, phi_offset, r1_offset, phi1_offset, r11_offset, slim, sym
 
-def get_cec_attr(path_to_file: str, f: h5py.File | Any, name: str, cmap: str, app_pars: Any) -> tuple[str, str, str, str, str, str]:
+def get_cec_attr(path_to_file: str, f: h5py.File | Any) -> tuple[str, str, str, str, str, str]:
     '''
     Call the CEC window.
 
@@ -345,27 +346,6 @@ def get_cec_attr(path_to_file: str, f: h5py.File | Any, name: str, cmap: str, ap
     Dwell = td.attrs['Dwell']
     Iterations = td.attrs['Iterations']
     Slit = td.attrs['Slit']
-        # if f_npz is False:
-        #     f_npz = True
-        #     args = get_cec_params(f)
-        #     try:
-        #         cec = CEC(g, lf_path, mode='load', cmap=cmap, app_pars=app_pars)
-        #         cec.load(*args, name, path_to_file)
-        #     except:
-        #         cec = CEC(g, tlfpath, mode='load', cmap=cmap, app_pars=app_pars)
-        #         cec.load(*args, name, path_to_file)
-    # except Exception as ecp:
-    #     if f_npz is False:
-    #         f_npz = True
-    #         if app_pars:
-    #             windll.user32.ShowWindow(app_pars.hwnd, 9)
-    #             windll.user32.SetForegroundWindow(app_pars.hwnd)
-    #         print(f"An error occurred: {ecp}")
-    #         print('\033[31mPath not found:\033[34m')
-    #         print(lf_path)
-    #         print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
-    #         message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
-    #         messagebox.showwarning("Warning", message)
     return PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath
 
 def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
@@ -383,7 +363,6 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
         cec = kwargs['cec']
         f_npz = kwargs['f_npz']
         cmap = kwargs['cmap']
-        app_pars = kwargs['app_pars']
     else:
         cec = None
         f_npz = True
@@ -481,7 +460,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
                 if f_npz is False:
                     f_npz = True
                     cec = 'CEC_Object'
-                PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f, name, cmap, app_pars)
+                PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
                 cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
             
         a = np.linspace(a_low, a_high, a_num)
@@ -536,17 +515,16 @@ def load_npz(path_to_file: str, **kwargs) -> xr.DataArray:
         cec = kwargs['cec']
         f_npz = kwargs['f_npz']
         cmap = kwargs['cmap']
-        app_pars = kwargs['app_pars']
     else:
         cec = None
         f_npz = True
     name = os.path.basename(path_to_file).split('.npz')[0]
     f = np.load(path_to_file)
+    PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
     if 'cec' in kwargs and 'f_npz' in kwargs:
         if f_npz is False:
             f_npz = True
             cec = 'CEC_Object'
-        PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f, name, cmap, app_pars)
         cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
     
     data = f['data']
@@ -646,12 +624,12 @@ class loadfiles(FileSequence):
             try:
                 if '.npz' in os.path.basename(v):
                     if self.cec is None:
-                        data, self.cec, self.f_npz_, self.cec_pars = load_npz(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap, app_pars=self.app_pars)
+                        data, self.cec, self.f_npz_, self.cec_pars = load_npz(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap)
                     else:
                         data = load_npz(v)
                 else:
                     if self.cec is None:
-                        data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap, app_pars=self.app_pars)
+                        data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap)
                     else:
                         data = load_h5(v)
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
@@ -2077,3 +2055,315 @@ class eloader:
         # limg.config(image=img[np.random.randint(len(img))])
         print('Done')
         self.st.put('Done')
+
+class tkDnD_loader(ABC):
+    """
+    A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
+    
+    Attributes:
+        root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
+    """
+    def __init__(self, root: tk.Misc | None = None):
+        if root is not None:
+            self.root = root
+            root.drop_target_register(DND_FILES)
+            root.dnd_bind('<<Drop>>', self.on_drop)
+        
+    def on_drop(self, event):
+        raw_str = event.data.split()
+        if len(raw_str) > 1:
+            files = []
+            flag = False
+            t_str = ''
+            for i in raw_str:
+                if '{' in i:
+                    flag = True
+                    t_str += ' ' + i
+                if '}' in i:
+                    flag = False
+                    t_str += ' ' + i
+                    files.append(t_str.split('{')[1].split('}')[0])
+                    t_str = ''
+                if '{' not in i and '}' not in i:
+                    if flag:
+                        t_str += ' ' + i
+                    else:
+                        files.append(i)
+        else:
+            if raw_str[0].startswith('{') and raw_str[0].endswith('}'):
+                files = [raw_str[0].split('{')[1].split('}')[0]]
+            else:
+                files = raw_str
+        if files:
+            self.load(drop=True, files=files)
+    
+    @abstractmethod
+    def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
+        pass
+    
+    @staticmethod
+    def check_h5(file):
+        path_h5 = []
+        t_path_h5 = file_walk(path=file, file_type='.h5')
+        for path in t_path_h5:
+            with h5py.File(path, 'r') as f:
+                keys = list(f.keys())
+                if 'Data' in keys and 'Region' in keys and 'Spectrum' in keys:
+                    path_h5.append(path)
+        return path_h5
+
+    @staticmethod
+    def check_json(file):
+        path_json = []
+        t_path_json = file_walk(path=file, file_type='.json')
+        for path in t_path_json:
+            with open(path, 'r') as f:
+                data = json.load(f)
+                keys = list(data.keys())
+                if 'Region' in keys and 'Detector' in keys and 'Data' in keys and 'Manipulator' in keys and 'Spectrum' in keys:
+                    path_json.append(path)
+        return path_json
+    
+    @staticmethod
+    def check_npz(file):
+        path_npz = []
+        t_path_npz = file_walk(path=file, file_type='.npz')
+        for path in t_path_npz:
+            f = np.load(path)
+            keys = list(f.keys())
+            if 'cx' in keys and 'cy' in keys and 'cdx' in keys and 'cdy' in keys and 'desc' in keys:
+                path_npz.append(path)
+        return path_npz
+    
+    @staticmethod
+    def check_txt(file):
+        path_txt = []
+        t_path_txt = file_walk(path=file, file_type='.txt')
+        for path in t_path_txt:
+            try:
+                load_txt(path)
+                path_txt.append(path)
+            except:
+                pass
+        return path_txt
+
+    @staticmethod
+    def load_raw(files):
+        out = []
+        if files:
+            for file in files:
+                file = os.path.normpath(file)   #有機會因模組版本有所差異 控制好固定格式
+                path_h5 = tkDnD_loader.check_h5(file=file)
+                path_json = tkDnD_loader.check_json(file=file)
+                path_npz = tkDnD_loader.check_npz(file=file)
+                path_txt = tkDnD_loader.check_txt(file=file)
+
+                for i in [path_h5, path_json, path_npz, path_txt]:
+                    if len(i) > 0:
+                        out += i
+                        
+            if out != []:
+                return out
+            
+        return ''
+
+class file_loader(ABC):
+    def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar, fr_tool: tk.Frame, b_tools: tk.Button, l_name: tk.OptionMenu, scale: float):
+        self.files = files
+        self.lfs = lfs
+        self.k_offset = k_offset
+        self.data, self.rdd, self.fpr, self.npzf, self.nlist, self.namevar = None, None, None, None, None, None
+        self.scale = scale
+        
+        if len(files) > 0:
+            clear(self.lfs)
+            self.lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
+            if self.lfs.cec_pars:
+                self.lfs = self.call_cec(g, self.lfs)
+            tpath = self.lfs.path[0]
+            b_name.config(state='normal')
+            b_excitation.config(state='normal')
+            b_desc.config(state='normal')
+            self.rdd = tpath
+            self.fpr = 0
+            if len(self.files) > 1:  #mulitple files
+                if len(self.lfs.n)>0:self.lfs.sort='no'
+                if b_tools is not None and l_name is not None:
+                    b_tools.grid_forget()
+                    l_name.grid_forget()
+                b_tools = tk.Button(fr_tool, text='Batch Master', command=self.tools, width=12, height=1, font=('Arial', self.size(12), "bold"), bg='white')
+                b_tools.grid(row=0, column=0)
+                self.nlist = self.lfs.name
+                self.namevar = tk.StringVar(value=self.nlist[0])
+                l_name = tk.OptionMenu(fr_tool, self.namevar, *self.nlist, command=self.change_file)
+                if len(self.namevar.get()) >30:
+                    l_name.config(font=('Arial', self.size(11), "bold"))
+                elif len(self.namevar.get()) >20:
+                    l_name.config(font=('Arial', self.size(12), "bold"))
+                else:
+                    l_name.config(font=('Arial', self.size(14), "bold"))
+                l_name.grid(row=0, column=1)
+            else:   #single file
+                if b_tools is not None and l_name is not None:
+                    b_tools.grid_forget()
+                    l_name.grid_forget()
+            if self.lfs.f_npz[0]:self.npzf = True
+            else:self.npzf = False
+            if self.npzf:
+                koffset.config(state='normal')
+                k_offset.set('0')
+                koffset.config(state='disable')
+            else:
+                koffset.config(state='normal')
+                self.set_k_offset()
+        else:
+            if self.lfs is None:
+                b_name.config(state='disable')
+                b_excitation.config(state='disable')
+                b_desc.config(state='disable')
+            else:
+                self.rdd = path
+            st.put('')
+            return
+        self.b_tools, self.l_name = b_tools, l_name
+        self.pars()
+        limg.config(image=img[np.random.randint(len(img))])
+        tbasename = os.path.basename(tpath)
+        if '.h5' in tbasename:
+            self.data = self.lfs.get(0)  # data save as xarray.DataArray format
+            self.pr_load(self.data)
+            tname = self.lfs.name[0]
+            print(f'\n{tname}')
+            if tname != self.name:
+                print(f'\033[31mname need correction\033[0m')
+                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'H5 Name', self.name))
+            else:
+                print('Name is correct')
+                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {self.name}\033[0m'%('Path Name', 'H5 Name'))
+            st.put('Loaded')
+        elif '.json' in tbasename:
+            self.data = self.lfs.get(0)
+            self.pr_load(self.data)
+            tname = self.lfs.name[0]
+            print(f'\n{tname}')
+            if tname != self.name:
+                print(f'\033[31mname need correction\033[0m')
+                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'JSON Name', self.name))
+            else:
+                print('Name is correct')
+                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {self.name}\033[0m'%('Path Name', 'JSON Name'))
+            st.put('Loaded')
+        elif '.txt' in tbasename:
+            self.data = self.lfs.get(0)
+            self.pr_load(self.data)
+            st.put('Loaded')
+        elif '.npz' in tbasename:
+            self.data = self.lfs.get(0)
+            self.pr_load(self.data)
+            tname = self.lfs.name[0]
+            st.put('Loaded')
+        else:
+            st.put('')
+        tname, tbasename, tpath = None, None, None
+        self.pars()
+    
+    def size(self, s: int) -> int:
+        return int(s * self.scale)
+    
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+    
+    @abstractmethod
+    def call_cec(self, g: tk.Misc, lfs: FileSequence) -> FileSequence:
+        pass
+    
+    @abstractmethod
+    def pr_load(self, data: xr.DataArray):
+        pass
+    
+    @abstractmethod
+    def change_file(self, *args):
+        pass
+    
+    @abstractmethod
+    def tools(self, *args):
+        pass
+    
+    @abstractmethod
+    def set_k_offset(self):
+        pass
+    
+    @abstractmethod
+    def pars(self):
+        pass
+
+class data_loader(ABC):
+    def __init__(self, menu1: tk.OptionMenu, menu2: tk.OptionMenu, menu3: tk.OptionMenu, in_fit: tk.Entry, b_fit: tk.Button, l_path: tk.Text, info: tk.Text, cdir: str, lfs: FileSequence):
+        self.menu1, self.menu2, self.menu3 = menu1, menu2, menu3
+        self.in_fit, self.b_fit = in_fit, b_fit
+        self.l_path = l_path
+        self.info = info
+        self.cdir = cdir
+        self.lfs = lfs
+        self.name, self.dvalue, self.e_photon, self.description, self.dpath = None, None, None, None, None
+        
+    def pr_load(self, data: xr.DataArray):
+        dvalue = list(data.attrs.values())
+        dpath = dvalue[14]
+        st=''
+        lst=[]
+        print()
+        for _ in data.attrs.keys():
+            if _ == 'Description':
+                ts=str(data.attrs[_])
+                ts=ts.replace('\n\n\n','\n').replace('\n\n','\n')
+                t=ts.split('\n')
+                st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                     ')
+                lst.append(len(' : '+t[0]))
+                for i in range(1,len(t)):
+                    lst.append(len('              '+t[i]))
+                print(_,':', data.attrs[_].replace('\n','\n              '))
+            elif _ == 'Path':
+                pass
+            else:
+                st+=str(_)+' : '+str(data.attrs[_])+'\n'
+                lst.append(len(str(_)+' : '+str(data.attrs[_])))
+                print(_,':', data.attrs[_])
+        print()
+        self.l_path.config(width=max(lst), state='normal')
+        self.l_path.delete(1.0, tk.END)
+        self.l_path.insert(tk.END, dpath)
+        self.l_path.see(1.0)
+        self.l_path.config(state='disabled')
+        self.info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
+        if len(st.split('\n'))>24:
+            self.info.config(height=24, width=max(lst)+1, state='normal')
+        self.info.insert(tk.END, '\n'+st+'\n')
+        self.info.update()
+        self.info.see(tk.END)
+        self.info.config(state='disabled')
+        ev, phi = data.indexes.values()
+        ev = np.float64(ev)
+        phi = np.float64(phi)
+        name=dvalue[0]
+        e_photon=np.float64(dvalue[3].split(' ')[0])
+        lensmode=dvalue[8]
+        description=dvalue[13]
+        for i in ['\n\n\n\n\n','\n\n\n\n','\n\n\n','\n\n']:
+            description=description.replace(i,'\n')
+        if lensmode=='Transmission':
+            for i in [self.menu1, self.menu2, self.menu3, self.in_fit, self.b_fit]:
+                i.config(state='disabled')
+        else:
+            for i in [self.menu1, self.menu2, self.menu3, self.in_fit, self.b_fit]:
+                i.config(state='normal')
+        self.name, self.dvalue, self.e_photon, self.description, self.dpath, self.ev, self.phi = name, dvalue, e_photon, description, dpath, ev, phi
+        self.pars()
+        os.chdir(self.cdir)
+        np.savez(os.path.join(self.cdir, '.MDC_cut', 'rd.npz'), path=dpath, lpath=[i for i in self.lfs.path])
+    
+    @abstractmethod
+    def pars(self):
+        pass
