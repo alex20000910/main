@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.1"
-__release_date__ = "2025-11-21"
+__version__ = "8.2"
+__release_date__ = "2025-12-04"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -84,8 +84,6 @@ import subprocess
 import argparse
 import importlib
 from typing import override, Literal
-
-from pydash import set_
     
 VERSION = sys.version.split()[0]
 VERSION = int(''.join(VERSION.split('.')))
@@ -247,20 +245,20 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
 
 def get_src(ver=False):
-    url = [r"https://github.com/alex20000910/main/blob/update/MDC_cut.py",
-           r"https://github.com/alex20000910/main/blob/update/src/viridis_2D.otp",
-           r"https://github.com/alex20000910/main/blob/update/src/MDC_cut_utility.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/__init__.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/util.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/loader.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/spectrogram.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/SO_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/VolumeSlicer.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/CEC.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/DataViewer.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/MDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/EDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/update/src/tool/window.py"]
+    url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
+           r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
+           r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/util.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py"]
     for i, v in enumerate(url):
         if i < 3:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
