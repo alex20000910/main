@@ -86,8 +86,13 @@ The following table illustrates the relationship between motor positions and the
 The conversion from real space to reciprocal space (k-space) is essential for interpreting ARPES data.
 Let's see a basic case considering only $\theta$ and $\psi$ angles.
 The momentum components $k_x$ and $k_y$ can be calculated using the following equations:
-$$k_x = \frac{\sqrt{2mE}}{\hbar} \cos(\theta) \sin(\psi)$$
-$$k_y = \frac{\sqrt{2mE}}{\hbar} \sin(\theta)$$
+<div align="center">
+
+$k_x = \frac{\sqrt{2mE}}{\hbar} \cos(\theta) \sin(\psi)$
+
+$k_y = \frac{\sqrt{2mE}}{\hbar} \sin(\theta)$
+
+</div>
 
 Obviously, a larger kinetic energy E will lead to a larger momentum k.
 The angles $\theta$ and $\psi$ determine the direction of the momentum vector in k-space.
@@ -100,7 +105,7 @@ and the two surfaces represent the $E-kx-ky$ map corresponding to $\psi=0°$ and
 
 |Wave Vector in k-space|Corresponding $E-k_x-k_y$ map|
 |:---:|:---:|
-|![](src\img\rotate_accept_angle_ce.gif)|![](src\img\rotate_one.gif)|
+|![](src/img/rotate_accept_angle_ce.gif)|![](src/img/rotate_one.gif)|
 
 </div>
 
@@ -118,7 +123,7 @@ The white mesh grid indicates the $E-k_x-k_y$ map acquired at a fixed $\psi$ ang
 
 <div align="center">
 
-|![](src\img\rotate_one_slice.gif)|![](src\img\rotate_slice.gif)|
+|![](src/img/rotate_one_slice.gif)|![](src/img/rotate_slice.gif)|
 |:---:|:---:|
 
 </div>
