@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "8.2"
+__version__ = "8.2.1"
 __release_date__ = "2025-12-04"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
@@ -2214,7 +2214,7 @@ if __name__ == '__main__':
             print('\033[90mEDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
-        ko = ''
+        ko = '0'
         fphi, epos, ffphi, efwhm, fk = [], [], [], [], []
         emin, emax, semin, semax = [], [], [], []
         seaa1, seaa2, sefp, sefi = [], [], [], []
@@ -2234,7 +2234,7 @@ if __name__ == '__main__':
                 print('\033[90mMDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
-        ko = ''
+        ko = '0'
         fev, rpos, ophi, fwhm, pos = [], [], [], [], []
         kmin, kmax, skmin, skmax = [], [], [], []
         smaa1, smaa2, smfp, smfi = [], [], [], []
