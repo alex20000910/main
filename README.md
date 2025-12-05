@@ -23,15 +23,18 @@ The user manual is currently out of date. For the latest changes and new feature
     - **Versatile Export Options**: Export data in graph(.png, .jpg...), HDF5, CasaXPS (.vms), and OriginPro (.opj/.opju) formats.
 
 ## Contents
-- [**Usage**](#usage)
-- [**What will `MDC_cut.py` do?**](#what-will-mdc_cutpy-do)
-- [**Work Flow**](#work-flow)
+- [**Installation**](#installation)
+  - [**What will `MDC_cut.py` do?**](#what-will-mdc_cutpy-do)
+- [**Basic Knowledge Overview**](#basic-knowledge-overview)
   - [**Geometry Definition**](#geometry-definition)
+  - [**Coordinate Transformation: Real to Reciprocal Space**](#coordinate-transformation-real-to-reciprocal-space)
+- [**Work Flow**](#work-flow)
   - [**E-Angle to E-k Conversion**](#e-angle-to-e-k-conversion)
 - [**Requirements**](#requirements)
 - [**License**](#license)
 - [**Snapshots**](#snapshots)
-## Usage
+
+## Installation
 > [!WARNING]
 > It is highly recommended to run `MDC_cut.py` in a virtual environment to avoid conflicts with existing packages in your main Python environment.
 > 
@@ -42,10 +45,89 @@ The user manual is currently out of date. For the latest changes and new feature
 - Create a virtual environment (e.g., via [![Anaconda](https://img.shields.io/badge/Anaconda-white?logo=anaconda&logoColor=%23)](https://www.anaconda.com/download)) with the required Python version to avoid changing your main environment, then run `MDC_cut.py` to automatically install the dependencies.
 - If you don’t mind the environment, execute `MDC_cut.py` and check that it automatically installs the required dependencies.
 
-## What will `MDC_cut.py` do?
+### What will `MDC_cut.py` do?
 1. Download the required files from this repository and place them into the working PATH of `MDC_cut.py`.
 2. Try to use the pip installer to install the required python packages.
 3. Start the GUI.
+
+## Basic Knowledge Overview
+The PREVAC EA15 analyzer can operate in two different lens modes: **Angular LensMode** and **Transmission LensMode**.
+
+- In **Angular LensMode**, the analyzer resolves the emission angles of the photoelectrons, allowing for the mapping of electronic band structures in momentum space (k-space).
+- In **Transmission LensMode**, the analyzer focuses on the spatial distribution of photoelectrons, which is useful for imaging applications.
+
+The choice of lens mode affects how the data is interpreted and analyzed, particularly in relation to the geometry of the sample manipulator.
+
+### Geometry Definition
+The geometry of the data is defined by the angles or positions of the sample manipulator motors.
+The following table illustrates the relationship between motor positions and the corresponding energy and angles resolved by the EA15 analyzer.
+> [!NOTE]
+> The values shown in the images below are for illustration purposes only and do not represent actual measurements.
+> The actual positions and angles of the motors might not be exactly the same as those depicted.
+>
+> For example, R1=-31° corresponds to $\psi$=0° and R2=85° corresponds to $\phi$=0° in the **Spectrium** software.
+>
+> However, users might not suffer from this offset since they can always calibrate the offset angle in the **k-plane** tool.
+> Additionally, there would be no difference in the k-space conversion as long as the relative angles are correct.
+
+<div align="center">
+
+|E (Kinetic Energy)|$\theta$ (Angle resolved by EA15 lens)|
+|:---:|:---:|
+|![](src/img/geo_E.gif)|![](src/img/geo_theta.gif)|
+
+|$\phi$ (Rotation around Y-axis, **R2** Motor)|$\psi$ (Tilt around Z-axis, **R1** Motor)|
+|:---:|:---:|
+|![](src/img/geo_phi.gif)|![](src/img/geo_psi.gif)|
+
+</div>
+
+### Coordinate Transformation: Real to Reciprocal Space
+The conversion from real space to reciprocal space (k-space) is essential for interpreting ARPES data.
+Let's see a basic case considering only $\theta$ and $\psi$ angles.
+The momentum components $k_x$ and $k_y$ can be calculated using the following equations:
+$$k_x = \frac{\sqrt{2mE}}{\hbar} \cos(\theta) \sin(\psi)$$
+$$k_y = \frac{\sqrt{2mE}}{\hbar} \sin(\theta)$$
+
+Obviously, a larger kinetic energy E will lead to a larger momentum k.
+The angles $\theta$ and $\psi$ determine the direction of the momentum vector in k-space.
+By varying these angles during the measurement, one can map out the electronic band structure of the material under study.
+
+The following table illustrates how changes in kinetic energy and angles affect the momentum components in k-space.
+The color change in viridis colormap indicates the variation in Kinetic Energy E for better visualization,
+and the two surfaces represent the $E-kx-ky$ map corresponding to $\psi=0°$ and $\psi=50°$, respectively.
+<div align="center">
+
+|Wave Vector in k-space|Corresponding $E-k_x-k_y$ map|
+|:---:|:---:|
+|![](src\img\rotate_accept_angle_ce.gif)|![](src\img\rotate_one.gif)|
+
+</div>
+
+> [!NOTE]
+> The angular cooridnates ($\theta$, $\phi$, $\psi$) stay the same in both real(x, y, z) and reciprocal($k_x$, $k_y$, $k_\perp$) space.
+
+Now you should have a basic understanding of how the geometry of the sample manipulator relates to the angles and positions used in ARPES measurements with the PREVAC EA15 analyzer.
+Let's consider if we want to obtain a $E-k_x-k_y$ map cut through a specific path in k-space,
+which is usually required for further analysis like MDC fitting.
+
+The following table illustrates the $E-k_y$ cut at $k_x=1.65$ as an example.
+The blue line represents a hexagonal first Brillouin zone boundary as a reference.
+The red mesh grid indicates the desired $E-k_y$ cut.
+The white mesh grid indicates the $E-k_x-k_y$ map acquired at a fixed $\psi$ angle.
+
+<div align="center">
+
+|![](src\img\rotate_one_slice.gif)|![](src\img\rotate_slice.gif)|
+|:---:|:---:|
+
+</div>
+
+It's not difficult to see that 
+we cannot obtain an orthogonal $E-k_x-k_y$ map with only one spectrum acquired at a fixed $\psi$ angle.
+To get an orthogonal k-space map that we can do further analysis on, 
+we need to vary the $\psi$ angle (R1 motor) during the measurements 
+or even change the $\phi$ angle (R2 motor) as well to cover the desired k-space region.
 
 ## Work Flow
 ![alt text](src/img/img_raw.png)
@@ -64,30 +146,6 @@ The user manual is currently out of date. For the latest changes and new feature
 > for Transmission LensMode
 >> 
 > to well define the geometry of the spectum acquired.
-
-### Geometry Definition
-The geometry of the data is defined by the angles or positions of the sample manipulator motors.
-The following table illustrates the relationship between motor positions and the corresponding energy and angles resolved by the EA15 analyzer.
-> [!NOTE]
-> The values shown in the images below are for illustration purposes only and do not represent actual measurements.
-> The actual positions and angles of the motors might not be exactly the same as those depicted.
->
-> For example, R1=-31° corresponds to $\psi$=0° and R2=85° corresponds to $\phi$=0° in the **Spectrium** software.
->
-> However, users might not suffer from this offset since they can always calibrate the offset angle in the **k-plane** tool.
-> Additionally, there would be no difference in the k-space conversion as long as the relative angles are correct.
-
-<div align="center">
-
-|Energy|Angle (resolved by EA15 lens)|
-|:---:|:---:|
-|![](src/img/geo_E.gif)|![](src/img/geo_theta.gif)|
-
-|$\phi$ (Rotation around Y-axis, **R2** Motor)|$\psi$ (Tilt around Z-axis, **R1** Motor)|
-|:---:|:---:|
-|![](src/img/geo_phi.gif)|![](src/img/geo_psi.gif)|
-
-</div>
 
 ### E-Angle to E-k Conversion
 The application will parse the file name to extract the geometry information. R1 and R2 represent the motor of the sample manipulator, while the numbers denote the angles(in degrees) or position(in millimeters) of the respective motors.
