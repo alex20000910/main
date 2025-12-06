@@ -1,6 +1,6 @@
 # MDC cut GUI
 __version__ = "8.2.1"
-__release_date__ = "2025-12-04"
+__release_date__ = "2025-12-05"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -809,11 +809,10 @@ def fit_so_app(*args):
 
 @pool_protect
 def emode():
-    global gfe,fe_in,b_emode,emf,v_fe,mfpr
+    global gfe,emf
     if 'gfe' in globals():
         gfe.destroy()
         clear(gfe)
-    mfpr=0
     if emf=='KE':
         emf='BE'
         b_emode.config(text='B.E.')

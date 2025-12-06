@@ -5,7 +5,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py, json
-import os
+import os, io
 import tkinter as tk
 from tkinter import filedialog as fd
 from threading import Thread
@@ -14,6 +14,7 @@ from tkinter import colorchooser, messagebox
 from ctypes import windll
 from typing import override
 from base64 import b64decode
+from PIL import Image, ImageTk
 
 class AboutWindow:
     def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, version: str = "x.x.x", release_date: str = "YYYY-MM-DD"):
@@ -21,6 +22,8 @@ class AboutWindow:
         self.scale = scale
         self.version = version
         self.release_date = release_date
+        icon = IconManager().icon
+        self.icon = ImageTk.PhotoImage(Image.open(io.BytesIO(b64decode(icon))).resize([150, 150]))
         self.show()
     
     def size(self, size: int) -> int:
@@ -54,8 +57,13 @@ class AboutWindow:
         fr = tk.Frame(bd_fr, bg='white', padx=gap/2, pady=gap/2)
         fr.pack()
         
-        l1 = tk.Label(fr, text='MDC_cut', font=('Arial', self.size(20), "bold"), bg='white')
-        l1.pack(pady=10)
+        fr_title = tk.Frame(fr, bg='white')
+        fr_title.pack()
+        l_icon = tk.Label(fr_title, bg='white', image=self.icon)
+        l_icon.pack(side=tk.LEFT, padx=2, pady=10)
+        l1 = tk.Label(fr_title, text='MDC_cut', font=('Arial', self.size(30), "bold"), bg='white')
+        l1.pack(side=tk.LEFT, pady=10)
+        
         l2 = tk.Label(fr, text='Version: '+self.version, font=('Arial', self.size(16)), bg='white')
         l2.pack(pady=5)
         l3 = tk.Label(fr, text='Release Date: '+self.release_date, font=('Arial', self.size(16)), bg='white')
