@@ -1,4 +1,3 @@
-from operator import le
 from MDC_cut_utility import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
