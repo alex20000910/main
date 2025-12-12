@@ -417,6 +417,7 @@ class origin_util:
                  pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
                  epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
                  cdir: str, dpath: str, bpath: str, app_name: str, npzf: bool,
+                 pos_err: list[float], fwhm_err: list[float],
                  g: tk.Tk, gori: tk.Toplevel, v1: tk.IntVar, v2: tk.IntVar, v3: tk.IntVar, v4: tk.IntVar, v5: tk.IntVar, v6: tk.IntVar,
                  v7: tk.IntVar, v8: tk.IntVar, v9: tk.IntVar, v10: tk.IntVar, v11: tk.IntVar) -> None:
         self.suffix = 'opju'
@@ -428,6 +429,7 @@ class origin_util:
         self.fev, self.epos, self.efwhm = fev, epos, efwhm
         self.fk, self.ffphi, self.fphi = fk, ffphi, fphi
         self.cdir, self.dpath, self.bpath, self.app_name, self.npzf = cdir, dpath, bpath, app_name, npzf
+        self.pos_err, self.fwhm_err = pos_err, fwhm_err
         self.g, self.gori = g, gori
         self.v1, self.v2, self.v3 = v1, v2, v3
         self.v4, self.v5, self.v6 = v4, v5, v6
@@ -544,7 +546,7 @@ def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)
         except:
             pass
 
-def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], title='title', xlabel='x', ylabel='y', ylabel1='y1', ylabel2='y2', xunit='arb', yunit='arb'):
+def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], y1err=[], y2err=[], title='title', xlabel='x', ylabel='y', ylabel1='y1', ylabel2='y2', xunit='arb', yunit='arb'):
     try:
         # create a new book
         wb = op.new_book('w',title)
@@ -555,13 +557,24 @@ def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], title='title', xlabel='x', ylabel='y', 
             ylabel1 = ylabel
         sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
         sheet.from_list(1, y1, lname=ylabel1, units=yunit, axis='Y')
+        sheet.from_list(2, y1err, lname='y1err', units=yunit, axis='E')
         gr=op.new_graph(title, 'scatter')
-        g1=gr[0].add_plot(sheet, 1, 0)
+        if len(y1err) != 0:
+            gr[0].add_plot(sheet, 1, 0, 2)
+            g1=gr[0].add_plot(sheet, 1, 0)
+        else:
+            g1=gr[0].add_plot(sheet, 1, 0)
         g1.symbol_size = 5
         g1.symbol_kind = 2
         if len(y2) != 0:
-            sheet.from_list(2, y2, lname=ylabel2, units=yunit, axis='Y')
-            g2=gr[0].add_plot(sheet, 2, 0)
+            if len(y2err) != 0:
+                sheet.from_list(3, y2, lname=ylabel2, units=yunit, axis='Y')
+                sheet.from_list(4, y2err, lname='y2err', units=yunit, axis='E')
+                gr[0].add_plot(sheet, 3, 0, 4)
+                g2=gr[0].add_plot(sheet, 3, 0, 4)
+            else:
+                sheet.from_list(2, y2, lname=ylabel2, units=yunit, axis='Y')
+                g2=gr[0].add_plot(sheet, 2, 0)
             g2.symbol_size = 5
             g2.symbol_kind = 2
             g2.color = 'red'
@@ -607,6 +620,7 @@ def save(format='{self.suffix}'):
         fk, ffphi, fphi = self.fk, self.ffphi, self.fphi
         emf, ev, phi = self.emf, self.ev, self.phi
         cdir, dpath = self.cdir, self.dpath
+        pos_err, fwhm_err = self.pos_err, self.fwhm_err
         m, h = 9.1093837015*10**-31, 6.62607015*10**-34
         try:
             cmdlist[0]=f'''plot2d()\n'''
@@ -621,12 +635,12 @@ def save(format='{self.suffix}'):
                             10**-10*(h/2/np.pi))*180/np.pi
             pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
                 np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-            cmdlist[2]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
+            cmdlist[2]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, y1err={pre_process(pos_err)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
 '''
         except:
             no.append(2)
         try:
-            cmdlist[3]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(fwhm)}, title='MDC Fit FWHM', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
+            cmdlist[3]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(fwhm)}, y1err={pre_process(fwhm_err)}, title='MDC Fit FWHM', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
 '''
         except:
             no.append(3)

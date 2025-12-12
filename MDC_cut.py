@@ -595,6 +595,7 @@ if __name__ == '__main__':
                         'pos', 'fwhm', 'rpos', 'ophi', 'fev',
                         'epos', 'efwhm', 'fk', 'ffphi', 'fphi',
                         'cdir', 'dpath', 'bpath', 'app_name', 'npzf',
+                        'pos_err', 'fwhm_err',
                         'g', 'gori', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'v10', 'v11']
             for i in var_list:
                 init_globals(i)
@@ -605,6 +606,7 @@ if __name__ == '__main__':
                  pos, fwhm, rpos, ophi, fev,
                  epos, efwhm, fk, ffphi, fphi,
                  cdir, dpath, bpath, app_name, npzf,
+                 pos_err, fwhm_err,
                  g, gori, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11)
     
     class plot1_window(Plot1Window):
@@ -977,9 +979,7 @@ def send_to_clipboard(clip_type, data):
     win32clipboard.EmptyClipboard()
     win32clipboard.SetClipboardData(clip_type, data)
     win32clipboard.CloseClipboard()
-    
-# spectrogram
-            
+
 @pool_protect
 def trans_plot(*e):
     if data is None:
@@ -1106,18 +1106,15 @@ def tools(*args):
         s = spectrogram(path=lfs.path, name='internal', app_pars=lfs.app_pars)
         s.plot(g, value3.get())
         toolg.destroy()
-        return
         
     def exp_casa():
         explfs = lfs_exp_casa(lfs)
         explfs.export_casa()
         toolg.destroy()
-        return
         
     def kplane():
         CEC(g, lfs.path, cmap=value3.get(), app_pars=lfs.app_pars)
         toolg.destroy()
-        return
     
     global toolg
     if 'toolg' in globals():
@@ -1142,7 +1139,6 @@ def tools(*args):
     set_center(g, toolg, 0, 0)
     toolg.focus_set()
     toolg.limit_bind()
-    return
 
 @pool_protect
 def def_cmap():
@@ -1151,8 +1147,6 @@ def def_cmap():
         CE.destroy()
         clear(CE)
     CE = ColormapEditor()
-
-fpr = 0
 
 @pool_protect
 def o_load(drop=False, files=''):
@@ -1364,9 +1358,7 @@ def o_fbb_offset(*e):
 
 @pool_protect
 def fbb_offset(*e):
-    t = threading.Thread(target=o_fbb_offset)
-    t.daemon = True
-    t.start()
+    threading.Thread(target=o_fbb_offset, daemon=True).start()
 
 
 @pool_protect
@@ -1380,9 +1372,7 @@ def o_fbbk_offset(*e):
 
 @pool_protect
 def fbbk_offset(*e):
-    t = threading.Thread(target=o_fbbk_offset)
-    t.daemon = True
-    t.start()
+    threading.Thread(target=o_fbbk_offset, daemon=True).start()
 
 @pool_protect
 def o_fbase(*e):
@@ -1393,9 +1383,7 @@ def o_fbase(*e):
 
 @pool_protect
 def fbase(*e):
-    t = threading.Thread(target=o_fbase)
-    t.daemon = True
-    t.start()
+    threading.Thread(target=o_fbase, daemon=True).start()
 
 @pool_protect
 def o_flowlim(*e):
@@ -1406,9 +1394,7 @@ def o_flowlim(*e):
 
 @pool_protect
 def flowlim(*e):
-    t = threading.Thread(target=o_flowlim)
-    t.daemon = True
-    t.start()
+    threading.Thread(target=o_flowlim, daemon=True).start()
 
 @pool_protect
 def o_reload(*e):
@@ -1595,21 +1581,15 @@ def exp(*e):
 
 @pool_protect
 def angcut(*e):
-    t0 = threading.Thread(target=o_angcut)
-    t0.daemon = True
-    t0.start()
+    threading.Thread(target=o_angcut, daemon=True).start()
 
 @pool_protect
 def ecut(*e):
-    t1 = threading.Thread(target=o_ecut)
-    t1.daemon = True
-    t1.start()
+    threading.Thread(target=o_ecut, daemon=True).start()
 
 @pool_protect
 def loadmfit(*e):
-    t2 = threading.Thread(target=o_loadmfit)
-    t2.daemon = True
-    t2.start()
+    threading.Thread(target=o_loadmfit, daemon=True).start()
 
 @pool_protect
 def loadefit(*e):
@@ -1618,8 +1598,7 @@ def loadefit(*e):
     el = eloader(st, data, ev, phi, rdd, cdir, lowlim.get())
     el.loadparam(k_offset.get(), base.get(), npzf, fpr)
     file = fd.askopenfilename(title="Select EDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
-    t3 = threading.Thread(target=el.loadefit, args=(file,))
-    t3.daemon = True
+    t3 = threading.Thread(target=el.loadefit, args=(file,), daemon=True)
     t3.start()
     t3.join()
     rdd, efi_x, data, fpr = el.rdd, el.efi_x, el.data, el.fpr
@@ -1645,27 +1624,19 @@ def loadefit(*e):
 
 @pool_protect
 def reload(*e):
-    t4 = threading.Thread(target=o_reload)
-    t4.daemon = True
-    t4.start()
+    threading.Thread(target=o_reload, daemon=True).start()
 
 @pool_protect
 def expte():
-    t5 = threading.Thread(target=o_expte)
-    t5.daemon = True
-    t5.start()
+    threading.Thread(target=o_expte, daemon=True).start()
 
 @pool_protect
 def exptm():
-    t6 = threading.Thread(target=o_exptm)
-    t6.daemon = True
-    t6.start()
+    threading.Thread(target=o_exptm, daemon=True).start()
 
 @pool_protect
 def bareband(*e):
-    t7 = threading.Thread(target=o_bareband)
-    t7.daemon = True
-    t7.start()
+    threading.Thread(target=o_bareband, daemon=True).start()
 
 @pool_protect
 def main_plot_bind():
@@ -1700,15 +1671,11 @@ def plot1(*e):
     elif value.get() == 'Second Derivative':
         gg = plot1_window_Second_Derivative(im_kernel)
     else:
-        t8 = threading.Thread(target=o_plot1)
-        t8.daemon = True
-        t8.start()
+        threading.Thread(target=o_plot1, daemon=True).start()
 
 @pool_protect
 def plot2(*e):
-    t9 = threading.Thread(target=o_plot2)
-    t9.daemon = True
-    t9.start()
+    threading.Thread(target=o_plot2, daemon=True).start()
 
 @pool_protect
 def plot3(*e):
@@ -1718,23 +1685,17 @@ def plot3(*e):
     if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
         gg = plot3_window(fev, fk)
     else:
-        t10 = threading.Thread(target=o_plot3)
-        t10.daemon = True
-        t10.start()
+        threading.Thread(target=o_plot3, daemon=True).start()
 
 @pool_protect
 def load(drop=False, files='', *args):
     if 'KeyPress' in str(drop):
         drop = False
-    t11 = threading.Thread(target=o_load, args=(drop, files))
-    t11.daemon = True
-    t11.start()
+    threading.Thread(target=o_load, args=(drop, files), daemon=True).start()
 
 def fitgl():
     pass
-    # t12 = threading.Thread(target=o_fitgl)
-    # t12.daemon = True
-    # t12.start()
+    # threading.Thread(target=o_fitgl, daemon=True).start()
 
 @pool_protect
 def tstate():
@@ -1745,18 +1706,36 @@ def tstate():
         pass
 
 @pool_protect
+def get_yerr():
+    global pos_err, fwhm_err
+    pos_err, fwhm_err = [], []
+    if smresult is not None:
+        for i, v in enumerate(smresult):
+            if i in smfi:
+                try:
+                    res = v[0].split('+/- ')[1].split(' (')[0]
+                    pos_err.append(res)
+                except:
+                    pass
+                try:
+                    res = v[4].split('+/- ')[1].split(' (')[0]
+                    fwhm_err.append(res)
+                except:
+                    pass            
+        pos_err = np.array(pos_err)
+        fwhm_err = np.array(fwhm_err)
+        
+@pool_protect
 def lm2p():
     lmgg.destroy()
     global rdd
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim.get())
     file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("VMS files", "*.vms"),))
-    t = threading.Thread(target=ml.loadmfit_2p, args=(file,))
-    t.daemon = True
+    t = threading.Thread(target=ml.loadmfit_2p, args=(file,), daemon=True)
     t.start()
     t.join()
     rdd = ml.rdd
     clear(ml)
-
 
 @pool_protect
 def lmre():
@@ -1764,8 +1743,7 @@ def lmre():
     global rdd
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim.get())
     file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("VMS files", "*.vms"),))
-    t = threading.Thread(target=ml.loadmfit_re, args=(file,))
-    t.daemon = True
+    t = threading.Thread(target=ml.loadmfit_re, args=(file,), daemon=True)
     t.start()
     t.join()
     rdd = ml.rdd
@@ -1779,12 +1757,12 @@ def lm():
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim.get())
     ml.loadparam(k_offset.get(), base.get(), npzf, fpr)
     file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
-    t = threading.Thread(target=ml.loadmfit_, args=(file,))
-    t.daemon = True
+    t = threading.Thread(target=ml.loadmfit_, args=(file,), daemon=True)
     t.start()
     t.join()
     rdd, mfi_x, data, fpr = ml.rdd, ml.mfi_x, ml.data, ml.fpr
     fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst = ml.fev, ml.rpos, ml.ophi, ml.fwhm, ml.pos, ml.kmin, ml.kmax, ml.skmin, ml.skmax, ml.smaa1, ml.smaa2, ml.smfp, ml.smfi, ml.smresult, ml.smcst
+    get_yerr()
     limg.config(image=img[np.random.randint(len(img))])
     if ml.fload:
         try:
@@ -1803,7 +1781,6 @@ def lm():
         except Exception as e:
             print(f'Error loading raw data from {rdd}: {e}')
     clear(ml)
-
 
 @pool_protect
 def o_loadmfit():
@@ -1836,9 +1813,7 @@ def dl_sw():
     s=['dot','line','dot-line']
     dl=(dl+1)%3
     b_sw.config(text=s[dl])
-    t = threading.Thread(target=o_plot3)
-    t.daemon = True
-    t.start()
+    threading.Thread(target=o_plot3, daemon=True).start()
 
 @pool_protect
 def plot1_set(opt):
@@ -2064,7 +2039,6 @@ if __name__ == '__main__':
     b_so_fit = Button(fr_toolbar, text="Sample Offset Fitter", image=icon_manager.get_icon('so_fit'), command=fit_so_app)
     b_so_fit.pack(side=tk.LEFT)
     
-    
     # 建立tooltip
     ToolTip(b_load, "Select and load your raw data files - supports H5, JSON, NPZ, and TXT formats. You can choose multiple files at once.", "Ctrl+O")
     ToolTip(b_loadmfit, "Select the MDC fitted file in VMS or NPZ formats. Note that the VMS file should only contain two peak information.", "F1")
@@ -2204,6 +2178,7 @@ if __name__ == '__main__':
     except:
         print('\033[90mNo MDC Fitted path preloaded\033[0m')
 
+    fpr = 0
     try:
         with np.load(os.path.join('.MDC_cut', 'efit.npz'), 'rb') as f:
             ko = str(f['ko'])
@@ -2226,8 +2201,10 @@ if __name__ == '__main__':
             fev, rpos, ophi, fwhm, pos = f['fev'], f['rpos'], f['ophi'], f['fwhm'], f['pos']
             kmin, kmax, skmin, skmax = f['kmin'], f['kmax'], f['skmin'], f['skmax']
             smaa1, smaa2, smfp, smfi = f['smaa1'], f['smaa2'], f['smfp'], f['smfi']
+            smresult, smcst = [], []
             try:
                 smresult, smcst = f['smresult'], f['smcst']
+                get_yerr()
                 print('\033[90mMDC Fitted Data preloaded (lmfit)\033[0m')
             except:
                 print('\033[90mMDC Fitted Data preloaded (Casa)\033[0m')
@@ -2237,7 +2214,6 @@ if __name__ == '__main__':
         fev, rpos, ophi, fwhm, pos = [], [], [], [], []
         kmin, kmax, skmin, skmax = [], [], [], []
         smaa1, smaa2, smfp, smfi = [], [], [], []
-        smresult, smcst = [], []
         print('\033[90mNo MDC fitted data preloaded (Casa)\033[0m')
 
     try:
@@ -2619,9 +2595,7 @@ if __name__ == '__main__':
     # exte.grid(row=3, column=0)
     
     
-    tt = threading.Thread(target=tstate)
-    tt.daemon = True
-    tt.start()
+    threading.Thread(target=tstate, daemon=True).start()
     if lfs is None:
         b_name.config(state='disable')
         b_excitation.config(state='disable')

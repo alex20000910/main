@@ -139,7 +139,6 @@ SOFTWARE."""
         self.about_win.destroy()
         clear(self.about_win)
 
-
 class EmodeWindow(RestrictedToplevel, ABC):
     def __init__(self, parent: tk.Misc | None = None, vfe: float=21.2, scale: float=1.0):
         super().__init__(parent, bg='white')
