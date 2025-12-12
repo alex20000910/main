@@ -1722,8 +1722,8 @@ def get_yerr():
                     fwhm_err.append(res)
                 except:
                     pass            
-        pos_err = np.array(pos_err)
-        fwhm_err = np.array(fwhm_err)
+        pos_err = np.array(pos_err, dtype=float)
+        fwhm_err = np.array(fwhm_err, dtype=float)
         
 @pool_protect
 def lm2p():

@@ -567,11 +567,11 @@ def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], y1err=[], y2err=[], title='title', xlab
         g1.symbol_size = 5
         g1.symbol_kind = 2
         if len(y2) != 0:
-            if len(y2err) != 0:
+            if len(y1err) != 0:
                 sheet.from_list(3, y2, lname=ylabel2, units=yunit, axis='Y')
                 sheet.from_list(4, y2err, lname='y2err', units=yunit, axis='E')
                 gr[0].add_plot(sheet, 3, 0, 4)
-                g2=gr[0].add_plot(sheet, 3, 0, 4)
+                g2=gr[0].add_plot(sheet, 3, 0)
             else:
                 sheet.from_list(2, y2, lname=ylabel2, units=yunit, axis='Y')
                 g2=gr[0].add_plot(sheet, 2, 0)
@@ -684,6 +684,7 @@ def save(format='{self.suffix}'):
             v = yy/xx
             # v = np.append(v, v[-1])  # fermi velocity
             v=interp(pos,x[0:-1]+xx/2,v)
+            y1err = pos_err*interp(pos, k*np.float64(bbk_offset.get()), be)/pos
             yy = np.abs(v*fwhm/2)
             xx = tbe
 
@@ -715,7 +716,7 @@ def save(format='{self.suffix}'):
             # Reconstructed real and imaginary parts
             reconstructed_real = np.imag(analytic_signal_i)
             reconstructed_imag = -np.imag(analytic_signal_r)
-            cmdlist[6]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(-1*((vfe-fev)*1000+interp(pos, k*np.float64(bbk_offset.get()), be - np.float64(bb_offset.get()))))}, y2={pre_process(reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])))}, title='Self Energy Real Part', xlabel='Binding Energy', ylabel=r"Re \g(S)", ylabel1=r"Re \g(S)", ylabel2=r"Re \g(S)\-(KK)=KK(Im \g(S))", xunit='meV', yunit='meV')
+            cmdlist[6]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(-1*((vfe-fev)*1000+interp(pos, k*np.float64(bbk_offset.get()), be - np.float64(bb_offset.get()))))}, y2={pre_process(reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])))}, y1err={pre_process(y1err)}, title='Self Energy Real Part', xlabel='Binding Energy', ylabel=r"Re \g(S)", ylabel1=r"Re \g(S)", ylabel2=r"Re \g(S)\-(KK)=KK(Im \g(S))", xunit='meV', yunit='meV')
 '''
         except:
             no.append(6)
@@ -748,6 +749,7 @@ def save(format='{self.suffix}'):
             # v = np.append(v, v[-1])  # fermi velocity
             v=interp(pos,x[0:-1]+xx/2,v)
             yy = np.abs(v*fwhm/2)
+            y1err = fwhm_err/2*np.abs(v)
             xx = tbe
 
             ix = xx
@@ -778,7 +780,7 @@ def save(format='{self.suffix}'):
             # Reconstructed real and imaginary parts
             reconstructed_real = np.imag(analytic_signal_i)
             reconstructed_imag = -np.imag(analytic_signal_r)
-            cmdlist[7]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(iy)}, y2={pre_process(reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])))}, title='Self Energy Imaginary Part', xlabel='Binding Energy', ylabel=r"Im \g(S)", ylabel1=r"Im \g(S)", ylabel2=r"Im \g(S)\-(KK)=KK(Re \g(S))", xunit='meV', yunit='meV')
+            cmdlist[7]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(iy)}, y2={pre_process(reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])))}, y1err={pre_process(y1err)}, title='Self Energy Imaginary Part', xlabel='Binding Energy', ylabel=r"Im \g(S)", ylabel1=r"Im \g(S)", ylabel2=r"Im \g(S)\-(KK)=KK(Re \g(S))", xunit='meV', yunit='meV')
 '''
         except:
             no.append(7)
