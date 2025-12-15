@@ -2200,7 +2200,7 @@ class plots_util(ABC):
             gc.collect()
 
     def o_plot3(self):
-        bo, h0, xl, yl, pflag = None, '', None, None, 3
+        ao, h0, xl, yl, pflag = None, '', None, None, 3
         tb0, tb0_, tb1, tb1_, tb2 = None, None, None, None, None
         value, value1, value2, value3 = self.value, self.value1, self.value2, self.value3
         vfe, fig, out = self.vfe, self.fig, self.out
@@ -2270,6 +2270,7 @@ class plots_util(ABC):
                     xx = tbe
                     ix = xx
                     iy = yy
+                    self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
                 except:
                     messagebox.showwarning("Warning", "Please load Bare Band file")
                     self.warn_str = "Please load Bare Band file"
@@ -2571,7 +2572,8 @@ class exp_util(exp_motion):
                  mp: int, ep: int, mf: int, ef: int, xl: tuple[float], yl: tuple[float],
                  cm: tk.DoubleVar, cM: tk.DoubleVar, vcmin: tk.DoubleVar, vcmax: tk.DoubleVar, dl: int,
                  st: queue.Queue, pflag: int, limg: tk.Label, img: list[tk.PhotoImage],
-                 d: int, l: int, p: int, npzf: bool, im_kernel: int
+                 d: int, l: int, p: int, npzf: bool, im_kernel: int,
+                 rx: np.ndarray, ry: np.ndarray, ix: np.ndarray, iy: np.ndarray
                  ) -> None:
         self.cf = True
         self.scale = scale
@@ -2586,6 +2588,7 @@ class exp_util(exp_motion):
         self.cm, self.cM, self.vcmin, self.vcmax, self.dl = cm, cM, vcmin, vcmax, dl
         self.pflag, self.st, self.limg, self.img = pflag, st, limg, img
         self.d, self.l, self.p, self.npzf, self.im_kernel = d, l, p, npzf, im_kernel
+        self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
         self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = None, None, None, None, None
     
     @abstractmethod
@@ -2621,7 +2624,7 @@ class exp_util(exp_motion):
         d, l, p, npzf, im_kernel = self.d, self.l, self.p, self.npzf, self.im_kernel
         scale = self.scale
         posmin, posmax, eposmin, eposmax = None, None, None, None
-        rx, ry, ix, iy = None, None, None, None
+        rx, ry, ix, iy = self.rx, self.ry, self.ix, self.iy
         a, a0 = None, None
         acx, acy, annot = None, None, None
         ta0, ta0_, ta1, ta1_, ta2 = None, None, None, None, None

@@ -702,7 +702,8 @@ if __name__ == '__main__':
                         'pos', 'fwhm', 'rpos', 'ophi', 'fev',
                         'epos', 'efwhm', 'fk', 'ffphi', 'fphi',
                         'mp', 'ep', 'mf', 'ef', 'xl', 'yl', 'cm', 'cM', 'vcmin', 'vcmax', 'dl', 'st',
-                        'pflag', 'limg', 'img', 'd', 'l', 'p', 'npzf', 'im_kernel']
+                        'pflag', 'limg', 'img', 'd', 'l', 'p', 'npzf', 'im_kernel',
+                        'rx', 'ry', 'ix', 'iy']
             for i in var_list:
                 init_globals(i)
             super().__init__(scale, value, value1, value2, value3, k_offset,
@@ -711,7 +712,8 @@ if __name__ == '__main__':
                              pos, fwhm, rpos, ophi, fev,
                              epos, efwhm, fk, ffphi, fphi,
                              mp, ep, mf, ef, xl, yl, cm, cM, vcmin, vcmax, dl, st,
-                             pflag, limg, img, d, l, p, npzf, im_kernel)
+                             pflag, limg, img, d, l, p, npzf, im_kernel,
+                             rx, ry, ix, iy)
         
         @override
         def pars(self):
@@ -760,8 +762,8 @@ if __name__ == '__main__':
                 
         @override
         def pars3(self):
-            var_list = ['h0', 'ao', 'xl', 'yl', 'pflag', 'tb0', 'tb0_', 'tb1', 'tb1_', 'tb2', 'warn_str']
-            for i, j in zip(var_list, [self.h0, self.ao, self.xl, self.yl, self.pflag, self.tb0, self.tb0_, self.tb1, self.tb1_, self.tb2, self.warn_str]):
+            var_list = ['h0', 'ao', 'xl', 'yl', 'pflag', 'tb0', 'tb0_', 'tb1', 'tb1_', 'tb2', 'rx', 'ry', 'ix', 'iy', 'warn_str']
+            for i, j in zip(var_list, [self.h0, self.ao, self.xl, self.yl, self.pflag, self.tb0, self.tb0_, self.tb1, self.tb1_, self.tb2, self.rx, self.ry, self.ix, self.iy, self.warn_str]):
                 set_globals(j, i)
             
         @override
