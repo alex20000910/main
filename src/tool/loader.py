@@ -1,3 +1,4 @@
+from sympy import E, EX
 from MDC_cut_utility import *
 from .util import app_param
 import os, inspect
@@ -366,6 +367,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
     else:
         cec = None
         f_npz = True
+    cec_pars = None
     
     with h5py.File(path_to_file, 'r') as f:
         # f = h5py.File(path_to_file, 'r')
@@ -518,6 +520,7 @@ def load_npz(path_to_file: str, **kwargs) -> xr.DataArray:
     else:
         cec = None
         f_npz = True
+    cec_pars = None
     name = os.path.basename(path_to_file).split('.npz')[0]
     f = np.load(path_to_file)
     PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
@@ -635,7 +638,8 @@ class loadfiles(FileSequence):
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
                     tf=True
                 clear(data)
-            except: pass
+            except Exception as e:
+                print('\033[31mError loading file:', v, '\n', e, '\033[0m')
             if '.npz' in os.path.basename(v) or tf:
                 self.f_npz[i] = True
                 self.n.append(i)
@@ -875,10 +879,14 @@ class loadfiles(FileSequence):
                         try:
                             a=float(t)
                             tf=False
-                        except:
+                        except Exception as e:
+                            print(e)
+                            print('setting r1=0 for file:', v)
                             for j in self.sep:
                                 if j in t:
                                     t=t.split(j)[0]
+                            tf=False
+                            a=0
                     r1.append(a)
                 return np.float64(r1)
             except:
@@ -897,10 +905,14 @@ class loadfiles(FileSequence):
                         try:
                             a=float(t)
                             tf=False
-                        except:
+                        except Exception as e:
+                            print(e)
+                            print('setting r2=0 for file:', v)
                             for j in self.sep:
                                 if j in t:
                                     t=t.split(j)[0]
+                            tf=False
+                            a=0
                     r2.append(a)
                 return np.float64(r2)
             except:
