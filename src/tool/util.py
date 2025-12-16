@@ -417,6 +417,7 @@ class origin_util:
                  pos: np.ndarray, fwhm: np.ndarray, rpos: np.ndarray, ophi: np.ndarray, fev: np.ndarray,
                  epos: np.ndarray, efwhm: np.ndarray, fk: np.ndarray, ffphi: np.ndarray, fphi: np.ndarray,
                  cdir: str, dpath: str, bpath: str, app_name: str, npzf: bool,
+                 pos_err: list[float], fwhm_err: list[float],
                  g: tk.Tk, gori: tk.Toplevel, v1: tk.IntVar, v2: tk.IntVar, v3: tk.IntVar, v4: tk.IntVar, v5: tk.IntVar, v6: tk.IntVar,
                  v7: tk.IntVar, v8: tk.IntVar, v9: tk.IntVar, v10: tk.IntVar, v11: tk.IntVar) -> None:
         self.suffix = 'opju'
@@ -428,6 +429,7 @@ class origin_util:
         self.fev, self.epos, self.efwhm = fev, epos, efwhm
         self.fk, self.ffphi, self.fphi = fk, ffphi, fphi
         self.cdir, self.dpath, self.bpath, self.app_name, self.npzf = cdir, dpath, bpath, app_name, npzf
+        self.pos_err, self.fwhm_err = pos_err, fwhm_err
         self.g, self.gori = g, gori
         self.v1, self.v2, self.v3 = v1, v2, v3
         self.v4, self.v5, self.v6 = v4, v5, v6
@@ -544,7 +546,7 @@ def plot2d(x=tx, y=ty, z=tz, x1=[], x2=[], y1=[], y2=[], title='E-Phi (Raw Data)
         except:
             pass
 
-def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], title='title', xlabel='x', ylabel='y', ylabel1='y1', ylabel2='y2', xunit='arb', yunit='arb'):
+def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], y1err=[], y2err=[], title='title', xlabel='x', ylabel='y', ylabel1='y1', ylabel2='y2', xunit='arb', yunit='arb'):
     try:
         # create a new book
         wb = op.new_book('w',title)
@@ -555,13 +557,24 @@ def plot1d(x=[1,2,3], y1=[1,2,3], y2=[], title='title', xlabel='x', ylabel='y', 
             ylabel1 = ylabel
         sheet.from_list(0, x, lname=xlabel, units=xunit, axis='X')     #col, data, lname='', units='', comments='', axis='', start=0(row offset)
         sheet.from_list(1, y1, lname=ylabel1, units=yunit, axis='Y')
+        sheet.from_list(2, y1err, lname='y1err', units=yunit, axis='E')
         gr=op.new_graph(title, 'scatter')
-        g1=gr[0].add_plot(sheet, 1, 0)
+        if len(y1err) != 0:
+            gr[0].add_plot(sheet, 1, 0, 2)
+            g1=gr[0].add_plot(sheet, 1, 0)
+        else:
+            g1=gr[0].add_plot(sheet, 1, 0)
         g1.symbol_size = 5
         g1.symbol_kind = 2
         if len(y2) != 0:
-            sheet.from_list(2, y2, lname=ylabel2, units=yunit, axis='Y')
-            g2=gr[0].add_plot(sheet, 2, 0)
+            if len(y1err) != 0:
+                sheet.from_list(3, y2, lname=ylabel2, units=yunit, axis='Y')
+                sheet.from_list(4, y2err, lname='y2err', units=yunit, axis='E')
+                gr[0].add_plot(sheet, 3, 0, 4)
+                g2=gr[0].add_plot(sheet, 3, 0)
+            else:
+                sheet.from_list(2, y2, lname=ylabel2, units=yunit, axis='Y')
+                g2=gr[0].add_plot(sheet, 2, 0)
             g2.symbol_size = 5
             g2.symbol_kind = 2
             g2.color = 'red'
@@ -607,6 +620,7 @@ def save(format='{self.suffix}'):
         fk, ffphi, fphi = self.fk, self.ffphi, self.fphi
         emf, ev, phi = self.emf, self.ev, self.phi
         cdir, dpath = self.cdir, self.dpath
+        pos_err, fwhm_err = self.pos_err, self.fwhm_err
         m, h = 9.1093837015*10**-31, 6.62607015*10**-34
         try:
             cmdlist[0]=f'''plot2d()\n'''
@@ -621,12 +635,12 @@ def save(format='{self.suffix}'):
                             10**-10*(h/2/np.pi))*180/np.pi
             pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
                 np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
-            cmdlist[2]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
+            cmdlist[2]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(pos)}, y1err={pre_process(pos_err)}, title='MDC Fit Position', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
 '''
         except:
             no.append(2)
         try:
-            cmdlist[3]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(fwhm)}, title='MDC Fit FWHM', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
+            cmdlist[3]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(fwhm)}, y1err={pre_process(fwhm_err)}, title='MDC Fit FWHM', xlabel='Binding Energy', ylabel='k', xunit='meV', yunit=r"2\g(p)Å\+(-1)")
 '''
         except:
             no.append(3)
@@ -670,6 +684,7 @@ def save(format='{self.suffix}'):
             v = yy/xx
             # v = np.append(v, v[-1])  # fermi velocity
             v=interp(pos,x[0:-1]+xx/2,v)
+            y1err = pos_err*interp(pos, k*np.float64(bbk_offset.get()), be)/pos
             yy = np.abs(v*fwhm/2)
             xx = tbe
 
@@ -701,7 +716,7 @@ def save(format='{self.suffix}'):
             # Reconstructed real and imaginary parts
             reconstructed_real = np.imag(analytic_signal_i)
             reconstructed_imag = -np.imag(analytic_signal_r)
-            cmdlist[6]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(-1*((vfe-fev)*1000+interp(pos, k*np.float64(bbk_offset.get()), be - np.float64(bb_offset.get()))))}, y2={pre_process(reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])))}, title='Self Energy Real Part', xlabel='Binding Energy', ylabel=r"Re \g(S)", ylabel1=r"Re \g(S)", ylabel2=r"Re \g(S)\-(KK)=KK(Im \g(S))", xunit='meV', yunit='meV')
+            cmdlist[6]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(-1*((vfe-fev)*1000+interp(pos, k*np.float64(bbk_offset.get()), be - np.float64(bb_offset.get()))))}, y2={pre_process(reconstructed_real[len(ix):2*len(ix)]+(ry-np.mean(reconstructed_real[len(ix):2*len(ix)])))}, y1err={pre_process(y1err)}, title='Self Energy Real Part', xlabel='Binding Energy', ylabel=r"Re \g(S)", ylabel1=r"Re \g(S)", ylabel2=r"Re \g(S)\-(KK)=KK(Im \g(S))", xunit='meV', yunit='meV')
 '''
         except:
             no.append(6)
@@ -734,6 +749,7 @@ def save(format='{self.suffix}'):
             # v = np.append(v, v[-1])  # fermi velocity
             v=interp(pos,x[0:-1]+xx/2,v)
             yy = np.abs(v*fwhm/2)
+            y1err = fwhm_err/2*np.abs(v)
             xx = tbe
 
             ix = xx
@@ -764,7 +780,7 @@ def save(format='{self.suffix}'):
             # Reconstructed real and imaginary parts
             reconstructed_real = np.imag(analytic_signal_i)
             reconstructed_imag = -np.imag(analytic_signal_r)
-            cmdlist[7]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(iy)}, y2={pre_process(reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])))}, title='Self Energy Imaginary Part', xlabel='Binding Energy', ylabel=r"Im \g(S)", ylabel1=r"Im \g(S)", ylabel2=r"Im \g(S)\-(KK)=KK(Re \g(S))", xunit='meV', yunit='meV')
+            cmdlist[7]=rf'''plot1d(x={pre_process((vfe-fev)*1000)}, y1={pre_process(iy)}, y2={pre_process(reconstructed_imag[len(ix):2*len(ix)]+(iy-np.mean(reconstructed_imag[len(ix):2*len(ix)])))}, y1err={pre_process(y1err)}, title='Self Energy Imaginary Part', xlabel='Binding Energy', ylabel=r"Im \g(S)", ylabel1=r"Im \g(S)", ylabel2=r"Im \g(S)\-(KK)=KK(Re \g(S))", xunit='meV', yunit='meV')
 '''
         except:
             no.append(7)
@@ -2184,7 +2200,7 @@ class plots_util(ABC):
             gc.collect()
 
     def o_plot3(self):
-        bo, h0, xl, yl, pflag = None, '', None, None, 3
+        ao, h0, xl, yl, pflag = None, '', None, None, 3
         tb0, tb0_, tb1, tb1_, tb2 = None, None, None, None, None
         value, value1, value2, value3 = self.value, self.value1, self.value2, self.value3
         vfe, fig, out = self.vfe, self.fig, self.out
@@ -2254,6 +2270,7 @@ class plots_util(ABC):
                     xx = tbe
                     ix = xx
                     iy = yy
+                    self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
                 except:
                     messagebox.showwarning("Warning", "Please load Bare Band file")
                     self.warn_str = "Please load Bare Band file"
@@ -2555,7 +2572,8 @@ class exp_util(exp_motion):
                  mp: int, ep: int, mf: int, ef: int, xl: tuple[float], yl: tuple[float],
                  cm: tk.DoubleVar, cM: tk.DoubleVar, vcmin: tk.DoubleVar, vcmax: tk.DoubleVar, dl: int,
                  st: queue.Queue, pflag: int, limg: tk.Label, img: list[tk.PhotoImage],
-                 d: int, l: int, p: int, npzf: bool, im_kernel: int
+                 d: int, l: int, p: int, npzf: bool, im_kernel: int,
+                 rx: np.ndarray, ry: np.ndarray, ix: np.ndarray, iy: np.ndarray
                  ) -> None:
         self.cf = True
         self.scale = scale
@@ -2570,6 +2588,7 @@ class exp_util(exp_motion):
         self.cm, self.cM, self.vcmin, self.vcmax, self.dl = cm, cM, vcmin, vcmax, dl
         self.pflag, self.st, self.limg, self.img = pflag, st, limg, img
         self.d, self.l, self.p, self.npzf, self.im_kernel = d, l, p, npzf, im_kernel
+        self.rx, self.ry, self.ix, self.iy = rx, ry, ix, iy
         self.ta0, self.ta0_, self.ta1, self.ta1_, self.ta2 = None, None, None, None, None
     
     @abstractmethod
@@ -2605,7 +2624,7 @@ class exp_util(exp_motion):
         d, l, p, npzf, im_kernel = self.d, self.l, self.p, self.npzf, self.im_kernel
         scale = self.scale
         posmin, posmax, eposmin, eposmax = None, None, None, None
-        rx, ry, ix, iy = None, None, None, None
+        rx, ry, ix, iy = self.rx, self.ry, self.ix, self.iy
         a, a0 = None, None
         acx, acy, annot = None, None, None
         ta0, ta0_, ta1, ta1_, ta2 = None, None, None, None, None

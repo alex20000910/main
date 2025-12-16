@@ -362,19 +362,6 @@ class SliceBrowser(QMainWindow):
         pbar.increaseProgress('Setting QtWidgets')
         self.slider_E = QSlider(Qt.Horizontal)
         self.slider_E.setFixedHeight(50)
-        self.slider_E.setStyleSheet("""
-                                    QSlider::handle:horizontal {
-                                        background: #007AD9;
-                                        width: 40px;      /* 控制滑塊寬度 */
-                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
-                                        margin: -10px 0;  /* 讓滑塊更突出 */
-                                    }
-                                    QSlider::groove:horizontal {
-                                        height: 10px;     /* 控制滑道粗細 */
-                                        background: #bcbcbc;
-                                        border-radius: 5px;
-                                    }
-                                    """)
         self.slider_E.setMinimum(0)
         self.slider_E.setMaximum(len(E)-1)
         self.slider_E.setValue(0)
@@ -387,19 +374,6 @@ class SliceBrowser(QMainWindow):
 
         self.slider_kx = QSlider(Qt.Horizontal)
         self.slider_kx.setFixedHeight(50)
-        self.slider_kx.setStyleSheet("""
-                                    QSlider::handle:horizontal {
-                                        background: #007AD9;
-                                        width: 40px;      /* 控制滑塊寬度 */
-                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
-                                        margin: -10px 0;  /* 讓滑塊更突出 */
-                                    }
-                                    QSlider::groove:horizontal {
-                                        height: 10px;     /* 控制滑道粗細 */
-                                        background: #bcbcbc;
-                                        border-radius: 5px;
-                                    }
-                                    """)
         self.slider_kx.setMinimum(0)
         self.slider_kx.setMaximum(len(kx)-1)
         self.slider_kx.setValue(0)
@@ -414,19 +388,6 @@ class SliceBrowser(QMainWindow):
 
         self.slider_ky = QSlider(Qt.Horizontal)
         self.slider_ky.setFixedHeight(50)
-        self.slider_ky.setStyleSheet("""
-                                    QSlider::handle:horizontal {
-                                        background: #007AD9;
-                                        width: 40px;      /* 控制滑塊寬度 */
-                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
-                                        margin: -10px 0;  /* 讓滑塊更突出 */
-                                    }
-                                    QSlider::groove:horizontal {
-                                        height: 10px;     /* 控制滑道粗細 */
-                                        background: #bcbcbc;
-                                        border-radius: 5px;
-                                    }
-                                    """)
         self.slider_ky.setMinimum(0)
         self.slider_ky.setMaximum(len(ky)-1)
         self.slider_ky.setValue(0)
@@ -656,7 +617,7 @@ class SliceBrowser(QMainWindow):
             self.slider_kx.setVisible(True)
             self.label_ky.setVisible(False)
             self.slider_ky.setVisible(False)
-            self.update_kx_slice(self.slider_kx.value())
+            self.update_kx_slice(self.slider_kx.value(), setlim=False)
         elif mode == 'ky':
             self.label_E.setVisible(False)
             self.slider_E.setVisible(False)
@@ -664,7 +625,7 @@ class SliceBrowser(QMainWindow):
             self.slider_kx.setVisible(False)
             self.label_ky.setVisible(True)
             self.slider_ky.setVisible(True)
-            self.update_ky_slice(self.slider_ky.value())
+            self.update_ky_slice(self.slider_ky.value(), setlim=False)
 
     def make_axis_label(self, text, font_size=18, vertical=False):
         font = QFont("Arial", font_size, QFont.Bold)
@@ -732,6 +693,21 @@ class SliceBrowser(QMainWindow):
         
         # self.imrect = pg.QtCore.QRectF(self.px, self.py, self.dx, self.dy)
         return
+    
+    def det_lim(self, axis, det_array)->tuple[float, float]:
+        for i in range(len(axis)):
+            if det_array[i]:
+                xl=axis[i]
+                if i==0:
+                    xl+=0.00011
+                break
+        for i in range(len(axis)-1, -1, -1):
+            if det_array[i]:
+                xh=axis[i]
+                if i==len(axis)-1:
+                    xh-=0.00011
+                break
+        return xl, xh
 
     def update_binned_data(self, save=False, indky=None, indkx=None, init=False):
         # 對整個三維資料 binning
@@ -798,10 +774,88 @@ class SliceBrowser(QMainWindow):
         self.E = self.raw_E[:self.data_show.shape[0]*bin_e].reshape(-1, bin_e).mean(axis=1) if bin_e > 1 else self.raw_E
         self.ky = self.raw_ky[:self.data_show.shape[1]*bin_ky].reshape(-1, bin_ky).mean(axis=1) if bin_ky > 1 else self.raw_ky
         self.kx = self.raw_kx[:self.data_show.shape[2]*bin_kx].reshape(-1, bin_kx).mean(axis=1) if bin_kx > 1 else self.raw_kx
-        # 更新滑桿最大值
+        # 更新滑桿
         self.slider_E.setMaximum(len(self.E)-1)
         self.slider_kx.setMaximum(len(self.kx)-1)
         self.slider_ky.setMaximum(len(self.ky)-1)
+        det = (self.data_show[:, :, :].sum(axis=2).sum(axis=1) > 0)
+        axis=(self.E-self.E[0])/(self.E[-1]-self.E[0])
+        el, eh = self.det_lim(axis, det)
+        w=eh-el
+        self.slider_E.setStyleSheet("""
+                                    QSlider::handle:horizontal {
+                                        background: #007AD9;
+                                        width: 40px;      /* 控制滑塊寬度 */
+                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
+                                        margin: -10px 0;  /* 讓滑塊更突出 */
+                                    }
+                                    QSlider::groove:horizontal {
+                                        height: 10px;     /* 控制滑道粗細 */
+                                        border-radius: 5px;
+                                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                    """+ f"""
+                                            stop:0.0 #bcbcbc,
+                                            stop:{el-0.0001} #bcbcbc,
+                                            stop:{el} #2A2A2A,
+                                            stop:{el+0.2*w} #669AE6,
+                                            stop:{el+0.4*w} #006600,
+                                            stop:{eh-0.4*w} #80FF00,
+                                            stop:{eh-0.2*w} #FFFF00,
+                                            stop:{eh} #FF0000,
+                                            stop:{eh+0.0001} #bcbcbc,
+                                            stop:1.0 #bcbcbc);
+                                    """+"""
+                                    }
+                                    """)
+        det = (self.data_show[:, :, :].sum(axis=1).sum(axis=0) > 0)
+        axis=(self.kx-self.kx[0])/(self.kx[-1]-self.kx[0])
+        xl, xh = self.det_lim(axis, det)
+        self.slider_kx.setStyleSheet("""
+                                    QSlider::handle:horizontal {
+                                        background: #007AD9;
+                                        width: 40px;      /* 控制滑塊寬度 */
+                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
+                                        margin: -10px 0;  /* 讓滑塊更突出 */
+                                    }
+                                    QSlider::groove:horizontal {
+                                        height: 10px;     /* 控制滑道粗細 */
+                                        border-radius: 5px;
+                                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                    """+ f"""
+                                            stop:0.0 #bcbcbc,
+                                            stop:{xl-0.0001} #bcbcbc,
+                                            stop:{xl} #00AA00,
+                                            stop:{xh} #00AA00,
+                                            stop:{xh+0.0001} #bcbcbc,
+                                            stop:1.0 #bcbcbc);
+                                    """+"""
+                                    }
+                                    """)
+        det = (self.data_show[:, :, :].sum(axis=2).sum(axis=0) > 0)
+        axis=(self.ky-self.ky[0])/(self.ky[-1]-self.ky[0])
+        xl, xh = self.det_lim(axis, det)
+        self.slider_ky.setStyleSheet("""
+                                    QSlider::handle:horizontal {
+                                        background: #007AD9;
+                                        width: 40px;      /* 控制滑塊寬度 */
+                                        height: 40px;     /* 控制滑塊高度（對水平slider沒影響，但可加大垂直slider）*/
+                                        margin: -10px 0;  /* 讓滑塊更突出 */
+                                    }
+                                    QSlider::groove:horizontal {
+                                        height: 10px;     /* 控制滑道粗細 */
+                                        border-radius: 5px;
+                                        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                    """+ f"""
+                                            stop:0.0 #bcbcbc,
+                                            stop:{xl-0.0001} #bcbcbc,
+                                            stop:{xl} #00AA00,
+                                            stop:{xh} #00AA00,
+                                            stop:{xh+0.0001} #bcbcbc,
+                                            stop:1.0 #bcbcbc);
+                                    """+"""
+                                    }
+                                    """)
+        
         for i in [self.slider_E, self.slider_kx, self.slider_ky]:
             if i.value() > i.maximum():
                 i.setValue(i.maximum())
@@ -927,7 +981,7 @@ class SliceBrowser(QMainWindow):
         self.v_cross.setVisible(False)
         self.h_cross.setVisible(False)
 
-    def update_kx_slice(self, idx):
+    def update_kx_slice(self, idx, setlim=False):
         self.current_mode = 'kx'
         self.export_btn.show()
         self.rotate_label.hide()
@@ -940,6 +994,19 @@ class SliceBrowser(QMainWindow):
         self.xhigh_label.show()
         self.xlow_label.setText("ky min")
         self.xhigh_label.setText("ky max")
+        
+        if not setlim:
+            det = (self.data_show[:, :, idx].sum(axis=0) > 0)
+            if det.any():
+                xl, xh = self.det_lim(self.ky, det)
+                d=abs(xl-xh)/20
+                self.xlow_edit.setText(f'{xl-d:.3f}')
+                self.xhigh_edit.setText(f'{xh+d:.3f}')
+            else:
+                xl = self.ky[0]
+                xh = self.ky[-1]
+                self.xlow_edit.setText(f'{xl:.3f}')
+                self.xhigh_edit.setText(f'{xh:.3f}')
         
         xlow = float(self.xlow_edit.text())
         xhigh = float(self.xhigh_edit.text())
@@ -962,6 +1029,7 @@ class SliceBrowser(QMainWindow):
         self.hist.setImageItem(img_item)
         self.plot.setAspectLocked(False)  # 鎖定比例
         self.plot.setLimits(xMin=ky_bin[0]-dx/2, xMax=ky_bin[-1]+dx/2, yMin=E_bin[0]-dy/2, yMax=E_bin[-1]+dy/2)
+        
         self.plot.setRange(xRange=(xlow, xhigh), yRange=(E_bin[0], E_bin[-1]), padding=0)
         # self.rescale(E_bin, ky_bin)
         rect = pg.QtCore.QRectF(ky_bin[0], E_bin[0], ky_bin[-1] - ky_bin[0], E_bin[-1] - E_bin[0])  # 真實位置
@@ -973,7 +1041,7 @@ class SliceBrowser(QMainWindow):
         self.statusbar.showMessage(f"kx index: {idx} (kx={self.kx[idx]:.3f})")
         self.label_kx.setText(f'kx Slice (E-ky) Index: {idx} (kx={self.kx[idx]:.3f})')
 
-    def update_ky_slice(self, idx):
+    def update_ky_slice(self, idx, setlim=False):
         self.current_mode = 'ky'
         self.export_btn.show()
         self.rotate_label.hide()
@@ -986,6 +1054,19 @@ class SliceBrowser(QMainWindow):
         self.xhigh_label.show()
         self.xlow_label.setText("kx min")
         self.xhigh_label.setText("kx max")
+        
+        if not setlim:
+            det = (self.data_show[:, idx, :].sum(axis=0) > 0)
+            if det.any():
+                xl, xh = self.det_lim(self.kx, det)
+                d=abs(xl-xh)/20
+                self.xlow_edit.setText(f'{xl-d:.3f}')
+                self.xhigh_edit.setText(f'{xh+d:.3f}')
+            else:
+                xl = self.kx[0]
+                xh = self.kx[-1]
+                self.xlow_edit.setText(f'{xl:.3f}')
+                self.xhigh_edit.setText(f'{xh:.3f}')
         
         xlow = float(self.xlow_edit.text())
         xhigh = float(self.xhigh_edit.text())
@@ -1008,6 +1089,7 @@ class SliceBrowser(QMainWindow):
         self.hist.setImageItem(img_item)
         self.plot.setAspectLocked(False)  # 鎖定比例
         self.plot.setLimits(xMin=kx_bin[0]-dx/2, xMax=kx_bin[-1]+dx/2, yMin=E_bin[0]-dy/2, yMax=E_bin[-1]+dy/2)
+        
         self.plot.setRange(xRange=(xlow, xhigh), yRange=(E_bin[0], E_bin[-1]), padding=0)
         # self.rescale(E_bin, ky_bin)
         rect = pg.QtCore.QRectF(kx_bin[0], E_bin[0], kx_bin[-1] - kx_bin[0], E_bin[-1] - E_bin[0])  # 真實位置
@@ -1023,9 +1105,9 @@ class SliceBrowser(QMainWindow):
         if self.current_mode == 'E':
             self.update_E_slice(self.slider_E.value())
         elif self.current_mode == 'kx':
-            self.update_kx_slice(self.slider_kx.value())
+            self.update_kx_slice(self.slider_kx.value(), setlim=True)
         elif self.current_mode == 'ky':
-            self.update_ky_slice(self.slider_ky.value())
+            self.update_ky_slice(self.slider_ky.value(), setlim=True)
 
     def export_slice(self):
         # 匯出時也裁切 xlow/xhigh
