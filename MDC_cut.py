@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.3"
-__release_date__ = "2025-12-16"
+__version__ = "8.3.1"
+__release_date__ = "2025-12-22"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -904,9 +904,11 @@ def desc():
         gstr.destroy()
     gstr=c_description()
 
+@pool_protect
 def view_3d(*e):
     DataViewer_PyQt5()
 
+@pool_protect
 def DataViewer_PyQt5():
     def j():
         os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
@@ -2216,6 +2218,7 @@ if __name__ == '__main__':
         fev, rpos, ophi, fwhm, pos = [], [], [], [], []
         kmin, kmax, skmin, skmax = [], [], [], []
         smaa1, smaa2, smfp, smfi = [], [], [], []
+        smresult, smcst = [], []
         print('\033[90mNo MDC fitted data preloaded (Casa)\033[0m')
 
     try:

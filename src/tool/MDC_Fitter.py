@@ -682,6 +682,17 @@ def mfitjob():
             a1 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 5, mbase[i]]
             a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 5, mbase[i],
                   (kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 5, mbase[i]]
+        except IndexError:
+            if i not in mfi_err:
+                mfi_err.append(i)
+            if i in mfi_x:
+                mfi_x.remove(i)
+            if i in mfi:
+                mfi.remove(i)
+            a1 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 5, mbase[i]]
+            a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 5, mbase[i],
+                (kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 5, mbase[i]]
+            smcst=np.zeros(len(ev)*6).reshape(len(ev),6)
         # fmxx[i, :len(xx)] = xx
         # fmyy[i, :len(yy)] = yy
         fmx[i, :] = x
@@ -858,6 +869,17 @@ def mfit():
         a1 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 0.5, mbase[i]]
         a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 0.5, mbase[i],
               (kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 0.5, mbase[i]]
+    except IndexError:
+        if i not in mfi_err:
+            mfi_err.append(i)
+        if i in mfi_x:
+            mfi_x.remove(i)
+        if i in mfi:
+            mfi.remove(i)
+        a1 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 0.5, mbase[i]]
+        a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 0.5, mbase[i],
+              (kmin[i]+kmax[i])/2, (np.max(y)-mbase[i]), 0.5, mbase[i]]
+        smcst=np.zeros(len(ev)*6).reshape(len(ev),6)
 
     # fmxx[i, :len(xx)] = xx
     # fmyy[i, :len(yy)] = yy
