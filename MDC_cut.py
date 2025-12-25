@@ -451,7 +451,7 @@ if __name__ == '__main__':
     
     class pr_load(data_loader):
         def __init__(self, data: xr.DataArray):
-            super().__init__(menu1, menu2, menu3, in_fit, b_fit, l_path, info, cdir, lfs)
+            super().__init__(menu1, menu2, menu3, in_fit, b_fit, l_path, info, cdir, lfs, scale)
             self.pr_load(data)
 
         @override
@@ -461,12 +461,7 @@ if __name__ == '__main__':
             
     class main_loader(file_loader):
         def __init__(self, files: tuple[str]|Literal['']):
-            super().__init__(files, path, value3.get(), lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale)
-        
-        @property
-        @override
-        def name(self) -> str:
-            return name
+            super().__init__(files, dpath, value3.get(), lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale)
         
         @override
         def call_cec(self, g, lfs) -> FileSequence:
@@ -531,11 +526,9 @@ if __name__ == '__main__':
         
         @override
         def pars(self):
-            set_globals(self.data, 'data')
-        
-        @override
-        def pr_load(self, data):
-            pr_load(data)
+            for i, j in zip(['dpath', 'rdd'], [self.dpath, self.dpath]):
+                set_globals(j, i)
+            main_loader(lfs.opath)
         
         @override
         def load_h5(self, path: str):
@@ -566,11 +559,6 @@ if __name__ == '__main__':
     class c_name(c_name_window, c_attr):
         def __init__(self):
             super().__init__(g, dpath, name, scale)
-            
-        @override
-        def pars(self):
-            for i, j in zip(['data', 'dpath'], [self.data, self.dpath]):
-                set_globals(j, i)
 
     class c_description(c_description_window, c_attr):
         def __init__(self):
@@ -1077,12 +1065,12 @@ npzf = False
 def change_file(*args):
     global data, rdd, npzf
     name = namevar.get()
-    if len(name) >30:
-        l_name.config(font=('Arial', size(11), "bold"))
-    elif len(name) >20:
-        l_name.config(font=('Arial', size(12), "bold"))
+    if len(name) > 30:
+        l_name.config(font=('Arial', size(10), "bold"), width=lfs.max_name_len)
+    elif len(name) > 20:
+        l_name.config(font=('Arial', size(12), "bold"), width=len(namevar.get()))
     else:
-        l_name.config(font=('Arial', size(14), "bold"))
+        l_name.config(font=('Arial', size(14), "bold"), width=len(namevar.get()))
     for i, j, k, l in zip(lfs.name, lfs.data, lfs.path, lfs.f_npz):
         if name == i:
             data = lfs.get(j)
@@ -2139,14 +2127,10 @@ if __name__ == '__main__':
             lpath = ff['lpath']
             print('\n\033[90mRaw Data preloaded:\033[0m\n\n')
             lfs = loadfiles(lpath, init=True, name='internal', cmap=value3.get(), app_pars=app_pars)
+            print(lfs)
             if lfs.cec_pars:
                 lfs = call_cec(g, lfs)
             data = lfs.get(0)
-            for _ in data.attrs.keys():
-                if _ != 'Description':
-                    print(_,':', data.attrs[_])
-                else:
-                    print(_,':', data.attrs[_].replace('\n','\n              '))
             dvalue = list(data.attrs.values())
             rdd = path  # old version data path
             dpath = path    # new version data path
@@ -2248,7 +2232,7 @@ if __name__ == '__main__':
     fr_main.pack(side=tk.TOP, fill='both', expand=True)
     
     fr = tk.Frame(fr_main, bg='white')
-    fr.grid(row=0, column=0)
+    fr.grid(row=0, column=0, sticky='n', pady=10)
     fr_info = tk.Frame(fr,bg='white')
     fr_info.pack(side=tk.TOP)
     fr_tool = tk.Frame(fr_info,bg='white',width=25)
@@ -2262,7 +2246,7 @@ if __name__ == '__main__':
     yscroll.pack(side='right', fill='y')
     info = tk.Text(fr_info, wrap='none', font=("Arial", size(14), "bold"), bg="white", fg="black", state='disabled',
                 height=10, width=25, xscrollcommand=xscroll.set, yscrollcommand=yscroll.set)
-    info.pack()
+    info.pack(anchor='w')
     xscroll.config(command=info.xview)
     yscroll.config(command=info.yview)
     fr_mod = tk.Frame(fr,bg='white')
@@ -2615,11 +2599,11 @@ if __name__ == '__main__':
             if len(lfs.n)>0:lfs.sort='no'
             b_tools.grid(row=0, column=0)
             if len(namevar.get()) >30:
-                l_name.config(font=('Arial', size(11), "bold"))
+                l_name.config(font=('Arial', size(10), "bold"), width=lfs.max_name_len)
             elif len(namevar.get()) >20:
-                l_name.config(font=('Arial', size(12), "bold"))
+                l_name.config(font=('Arial', size(12), "bold"), width=len(namevar.get()))
             else:
-                l_name.config(font=('Arial', size(14), "bold"))
+                l_name.config(font=('Arial', size(14), "bold"), width=len(namevar.get()))
             l_name.grid(row=0, column=1)
         if lfs.f_npz[0]:
             npzf = True

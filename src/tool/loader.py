@@ -591,7 +591,7 @@ class loadfiles(FileSequence):
         object (FileSequence): File Sequence object.
         
     """
-    __slots__ = ['f_npz', 'n', 'opath', 'oname', 'r1s', 'r2s', 'sep', 'r1_splitter', 'r2_splitter', 'or2', 'or1', 'path1', 'r11', 'path', 'name', 'r1', 'r2', 'data', 'sort', 'zpath', 'xr_name', 'xr_coords', 'xr_attrs', 'load_mode', 'cec', 'f_npz_', 'app_pars', 'cec_pars']
+    __slots__ = ['f_npz', 'n', 'opath', 'oname', 'r1s', 'r2s', 'sep', 'r1_splitter', 'r2_splitter', 'or2', 'or1', 'path1', 'r11', 'path', 'name', 'r1', 'r2', 'data', 'sort', 'zpath', 'xr_name', 'xr_coords', 'xr_attrs', 'load_mode', 'cec', 'f_npz_', 'app_pars', 'cec_pars', 'max_lst_len', 'max_name_len']
     def __init__(self, files: list[str] | tuple[str, ...] | str, mode: Literal['lazy', 'eager'] = 'lazy', init: bool = False, **kwargs):
         if isinstance(files, str):
             files = [files] # Convert string to list ensuring compatibility
@@ -663,6 +663,12 @@ class loadfiles(FileSequence):
         for i, name in enumerate(self.name):
             string += f"  {i + 1}. {name}\n"
         string += f'\033[0mSize: {np.sum([self.get(i).nbytes/1024**2 for i in range(len(self.name))]):.3f} MB\n'
+        sort_display = {
+            'r1r2': 'R1 & R2',
+            'r1': 'R1 Only',
+            'no': 'None'
+        }
+        string += f'\033[33mSort Mode: {sort_display.get(self.sort, "Unknown")}\033[0m\n'
         return string
     
     @override
@@ -679,7 +685,7 @@ class loadfiles(FileSequence):
                 attrs=self.xr_attrs[ind]
             )
             tdata, path = None, None
-        return data
+            return data
     
     @property
     def __check_name(self) -> bool:
@@ -745,6 +751,30 @@ class loadfiles(FileSequence):
                 self.data.append(load_npz(i))
             else:
                 self.data.append([])
+        max_lst_len = 0
+        max_name_len = 0
+        for data in self.data:
+            attr = data.attrs
+            name = attr['Name']
+            lst=[]
+            for _ in attr.keys():
+                if _ == 'Description':
+                    ts=str(attr[_])
+                    ts=ts.replace('\n\n\n','\n').replace('\n\n','\n')
+                    t=ts.split('\n')
+                    lst.append(len(': '+t[0]))
+                    for i in range(1,len(t)):
+                        lst.append(len('              '+t[i]))
+                elif _ == 'Path':
+                    pass
+                else:
+                    lst.append(len(str(_)+': '+str(attr[_])))
+            if max(lst)>max_lst_len:
+                max_lst_len = max(lst)
+            if len(name)>max_name_len:
+                max_name_len = len(name)
+        self.max_lst_len = max_lst_len
+        self.max_name_len = max_name_len
     
     def __set_r1_r2(self):
         def __sort_r1_r2():
@@ -817,21 +847,15 @@ class loadfiles(FileSequence):
             if f:   # r1 and r2 exist
                 __sort_r1_r2()
                 self.sort = 'r1r2'
-                if self._name == 'internal':
-                    print('Sort by r1 and r2\n')
             elif len(self.oname[0].split(self.r1_splitter[0]))>1:   # only r1 exist
                 __sort_r1()
                 self.sort = 'r1'
-                if self._name == 'internal':
-                    print('Sort by r1\n') 
             else:   # no r1 and r2
                 if self.r1s[0] == 'X_':
                     self.r1s, self.r2s = ['R1_', 'R1 ', 'R1', 'r1_', 'r1 ', 'r1'], ['R2_', 'R2 ', 'R2', 'r2_', 'r2 ', 'r2']
                     self.path = self.opath
                     self.name = self.check_repeat(self.oname)
                     self.sort = 'no'
-                    if self._name == 'internal':
-                        print('No Sort\n')
                 else:
                     self.r1s, self.r2s = ['X_', 'X ', 'X', 'x_', 'x ', 'x'], ['Z_', 'Z ', 'Z', 'z_', 'z ', 'z']
                     self.__set_r1_r2()
@@ -841,8 +865,6 @@ class loadfiles(FileSequence):
             self.path = self.opath
             self.name = self.check_repeat(self.oname)
             self.sort = 'no'
-            if self._name == 'internal':
-                print('No Sort (Exception)\n')
         
     def check_repeat(self, name):
         fl = False
@@ -2190,9 +2212,15 @@ class file_loader(ABC):
         if len(files) > 0:
             clear(self.lfs)
             self.lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
+            print(self.lfs)
             if self.lfs.cec_pars:
                 self.lfs = self.call_cec(g, self.lfs)
-            tpath = self.lfs.path[0]
+            ind=0
+            for i, v in enumerate(self.lfs.path):
+                if path == v:
+                    ind = i
+                    break
+            tpath = self.lfs.path[ind]
             b_name.config(state='normal')
             b_excitation.config(state='normal')
             b_desc.config(state='normal')
@@ -2206,20 +2234,20 @@ class file_loader(ABC):
                 b_tools = tk.Button(fr_tool, text='Batch Master', command=self.tools, width=12, height=1, font=('Arial', self.size(12), "bold"), bg='white')
                 b_tools.grid(row=0, column=0)
                 self.nlist = self.lfs.name
-                self.namevar = tk.StringVar(value=self.nlist[0])
+                self.namevar = tk.StringVar(value=self.nlist[ind])
                 l_name = tk.OptionMenu(fr_tool, self.namevar, *self.nlist, command=self.change_file)
-                if len(self.namevar.get()) >30:
-                    l_name.config(font=('Arial', self.size(11), "bold"))
-                elif len(self.namevar.get()) >20:
-                    l_name.config(font=('Arial', self.size(12), "bold"))
+                if len(self.namevar.get()) > 30:
+                    l_name.config(font=('Arial', self.size(10), "bold"), width=self.lfs.max_name_len)
+                elif len(self.namevar.get()) > 20:
+                    l_name.config(font=('Arial', self.size(12), "bold"), width=len(self.namevar.get()))
                 else:
-                    l_name.config(font=('Arial', self.size(14), "bold"))
+                    l_name.config(font=('Arial', self.size(14), "bold"), width=len(self.namevar.get()))
                 l_name.grid(row=0, column=1)
             else:   #single file
                 if b_tools is not None and l_name is not None:
                     b_tools.grid_forget()
                     l_name.grid_forget()
-            if self.lfs.f_npz[0]:self.npzf = True
+            if self.lfs.f_npz[ind]:self.npzf = True
             else:self.npzf = False
             if self.npzf:
                 koffset.config(state='normal')
@@ -2240,52 +2268,14 @@ class file_loader(ABC):
         self.b_tools, self.l_name = b_tools, l_name
         self.pars()
         limg.config(image=img[np.random.randint(len(img))])
-        tbasename = os.path.basename(tpath)
-        if '.h5' in tbasename:
-            self.data = self.lfs.get(0)  # data save as xarray.DataArray format
-            self.pr_load(self.data)
-            tname = self.lfs.name[0]
-            print(f'\n{tname}')
-            if tname != self.name:
-                print(f'\033[31mname need correction\033[0m')
-                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'H5 Name', self.name))
-            else:
-                print('Name is correct')
-                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {self.name}\033[0m'%('Path Name', 'H5 Name'))
-            st.put('Loaded')
-        elif '.json' in tbasename:
-            self.data = self.lfs.get(0)
-            self.pr_load(self.data)
-            tname = self.lfs.name[0]
-            print(f'\n{tname}')
-            if tname != self.name:
-                print(f'\033[31mname need correction\033[0m')
-                print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', tname, 'JSON Name', self.name))
-            else:
-                print('Name is correct')
-                print(f'\033[32m%9s: {tname}\n\033[32m%9s: {self.name}\033[0m'%('Path Name', 'JSON Name'))
-            st.put('Loaded')
-        elif '.txt' in tbasename:
-            self.data = self.lfs.get(0)
-            self.pr_load(self.data)
-            st.put('Loaded')
-        elif '.npz' in tbasename:
-            self.data = self.lfs.get(0)
-            self.pr_load(self.data)
-            tname = self.lfs.name[0]
-            st.put('Loaded')
-        else:
-            st.put('')
-        tname, tbasename, tpath = None, None, None
+        self.data = self.lfs.get(ind)
+        self.pr_load(self.data)
+        st.put('Loaded')
+        tpath = None
         self.pars()
     
     def size(self, s: int) -> int:
         return int(s * self.scale)
-    
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        pass
     
     @abstractmethod
     def call_cec(self, g: tk.Misc, lfs: FileSequence) -> FileSequence:
@@ -2312,17 +2302,19 @@ class file_loader(ABC):
         pass
 
 class data_loader(ABC):
-    def __init__(self, menu1: tk.OptionMenu, menu2: tk.OptionMenu, menu3: tk.OptionMenu, in_fit: tk.Entry, b_fit: tk.Button, l_path: tk.Text, info: tk.Text, cdir: str, lfs: FileSequence):
+    def __init__(self, menu1: tk.OptionMenu, menu2: tk.OptionMenu, menu3: tk.OptionMenu, in_fit: tk.Entry, b_fit: tk.Button, l_path: tk.Text, info: tk.Text, cdir: str, lfs: FileSequence, scale: float):
         self.menu1, self.menu2, self.menu3 = menu1, menu2, menu3
         self.in_fit, self.b_fit = in_fit, b_fit
         self.l_path = l_path
         self.info = info
         self.cdir = cdir
         self.lfs = lfs
+        self.scale = scale
         self.name, self.dvalue, self.e_photon, self.description, self.dpath = None, None, None, None, None
         
     def pr_load(self, data: xr.DataArray):
         dvalue = list(data.attrs.values())
+        self.attrs = data.attrs
         dpath = dvalue[14]
         st=''
         lst=[]
@@ -2332,26 +2324,33 @@ class data_loader(ABC):
                 ts=str(data.attrs[_])
                 ts=ts.replace('\n\n\n','\n').replace('\n\n','\n')
                 t=ts.split('\n')
-                st+=str(_)+' : '+str(data.attrs[_]).replace('\n','\n                     ')
-                lst.append(len(' : '+t[0]))
+                st+=str(_)+': '+str(data.attrs[_]).replace('\n','\n                      ')
+                lst.append(len(': '+t[0]))
                 for i in range(1,len(t)):
                     lst.append(len('              '+t[i]))
                 print(_,':', data.attrs[_].replace('\n','\n              '))
             elif _ == 'Path':
                 pass
             else:
-                st+=str(_)+' : '+str(data.attrs[_])+'\n'
-                lst.append(len(str(_)+' : '+str(data.attrs[_])))
+                st+=str(_)+': '+str(data.attrs[_])+'\n'
+                lst.append(len(str(_)+': '+str(data.attrs[_])))
                 print(_,':', data.attrs[_])
         print()
-        self.l_path.config(width=max(lst), state='normal')
+        self.check_name()
+        if len(st.split('\n'))>24:
+            self.info.config(height=24, state='normal')
+        else:
+            self.info.config(height=len(st.split('\n'))+1, state='normal')
+        if self.lfs.max_lst_len>=40:
+            self.info.config(width=44, font=('Arial', self.size(13), 'bold'))
+            self.l_path.config(width=44, state='normal')
+        else:
+            self.info.config(width=self.lfs.max_lst_len+2, font=('Arial', self.size(14), 'bold'))
+            self.l_path.config(width=self.lfs.max_lst_len, state='normal')
         self.l_path.delete(1.0, tk.END)
         self.l_path.insert(tk.END, dpath)
         self.l_path.see(1.0)
         self.l_path.config(state='disabled')
-        self.info.config(height=len(st.split('\n'))+1, width=max(lst), state='normal')
-        if len(st.split('\n'))>24:
-            self.info.config(height=24, width=max(lst)+1, state='normal')
         self.info.insert(tk.END, '\n'+st+'\n')
         self.info.update()
         self.info.see(tk.END)
@@ -2375,6 +2374,31 @@ class data_loader(ABC):
         self.pars()
         os.chdir(self.cdir)
         np.savez(os.path.join(self.cdir, '.MDC_cut', 'rd.npz'), path=dpath, lpath=[i for i in self.lfs.path])
+    
+    def check_name(self):
+        data_type = ['.h5', '.H5', '.json', '.JSON']
+        basename = os.path.basename(self.attrs['Path'])
+        for i, v in enumerate(data_type):
+            if basename.endswith(v):
+                data_name=self.attrs['Name']
+                file_name=basename.removesuffix(v).split('#id#')[0].split('#d#')[0]
+                if i<2:
+                    if data_name != file_name:
+                        print(f'\033[31mname need correction\033[0m')
+                        print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', file_name, 'H5 Name', data_name))
+                    else:
+                        print('Name is correct')
+                        print(f'\033[32m%9s: {file_name}\n\033[32m%9s: {data_name}\033[0m'%('Path Name', 'H5 Name'))
+                else:
+                    if data_name != file_name:
+                        print(f'\033[31mname need correction\033[0m')
+                        print(f'\033[33m%9s: %s\n\033[33m%9s: %s\033[0m'%('Path Name', file_name, 'JSON Name', data_name))
+                    else:
+                        print('Name is correct')
+                        print(f'\033[32m%9s: %s\n\033[32m%9s: %s\033[0m'%('Path Name', file_name, 'JSON Name', data_name))
+    
+    def size(self, s: int) -> int:
+        return int(s * self.scale)
     
     @abstractmethod
     def pars(self):
