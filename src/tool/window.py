@@ -419,17 +419,11 @@ class c_attr_window(RestrictedToplevel, ABC):
             tbasename = os.path.basename(self.dpath)
             if '.h5' in tbasename:
                 self.attr_h5(s)
-                self.data = self.load_h5(self.dpath)  # data save as xarray.DataArray format
-                self.pr_load(self.data)
             elif '.json' in tbasename:
                 self.attr_json(s)
-                self.data = self.load_json(self.dpath)
-                self.pr_load(self.data)
             elif '.npz' in tbasename:
                 self.attr_npz(s)
-                self.data = self.load_npz(self.dpath)
-                self.pr_load(self.data)
-        self.pars()
+            self.pars()
         self.destroy()
     
     @abstractmethod
@@ -444,19 +438,13 @@ class c_attr_window(RestrictedToplevel, ABC):
     @abstractmethod
     def attr_h5(self, s:str):
         pass
-    
     @abstractmethod
     def attr_json(self, s:str):
         pass
-    
     @abstractmethod
     def attr_npz(self, s:str):
         pass
-        
-    @abstractmethod
-    def pr_load(self, data):
-        # plot the data in main thread
-        pass
+    
     @abstractmethod
     def load_h5(self, dpath: str):
         # Implement loading h5 file and return data
@@ -495,7 +483,7 @@ class c_excitation_window(c_attr_window):
         with h5py.File(self.dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['ExcitationEnergy']['Value'][:]
-            print("Original:", data)
+            print("\nOriginal:", data)
             
             # Prepare the new data
             new_data = np.array([float(s)], dtype=float)  # Use vlen=str for variable-length strings
@@ -514,7 +502,7 @@ class c_excitation_window(c_attr_window):
     def attr_json(self, s):
         with open(self.dpath, 'r') as f:
             data = json.load(f)
-            print("Original:", data['Region']['ExcitationEnergy']['Value'])
+            print("\nOriginal:", data['Region']['ExcitationEnergy']['Value'])
         data['Region']['ExcitationEnergy']['Value'] = float(s)
         with open(self.dpath, 'w') as f:
             json.dump(data, f, indent=2)
@@ -549,7 +537,7 @@ class c_name_window(c_attr_window):
         with h5py.File(self.dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['Name'][:]
-            print("Original:", data)
+            print("\nOriginal:", data)
             
             # Prepare the new data
             new_data = np.array([bytes(s, 'utf-8')], dtype=h5py.special_dtype(vlen=str))  # Use vlen=str for variable-length strings
@@ -568,7 +556,7 @@ class c_name_window(c_attr_window):
     def attr_json(self, s:str):
         with open(self.dpath, 'r') as f:
             data = json.load(f)
-            print("Original:", data['Region']['Name'])
+            print("\nOriginal:", data['Region']['Name'])
         data['Region']['Name'] = s
         with open(self.dpath, 'w') as f:
             json.dump(data, f, indent=2)
@@ -609,7 +597,7 @@ class c_description_window(c_attr_window):
         with h5py.File(self.dpath, 'r+') as hf:
             # Read the dataset
             data = hf['Region']['Description'][:]
-            print("Original:", data)
+            print("\nOriginal:", data)
             
             # Prepare the new data
             # s1 = b'BUF : 1.68E-6 mbar'
@@ -633,7 +621,7 @@ class c_description_window(c_attr_window):
     def attr_json(self, s:str):
         with open(self.dpath, 'r') as f:
             data = json.load(f)
-            print("Original:", data['Region']['Description'])
+            print("\nOriginal:", data['Region']['Description'])
         data['Region']['Description'] = s
         with open(self.dpath, 'w') as f:
             json.dump(data, f, indent=2)
@@ -653,6 +641,8 @@ class VersionCheckWindow(tk.Toplevel, ABC):
         f = self.check_github_connection()
         if not f:
             return
+        icon = IconManager().icon_upgrade
+        self.icon = ImageTk.PhotoImage(Image.open(io.BytesIO(b64decode(icon))).resize([150, 150]))
         self.scale = scale
         self.get_src(ver=True)
         path = os.path.join(cdir, '.MDC_cut', 'MDC_cut.py')
@@ -664,8 +654,12 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         super().__init__(master, bg='white')
                         self.title("Version Check")
                         self.resizable(False, False)
-                        lbl = tk.Label(self, text=f"A new version {remote_ver} is available.\nUpdate now?", bg='white', font=("Arial", self.size(18)))
-                        lbl.pack(pady=10)
+                        fr_label = tk.Frame(self, bg='white')
+                        fr_label.pack(pady=10)
+                        lb1 = tk.Label(fr_label, image=self.icon, width='150', height='150', bg='white')
+                        lb1.pack(side=tk.LEFT)
+                        lb2 = tk.Label(fr_label, text=f"A new version {remote_ver} is available.\nUpdate now?", bg='white', font=("Arial", self.size(20), 'bold'))
+                        lb2.pack(side=tk.LEFT)
                         def update_now():
                             self.destroy()
                             if os.name == 'nt' and hwnd:
