@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "8.3.1"
+__version__ = "8.3.2"
 __release_date__ = "2025-12-22"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
@@ -2386,7 +2386,8 @@ if __name__ == '__main__':
         "Arial", size(14), "bold"), bg="white", fg="black", wraplength=250, justify='center')
     state.grid(row=0, column=0)
 
-    Icon = [icon.icon1, icon.icon2, icon.icon3, icon.icon4, icon.icon5, icon.icon6, icon.icon7, icon.icon8, icon.icon9, icon.icon10, icon.icon11, icon.icon12, icon.icon13, icon.icon14, icon.icon15, icon.icon16, icon.icon17, icon.icon18, icon.icon19, icon.icon20]
+    # Icon = [icon.icon1, icon.icon2, icon.icon3, icon.icon4, icon.icon5, icon.icon6, icon.icon7, icon.icon8, icon.icon9, icon.icon10, icon.icon11, icon.icon12, icon.icon13, icon.icon14, icon.icon15, icon.icon16, icon.icon17, icon.icon18, icon.icon19, icon.icon20]
+    Icon = [icon.icon0]
     img = []
     tdata = []
     for _ in Icon:

@@ -641,6 +641,8 @@ class VersionCheckWindow(tk.Toplevel, ABC):
         f = self.check_github_connection()
         if not f:
             return
+        icon = IconManager().icon_upgrade
+        self.icon = ImageTk.PhotoImage(Image.open(io.BytesIO(b64decode(icon))).resize([150, 150]))
         self.scale = scale
         self.get_src(ver=True)
         path = os.path.join(cdir, '.MDC_cut', 'MDC_cut.py')
@@ -652,8 +654,12 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         super().__init__(master, bg='white')
                         self.title("Version Check")
                         self.resizable(False, False)
-                        lbl = tk.Label(self, text=f"A new version {remote_ver} is available.\nUpdate now?", bg='white', font=("Arial", self.size(18)))
-                        lbl.pack(pady=10)
+                        fr_label = tk.Frame(self, bg='white')
+                        fr_label.pack(pady=10)
+                        lb1 = tk.Label(fr_label, image=self.icon, width='150', height='150', bg='white')
+                        lb1.pack(side=tk.LEFT)
+                        lb2 = tk.Label(fr_label, text=f"A new version {remote_ver} is available.\nUpdate now?", bg='white', font=("Arial", self.size(20), 'bold'))
+                        lb2.pack(side=tk.LEFT)
                         def update_now():
                             self.destroy()
                             if os.name == 'nt' and hwnd:
