@@ -1,6 +1,6 @@
 # MDC cut GUI
 __version__ = "8.3.2"
-__release_date__ = "2025-12-22"
+__release_date__ = "2025-12-26"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
