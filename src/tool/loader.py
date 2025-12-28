@@ -1,4 +1,3 @@
-from sympy import E, EX
 from MDC_cut_utility import *
 from .util import app_param
 import os, inspect

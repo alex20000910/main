@@ -103,8 +103,8 @@ if VERSION < 3130:
     "psutil==7.0.0",
     "zarr==3.1.1",
     "PyQt5==5.15.11",
-    "pyqtgraph==0.13.7"
-    "tkinterdnd2==0.4.3",
+    "pyqtgraph==0.13.7",
+    "tkinterdnd2==0.4.3"
     ]
 else:
     REQUIREMENTS = ["numpy==2.2.6",
@@ -2124,7 +2124,7 @@ if __name__ == '__main__':
             dpath = path    # new version data path
             name, e_photon, description = dvalue[0], float(dvalue[3].split()[0]), dvalue[13]
     except:
-        data, lfs, name, description, e_photon = None, None, None, None, None
+        data, lfs, name, description, e_photon, rdd, dpath = None, None, None, None, None, '', ''
         print('\033[90mNo Raw Data preloaded\033[0m')
 
     try:
