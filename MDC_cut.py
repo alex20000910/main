@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.3.2"
-__release_date__ = "2025-12-26"
+__version__ = "8.3.3"
+__release_date__ = "2025-12-29"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -1244,14 +1244,14 @@ def cmfit(*e):
     import tool.MDC_Fitter
     from tool.MDC_Fitter import mgg as mgg
     if mgg is None:
-        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst)
+        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst, mdet=mdet)
         threading.Thread(target=tool.MDC_Fitter.fitm, args=(mdc_pars,)).start()
         clear(mdc_pars)
     elif isinstance(mgg, tk.Toplevel):
         mgg.lift()
     elif mgg == True:
         importlib.reload(tool.MDC_Fitter)
-        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst)
+        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst, mdet=mdet)
         threading.Thread(target=tool.MDC_Fitter.fitm, args=(mdc_pars,)).start()
         clear(mdc_pars)
 
@@ -1264,14 +1264,14 @@ def cefit(*e):
     import tool.EDC_Fitter
     from tool.EDC_Fitter import egg as egg
     if egg is None:
-        edc_pars = EDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, semin=semin, semax=semax, sefp=sefp, sefi=sefi, seaa1=seaa1, seaa2=seaa2)
+        edc_pars = EDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, semin=semin, semax=semax, sefp=sefp, sefi=sefi, seaa1=seaa1, seaa2=seaa2, edet=edet)
         threading.Thread(target=tool.EDC_Fitter.fite, args=(edc_pars,)).start()
         clear(edc_pars)
     elif isinstance(egg, tk.Toplevel):
         egg.lift()
     elif egg == True:
         importlib.reload(tool.EDC_Fitter)
-        edc_pars = EDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, semin=semin, semax=semax, sefp=sefp, sefi=sefi, seaa1=seaa1, seaa2=seaa2)
+        edc_pars = EDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, semin=semin, semax=semax, sefp=sefp, sefi=sefi, seaa1=seaa1, seaa2=seaa2, edet=edet)
         threading.Thread(target=tool.EDC_Fitter.fite, args=(edc_pars,)).start()
         clear(edc_pars)
 
@@ -1410,14 +1410,14 @@ def o_reload(*e):
         np.savez(os.path.join(cdir, '.MDC_cut', 'mfit.npz'), ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
                  kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
         np.savez(os.path.join(cdir, '.MDC_cut', 'mfit.npz'), ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
-                 kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
+                 kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst, mdet=mdet)
     except:
         try:
             ffphi = np.float64(k_offset.get())+fphi
             fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
                 np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
             np.savez(os.path.join(cdir, '.MDC_cut', 'efit.npz'), ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
-                 emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
+                 emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi, edet=edet)
         except:
             pass
         pass
@@ -1585,8 +1585,8 @@ def loadmfit(*e):
 
 @pool_protect
 def loadefit(*e):
-    global rdd, efi_x, data, fpr
-    global fphi, epos, ffphi, efwhm, fk, emin, emax, semin, semax, seaa1, seaa2, sefp, sefi
+    global rdd, efi_x, data, fpr, lfs, npzf
+    global fphi, epos, ffphi, efwhm, fk, emin, emax, semin, semax, seaa1, seaa2, sefp, sefi, edet
     el = eloader(st, data, ev, phi, rdd, cdir, lowlim.get())
     el.loadparam(k_offset.get(), base.get(), npzf, fpr)
     file = fd.askopenfilename(title="Select EDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
@@ -1594,20 +1594,14 @@ def loadefit(*e):
     t3.start()
     t3.join()
     rdd, efi_x, data, fpr = el.rdd, el.efi_x, el.data, el.fpr
-    fphi, epos, ffphi, efwhm, fk, emin, emax, semin, semax, seaa1, seaa2, sefp, sefi = el.fphi, el.epos, el.ffphi, el.efwhm, el.fk, el.emin, el.emax, el.semin, el.semax, el.seaa1, el.seaa2, el.sefp, el.sefi
+    fphi, epos, ffphi, efwhm, fk, emin, emax, semin, semax, seaa1, seaa2, sefp, sefi, edet = el.fphi, el.epos, el.ffphi, el.efwhm, el.fk, el.emin, el.emax, el.semin, el.semax, el.seaa1, el.seaa2, el.sefp, el.sefi, el.edet
     limg.config(image=img[np.random.randint(len(img))])
     if el.fload:
         try:
-            tbasename = os.path.basename(rdd)
-            if '.h5' in tbasename:
-                data = load_h5(rdd)
-                pr_load(data)
-            elif '.json' in tbasename:
-                data = load_json(rdd)
-                pr_load(data)
-            elif '.txt' in tbasename:
-                data = load_txt(rdd)
-                pr_load(data)
+            lfs = loadfiles([rdd], init=False, name='internal', cmap=value3.get(), app_pars=app_pars)
+            data = lfs.get(0)
+            pr_load(data)
+            npzf = lfs.f_npz[0]
         except FileNotFoundError:
             print(f'{rdd} File path not found, skip loading raw data.')
         except Exception as e:
@@ -1744,8 +1738,8 @@ def lmre():
 @pool_protect
 def lm():
     lmgg.destroy()
-    global rdd, mfi_x, data, fpr
-    global fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst
+    global rdd, mfi_x, data, fpr, lfs, npzf
+    global fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, mdet
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim.get())
     ml.loadparam(k_offset.get(), base.get(), npzf, fpr)
     file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
@@ -1753,21 +1747,15 @@ def lm():
     t.start()
     t.join()
     rdd, mfi_x, data, fpr = ml.rdd, ml.mfi_x, ml.data, ml.fpr
-    fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst = ml.fev, ml.rpos, ml.ophi, ml.fwhm, ml.pos, ml.kmin, ml.kmax, ml.skmin, ml.skmax, ml.smaa1, ml.smaa2, ml.smfp, ml.smfi, ml.smresult, ml.smcst
+    fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, mdet = ml.fev, ml.rpos, ml.ophi, ml.fwhm, ml.pos, ml.kmin, ml.kmax, ml.skmin, ml.skmax, ml.smaa1, ml.smaa2, ml.smfp, ml.smfi, ml.smresult, ml.smcst, ml.mdet
     get_yerr()
     limg.config(image=img[np.random.randint(len(img))])
     if ml.fload:
         try:
-            tbasename = os.path.basename(rdd)
-            if '.h5' in tbasename:
-                data = load_h5(rdd)
-                pr_load(data)
-            elif '.json' in tbasename:
-                data = load_json(rdd)
-                pr_load(data)
-            elif '.txt' in tbasename:
-                data = load_txt(rdd)
-                pr_load(data)
+            lfs = loadfiles([rdd], init=False, name='internal', cmap=value3.get(), app_pars=app_pars)
+            data = lfs.get(0)
+            pr_load(data)
+            npzf = lfs.f_npz[0]
         except FileNotFoundError:
             print(f'{rdd} File path not found, skip loading raw data.')
         except Exception as e:
@@ -2173,6 +2161,10 @@ if __name__ == '__main__':
             fphi, epos, ffphi, efwhm, fk = f['fphi'], f['epos'], f['ffphi'], f['efwhm'], f['fk']
             emin, emax, semin, semax = f['emin'], f['emax'], f['semin'], f['semax']
             seaa1, seaa2, sefp, sefi = f['seaa1'], f['seaa2'], f['sefp'], f['sefi']
+            try:
+                edet = f['edet']
+            except:
+                edet = -1
             print('\033[90mEDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
@@ -2181,6 +2173,7 @@ if __name__ == '__main__':
         emin, emax, semin, semax = [], [], [], []
         seaa1, seaa2, sefp, sefi = [], [], [], []
         # seresult, secst = [], []
+        edet = -1
         print('\033[90mNo EDC fitted data preloaded (Casa)\033[0m')
 
     try:
@@ -2190,6 +2183,10 @@ if __name__ == '__main__':
             kmin, kmax, skmin, skmax = f['kmin'], f['kmax'], f['skmin'], f['skmax']
             smaa1, smaa2, smfp, smfi = f['smaa1'], f['smaa2'], f['smfp'], f['smfi']
             smresult, smcst = [], []
+            try:
+                mdet = f['mdet']
+            except:
+                mdet = -1
             try:
                 smresult, smcst = f['smresult'], f['smcst']
                 get_yerr()
@@ -2203,6 +2200,7 @@ if __name__ == '__main__':
         kmin, kmax, skmin, skmax = [], [], [], []
         smaa1, smaa2, smfp, smfi = [], [], [], []
         smresult, smcst = [], []
+        mdet = -1
         print('\033[90mNo MDC fitted data preloaded (Casa)\033[0m')
 
     try:
