@@ -1,4 +1,4 @@
-from MDC_cut_utility import RestrictedToplevel, set_center, clear, on_configure
+from MDC_cut_utility import RestrictedToplevel, set_center, clear, on_configure, cal_ver
 from .util import IconManager
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -650,7 +650,7 @@ class VersionCheckWindow(tk.Toplevel, ABC):
             for line in f:
                 if line.startswith('__version__ =') or line.startswith("__version__="):
                     remote_ver = line.split('=')[1].strip().strip('"').strip("'")
-                    if remote_ver != __version__:
+                    if cal_ver(remote_ver) > cal_ver(__version__):
                         super().__init__(master, bg='white')
                         self.title("Version Check")
                         self.resizable(False, False)

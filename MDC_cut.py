@@ -268,6 +268,23 @@ def get_src(ver=False):
         if ver:
             break
 
+def cal_ver(ver: str) -> int:
+    '''
+    Version string to integer for comparison
+    e.g. '8.3.1' -> 80301\n
+    # Parameters
+    - ver: str\n
+    'major.minor.patch' or 'major.minor', 0-99 for each part
+    # Returns
+    output: int
+    '''
+    ver = [int(i) for i in ver.split('.')]
+    if len(ver) != 3:
+        ver.append(0)
+    ver = ver[0]*10000 + ver[1]*100 + ver[2]
+    print(ver)
+    return ver
+
 # set up .MDC_cut folder
 os.chdir(cdir)
 if not os.path.exists('.MDC_cut'):
@@ -280,7 +297,7 @@ v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
 if os.path.exists(v_check_path):
     with open(v_check_path, mode='r') as f:
         ver = f.read().strip()
-    if ver != __version__:
+    if cal_ver(ver) < cal_ver('8.0'):
         get_src()
         with open(v_check_path, mode='w') as f:
             f.write(__version__)

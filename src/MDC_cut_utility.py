@@ -490,3 +490,9 @@ def poly_smooth(x, y, order=6,xx=None):
         y = np.polyval(coeffs, xx)
     return y
 
+def cal_ver(ver):
+    ver = [int(i) for i in ver.split('.')]
+    if len(ver) != 3:
+        ver.append(0)
+    ver = ver[0]*10000 + ver[1]*100 + ver[2]
+    return ver
