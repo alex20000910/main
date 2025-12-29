@@ -22,6 +22,15 @@ The user manual is currently out of date. For the latest changes and new feature
     - **Spectrogram Tool**: Generate and select spectrograms from your data.
     - **Versatile Export Options**: Export data in graph(.png, .jpg...), HDF5, CasaXPS (.vms), and OriginPro (.opj/.opju) formats.
 
+## Feature Highlights
+
+<div align="center">
+
+![alt text](src/img/view1.gif)
+![alt text](src/img/view2.gif)
+
+</div>
+
 ## Contents
 - [**Installation**](#installation)
   - [**What will `MDC_cut.py` do?**](#what-will-mdc_cutpy-do)
