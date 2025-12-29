@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "8.3.3"
+__version__ = "8.4"
 __release_date__ = "2025-12-29"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
@@ -258,7 +258,8 @@ def get_src(ver=False):
            r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py"]
+           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py"]
     for i, v in enumerate(url):
         if i < 3:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
@@ -1107,9 +1108,23 @@ def change_file(*args):
     st.put(name)
     if value.get() != '---Plot1---':
         o_plot1()
-    
+
+@pool_protect
+def qt_app(path: list[str]):
+    def job():
+        subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+    threading.Thread(target=job, daemon=True).start()
+    if os.name == 'nt' and hwnd:
+        windll.user32.ShowWindow(hwnd, 9)
+        windll.user32.SetForegroundWindow(hwnd)
+    print('\033[36m\nTransfering Data...\nPlease wait...\033[0m')
+
 @pool_protect
 def tools(*args):
+    def raw_data_viewer(*args):
+        qt_app(lfs.path)
+        toolg.destroy()
+        
     def spec(*args):
         s = spectrogram(path=lfs.path, name='internal', app_pars=lfs.app_pars)
         s.plot(g, value3.get())
@@ -1129,8 +1144,10 @@ def tools(*args):
         toolg.destroy()
     toolg = RestrictedToplevel(g)
     toolg.title('Batch Master')
+    b_raw_viewer = tk.Button(toolg, text='Raw Data Viewer', command=raw_data_viewer, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_raw_viewer.grid(row=0, column=0)
     b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b_spec.grid(row=0, column=0)
+    b_spec.grid(row=0, column=1)
     try:
         flag = False
         t_, t__ = lfs.r1.copy(), lfs.r2.copy()
@@ -1140,9 +1157,9 @@ def tools(*args):
         pass
     if lfs.sort != 'no' and flag:
         b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-        b_kplane.grid(row=0, column=1)
+        b_kplane.grid(row=0, column=2)
     b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b_exp_casa.grid(row=0, column=2)
+    b_exp_casa.grid(row=0, column=3)
     toolg.bind('<Return>', spec)
     set_center(g, toolg, 0, 0)
     toolg.focus_set()
@@ -1869,6 +1886,11 @@ if __name__ == '__main__':
     # w 1920 1374 (96 dpi)
     # h 1080 748 (96 dpi)
     g = TkinterDnD.Tk()
+    # g.withdraw()
+    # # 最小化視窗
+    # g.iconify()
+    # # 恢復視窗
+    # g.deiconify()
     tkDnD(g)    #bind whole window to Drag-and-drop function
     # g = ttk.Window(themename='darkly')
     odpi=g.winfo_fpixels('1i')
@@ -2677,3 +2699,4 @@ if __name__ == '__main__':
     # for index, stat in enumerate(top_stats[:10], 1):
     #     print(f"{index}. {stat}")
     g.mainloop()
+    

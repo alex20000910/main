@@ -718,7 +718,9 @@ class loadfiles(FileSequence):
                 with open(tpath, 'w') as f:
                     for i in range(len(self.name)):
                         data = self.data[i].data
-                        if np.max(data) < 256:
+                        if (np.mod(data[data.shape[0]//2]*10, 10) != 0).any():
+                            data = data.astype(np.float32)
+                        elif np.max(data) < 256:
                             data = data.astype(np.uint8)
                         elif np.max(data) < 65536:
                             data = data.astype(np.uint16)
