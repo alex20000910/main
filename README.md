@@ -26,8 +26,8 @@ The user manual is currently out of date. For the latest changes and new feature
 
 <div align="center">
 
-<video src="src/img/view1.mp4" controls loop autoplay muted width="100%"></video>
-<video src="src/img/view2.mp4" controls loop autoplay muted width="100%"></video>
+<video src="src\img\view1.mp4" controls loop autoplay muted width="100%"></video>
+<video src="src\img\view2.mp4" controls loop autoplay muted width="100%"></video>
 
 </div>
 
