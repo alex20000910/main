@@ -26,8 +26,8 @@ The user manual is currently out of date. For the latest changes and new feature
 
 <div align="center">
 
-<video src="https://github.com/alex20000910/main/blob/update/src/img/view1.mp4" controls loop autoplay muted width="100%"></video>
-<video src="https://github.com/alex20000910/main/blob/update/src/img/view2.mp4" controls loop autoplay muted width="100%"></video>
+<video src="https://github.com/user-attachments/assets/530e1fe7-68b9-4f6c-bbc3-5c98394d988d" controls loop autoplay muted width="100%"></video>
+<video src="https://github.com/user-attachments/assets/bb8f29a5-086e-418b-826f-9aedcbcf0fe6" controls loop autoplay muted width="100%"></video>
 
 </div>
 
