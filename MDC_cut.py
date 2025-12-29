@@ -282,7 +282,6 @@ def cal_ver(ver: str) -> int:
     if len(ver) != 3:
         ver.append(0)
     ver = ver[0]*10000 + ver[1]*100 + ver[2]
-    print(ver)
     return ver
 
 # set up .MDC_cut folder

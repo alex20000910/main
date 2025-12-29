@@ -718,6 +718,12 @@ class loadfiles(FileSequence):
                 with open(tpath, 'w') as f:
                     for i in range(len(self.name)):
                         data = self.data[i].data
+                        if np.max(data) < 256:
+                            data = data.astype(np.uint8)
+                        elif np.max(data) < 65536:
+                            data = data.astype(np.uint16)
+                        else:
+                            data = data.astype(np.uint32)
                         dpath = os.path.join(self.zpath, f'lfs_{i}.zarr')
                         zarr.save(dpath, data)
                         f.write(self.name[i]+'__sep__')
