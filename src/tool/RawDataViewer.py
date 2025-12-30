@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QButtonGroup, QFileDialog, QProgressBar, QDialog, QTextEdit, QComboBox, QMessageBox
 )
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor
+from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor, QFontMetrics
 import pyqtgraph as pg
 from base64 import b64decode
 import cv2, os, inspect
@@ -55,8 +55,7 @@ if os.name == 'nt':
 app_name = os.path.basename(inspect.stack()[0].filename).removesuffix('.py')
 for i in range(5):
     cdir = os.path.dirname(cdir)
-    if cdir.split(os.sep)[-1] == '.MDC_cut':
-        cdir = os.path.dirname(cdir)
+    if '.MDC_cut' in os.listdir(cdir):
         break
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 
@@ -355,6 +354,7 @@ class main(QMainWindow):
             }
         """)
         self.text_display.setPlainText("Waiting for data...")
+        self.text_display.wheelEvent = self.on_wheel_event
         
         left_layout.addWidget(self.file_name)
         left_layout.addWidget(self.text_display)
@@ -367,6 +367,8 @@ class main(QMainWindow):
 
 
         self.plot = pg.PlotWidget()
+        # self.plot.setMinimumWidth(400)
+        # self.plot.setMinimumHeight(400)
         self.plot.setMouseEnabled(x=True, y=True)
         self.plot.setLabel('bottom', '')
         self.plot.getAxis('bottom').setStyle(tickFont=pg.QtGui.QFont("Arial", 18))
@@ -374,6 +376,20 @@ class main(QMainWindow):
         self.plot.getAxis('left').setStyle(tickFont=pg.QtGui.QFont("Arial", 18))
         self.plot.scene().sigMouseMoved.connect(self.on_mouse_moved)
         
+        self.plotx = pg.PlotWidget()
+        self.ploty = pg.PlotWidget()
+        self.plotx.setMouseEnabled(x=False, y=False)
+        self.ploty.setMouseEnabled(x=False, y=False)
+        self.plotx.scene().sigMouseMoved.connect(self.xy_clear)
+        self.ploty.scene().sigMouseMoved.connect(self.xy_clear)
+        self.plotx.setMaximumHeight(100)
+        # self.plotx.setMinimumWidth(400)
+        self.ploty.setMaximumWidth(100)
+        # self.ploty.setMinimumHeight(400)
+        self.plotx.hideAxis('bottom')
+        self.ploty.hideAxis('left')
+        self.plotx.getAxis('left').setStyle(tickFont=pg.QtGui.QFont("Arial", 14))
+        self.ploty.getAxis('bottom').setStyle(tickFont=pg.QtGui.QFont("Arial", 14))
 
         self.menu_bar = QMenuBar()
         self.setMenuBar(self.menu_bar)
@@ -399,7 +415,6 @@ class main(QMainWindow):
         self.xlabel = QLabel()
         self.xlabel.setPixmap(self.deg_pixmap)
         self.xlabel.setAlignment(Qt.AlignCenter)
-        self.xlabel.setContentsMargins(100, 0, 0, 0)
 
         self.ylabel = QLabel()
         self.set_vfe = None
@@ -419,6 +434,9 @@ class main(QMainWindow):
             
         ploty_layout.addWidget(self.ylabel)
         ploty_layout.addWidget(self.plot)
+        ploty_layout.addWidget(self.ploty)
+        plotx_layout.addWidget(self.plotx)
+        
         plotx_layout.addLayout(ploty_layout)
         plotx_layout.addWidget(self.xlabel)
         
@@ -447,6 +465,7 @@ class main(QMainWindow):
         
         self.ind = 0
         self.data = self.lfs.get(self.ind)
+        self.resizeEvent = self.xy_clear()
         self.update_plot()
         
         self.showMaximized()
@@ -466,21 +485,141 @@ class main(QMainWindow):
                 self.update_plot()
             self.set_vfe = None
     
+    def plot_geometry(self):
+        axis = self.plot.getAxis('left')
+        tick_font = axis.style.get('tickFont', pg.QtGui.QFont("Arial", 18))
+        metrics = QFontMetrics(tick_font)
+        
+        # 取得當前範圍的 tick values
+        axis_range = axis.range
+        size = axis.height()
+        
+        try:
+            tick_values = axis.tickValues(axis_range[0], axis_range[1], size)            
+            max_width = 0
+            
+            # tickValues 返回的是一個列表,每個元素是 (spacing, [(value, text), ...])
+            for level in tick_values:
+                if isinstance(level, tuple) and len(level) >= 2:
+                    spacing, ticks = level[0], level[1]
+                    # ticks 是 [(value, text), ...] 的列表
+                    for tick_info in ticks:
+                        if isinstance(tick_info, float) and len(ticks) >= 2:
+                            text = str(tick_info)
+                            # 計算文字寬度
+                            width = metrics.horizontalAdvance(text)
+                            if '9999' not in text and '0000' not in text:   # 小數極端狀況排除
+                                if width > max_width:
+                                    max_width = width
+            
+            # 設定軸寬度
+            tick_length = abs(axis.style.get('tickLength', 5))
+            tick_offset = axis.style.get('tickTextOffset', 3)
+            total_width = max_width + tick_length + tick_offset[0] + 10
+            
+            if max_width < 65:
+                max_width = 65
+                
+            axis.setWidth(max_width)
+            
+            # print(f"Max tick label width: {max_width}, Total axis width: {total_width}")
+            return max_width
+            
+        except Exception as e:
+            print(f"Error calculating tick label width: {e}")
+            import traceback
+            traceback.print_exc()
+            # 返回預設寬度
+            default_width = metrics.horizontalAdvance("-000.00")
+            axis.setWidth(default_width + 20)
+            return default_width
+        
+    
+    def xy_geometry(self, event=None):
+        if event is not None:
+            print(event)
+        self.plot_geometry()
+        self.plotx.clear()
+        self.ploty.clear()
+        self.plotx.showAxis('left')
+        self.ploty.showAxis('bottom')
+        vb = self.plot.getViewBox()
+        rect = vb.sceneBoundingRect()
+        # 使用 setGeometry 設定位置和大小
+        plot_geometry = self.plot.geometry()
+        plot_x = plot_geometry.x()
+        plot_y = plot_geometry.y()
+        # 計算左軸佔用的寬度
+        left_axis = self.plot.getAxis('left')
+        left_axis_width = int(left_axis.width())  # 包含 tick labels 的寬度
+        
+        # 計算實際繪圖區域相對於 widget 的偏移
+        plot_area_width = int(rect.width())  # 繪圖區域的寬度
+        
+        # 計算 plotx 應該的位置和寬度
+        # plotx 應該與主 plot 的繪圖區域對齊
+        plotx_height = self.plotx.height()
+        plotx_x = plot_x  # widget x + 左軸寬度
+        plotx_y = plot_y - plotx_height
+        plotx_width = plot_area_width + left_axis_width  # 包含左軸寬度
+        
+        # 設定 plotx 的幾何位置
+        self.plotx.getAxis('left').setWidth(left_axis_width)
+        self.plotx.setGeometry(plotx_x, plotx_y, plotx_width, plotx_height)
+        
+        
+        bottom_axis = self.plot.getAxis('bottom')
+        bottom_axis_height = int(bottom_axis.height())
+        
+        plot_area_height = int(rect.height())
+        
+        
+        ploty_width = self.ploty.width()
+        ploty_x = plot_x + plot_area_width + left_axis_width
+        ploty_y = plot_y
+        ploty_height = plot_area_height + bottom_axis_height
+        
+        self.ploty.getAxis('bottom').setHeight(bottom_axis_height-2)
+        self.ploty.setGeometry(ploty_x, ploty_y, ploty_width, ploty_height)
+    
     def on_mouse_moved(self, pos):
         vb = self.plot.getViewBox()
-        if vb.sceneBoundingRect().contains(pos):
+        rect = vb.sceneBoundingRect()
+        self.xy_geometry()
+        if rect.contains(pos):
             mouse_point = vb.mapSceneToView(pos)
             self.statusbar.setStyleSheet("font-size: 30px;")
             self.statusbar.showMessage(f"x={mouse_point.x():.2f}  y={mouse_point.y():.2f} data={self.data_interp(mouse_point.x(), mouse_point.y()):.4f}")
-    
+            xdata = self.data.phi.values
+            ydata = self.data.eV.values
+            xidx = (np.abs(xdata - mouse_point.x())).argmin()
+            yidx = (np.abs(ydata - mouse_point.y())).argmin()
+            if self.emode == 'BE':
+                yidx = (np.abs((ydata - self.vfe) - mouse_point.y())).argmin()
+                ydata = ydata - self.vfe
+            self.plotx.plot(xdata, self.data.data[yidx, :], pen=pg.mkPen('w', width=2))
+            self.ploty.plot(self.data.data[:, xidx], ydata, pen=pg.mkPen('w', width=2))
+            self.plotx.setRange(xRange=(self.plot.viewRect().left(), self.plot.viewRect().right()), padding=0)
+            self.ploty.setRange(yRange=(self.plot.viewRect().top(), self.plot.viewRect().bottom()), padding=0)
+        else:
+            self.xy_clear()
+            
     def data_interp(self, x, y):
         data = self.data.sel(eV=y, phi=x, method='nearest').values
         return data
     
     def on_file_name_changed(self, value):
+        self.xy_clear()
         self.ind = value
         self.data = self.lfs.get(self.ind)
         self.update_plot()
+    
+    def xy_clear(self):
+        self.statusbar.showMessage("")
+        self.plotx.clear()
+        self.ploty.clear()
+        self.plotx.hideAxis('left')
+        self.ploty.hideAxis('bottom')
     
     def update_info_display(self):
         self.attrs = self.data.attrs
@@ -509,7 +648,6 @@ Y-Axis: {self.data.eV.values.min()} to {self.data.eV.values.max()}, {len(self.da
 X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.data.phi)} points
 """
         self.text_display.setPlainText(info_text)
-        self.text_display.wheelEvent = self.on_wheel_event
     
     def update_plot(self):
         # tring to plot initial data
@@ -590,7 +728,7 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
             painter.setPen(QColor("white"))
             painter.translate(w//2, h//2)
             painter.rotate(-90)
-            painter.drawText(-h//2 + 5, w//2 - 5, text)
+            painter.drawText(-h//2 + 5, w//2 - 12, text)
             painter.end()
             # label = QLabel()
             # label.setPixmap(pixmap)
@@ -605,7 +743,7 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
             painter = QPainter(pixmap)
             painter.setFont(font)
             painter.setPen(QColor("white"))
-            painter.drawText(5, h - 5, text)
+            painter.drawText(5, h - 12, text)
             painter.end()
             # label = QLabel()
             # label.setPixmap(pixmap)

@@ -788,6 +788,27 @@ if __name__ == '__main__':
             climoff()
 
 @pool_protect
+def suggest():
+    global b_suggest
+    if value.get() == 'Raw Data':
+        b_suggest.config(text='Raw Data Viewer', bg='#aa0000', fg='white', font=('Arial', size(18), "bold"))
+        ToolTip(b_suggest, "Use Qt Window to view raw data with high performance")
+        b_suggest.config(command=lambda: qt_app(lfs.path))
+        b_suggest.grid(row=1, column=0, pady=20)
+        def job():
+            import time
+            for i in range(10):
+                b_suggest.config(bg='white', fg='red')
+                g.update_idletasks()
+                time.sleep(0.5)
+                b_suggest.config(bg='#aa0000', fg='white')
+                g.update_idletasks()
+                time.sleep(0.5)
+        threading.Thread(target=job, daemon=True).start()
+    else:
+        b_suggest.grid_forget()
+
+@pool_protect
 def g_close(*e):
     try:
         g.destroy()
@@ -1682,6 +1703,7 @@ im_kernel = 17
 d,l,p = 8,20,3
 @pool_protect
 def plot1(*e):
+    suggest()
     global gg
     if 'gg' in globals():
         gg.destroy()
@@ -1694,11 +1716,13 @@ def plot1(*e):
 
 @pool_protect
 def plot2(*e):
+    suggest()
     threading.Thread(target=o_plot2, daemon=True).start()
 
 @pool_protect
 def plot3(*e):
     global gg
+    suggest()
     if 'gg' in globals():
         gg.destroy()
     if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
@@ -2415,12 +2439,12 @@ if __name__ == '__main__':
 
     
     fr_state = tk.Frame(fr_main, bg='white')
-    fr_state.grid(row=0, column=2)
+    fr_state.grid(row=0, column=2, sticky='n')
 
     st = queue.Queue(maxsize=0)
     state = tk.Label(fr_state, text=f"Version: {__version__}", font=(
         "Arial", size(14), "bold"), bg="white", fg="black", wraplength=250, justify='center')
-    state.grid(row=0, column=0)
+    state.grid(row=0, column=0, pady=20)
 
     # Icon = [icon.icon1, icon.icon2, icon.icon3, icon.icon4, icon.icon5, icon.icon6, icon.icon7, icon.icon8, icon.icon9, icon.icon10, icon.icon11, icon.icon12, icon.icon13, icon.icon14, icon.icon15, icon.icon16, icon.icon17, icon.icon18, icon.icon19, icon.icon20]
     Icon = [icon.icon0]
@@ -2436,7 +2460,10 @@ if __name__ == '__main__':
     timg = ImageTk.PhotoImage(Image.open(tdata[trd]).resize([250, 250]))
     tdata = tdata[trd]
     limg = tk.Label(fr_state, image=timg, width='250', height='250', bg='white')
-    limg.grid(row=1, column=0)
+    # limg.grid(row=1, column=0)
+    b_suggest = tk.Button(fr_state, text='Suggestion', font=(
+        "Arial", size(14), "bold"), bg="white", height='1', bd=5)
+    # b_suggest.grid(row=1, column=0)
 
     
     exf = tk.Frame(fr_state, bg='white')

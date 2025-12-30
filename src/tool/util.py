@@ -303,7 +303,10 @@ class ToolTip_util:
         main_frame.grid(row=0, column=0)
     
         # 顯示標籤
-        label_icon = tk.Label(main_frame, image=self.icon.get_giant_icon(self.dict[self.widget.cget('text')]), background="#ffffff")
+        try:
+            label_icon = tk.Label(main_frame, image=self.icon.get_giant_icon(self.dict[self.widget.cget('text')]), background="#ffffff")
+        except KeyError:
+            label_icon = tk.Label(main_frame, text='', background="#ffffff")
         label_icon.grid(row=0, column=0)
         label_title = tk.Label(main_frame, text=self.widget_text, font=("Arial", self.scaled_font_size, "bold"), background="#ffffff")
         label_title.grid(row=0, column=1, sticky="w")
