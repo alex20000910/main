@@ -205,6 +205,9 @@ class main(QMainWindow):
                 background-color: #000;
                 color: #EEE;
             }
+            QMenuBar {
+                padding: 8px;
+            }
             QPushButton {
                 background-color: #333;
                 color: #EEE;
