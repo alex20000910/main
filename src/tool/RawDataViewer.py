@@ -1,4 +1,5 @@
 import sys
+from turtle import right
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QSlider, QLabel, QStatusBar,
@@ -367,14 +368,17 @@ class main(QMainWindow):
 
 
         self.plot = pg.PlotWidget()
-        # self.plot.setMinimumWidth(400)
-        # self.plot.setMinimumHeight(400)
+        self.lx, self.ly = None, None
         self.plot.setMouseEnabled(x=True, y=True)
         self.plot.setLabel('bottom', '')
         self.plot.getAxis('bottom').setStyle(tickFont=pg.QtGui.QFont("Arial", 18))
         self.plot.setLabel('left', '')
         self.plot.getAxis('left').setStyle(tickFont=pg.QtGui.QFont("Arial", 18))
         self.plot.scene().sigMouseMoved.connect(self.on_mouse_moved)
+        self.plot.scene().sigMouseClicked.connect(self.mouse_clicked)
+        self.flag_click = False
+        self.plot.sigRangeChanged.connect(self.range_changed)
+        self.mouse_point = None
         
         self.plotx = pg.PlotWidget()
         self.ploty = pg.PlotWidget()
@@ -383,9 +387,7 @@ class main(QMainWindow):
         self.plotx.scene().sigMouseMoved.connect(self.xy_clear)
         self.ploty.scene().sigMouseMoved.connect(self.xy_clear)
         self.plotx.setMaximumHeight(100)
-        # self.plotx.setMinimumWidth(400)
         self.ploty.setMaximumWidth(100)
-        # self.ploty.setMinimumHeight(400)
         self.plotx.hideAxis('bottom')
         self.ploty.hideAxis('left')
         self.plotx.getAxis('left').setStyle(tickFont=pg.QtGui.QFont("Arial", 14))
@@ -539,8 +541,9 @@ class main(QMainWindow):
         if event is not None:
             print(event)
         self.plot_geometry()
-        self.plotx.clear()
-        self.ploty.clear()
+        if self.flag_click is False:
+            self.plotx.clear()
+            self.ploty.clear()
         self.plotx.showAxis('left')
         self.ploty.showAxis('bottom')
         vb = self.plot.getViewBox()
@@ -582,44 +585,98 @@ class main(QMainWindow):
         self.ploty.getAxis('bottom').setHeight(bottom_axis_height-2)
         self.ploty.setGeometry(ploty_x, ploty_y, ploty_width, ploty_height)
     
+    def range_changed(self, *args):
+        if self.mouse_point is not None:
+            if self.flag_click:
+                self.xy_geometry()
+                self.update_xy_cut(self.mark_point.x(), self.mark_point.y())
+            else:
+                self.xy_geometry()
+                self.update_xy_cut(self.mouse_point.x(), self.mouse_point.y())
+    
+    def mouse_clicked(self, event):
+        if self.flag_click:
+            self.flag_click = False
+        else:
+            self.flag_click = True
+            mark_point = event.scenePos()
+            self.mark_point = self.plot.getViewBox().mapSceneToView(mark_point)
+    
     def on_mouse_moved(self, pos):
         vb = self.plot.getViewBox()
         rect = vb.sceneBoundingRect()
         self.xy_geometry()
         if rect.contains(pos):
             mouse_point = vb.mapSceneToView(pos)
+            self.mouse_point = mouse_point
             self.statusbar.setStyleSheet("font-size: 30px;")
             self.statusbar.showMessage(f"x={mouse_point.x():.2f}  y={mouse_point.y():.2f} data={self.data_interp(mouse_point.x(), mouse_point.y()):.4f}")
-            xdata = self.data.phi.values
-            ydata = self.data.eV.values
-            xidx = (np.abs(xdata - mouse_point.x())).argmin()
-            yidx = (np.abs(ydata - mouse_point.y())).argmin()
-            if self.emode == 'BE':
-                yidx = (np.abs((ydata - self.vfe) - mouse_point.y())).argmin()
-                ydata = ydata - self.vfe
-            self.plotx.plot(xdata, self.data.data[yidx, :], pen=pg.mkPen('w', width=2))
-            self.ploty.plot(self.data.data[:, xidx], ydata, pen=pg.mkPen('w', width=2))
-            self.plotx.setRange(xRange=(self.plot.viewRect().left(), self.plot.viewRect().right()), padding=0)
-            self.ploty.setRange(yRange=(self.plot.viewRect().top(), self.plot.viewRect().bottom()), padding=0)
+            if not self.flag_click:
+                self.update_xy_cut(mouse_point.x(), mouse_point.y())
         else:
             self.xy_clear()
+    
+    def update_xy_cut(self, x, y):
+        xdata = self.data.phi.values
+        ydata = self.data.eV.values
+        xidx = (np.abs(xdata - x)).argmin()
+        yidx = (np.abs(ydata - y)).argmin()
+        if self.emode == 'BE':
+            yidx = (np.abs((ydata - self.vfe) - y)).argmin()
+            ydata = ydata - self.vfe
+        
+        if abs(xdata[xidx] - x) > (xdata[1]-xdata[0])/2:
+            self.ploty.clear()
+        else:
+            self.ploty.plot(self.data.data[:, xidx], ydata, pen=pg.mkPen('w', width=2))
+        
+        if abs(ydata[yidx] - y) > (ydata[1]-ydata[0])/2:
+            self.plotx.clear()
+        else:
+            self.plotx.plot(xdata, self.data.data[yidx, :], pen=pg.mkPen('w', width=2))
             
+        left, right = self.plot.viewRect().left(), self.plot.viewRect().right()
+        top, bottom = self.plot.viewRect().top(), self.plot.viewRect().bottom()
+        self.plotx.setRange(xRange=(left, right), padding=0)
+        self.ploty.setRange(yRange=(top, bottom), padding=0)
+        if self.lx is not None:
+            self.plot.removeItem(self.lx)
+            self.plot.removeItem(self.ly)
+            self.lx, self.ly = None, None
+        self.lx = self.plot.plot([x, x], [top, bottom], pen=pg.mkPen('y', width=1, style=Qt.DashLine))
+        self.ly = self.plot.plot([left, right], [y, y], pen=pg.mkPen('y', width=1, style=Qt.DashLine))
+    
     def data_interp(self, x, y):
+        if self.emode == 'BE':
+            y+=self.vfe
         data = self.data.sel(eV=y, phi=x, method='nearest').values
         return data
     
     def on_file_name_changed(self, value):
+        self.flag_click = False
+        self.mouse_point = None
         self.xy_clear()
         self.ind = value
         self.data = self.lfs.get(self.ind)
         self.update_plot()
     
     def xy_clear(self):
-        self.statusbar.showMessage("")
-        self.plotx.clear()
-        self.ploty.clear()
-        self.plotx.hideAxis('left')
-        self.ploty.hideAxis('bottom')
+        if self.flag_click is False:
+            self.statusbar.showMessage("")
+            self.plotx.clear()
+            self.ploty.clear()
+            self.plotx.hideAxis('left')
+            self.ploty.hideAxis('bottom')
+            if self.lx is not None:
+                self.plot.removeItem(self.lx)
+                self.plot.removeItem(self.ly)
+                self.lx, self.ly = None, None
+        else:
+            self.xy_geometry()
+            x = self.mark_point.x()
+            y = self.mark_point.y()
+            self.statusbar.setStyleSheet("font-size: 30px;")
+            self.statusbar.showMessage(f"x={x:.2f}  y={y:.2f} data={self.data_interp(x, y):.4f}")
     
     def update_info_display(self):
         self.attrs = self.data.attrs
