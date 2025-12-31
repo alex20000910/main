@@ -1,6 +1,3 @@
-import sys
-from turtle import right
-import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QSlider, QLabel, QStatusBar,
     QSpinBox, QPushButton, QHBoxLayout, QLineEdit, QMenuBar, QAction, QRadioButton,
@@ -9,46 +6,15 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor, QFontMetrics
 import pyqtgraph as pg
-from base64 import b64decode
-import cv2, os, inspect
-import h5py, time, zarr
-import ctypes
-from ctypes import windll, wintypes
-import shutil, psutil, argparse
 
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-if __name__ == '__main__':
-    from matplotlib.colors import LinearSegmentedColormap
-    # from matplotlib.widgets import SpanSelector
-    # from matplotlib.widgets import RectangleSelector
-    import matplotlib as mpl
-    # from matplotlib.widgets import Cursor
-    # from matplotlib.widgets import Slider
+import os, inspect, time, sys, argparse
+from base64 import b64decode
+from ctypes import windll
+
 import numpy as np
-import xarray as xr
-import h5py
-from PIL import Image, ImageTk
-if __name__ == '__main__':
-    # from scipy.optimize import curve_fit
-    from scipy.signal import hilbert
-    # from lmfit import Parameters, Minimizer
-    from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
-import tqdm
-import win32clipboard
-if __name__ == '__main__':
-    import originpro as op
-from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
-import psutil
-if __name__ == '__main__':
-    import cpuinfo
-    import zarr
-    import PyQt5
-    import pyqtgraph
-    from tkinterdnd2 import DND_FILES, TkinterDnD
+import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib as mpl
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':
@@ -64,11 +30,10 @@ from MDC_cut_utility import *
 from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
 from tool.spectrogram import spectrogram, lfs_exp_casa
 from tool.util import laplacian_filter  # for originpro: from MDC_cut import *
-if __name__ == '__main__':
-    from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
-    from tool.SO_Fitter import SO_Fitter
-    from tool.CEC import CEC, call_cec
-    from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
+from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
+from tool.SO_Fitter import SO_Fitter
+from tool.CEC import CEC, call_cec
+from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
 
 def get_hwnd():
     try:
@@ -186,13 +151,13 @@ class c_fermi_level(QDialog):
         HWND_NOTOPMOST = -2
         
         # 設為最上層
-        ctypes.windll.user32.SetWindowPos(
+        windll.user32.SetWindowPos(
             hwnd, HWND_TOPMOST, 0, 0, 0, 0,
             SWP_NOMOVE | SWP_NOSIZE
         )
         
         # 設定焦點
-        ctypes.windll.user32.SetForegroundWindow(hwnd)
+        windll.user32.SetForegroundWindow(hwnd)
         
     def accept(self, event):
         eflag = True
@@ -406,6 +371,14 @@ class main(QMainWindow):
         act_grid.setChecked(False)
         act_grid.triggered.connect(self.toggle_grid)
         view_menu.addAction(act_grid)
+        view_menu.addSeparator()
+        self.set_default_colormap()
+        for cmap_name in self.cmap_colors_dict.keys():
+            act_cmap = QAction(f"Colormap: {cmap_name}", self)
+            act_cmap.setCheckable(True)
+            act_cmap.setChecked(cmap_name=='prevac_cmap')
+            act_cmap.triggered.connect(lambda checked, name=cmap_name: self.set_cmap(name))
+            view_menu.addAction(act_cmap)
         
         
         self.KE_pixmap = self.make_axis_label("Kinetic Energy (eV)", font_size=18, vertical=True)
@@ -446,7 +419,8 @@ class main(QMainWindow):
         plot_hist_layout.setContentsMargins(0, 0, 0, 0)
         self.hist = pg.HistogramLUTWidget()
         # plot_hist_layout.addWidget(self.plot, stretch=4)
-        self.set_default_colormap()
+        self.set_cmap()
+        
         plot_hist_layout.addLayout(plotx_layout, stretch=4)
         plot_hist_layout.addWidget(self.hist, stretch=1)
 
@@ -878,45 +852,40 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
         prevac_cmap = LinearSegmentedColormap.from_list(
             'prevac_cmap', prevac_colors, N=256)
         mpl.colormaps.register(prevac_cmap)
-        cmap = plt.get_cmap('prevac_cmap')
+        
+        self.cmap_colors_dict={
+            'prevac_cmap': len(prevac_cmap._segmentdata['red']),
+            'custom_cmap1': len(custom_cmap1._segmentdata['red']),
+            'custom_cmap2': len(custom_cmap2._segmentdata['red']),
+            'custom_cmap3': len(custom_cmap3._segmentdata['red']),
+            'custom_cmap4': len(custom_cmap4._segmentdata['red'])
+        }
+            
+    def set_cmap(self, cmap_name='prevac_cmap'):
+        for action in self.menu_bar.actions():
+            if action.menu():
+                for act in action.menu().actions():
+                    if act.text().startswith("Colormap:"):
+                        if act.text() == f"Colormap: {cmap_name}":
+                            act.setChecked(True)
+                        else:
+                            act.setChecked(False)
+        cmap = plt.get_cmap(cmap_name)
+        n = self.cmap_colors_dict[cmap_name]
             
         # 轉換為 pyqtgraph 格式
         # 取 256 個顏色點
-        colors = cmap(np.linspace(0, 1, 6))
+        colors = cmap(np.linspace(0, 1, n))
         
         # 轉換為 pyqtgraph 的格式 (0-255 的整數)
         colors_rgb = (colors[:, :3] * 255).astype(np.uint8)
         
         # 創建 ColorMap
-        pos = np.linspace(0, 1, 6)
+        pos = np.linspace(0, 1, n)
         color_map = pg.ColorMap(pos, colors_rgb)
         
         # 應用到 histogram widget
         self.hist.gradient.setColorMap(color_map)
-    
-    def set_custom_colormap(self, colors, positions=None):
-        """
-        自訂 colormap
-        
-        Parameters:
-        -----------
-        colors : list of tuples
-            RGB 顏色列表，例如 [(0, 0, 255), (255, 255, 0), (255, 0, 0)]
-        positions : list, optional
-            顏色位置 (0-1)，例如 [0, 0.5, 1.0]
-            如果為 None，會自動平均分配
-        """
-        if positions is None:
-            positions = np.linspace(0, 1, len(colors))
-        
-        color_map = pg.ColorMap(positions, colors)
-        self.hist.gradient.setColorMap(color_map)
-        print(f"Custom colormap applied with {len(colors)} colors")
-    
-    def get_available_colormaps(self):
-        """返回可用的 colormap 列表"""
-        import matplotlib.pyplot as plt
-        return plt.colormaps()
     
 if __name__ == "__main__":
     app = QApplication(sys.argv)

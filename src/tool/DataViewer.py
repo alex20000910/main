@@ -312,6 +312,14 @@ class SliceBrowser(QMainWindow):
         act_grid.setChecked(False)
         act_grid.triggered.connect(self.toggle_grid)
         view_menu.addAction(act_grid)
+        view_menu.addSeparator()
+        self.set_default_colormap()
+        for cmap_name in self.cmap_colors_dict.keys():
+            act_cmap = QAction(f"Colormap: {cmap_name}", self)
+            act_cmap.setCheckable(True)
+            act_cmap.setChecked(cmap_name=='prevac_cmap')
+            act_cmap.triggered.connect(lambda checked, name=cmap_name: self.set_cmap(name))
+            view_menu.addAction(act_cmap)
         
         
         self.E_pixmap_x = self.make_axis_label("Kinetic Energy (eV)", font_size=18, vertical=False)
@@ -736,17 +744,36 @@ class SliceBrowser(QMainWindow):
         prevac_cmap = LinearSegmentedColormap.from_list(
             'prevac_cmap', prevac_colors, N=256)
         mpl.colormaps.register(prevac_cmap)
-        cmap = plt.get_cmap('prevac_cmap')
+        
+        self.cmap_colors_dict={
+            'prevac_cmap': len(prevac_cmap._segmentdata['red']),
+            'custom_cmap1': len(custom_cmap1._segmentdata['red']),
+            'custom_cmap2': len(custom_cmap2._segmentdata['red']),
+            'custom_cmap3': len(custom_cmap3._segmentdata['red']),
+            'custom_cmap4': len(custom_cmap4._segmentdata['red'])
+        }
+    
+    def set_cmap(self, cmap_name='prevac_cmap'):
+        for action in self.menu_bar.actions():
+            if action.menu():
+                for act in action.menu().actions():
+                    if act.text().startswith("Colormap:"):
+                        if act.text() == f"Colormap: {cmap_name}":
+                            act.setChecked(True)
+                        else:
+                            act.setChecked(False)
+        cmap = plt.get_cmap(cmap_name)
+        n = self.cmap_colors_dict[cmap_name]
             
         # 轉換為 pyqtgraph 格式
         # 取 256 個顏色點
-        colors = cmap(np.linspace(0, 1, 6))
+        colors = cmap(np.linspace(0, 1, n))
         
         # 轉換為 pyqtgraph 的格式 (0-255 的整數)
         colors_rgb = (colors[:, :3] * 255).astype(np.uint8)
         
         # 創建 ColorMap
-        pos = np.linspace(0, 1, 6)
+        pos = np.linspace(0, 1, n)
         color_map = pg.ColorMap(pos, colors_rgb)
         
         # 應用到 histogram widget
@@ -1056,7 +1083,7 @@ class SliceBrowser(QMainWindow):
             if self.xRange != self.plot.getViewBox().viewRange()[0] or self.yRange != self.plot.getViewBox().viewRange()[1]:
                 self.xRange, self.yRange = self.plot.getViewBox().viewRange()[0], self.plot.getViewBox().viewRange()[1]
         else:
-            self.set_default_colormap()
+            self.set_cmap()
             self.xRange, self.yRange = (self.xl, self.xh), (self.yl, self.yh)
         self.update_E_job(arr)
 
