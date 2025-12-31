@@ -13,6 +13,9 @@ import cv2, os, inspect
 import h5py, time, zarr
 from ctypes import windll
 import shutil, psutil, argparse
+import matplotlib as mpl
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -309,6 +312,14 @@ class SliceBrowser(QMainWindow):
         act_grid.setChecked(False)
         act_grid.triggered.connect(self.toggle_grid)
         view_menu.addAction(act_grid)
+        view_menu.addSeparator()
+        self.set_default_colormap()
+        for cmap_name in self.cmap_colors_dict.keys():
+            act_cmap = QAction(f"Colormap: {cmap_name}", self)
+            act_cmap.setCheckable(True)
+            act_cmap.setChecked(cmap_name=='prevac_cmap')
+            act_cmap.triggered.connect(lambda checked, name=cmap_name: self.set_cmap(name))
+            view_menu.addAction(act_cmap)
         
         
         self.E_pixmap_x = self.make_axis_label("Kinetic Energy (eV)", font_size=18, vertical=False)
@@ -663,6 +674,111 @@ class SliceBrowser(QMainWindow):
             # label.setAlignment(Qt.AlignCenter)
             return pixmap
 
+    def set_default_colormap(self):
+        # Define your custom colors (as RGB tuples)
+        # (value,(color))
+        custom_colors1 = [(0, (1, 1, 1)),
+                        (0.5, (0, 0, 1)),
+                        (0.85, (0, 1, 1)),
+                        (1, (1, 1, 0.26))]
+
+        # Create a custom colormap
+        custom_cmap1 = LinearSegmentedColormap.from_list(
+            'custom_cmap1', custom_colors1, N=256)
+        mpl.colormaps.register(custom_cmap1)
+
+        # Define your custom colors (as RGB tuples)
+        # (value,(color))
+        custom_colors2 = [(0, (0, 0.08, 0.16)),
+                        (0.2, (0.2, 0.7, 1)),
+                        (0.4, (0.28, 0.2, 0.4)),
+                        (0.62, (0.9, 0.1, 0.1)),
+                        (0.72, (0.7, 0.34, 0.1)),
+                        (0.8, (1, 0.5, 0.1)),
+                        (1, (1, 1, 0))]
+
+        # Create a custom colormap
+        custom_cmap2 = LinearSegmentedColormap.from_list(
+            'custom_cmap2', custom_colors2, N=256)
+        mpl.colormaps.register(custom_cmap2)
+
+        # Define your custom colors (as RGB tuples)
+        # (value,(color))
+        custom_colors3 = [(0, (0.88, 0.84, 0.96)),
+                        (0.5, (0.32, 0, 0.64)),
+                        (0.75, (0, 0, 1)),
+                        (0.85, (0, 0.65, 1)),
+                        (0.9, (0.2, 1, 0.2)),
+                        (0.96, (0.72, 1, 0)),
+                        (1, (1, 1, 0))]
+
+        # Create a custom colormap
+        custom_cmap3 = LinearSegmentedColormap.from_list(
+            'custom_cmap3', custom_colors3, N=256)
+        mpl.colormaps.register(custom_cmap3)
+
+        # Define your custom colors (as RGB tuples)
+        # (value,(color))
+        custom_colors4 = [(0, (1, 1, 1)),
+                        (0.4, (0.3, 0, 0.3)),
+                        (0.5, (0.3, 0, 0.6)),
+                        (0.6, (0, 1, 1)),
+                        (0.7, (0, 1, 0)),
+                        (0.8, (1, 1, 0)),
+                        (1, (1, 0, 0))]
+
+        # Create a custom colormap
+        custom_cmap4 = LinearSegmentedColormap.from_list(
+            'custom_cmap4', custom_colors4, N=256)
+        mpl.colormaps.register(custom_cmap4)
+        
+        # Define your custom colors (as RGB tuples)
+        # (value,(color))
+        prevac_colors = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
+                        (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
+                        (0.4, (0, 0.4*0.82, 0)),
+                        (0.6, (0.5*0.82, 1*0.82, 0)),
+                        (0.8,(1*0.82, 1*0.82, 0)),
+                        (1, (1*0.82, 0, 0))]
+        # Create a custom colormap
+        prevac_cmap = LinearSegmentedColormap.from_list(
+            'prevac_cmap', prevac_colors, N=256)
+        mpl.colormaps.register(prevac_cmap)
+        
+        self.cmap_colors_dict={
+            'prevac_cmap': len(prevac_cmap._segmentdata['red']),
+            'custom_cmap1': len(custom_cmap1._segmentdata['red']),
+            'custom_cmap2': len(custom_cmap2._segmentdata['red']),
+            'custom_cmap3': len(custom_cmap3._segmentdata['red']),
+            'custom_cmap4': len(custom_cmap4._segmentdata['red'])
+        }
+    
+    def set_cmap(self, cmap_name='prevac_cmap'):
+        for action in self.menu_bar.actions():
+            if action.menu():
+                for act in action.menu().actions():
+                    if act.text().startswith("Colormap:"):
+                        if act.text() == f"Colormap: {cmap_name}":
+                            act.setChecked(True)
+                        else:
+                            act.setChecked(False)
+        cmap = plt.get_cmap(cmap_name)
+        n = self.cmap_colors_dict[cmap_name]
+            
+        # 轉換為 pyqtgraph 格式
+        # 取 256 個顏色點
+        colors = cmap(np.linspace(0, 1, n))
+        
+        # 轉換為 pyqtgraph 的格式 (0-255 的整數)
+        colors_rgb = (colors[:, :3] * 255).astype(np.uint8)
+        
+        # 創建 ColorMap
+        pos = np.linspace(0, 1, n)
+        color_map = pg.ColorMap(pos, colors_rgb)
+        
+        # 應用到 histogram widget
+        self.hist.gradient.setColorMap(color_map)
+        
     def on_mouse_moved(self, pos):
         vb = self.plot.getViewBox()
         if vb.sceneBoundingRect().contains(pos):
@@ -967,6 +1083,7 @@ class SliceBrowser(QMainWindow):
             if self.xRange != self.plot.getViewBox().viewRange()[0] or self.yRange != self.plot.getViewBox().viewRange()[1]:
                 self.xRange, self.yRange = self.plot.getViewBox().viewRange()[0], self.plot.getViewBox().viewRange()[1]
         else:
+            self.set_cmap()
             self.xRange, self.yRange = (self.xl, self.xh), (self.yl, self.yh)
         self.update_E_job(arr)
 

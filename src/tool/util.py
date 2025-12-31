@@ -49,7 +49,7 @@ class app_param:
         self.g_mem = g_mem
 
 class MDC_param:
-    def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, smfp, smfi, smaa1, smaa2, smresult, smcst):
+    def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, smfp, smfi, smaa1, smaa2, smresult, smcst, mdet):
         self.ScaleFactor = ScaleFactor
         self.sc_y = sc_y
         self.g = g
@@ -75,9 +75,12 @@ class MDC_param:
         self.smaa2 = smaa2
         self.smresult = smresult
         self.smcst = smcst
+        shape=data.shape
+        tdet=data.data[shape[0]//2, shape[1]//2]
+        self.mdet = tdet if mdet==-1 else mdet
 
 class EDC_param:
-    def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, semin, semax, sefp, sefi, seaa1, seaa2):
+    def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, semin, semax, sefp, sefi, seaa1, seaa2, edet):
         self.ScaleFactor = ScaleFactor
         self.sc_y = sc_y
         self.g = g
@@ -103,6 +106,9 @@ class EDC_param:
         self.seaa2 = seaa2
         # self.seresult = seresult
         # self.secst = secst
+        shape=data.shape
+        tdet=data.data[shape[0]//2, shape[1]//2]
+        self.edet = tdet if edet==-1 else edet
 
 class Button(tk.Button):
     """white background button"""
@@ -297,7 +303,10 @@ class ToolTip_util:
         main_frame.grid(row=0, column=0)
     
         # 顯示標籤
-        label_icon = tk.Label(main_frame, image=self.icon.get_giant_icon(self.dict[self.widget.cget('text')]), background="#ffffff")
+        try:
+            label_icon = tk.Label(main_frame, image=self.icon.get_giant_icon(self.dict[self.widget.cget('text')]), background="#ffffff")
+        except KeyError:
+            label_icon = tk.Label(main_frame, text='', background="#ffffff")
         label_icon.grid(row=0, column=0)
         label_title = tk.Label(main_frame, text=self.widget_text, font=("Arial", self.scaled_font_size, "bold"), background="#ffffff")
         label_title.grid(row=0, column=1, sticky="w")

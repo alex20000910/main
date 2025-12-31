@@ -28,7 +28,7 @@ class EDC_Fitter(ABC):
 
 def init_pars(app_pars=None):
     if app_pars is not None:
-        global ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, semin, semax, sefp, sefi, seaa1, seaa2, seresult, secst, m, h, seresult_original
+        global ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, semin, semax, sefp, sefi, seaa1, seaa2, seresult, secst, edet, m, h, seresult_original
         ScaleFactor = app_pars.ScaleFactor
         sc_y = app_pars.sc_y
         g = app_pars.g
@@ -54,6 +54,7 @@ def init_pars(app_pars=None):
         seaa2 = app_pars.seaa2
         # seresult = app_pars.seresult
         # secst = app_pars.secst
+        edet = app_pars.edet
         m = 9.10938356e-31  # electron mass kg
         h = 6.62607015e-34  # Planck constant J·s
         # seresult_original = copy.deepcopy(seresult)
@@ -447,7 +448,7 @@ def feedmove(event):
 
 
 def saveefit():
-    global epos, efwhm, fphi, efwhm, epos, semin, semax, seaa1, seaa2, sefp, sefi
+    global epos, efwhm, fphi, efwhm, epos, semin, semax, seaa1, seaa2, sefp, sefi, edet
     path = fd.asksaveasfilename(title="Save EDC Fitted Data", initialdir=dpath,
                                 initialfile=name+"_efit", filetype=[("NPZ files", ".npz"),], defaultextension=".npz")
     try:
@@ -463,8 +464,10 @@ def saveefit():
         # sefp = res(sefi, sefp)
         fphi = res(sefi, fphi)
         sefi = res(sefi, sefi)
+        shape=data.shape
+        edet=data.data[shape[0]//2, shape[1]//2]
         np.savez(path, path=dpath, fphi=fphi, efwhm=efwhm, epos=epos, semin=semin,
-                 semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
+                 semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi, edet=edet)
     else:
         eendg.focus_force()
 
@@ -1118,10 +1121,14 @@ def fite(edc_pars):
         egg.lift()
         return
     init_pars(edc_pars)
-    global ev, phi, data, evv, eaa1, eaa2, fexx, feyy, fex, fey, emin, emax, cei, ebase, eprfit
+    global ev, phi, data, evv, eaa1, eaa2, fexx, feyy, fex, fey, emin, emax, cei, ebase, eprfit, fpr
     cei = []
     ebase = [0 for i in range(len(phi))]
     elim = oelim(npzf, ev, phi)
+    shape=data.shape
+    det=data.data[shape[0]//2, shape[1]//2]
+    if edet != det:
+        fpr = 0
     if fpr == 1:
         try:
             emin, emax = semin, semax

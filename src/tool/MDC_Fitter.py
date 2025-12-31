@@ -26,7 +26,7 @@ class MDC_Fitter(ABC):
 
 def init_pars(app_pars=None):
     if app_pars is not None:
-        global ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, smfp, smfi, smaa1, smaa2, smresult, smcst, m, h, smresult_original
+        global ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, smfp, smfi, smaa1, smaa2, smresult, smcst, mdet, m, h, smresult_original
         ScaleFactor = app_pars.ScaleFactor
         sc_y = app_pars.sc_y
         g = app_pars.g
@@ -52,6 +52,7 @@ def init_pars(app_pars=None):
         smaa2 = app_pars.smaa2
         smresult = app_pars.smresult
         smcst = app_pars.smcst
+        mdet = app_pars.mdet
         m = 9.10938356e-31  # electron mass kg
         h = 6.62607015e-34  # Planck constant J·s
         smresult_original = copy.deepcopy(smresult)
@@ -1036,7 +1037,7 @@ def fmedmove(event):
 
 
 def savemfit():
-    global smresult, smcst, fev, fwhm, pos, skmin, skmax, smaa1, smaa2, smfp, smfi
+    global smresult, smcst, fev, fwhm, pos, skmin, skmax, smaa1, smaa2, smfp, smfi, mdet
     smresult = pack_fitpar(mresult)
     path = fd.asksaveasfilename(title="Save MDC Fitted Data", initialdir=dpath,
                                 initialfile=name+"_mfit", filetype=[("NPZ files", ".npz"),], defaultextension=".npz")
@@ -1046,8 +1047,10 @@ def savemfit():
         pass
     if len(path) > 2:
         mendg.destroy()
+        shape=data.shape
+        mdet=data.data[shape[0]//2, shape[1]//2]
         np.savez(path, path=dpath, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
-                 skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
+                 skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst, mdet=mdet)
     else:
         mendg.focus_force()
 
@@ -2786,12 +2789,16 @@ def fitm(mdc_pars):
         mgg.lift()
         return
     init_pars(mdc_pars)
-    global ev, phi, data, mvv, maa1, maa2, fmxx, fmyy, fmx, fmy, kmin, kmax, cki, mbase, mprfit, mf_prswap, smresult, klim
+    global ev, phi, data, mvv, maa1, maa2, fmxx, fmyy, fmx, fmy, kmin, kmax, cki, mbase, mprfit, mf_prswap, smresult, klim, fpr
     mprfit = 0
     cki = []
     mbase = [0 for i in range(len(ev))]
     mf_prswap = []
     klim = oklim(npzf, ev, phi)
+    shape=data.shape
+    det=data.data[shape[0]//2, shape[1]//2]
+    if mdet != det:
+        fpr = 0
     if fpr == 1:
         try:
             kmin, kmax = skmin, skmax

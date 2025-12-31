@@ -1,4 +1,3 @@
-from sympy import E, EX
 from MDC_cut_utility import *
 from .util import app_param
 import os, inspect
@@ -719,6 +718,14 @@ class loadfiles(FileSequence):
                 with open(tpath, 'w') as f:
                     for i in range(len(self.name)):
                         data = self.data[i].data
+                        if (np.mod(data[data.shape[0]//2]*10, 10) != 0).any():
+                            data = data.astype(np.float32)
+                        elif np.max(data) < 256:
+                            data = data.astype(np.uint8)
+                        elif np.max(data) < 65536:
+                            data = data.astype(np.uint16)
+                        else:
+                            data = data.astype(np.uint32)
                         dpath = os.path.join(self.zpath, f'lfs_{i}.zarr')
                         zarr.save(dpath, data)
                         f.write(self.name[i]+'__sep__')
@@ -975,6 +982,7 @@ class mloader:
         self.smaa2 = []
         self.smresult = []
         self.smcst = []
+        self.mdet = -1
     
     def loadmfit_2p(self, file: str):
         # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("VMS files", "*.vms"),))
@@ -1827,15 +1835,21 @@ class mloader:
                 self.fpr = 1
                 tbasename = os.path.basename(self.rdd)
                 if '.h5' in tbasename:
-                    # data = load_h5(self.rdd)
+                    data = load_h5(self.rdd)
+                    shape = data.shape
+                    mdet = data.data[shape[0]//2, shape[1]//2]
                     # pr_load(data)
                     self.fload = True
                 elif '.json' in tbasename:
-                    # data = load_json(self.rdd)
+                    data = load_json(self.rdd)
+                    shape = data.shape
+                    mdet = data.data[shape[0]//2, shape[1]//2]
                     # pr_load(data)
                     self.fload = True
                 elif '.txt' in tbasename:
-                    # data = load_txt(self.rdd)
+                    data = load_txt(self.rdd)
+                    shape = data.shape
+                    mdet = data.data[shape[0]//2, shape[1]//2]
                     # pr_load(data)
                     self.fload = True
             except:
@@ -1850,9 +1864,10 @@ class mloader:
             self.kmin, self.kmax = kmin, kmax
         elif ".npz" in file:
             np.savez(os.path.join(self.cdir, '.MDC_cut', 'mfit.npz'), ko=self.k_offset, fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=skmin,
-                    kmax=skmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
+                    kmax=skmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst, mdet=mdet)
             self.kmin, self.kmax = skmin, skmax
             self.smresult, self.smcst = smresult, smcst
+            self.mdet = mdet
         # self.limg.config(image=self.img[np.random.randint(len(self.img))])
         print('Done')
         self.st.put('Done')
@@ -1891,6 +1906,7 @@ class eloader:
         self.seaa2 = []
         # self.seresult = []
         # self.secst = []
+        self.edet = -1
     
     
     def loadefit(self, file: str):
@@ -2061,15 +2077,21 @@ class eloader:
                 self.fpr = 1
                 tbasename = os.path.basename(self.rdd)
                 if '.h5' in tbasename:
-                    # data = load_h5(self.rdd)
+                    data = load_h5(self.rdd)
+                    shape = data.shape
+                    edet = data.data[shape[0]//2, shape[1]//2]
                     # pr_load(data)
                     self.fload = True
                 elif '.json' in tbasename:
-                    # data = load_json(self.rdd)
+                    data = load_json(self.rdd)
+                    shape = data.shape
+                    edet = data.data[shape[0]//2, shape[1]//2]
                     # pr_load(data)
                     self.fload = True
                 elif '.txt' in tbasename:
-                    # data = load_txt(self.rdd)
+                    data = load_txt(self.rdd)
+                    shape = data.shape
+                    edet = data.data[shape[0]//2, shape[1]//2]
                     # pr_load(data)
                     self.fload = True
             except:
@@ -2084,8 +2106,9 @@ class eloader:
             self.emin, self.emax = emin, emax
         elif ".npz" in file:
             np.savez(os.path.join(self.cdir, '.MDC_cut', 'efit.npz'), ko=self.k_offset, fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
-                    emin=semin, emax=semax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
+                    emin=semin, emax=semax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi, edet=edet)
             self.emin, self.emax = semin, semax
+            self.edet = edet
         # limg.config(image=img[np.random.randint(len(img))])
         print('Done')
         self.st.put('Done')

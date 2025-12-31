@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.3.2"
-__release_date__ = "2025-12-26"
+__version__ = "8.4"
+__release_date__ = "2025-12-31"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -103,8 +103,8 @@ if VERSION < 3130:
     "psutil==7.0.0",
     "zarr==3.1.1",
     "PyQt5==5.15.11",
-    "pyqtgraph==0.13.7"
-    "tkinterdnd2==0.4.3",
+    "pyqtgraph==0.13.7",
+    "tkinterdnd2==0.4.3"
     ]
 else:
     REQUIREMENTS = ["numpy==2.2.6",
@@ -258,7 +258,8 @@ def get_src(ver=False):
            r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py"]
+           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py"]
     for i, v in enumerate(url):
         if i < 3:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
@@ -267,6 +268,22 @@ def get_src(ver=False):
         get_file_from_github(v, out_path)
         if ver:
             break
+
+def cal_ver(ver: str) -> int:
+    '''
+    Version string to integer for comparison
+    e.g. '8.3.1' -> 80301\n
+    # Parameters
+    - ver: str\n
+    'major.minor.patch' or 'major.minor', 0-99 for each part
+    # Returns
+    output: int
+    '''
+    ver = [int(i) for i in ver.split('.')]
+    if len(ver) != 3:
+        ver.append(0)
+    ver = ver[0]*10000 + ver[1]*100 + ver[2]
+    return ver
 
 # set up .MDC_cut folder
 os.chdir(cdir)
@@ -280,7 +297,7 @@ v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
 if os.path.exists(v_check_path):
     with open(v_check_path, mode='r') as f:
         ver = f.read().strip()
-    if ver != __version__:
+    if cal_ver(ver) < cal_ver('8.0'):
         get_src()
         with open(v_check_path, mode='w') as f:
             f.write(__version__)
@@ -771,6 +788,27 @@ if __name__ == '__main__':
             climoff()
 
 @pool_protect
+def suggest():
+    global b_suggest
+    if value.get() == 'Raw Data':
+        b_suggest.config(text='Raw Data Viewer', bg='#aa0000', fg='white', font=('Arial', size(18), "bold"))
+        ToolTip(b_suggest, "Use Qt Window to view raw data with high performance")
+        b_suggest.config(command=lambda: qt_app(lfs.path))
+        b_suggest.grid(row=1, column=0, pady=20)
+        def job():
+            import time
+            for i in range(10):
+                b_suggest.config(bg='white', fg='red')
+                g.update_idletasks()
+                time.sleep(0.5)
+                b_suggest.config(bg='#aa0000', fg='white')
+                g.update_idletasks()
+                time.sleep(0.5)
+        threading.Thread(target=job, daemon=True).start()
+    else:
+        b_suggest.grid_forget()
+
+@pool_protect
 def g_close(*e):
     try:
         g.destroy()
@@ -1091,9 +1129,23 @@ def change_file(*args):
     st.put(name)
     if value.get() != '---Plot1---':
         o_plot1()
-    
+
+@pool_protect
+def qt_app(path: list[str]):
+    def job():
+        subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+    threading.Thread(target=job, daemon=True).start()
+    if os.name == 'nt' and hwnd:
+        windll.user32.ShowWindow(hwnd, 9)
+        windll.user32.SetForegroundWindow(hwnd)
+    print('\033[36m\nTransfering Data...\nPlease wait...\033[0m')
+
 @pool_protect
 def tools(*args):
+    def raw_data_viewer(*args):
+        qt_app(lfs.path)
+        toolg.destroy()
+        
     def spec(*args):
         s = spectrogram(path=lfs.path, name='internal', app_pars=lfs.app_pars)
         s.plot(g, value3.get())
@@ -1113,8 +1165,10 @@ def tools(*args):
         toolg.destroy()
     toolg = RestrictedToplevel(g)
     toolg.title('Batch Master')
+    b_raw_viewer = tk.Button(toolg, text='Raw Data Viewer', command=raw_data_viewer, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_raw_viewer.grid(row=0, column=0)
     b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b_spec.grid(row=0, column=0)
+    b_spec.grid(row=0, column=1)
     try:
         flag = False
         t_, t__ = lfs.r1.copy(), lfs.r2.copy()
@@ -1124,9 +1178,9 @@ def tools(*args):
         pass
     if lfs.sort != 'no' and flag:
         b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-        b_kplane.grid(row=0, column=1)
+        b_kplane.grid(row=0, column=2)
     b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
-    b_exp_casa.grid(row=0, column=2)
+    b_exp_casa.grid(row=0, column=3)
     toolg.bind('<Return>', spec)
     set_center(g, toolg, 0, 0)
     toolg.focus_set()
@@ -1244,14 +1298,14 @@ def cmfit(*e):
     import tool.MDC_Fitter
     from tool.MDC_Fitter import mgg as mgg
     if mgg is None:
-        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst)
+        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst, mdet=mdet)
         threading.Thread(target=tool.MDC_Fitter.fitm, args=(mdc_pars,)).start()
         clear(mdc_pars)
     elif isinstance(mgg, tk.Toplevel):
         mgg.lift()
     elif mgg == True:
         importlib.reload(tool.MDC_Fitter)
-        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst)
+        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst, mdet=mdet)
         threading.Thread(target=tool.MDC_Fitter.fitm, args=(mdc_pars,)).start()
         clear(mdc_pars)
 
@@ -1264,14 +1318,14 @@ def cefit(*e):
     import tool.EDC_Fitter
     from tool.EDC_Fitter import egg as egg
     if egg is None:
-        edc_pars = EDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, semin=semin, semax=semax, sefp=sefp, sefi=sefi, seaa1=seaa1, seaa2=seaa2)
+        edc_pars = EDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, semin=semin, semax=semax, sefp=sefp, sefi=sefi, seaa1=seaa1, seaa2=seaa2, edet=edet)
         threading.Thread(target=tool.EDC_Fitter.fite, args=(edc_pars,)).start()
         clear(edc_pars)
     elif isinstance(egg, tk.Toplevel):
         egg.lift()
     elif egg == True:
         importlib.reload(tool.EDC_Fitter)
-        edc_pars = EDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, semin=semin, semax=semax, sefp=sefp, sefi=sefi, seaa1=seaa1, seaa2=seaa2)
+        edc_pars = EDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, semin=semin, semax=semax, sefp=sefp, sefi=sefi, seaa1=seaa1, seaa2=seaa2, edet=edet)
         threading.Thread(target=tool.EDC_Fitter.fite, args=(edc_pars,)).start()
         clear(edc_pars)
 
@@ -1410,14 +1464,14 @@ def o_reload(*e):
         np.savez(os.path.join(cdir, '.MDC_cut', 'mfit.npz'), ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
                  kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
         np.savez(os.path.join(cdir, '.MDC_cut', 'mfit.npz'), ko=k_offset.get(), fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
-                 kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst)
+                 kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst, mdet=mdet)
     except:
         try:
             ffphi = np.float64(k_offset.get())+fphi
             fk = (2*m*epos*1.602176634*10**-19)**0.5 * \
                 np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
             np.savez(os.path.join(cdir, '.MDC_cut', 'efit.npz'), ko=k_offset.get(), fphi=fphi, epos=epos, ffphi=ffphi, efwhm=efwhm, fk=fk,
-                 emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi)
+                 emin=emin, emax=emax, semin=semin, semax=semax, seaa1=seaa1, seaa2=seaa2, sefp=sefp, sefi=sefi, edet=edet)
         except:
             pass
         pass
@@ -1585,8 +1639,8 @@ def loadmfit(*e):
 
 @pool_protect
 def loadefit(*e):
-    global rdd, efi_x, data, fpr
-    global fphi, epos, ffphi, efwhm, fk, emin, emax, semin, semax, seaa1, seaa2, sefp, sefi
+    global rdd, efi_x, data, fpr, lfs, npzf
+    global fphi, epos, ffphi, efwhm, fk, emin, emax, semin, semax, seaa1, seaa2, sefp, sefi, edet
     el = eloader(st, data, ev, phi, rdd, cdir, lowlim.get())
     el.loadparam(k_offset.get(), base.get(), npzf, fpr)
     file = fd.askopenfilename(title="Select EDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
@@ -1594,20 +1648,14 @@ def loadefit(*e):
     t3.start()
     t3.join()
     rdd, efi_x, data, fpr = el.rdd, el.efi_x, el.data, el.fpr
-    fphi, epos, ffphi, efwhm, fk, emin, emax, semin, semax, seaa1, seaa2, sefp, sefi = el.fphi, el.epos, el.ffphi, el.efwhm, el.fk, el.emin, el.emax, el.semin, el.semax, el.seaa1, el.seaa2, el.sefp, el.sefi
+    fphi, epos, ffphi, efwhm, fk, emin, emax, semin, semax, seaa1, seaa2, sefp, sefi, edet = el.fphi, el.epos, el.ffphi, el.efwhm, el.fk, el.emin, el.emax, el.semin, el.semax, el.seaa1, el.seaa2, el.sefp, el.sefi, el.edet
     limg.config(image=img[np.random.randint(len(img))])
     if el.fload:
         try:
-            tbasename = os.path.basename(rdd)
-            if '.h5' in tbasename:
-                data = load_h5(rdd)
-                pr_load(data)
-            elif '.json' in tbasename:
-                data = load_json(rdd)
-                pr_load(data)
-            elif '.txt' in tbasename:
-                data = load_txt(rdd)
-                pr_load(data)
+            lfs = loadfiles([rdd], init=False, name='internal', cmap=value3.get(), app_pars=app_pars)
+            data = lfs.get(0)
+            pr_load(data)
+            npzf = lfs.f_npz[0]
         except FileNotFoundError:
             print(f'{rdd} File path not found, skip loading raw data.')
         except Exception as e:
@@ -1655,6 +1703,7 @@ im_kernel = 17
 d,l,p = 8,20,3
 @pool_protect
 def plot1(*e):
+    suggest()
     global gg
     if 'gg' in globals():
         gg.destroy()
@@ -1667,11 +1716,13 @@ def plot1(*e):
 
 @pool_protect
 def plot2(*e):
+    suggest()
     threading.Thread(target=o_plot2, daemon=True).start()
 
 @pool_protect
 def plot3(*e):
     global gg
+    suggest()
     if 'gg' in globals():
         gg.destroy()
     if value2.get() == 'Data Plot with Pos' or value2.get() == 'Data Plot with Pos and Bare Band':
@@ -1744,8 +1795,8 @@ def lmre():
 @pool_protect
 def lm():
     lmgg.destroy()
-    global rdd, mfi_x, data, fpr
-    global fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst
+    global rdd, mfi_x, data, fpr, lfs, npzf
+    global fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, mdet
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim.get())
     ml.loadparam(k_offset.get(), base.get(), npzf, fpr)
     file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
@@ -1753,21 +1804,15 @@ def lm():
     t.start()
     t.join()
     rdd, mfi_x, data, fpr = ml.rdd, ml.mfi_x, ml.data, ml.fpr
-    fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst = ml.fev, ml.rpos, ml.ophi, ml.fwhm, ml.pos, ml.kmin, ml.kmax, ml.skmin, ml.skmax, ml.smaa1, ml.smaa2, ml.smfp, ml.smfi, ml.smresult, ml.smcst
+    fev, rpos, ophi, fwhm, pos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, mdet = ml.fev, ml.rpos, ml.ophi, ml.fwhm, ml.pos, ml.kmin, ml.kmax, ml.skmin, ml.skmax, ml.smaa1, ml.smaa2, ml.smfp, ml.smfi, ml.smresult, ml.smcst, ml.mdet
     get_yerr()
     limg.config(image=img[np.random.randint(len(img))])
     if ml.fload:
         try:
-            tbasename = os.path.basename(rdd)
-            if '.h5' in tbasename:
-                data = load_h5(rdd)
-                pr_load(data)
-            elif '.json' in tbasename:
-                data = load_json(rdd)
-                pr_load(data)
-            elif '.txt' in tbasename:
-                data = load_txt(rdd)
-                pr_load(data)
+            lfs = loadfiles([rdd], init=False, name='internal', cmap=value3.get(), app_pars=app_pars)
+            data = lfs.get(0)
+            pr_load(data)
+            npzf = lfs.f_npz[0]
         except FileNotFoundError:
             print(f'{rdd} File path not found, skip loading raw data.')
         except Exception as e:
@@ -1865,6 +1910,11 @@ if __name__ == '__main__':
     # w 1920 1374 (96 dpi)
     # h 1080 748 (96 dpi)
     g = TkinterDnD.Tk()
+    # g.withdraw()
+    # # 最小化視窗
+    # g.iconify()
+    # # 恢復視窗
+    # g.deiconify()
     tkDnD(g)    #bind whole window to Drag-and-drop function
     # g = ttk.Window(themename='darkly')
     odpi=g.winfo_fpixels('1i')
@@ -2136,7 +2186,7 @@ if __name__ == '__main__':
             dpath = path    # new version data path
             name, e_photon, description = dvalue[0], float(dvalue[3].split()[0]), dvalue[13]
     except:
-        data, lfs, name, description, e_photon = None, None, None, None, None
+        data, lfs, name, description, e_photon, rdd, dpath = None, None, None, None, None, '', ''
         print('\033[90mNo Raw Data preloaded\033[0m')
 
     try:
@@ -2173,6 +2223,10 @@ if __name__ == '__main__':
             fphi, epos, ffphi, efwhm, fk = f['fphi'], f['epos'], f['ffphi'], f['efwhm'], f['fk']
             emin, emax, semin, semax = f['emin'], f['emax'], f['semin'], f['semax']
             seaa1, seaa2, sefp, sefi = f['seaa1'], f['seaa2'], f['sefp'], f['sefi']
+            try:
+                edet = f['edet']
+            except:
+                edet = -1
             print('\033[90mEDC Fitted Data preloaded (Casa)\033[0m')
         fpr = 1
     except:
@@ -2181,6 +2235,7 @@ if __name__ == '__main__':
         emin, emax, semin, semax = [], [], [], []
         seaa1, seaa2, sefp, sefi = [], [], [], []
         # seresult, secst = [], []
+        edet = -1
         print('\033[90mNo EDC fitted data preloaded (Casa)\033[0m')
 
     try:
@@ -2190,6 +2245,10 @@ if __name__ == '__main__':
             kmin, kmax, skmin, skmax = f['kmin'], f['kmax'], f['skmin'], f['skmax']
             smaa1, smaa2, smfp, smfi = f['smaa1'], f['smaa2'], f['smfp'], f['smfi']
             smresult, smcst = [], []
+            try:
+                mdet = f['mdet']
+            except:
+                mdet = -1
             try:
                 smresult, smcst = f['smresult'], f['smcst']
                 get_yerr()
@@ -2203,6 +2262,7 @@ if __name__ == '__main__':
         kmin, kmax, skmin, skmax = [], [], [], []
         smaa1, smaa2, smfp, smfi = [], [], [], []
         smresult, smcst = [], []
+        mdet = -1
         print('\033[90mNo MDC fitted data preloaded (Casa)\033[0m')
 
     try:
@@ -2379,12 +2439,12 @@ if __name__ == '__main__':
 
     
     fr_state = tk.Frame(fr_main, bg='white')
-    fr_state.grid(row=0, column=2)
+    fr_state.grid(row=0, column=2, sticky='n')
 
     st = queue.Queue(maxsize=0)
     state = tk.Label(fr_state, text=f"Version: {__version__}", font=(
         "Arial", size(14), "bold"), bg="white", fg="black", wraplength=250, justify='center')
-    state.grid(row=0, column=0)
+    state.grid(row=0, column=0, pady=20)
 
     # Icon = [icon.icon1, icon.icon2, icon.icon3, icon.icon4, icon.icon5, icon.icon6, icon.icon7, icon.icon8, icon.icon9, icon.icon10, icon.icon11, icon.icon12, icon.icon13, icon.icon14, icon.icon15, icon.icon16, icon.icon17, icon.icon18, icon.icon19, icon.icon20]
     Icon = [icon.icon0]
@@ -2400,7 +2460,10 @@ if __name__ == '__main__':
     timg = ImageTk.PhotoImage(Image.open(tdata[trd]).resize([250, 250]))
     tdata = tdata[trd]
     limg = tk.Label(fr_state, image=timg, width='250', height='250', bg='white')
-    limg.grid(row=1, column=0)
+    # limg.grid(row=1, column=0)
+    b_suggest = tk.Button(fr_state, text='Suggestion', font=(
+        "Arial", size(14), "bold"), bg="white", height='1', bd=5)
+    # b_suggest.grid(row=1, column=0)
 
     
     exf = tk.Frame(fr_state, bg='white')
@@ -2663,3 +2726,4 @@ if __name__ == '__main__':
     # for index, stat in enumerate(top_stats[:10], 1):
     #     print(f"{index}. {stat}")
     g.mainloop()
+    
