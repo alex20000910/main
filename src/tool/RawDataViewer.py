@@ -183,6 +183,7 @@ class main(QMainWindow):
         super().__init__()
         self.hwnd=hwnd
         self.setWindowTitle("Raw Data Viewer")
+        self.setAcceptDrops(True)
         # self.showFullScreen()
         # geo = self.geometry()
         # self.showNormal()
@@ -899,6 +900,22 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
         # 應用到 histogram widget
         self.hist.gradient.setColorMap(color_map)
     
+    def dragEnterEvent(self, event):
+        # 檢查是否為檔案
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        # 獲取拖曳的檔案路徑
+        files = [url.toLocalFile() for url in event.mimeData().urls()]
+        if files:
+            self.lfs = loadfiles(files, name='external')
+            self.file_name.clear()
+            self.file_name.addItems([name for name in self.lfs.name])
+            self.file_name.setCurrentIndex(0)
+            
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     hwnd = get_hwnd()
