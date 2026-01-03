@@ -312,14 +312,14 @@ class SliceBrowser(QMainWindow):
         act_grid.setChecked(False)
         act_grid.triggered.connect(self.toggle_grid)
         view_menu.addAction(act_grid)
-        view_menu.addSeparator()
+        self.cmap_menu = view_menu.addMenu("Colormap")
         self.set_default_colormap()
         for cmap_name in self.cmap_colors_dict.keys():
-            act_cmap = QAction(f"Colormap: {cmap_name}", self)
+            act_cmap = QAction(f"{cmap_name}", self)
             act_cmap.setCheckable(True)
             act_cmap.setChecked(cmap_name=='prevac_cmap')
             act_cmap.triggered.connect(lambda checked, name=cmap_name: self.set_cmap(name))
-            view_menu.addAction(act_cmap)
+            self.cmap_menu.addAction(act_cmap)
         
         
         self.E_pixmap_x = self.make_axis_label("Kinetic Energy (eV)", font_size=18, vertical=False)
@@ -754,14 +754,11 @@ class SliceBrowser(QMainWindow):
         }
     
     def set_cmap(self, cmap_name='prevac_cmap'):
-        for action in self.menu_bar.actions():
-            if action.menu():
-                for act in action.menu().actions():
-                    if act.text().startswith("Colormap:"):
-                        if act.text() == f"Colormap: {cmap_name}":
-                            act.setChecked(True)
-                        else:
-                            act.setChecked(False)
+        for act in self.cmap_menu.actions():
+            if act.text() == f"{cmap_name}":
+                act.setChecked(True)
+            else:
+                act.setChecked(False)
         cmap = plt.get_cmap(cmap_name)
         n = self.cmap_colors_dict[cmap_name]
             
