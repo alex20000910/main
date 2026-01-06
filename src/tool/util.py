@@ -48,6 +48,7 @@ class app_param:
         self.bar_pos = bar_pos
         self.g_mem = g_mem
 
+# Deprecated classes
 class MDC_param:
     def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, smfp, smfi, smaa1, smaa2, smresult, smcst, mdet):
         self.ScaleFactor = ScaleFactor
@@ -1004,38 +1005,39 @@ class motion:
                 px2, py2 = event.x, event.y
                 self.out.get_tk_widget().create_rectangle((self.px1, int(self.figy*100)-self.py1), (px2, int(self.figy*100)-py2),
                                                     outline='black', width=2, tag='rec')
-            if self.value.get() == 'Raw Data':
-                if event.inaxes:
-                    cxdata = event.xdata
-                    cydata = event.ydata
-                    xf = (cxdata >= self.ao.get_xlim()[0] and cxdata <= self.ao.get_xlim()[1])
-                    if self.emf=='KE':
-                        yf = (cydata >= self.ao.get_ylim()[0] and cydata <= self.ao.get_ylim()[1])
-                    else:
-                        yf = (cydata <= self.ao.get_ylim()[0] and cydata >= self.ao.get_ylim()[1])
-                    if xf and yf:
+            if self.value is not None and self.ao is not None:
+                if self.value.get() == 'Raw Data':
+                    if event.inaxes:
+                        cxdata = event.xdata
+                        cydata = event.ydata
+                        xf = (cxdata >= self.ao.get_xlim()[0] and cxdata <= self.ao.get_xlim()[1])
                         if self.emf=='KE':
-                            dx = self.data.sel(
-                                eV=cydata, method='nearest').to_numpy().reshape(len(self.phi))
+                            yf = (cydata >= self.ao.get_ylim()[0] and cydata <= self.ao.get_ylim()[1])
                         else:
-                            dx = self.data.sel(
-                                eV=self.vfe-cydata, method='nearest').to_numpy().reshape(len(self.phi))
-                        dy = self.data.sel(
-                            phi=cxdata, method='nearest').to_numpy().reshape(len(self.ev))
-                        if self.rcx is not None:
-                            self.rcx.clear()
-                            self.rcy.clear()
-                            self.rcx.set_title('            Raw Data', font='Arial', fontsize=self.size(16))
-                            self.rcx.plot(self.phi, dx, c='black')
+                            yf = (cydata <= self.ao.get_ylim()[0] and cydata >= self.ao.get_ylim()[1])
+                        if xf and yf:
                             if self.emf=='KE':
-                                self.rcy.plot(dy, self.ev, c='black')
+                                dx = self.data.sel(
+                                    eV=cydata, method='nearest').to_numpy().reshape(len(self.phi))
                             else:
-                                self.rcy.plot(dy, self.vfe-self.ev, c='black')
-                            self.rcx.set_xticks([])
-                            self.rcy.set_yticks([])
-                            self.rcx.set_xlim(self.ao.get_xlim())
-                            self.rcy.set_ylim(self.ao.get_ylim())
-                        self.out.draw()
+                                dx = self.data.sel(
+                                    eV=self.vfe-cydata, method='nearest').to_numpy().reshape(len(self.phi))
+                            dy = self.data.sel(
+                                phi=cxdata, method='nearest').to_numpy().reshape(len(self.ev))
+                            if self.rcx is not None:
+                                self.rcx.clear()
+                                self.rcy.clear()
+                                self.rcx.set_title('            Raw Data', font='Arial', fontsize=self.size(16))
+                                self.rcx.plot(self.phi, dx, c='black')
+                                if self.emf=='KE':
+                                    self.rcy.plot(dy, self.ev, c='black')
+                                else:
+                                    self.rcy.plot(dy, self.vfe-self.ev, c='black')
+                                self.rcx.set_xticks([])
+                                self.rcy.set_yticks([])
+                                self.rcx.set_xlim(self.ao.get_xlim())
+                                self.rcy.set_ylim(self.ao.get_ylim())
+                            self.out.draw()
             self.xdata.config(text='xdata:'+str(' %.3f' % event.xdata))
             self.ydata.config(text='ydata:'+str(' %.3f' % event.ydata))
         else:

@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.4"
-__release_date__ = "2025-12-31"
+__version__ = "8.5"
+__release_date__ = "2026-01-06"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -1295,19 +1295,14 @@ def cmfit(*e):
         st.put('No data loaded!')
         messagebox.showwarning("Warning","No data loaded!")
         return
-    import tool.MDC_Fitter
-    from tool.MDC_Fitter import mgg as mgg
-    if mgg is None:
-        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst, mdet=mdet)
-        threading.Thread(target=tool.MDC_Fitter.fitm, args=(mdc_pars,)).start()
-        clear(mdc_pars)
-    elif isinstance(mgg, tk.Toplevel):
-        mgg.lift()
-    elif mgg == True:
-        importlib.reload(tool.MDC_Fitter)
-        mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst, mdet=mdet)
-        threading.Thread(target=tool.MDC_Fitter.fitm, args=(mdc_pars,)).start()
-        clear(mdc_pars)
+    def job():
+        src = '.MDC_cut'
+        subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
+    threading.Thread(target=job, daemon=True).start()
+    if os.name == 'nt' and hwnd:
+        windll.user32.ShowWindow(hwnd, 9)
+        windll.user32.SetForegroundWindow(hwnd)
+    print('\033[36m\nTransfering Data...\nPlease wait...\033[0m')
 
 @pool_protect
 def cefit(*e):

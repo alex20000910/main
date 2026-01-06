@@ -27,13 +27,8 @@ for i in range(5):
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 
 from MDC_cut_utility import *
-from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
-from tool.spectrogram import spectrogram, lfs_exp_casa
-from tool.util import laplacian_filter  # for originpro: from MDC_cut import *
-from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
-from tool.SO_Fitter import SO_Fitter
-from tool.CEC import CEC, call_cec
-from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
+from tool.loader import loadfiles
+from tool.util import IconManager
 
 def get_hwnd():
     try:
@@ -173,8 +168,8 @@ class c_fermi_level(QDialog):
         QApplication.processEvents()
 
 class main(QMainWindow):
-    def __init__(self, file, hwnd=None):
-        self.lfs = loadfiles(file, name='internal')
+    def __init__(self, lfs: FileSequence, hwnd=None):
+        self.lfs = lfs
         icon = IconManager().icon
         pixmap = QPixmap()
         pixmap.loadFromData(b64decode(icon))
@@ -183,6 +178,7 @@ class main(QMainWindow):
         super().__init__()
         self.hwnd=hwnd
         self.setWindowTitle("Raw Data Viewer")
+        self.setAcceptDrops(True)
         # self.showFullScreen()
         # geo = self.geometry()
         # self.showNormal()
@@ -364,6 +360,10 @@ class main(QMainWindow):
         self.menu_bar = QMenuBar()
         self.setMenuBar(self.menu_bar)
         file_menu = self.menu_bar.addMenu("File")
+        act_load = QAction("Load File", self)
+        act_load.setShortcut("Ctrl+O")
+        act_load.triggered.connect(self.load_file)
+        file_menu.addAction(act_load)
         act_quit = QAction("Quit", self)
         act_quit.setShortcut("Ctrl+Q")
         act_quit.triggered.connect(self.close)
@@ -374,14 +374,14 @@ class main(QMainWindow):
         act_grid.setChecked(False)
         act_grid.triggered.connect(self.toggle_grid)
         view_menu.addAction(act_grid)
-        view_menu.addSeparator()
+        self.cmap_menu = view_menu.addMenu("Colormap")
         self.set_default_colormap()
         for cmap_name in self.cmap_colors_dict.keys():
-            act_cmap = QAction(f"Colormap: {cmap_name}", self)
+            act_cmap = QAction(f"{cmap_name}", self)
             act_cmap.setCheckable(True)
             act_cmap.setChecked(cmap_name=='prevac_cmap')
             act_cmap.triggered.connect(lambda checked, name=cmap_name: self.set_cmap(name))
-            view_menu.addAction(act_cmap)
+            self.cmap_menu.addAction(act_cmap)
         
         
         self.KE_pixmap = self.make_axis_label("Kinetic Energy (eV)", font_size=18, vertical=True)
@@ -449,7 +449,15 @@ class main(QMainWindow):
         
         self.showMaximized()
         self.w, self.h = self.width(), self.height()
-        
+    
+    def load_file(self):
+        file = QFileDialog.getOpenFileNames(self, "Open Data File", "", "HDF5 Files (*.h5 *.hdf5);;NPZ Files (*.npz);;JSON Files (*.json);;TXT Files (*.txt)")[0]
+        if file:
+            self.lfs = loadfiles(file, name='external')
+            self.file_name.clear()
+            self.file_name.addItems([name for name in self.lfs.name])
+            self.file_name.setCurrentIndex(0)
+    
     def energy_mode(self, event):
         if self.set_vfe is None:
             self.set_vfe = c_fermi_level(self.vfe, self.icon)
@@ -865,14 +873,11 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
         }
             
     def set_cmap(self, cmap_name='prevac_cmap'):
-        for action in self.menu_bar.actions():
-            if action.menu():
-                for act in action.menu().actions():
-                    if act.text().startswith("Colormap:"):
-                        if act.text() == f"Colormap: {cmap_name}":
-                            act.setChecked(True)
-                        else:
-                            act.setChecked(False)
+        for act in self.cmap_menu.actions():
+            if act.text() == f"{cmap_name}":
+                act.setChecked(True)
+            else:
+                act.setChecked(False)
         cmap = plt.get_cmap(cmap_name)
         n = self.cmap_colors_dict[cmap_name]
             
@@ -890,14 +895,39 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
         # 應用到 histogram widget
         self.hist.gradient.setColorMap(color_map)
     
+    def dragEnterEvent(self, event):
+        # 檢查是否為檔案
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        # 獲取拖曳的檔案路徑
+        files = [url.toLocalFile() for url in event.mimeData().urls()]
+        if files:
+            self.lfs = loadfiles(files, name='external')
+            self.file_name.clear()
+            self.file_name.addItems([name for name in self.lfs.name])
+            self.file_name.setCurrentIndex(0)
+            
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     hwnd = get_hwnd()
+    cdir = os.path.abspath(__file__)
+    cdir = os.path.dirname(cdir)
+    cdir = os.path.dirname(cdir)
+    cdir = os.path.dirname(cdir)
     p = argparse.ArgumentParser(description="Input Raw Data File Path")
-    p.add_argument("-f", "--file", help="file path", type=str, nargs='+', required=True)
+    p.add_argument("-f", "--file", help="file path", type=str, nargs='+', required=False)
     args = p.parse_args()
     if args.file:
         file = args.file
-    win = main(file, hwnd)
-    win.show()
-    sys.exit(app.exec())
+        lfs = loadfiles(file, name='internal')
+    else:
+        file = QFileDialog.getOpenFileNames(None, "Open Data File", cdir, "HDF5 Files (*.h5 *.hdf5);;NPZ Files (*.npz);;JSON Files (*.json);;TXT Files (*.txt)")[0]
+        lfs = loadfiles(file, name='external')
+    if file:
+        win = main(lfs, hwnd)
+        win.show()
+        sys.exit(app.exec())
