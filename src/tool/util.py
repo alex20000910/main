@@ -48,6 +48,7 @@ class app_param:
         self.bar_pos = bar_pos
         self.g_mem = g_mem
 
+# Deprecated classes
 class MDC_param:
     def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, smfp, smfi, smaa1, smaa2, smresult, smcst, mdet):
         self.ScaleFactor = ScaleFactor
