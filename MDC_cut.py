@@ -1296,17 +1296,17 @@ def cmfit(*e):
         messagebox.showwarning("Warning","No data loaded!")
         return
     import tool.MDC_Fitter
-    from tool.MDC_Fitter import mgg as mgg
+    from tool.MDC_Fitter import mgg as mgg, fitm as fitm
     if mgg is None:
         mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst, mdet=mdet)
-        threading.Thread(target=tool.MDC_Fitter.fitm, args=(mdc_pars,)).start()
+        threading.Thread(target=fitm, args=(mdc_pars,)).start()
         clear(mdc_pars)
     elif isinstance(mgg, tk.Toplevel):
         mgg.lift()
     elif mgg == True:
         importlib.reload(tool.MDC_Fitter)
         mdc_pars = MDC_param(ScaleFactor=ScaleFactor, sc_y=sc_y, g=g, scale=scale, npzf=npzf, vfe=vfe, emf=emf, st=st, dpath=dpath, name=name, k_offset=k_offset, value3=value3, ev=ev, phi=phi, data=data, base=base, fpr=fpr, skmin=skmin, skmax=skmax, smfp=smfp, smfi=smfi, smaa1=smaa1, smaa2=smaa2, smresult=smresult, smcst=smcst, mdet=mdet)
-        threading.Thread(target=tool.MDC_Fitter.fitm, args=(mdc_pars,)).start()
+        threading.Thread(target=fitm, args=(mdc_pars,)).start()
         clear(mdc_pars)
 
 @pool_protect

@@ -986,6 +986,8 @@ class mloader:
     
     def loadmfit_2p(self, file: str):
         # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("VMS files", "*.vms"),))
+        if not file:
+            return
         mfpath = ''
         yy = []
         for n in range(len(self.ev)):
@@ -1248,6 +1250,8 @@ class mloader:
         # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("VMS files", "*.vms"),))
         # global st
         # global data, rdd, lmgg
+        if not file:
+            return
         name = self.data.attrs['Name']
         mfpath = ''
         yy = []
@@ -1564,6 +1568,8 @@ class mloader:
         # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
         # global h, m, fwhm, fev, pos, limg, img, name, ophi, rpos, st, kmax, kmin, lmgg
         # global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x, smresult, smcst
+        if not file:
+            return
         h=6.62607015*10**-34
         m=9.10938356*10**-31
         name = self.data.attrs['Name']
@@ -1834,6 +1840,7 @@ class mloader:
                                 0.5/10**-10*(h/2/np.pi))*180/np.pi
                 self.fpr = 1
                 tbasename = os.path.basename(self.rdd)
+                mdet = -1
                 if '.h5' in tbasename:
                     data = load_h5(self.rdd)
                     shape = data.shape
@@ -2076,6 +2083,7 @@ class eloader:
                     np.sin(ffphi/180*np.pi)*10**-10/(h/2/np.pi)
                 self.fpr = 1
                 tbasename = os.path.basename(self.rdd)
+                edet = -1
                 if '.h5' in tbasename:
                     data = load_h5(self.rdd)
                     shape = data.shape

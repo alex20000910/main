@@ -917,7 +917,7 @@ def msave_state():
 
 def mundo():
     if mundo_stack:
-        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, smcst, mfi_err, fdo
+        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, mresult, smcst, mfi_err, fdo
         # 從撤銷堆疊中彈出上一個狀態並恢復，並將當前狀態推入重做堆疊
         state = mundo_stack.pop()
         smresult = pack_fitpar(mresult)
@@ -939,6 +939,7 @@ def mundo():
         maa1 = state['maa1']
         maa2 = state['maa2']
         smresult = state['smresult']
+        mresult = state['smresult']
         smcst = state['smcst']
         mfi_err = state['mfi_err']
         mst.put("Undo")
@@ -952,7 +953,7 @@ def mundo():
 
 def mredo():
     if mredo_stack:
-        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, smcst, mfi_err, fdo
+        global mfi, mfp, kmin, kmax, maa1, maa2, smresult, mresult, smcst, mfi_err, fdo
         # 從重做堆疊中彈出上一個狀態並恢復，並將當前狀態推入撤銷堆疊
         state = mredo_stack.pop()
         smresult = pack_fitpar(mresult)
@@ -974,6 +975,7 @@ def mredo():
         maa1 = state['maa1']
         maa2 = state['maa2']
         smresult = state['smresult']
+        mresult = state['smresult']
         smcst = state['smcst']
         mfi_err = state['mfi_err']
         mst.put("Redo")

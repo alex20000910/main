@@ -822,6 +822,29 @@ class SliceBrowser(QMainWindow):
                 break
         return xl, xh
 
+    def gen_slider_color(self, axis, det)->str:
+        text = "stop:0.0 #bcbcbc,"
+        xl, xh = self.det_lim(axis, det)
+        for i in range(len(axis)):
+            if axis[i] >= xl:
+                start = axis[i]+0.00011
+                for j in range(i, len(axis)):
+                    if det[j]==False:
+                        end = axis[j-1]-0.00011
+                        body = f"""stop:{start-0.0001} #bcbcbc,
+                                stop:{start} #00AA00,
+                                stop:{end} #00AA00,
+                                stop:{end+0.0001} #bcbcbc,
+                            """
+                        text += body
+                        break
+                try:
+                    xl, xh = self.det_lim(axis[j:], det[j:])
+                except:
+                    break
+        text += "stop:1.0 #bcbcbc);"
+        return text
+    
     def update_binned_data(self, save=False, indky=None, indkx=None, init=False):
         # 對整個三維資料 binning
         bin_e = self.bin_e_spin.value()
@@ -906,7 +929,7 @@ class SliceBrowser(QMainWindow):
                                         height: 10px;     /* 控制滑道粗細 */
                                         border-radius: 5px;
                                         background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                    """+ f"""
+                                    """+f"""
                                             stop:0.0 #bcbcbc,
                                             stop:{el-0.0001} #bcbcbc,
                                             stop:{el} #2A2A2A,
@@ -922,7 +945,7 @@ class SliceBrowser(QMainWindow):
                                     """)
         det = (self.data_show[:, :, :].sum(axis=1).sum(axis=0) > 0)
         axis=(self.kx-self.kx[0])/(self.kx[-1]-self.kx[0])
-        xl, xh = self.det_lim(axis, det)
+        text = self.gen_slider_color(axis, det)
         self.slider_kx.setStyleSheet("""
                                     QSlider::handle:horizontal {
                                         background: #007AD9;
@@ -934,19 +957,12 @@ class SliceBrowser(QMainWindow):
                                         height: 10px;     /* 控制滑道粗細 */
                                         border-radius: 5px;
                                         background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                    """+ f"""
-                                            stop:0.0 #bcbcbc,
-                                            stop:{xl-0.0001} #bcbcbc,
-                                            stop:{xl} #00AA00,
-                                            stop:{xh} #00AA00,
-                                            stop:{xh+0.0001} #bcbcbc,
-                                            stop:1.0 #bcbcbc);
-                                    """+"""
+                                    """+text+"""
                                     }
                                     """)
         det = (self.data_show[:, :, :].sum(axis=2).sum(axis=0) > 0)
         axis=(self.ky-self.ky[0])/(self.ky[-1]-self.ky[0])
-        xl, xh = self.det_lim(axis, det)
+        text = self.gen_slider_color(axis, det)
         self.slider_ky.setStyleSheet("""
                                     QSlider::handle:horizontal {
                                         background: #007AD9;
@@ -958,14 +974,7 @@ class SliceBrowser(QMainWindow):
                                         height: 10px;     /* 控制滑道粗細 */
                                         border-radius: 5px;
                                         background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                    """+ f"""
-                                            stop:0.0 #bcbcbc,
-                                            stop:{xl-0.0001} #bcbcbc,
-                                            stop:{xl} #00AA00,
-                                            stop:{xh} #00AA00,
-                                            stop:{xh+0.0001} #bcbcbc,
-                                            stop:1.0 #bcbcbc);
-                                    """+"""
+                                    """+text+"""
                                     }
                                     """)
         
