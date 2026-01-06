@@ -32,13 +32,8 @@ for i in range(5):
 sys.path.append(os.path.join(cdir, mod_dir))
 
 from MDC_cut_utility import *
-from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
-from tool.spectrogram import spectrogram, lfs_exp_casa
-from tool.util import laplacian_filter  # for originpro: from MDC_cut import *
-from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
-from tool.SO_Fitter import SO_Fitter
-from tool.CEC import CEC, call_cec
-from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
+from tool.loader import loadfiles
+from tool.util import IconManager
 
 m = 9.110938356e-31  # electron mass
 e = 1.602176634e-19  # elementary charge
@@ -926,13 +921,6 @@ class main(QMainWindow):
         self.g_residual.setWindowTitle("Preview")
         self.g_residual.setWindowIcon(self.icon)
         self.g_residual.show()
-        # plt.plot(ev,s3,label='STD',c='r')
-        # plt.plot(ev,s4,label='RMS',c='b')
-        # plt.title('Residual')
-        # plt.xlabel('Kinetic Energy (eV)')
-        # plt.ylabel('Intensity (Counts)')
-        # plt.legend()
-        # plt.show()
     
     def close_residual(self, event):
         self.g_residual.close()
@@ -1005,13 +993,6 @@ class main(QMainWindow):
         self.g_area.setWindowTitle("Area")
         self.g_area.setWindowIcon(self.icon)
         self.g_area.show()
-        # plt.plot(ev,s1,label='Area 1',c='r')
-        # plt.plot(ev,s2,label='Area 2',c='b')
-        # plt.title('Area')
-        # plt.xlabel('Kinetic Energy (eV)')
-        # plt.ylabel('Intensity (Counts)')
-        # plt.legend()
-        # plt.show()
     
     def close_area(self, event):
         self.g_area.close()
@@ -1032,10 +1013,6 @@ class main(QMainWindow):
         ev = self.eV
         # global pos, fwhm, fev, rpos, ophi
         fev, pos, fwhm = [], [], []
-        # f=plt.figure()
-        # a1=f.add_subplot(311)
-        # a2=f.add_subplot(312)
-        # a3=f.add_subplot(313)
         x1=[]
         x2=[]
         y1=[]
@@ -1070,21 +1047,6 @@ class main(QMainWindow):
         fwhm = res(fev, fwhm)
         pos = res(fev, pos)
         fev = res(fev, fev)
-        
-        # ha=a1.scatter(x1,y1,c='r')
-        # a1.set_title('FWHM')
-        # a1.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)')
-        # a1.legend([ha],['Comp 1'])
-        # hb=a2.scatter(x2,y2,c='b')
-        # a2.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)')
-        # a2.legend([hb],['Comp 2'])
-        # h2=a3.scatter(x2,y2,c='b')
-        # h1=a3.scatter(x1,y1,c='r')
-        # a3.set_xlabel('Kinetic Energy (eV)')
-        # a3.set_ylabel(r'FWHM ($\frac{2\pi}{\AA}$)')
-        # a3.legend([h1,h2],['Comp 1','Comp 2'])
-        # plt.tight_layout()
-        # plt.show()
         
         self.g_fwhm = QDialog(self)
         self.g_fwhm.closeEvent = lambda event: self.close_fwhm(event)
@@ -1149,13 +1111,7 @@ class main(QMainWindow):
         ev = self.eV
         
         # global pos, fwhm, fev, rpos, ophi
-        # _size = lambda s: int(s * 1)
         fev, pos, fwhm = [], [], []
-        # f=plt.figure()
-        # a1=f.add_subplot(221)
-        # a2=f.add_subplot(222)
-        # a3=f.add_subplot(223)
-        # a4=f.add_subplot(224)
         y=[]
         pos1=[]
         pos2=[]
@@ -1219,28 +1175,6 @@ class main(QMainWindow):
         print(len(xx))
         x = ((y[-1:0:-1]+xx[::-1])-self.vfe)*1000
         print(len(x))
-        # ha=a1.scatter(x,v1,c='r')
-        # hb=a2.scatter(x,v2,c='b')
-        # h1=a3.scatter(x,yy1*1000,c='r')
-        # h2=a4.scatter(x,yy2*1000,c='b')
-        # a1.set_title('Group Velocity')
-        # a1.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=_size(14))
-        # a1.set_ylabel(r'v ($eV\AA$)', font='Arial', fontsize=_size(14))
-        # a1.legend([ha],['Comp 1'])
-        # a2.set_title('Group Velocity')
-        # a2.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=_size(14))
-        # a2.set_ylabel(r'v ($eV\AA$)', font='Arial', fontsize=_size(14))
-        # a2.legend([hb],['Comp 2'])
-        # a3.set_title('Imaginary Part')
-        # a3.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=_size(14))
-        # a3.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=_size(14))
-        # a3.legend([h1],['Comp 1'])
-        # a4.set_title('Imaginary Part')
-        # a4.set_xlabel('Binding Energy (meV)', font='Arial', fontsize=_size(14))
-        # a4.set_ylabel(r'Im $\Sigma$ (meV)', font='Arial', fontsize=_size(14))
-        # a4.legend([h2],['Comp 2'])
-        # plt.tight_layout()
-        # plt.show()
         
         self.g_imse = QDialog(self)
         self.g_imse.closeEvent = lambda event: self.close_imse(event)
@@ -1338,23 +1272,6 @@ class main(QMainWindow):
         bmimse.clicked.connect(self.fmimse)
         tg_layout.addWidget(bmimse)
         self.tg.show()
-        
-        # mprvg = tk.Toplevel(g)
-        # mprvg.geometry('300x320')
-        # mprvg.title(' Preview MDC Result')
-        # bmresidual = tk.Button(mprvg, text='Residual', command=fmresidual, width=30, height=2, font=('Arial', _size(16), "bold"), bg='white', bd=10)
-        # bmresidual.pack()
-        # bmarea = tk.Button(mprvg, text='Area', command=fmarea, width=30, height=2, font=('Arial', _size(16), "bold"), bg='white', bd=10)
-        # bmarea.pack()
-        # bmfwhm = tk.Button(mprvg, text='FWHM', command=fmfwhm, width=30, height=2, font=('Arial', _size(16), "bold"), bg='white', bd=10)
-        # bmfwhm.pack()
-        # bmimse = tk.Button(mprvg, text='Imaginary Part', command=fmimse, width=30, height=2, font=('Arial', _size(16), "bold"), bg='white', bd=10)
-        # bmimse.pack()
-        # mprvg.update()
-        # w=mprvg.winfo_reqwidth()
-        # h=mprvg.winfo_reqheight()
-        # mprvg.geometry(f'{w}x{h}')
-        # mprvg.update()
     
     def update_indicator(self):
         self.ind_plot.clear()
@@ -1650,51 +1567,15 @@ class main(QMainWindow):
         self.g_exp.setWindowTitle("Preview")
         self.g_exp.setWindowIcon(self.icon)
         self.g_exp.show()
-        # if 'mendg' in globals():
-        #     mendg.destroy()
-        # mendg = tk.Toplevel(g)
-        # mendg.title('MDC Lorentz Fit Result')
-        # fr = tk.Frame(master=mendg, bd=5)
-        # fr.grid(row=0, column=0)
-        # mfitfig = Figure(figsize=(8*scale, 6*scale), layout='constrained')
-        # medfitout = FigureCanvasTkAgg(mfitfig, master=fr)
-        # medfitout.get_tk_widget().grid(row=0, column=0)
-        # medfitout.mpl_connect('motion_notify_event', fmedmove)
-
-        # a = mfitfig.subplots()
-        # a.scatter(pos+fwhm/2, fev, c='r', s=scale*scale*10)
-        # a.scatter(pos-fwhm/2, fev, c='r', s=scale*scale*10)
-        # a.scatter(pos, fev, c='k', s=scale*scale*10)
-        # a.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=_size(14))
-        # a.set_ylabel('Kinetic Energy (eV)', font='Arial', fontsize=_size(14))
-        # medfitout.draw()
-        # xydata = tk.Frame(master=fr, bd=5)
-        # xydata.grid(row=1, column=0)
-
-        # medxdata = tk.Label(xydata, text='xdata:', font=(
-        #     "Arial", _size(12), "bold"), width='15', height='1', bd=10, bg='white')
-        # medxdata.grid(row=0, column=0)
-        # medydata = tk.Label(xydata, text='ydata:', font=(
-        #     "Arial", _size(12), "bold"), width='15', height='1', bd=10, bg='white')
-        # medydata.grid(row=0, column=1)
-
-        # bsave = tk.Button(master=mendg, text='Save Fitted Data', command=savemfit,
-        #                 width=30, height=2, font=('Arial', _size(14), "bold"), bg='white', bd=10)
-        # bsave.grid(row=1, column=0)
-        
-        # mendg.update()
 
     def savemfit(self):
         # global smresult, smcst, fev, fwhm, pos, skmin, skmax, smaa1, smaa2, smfp, smfi, mdet
         self.smresult = self.pack_fitpar(self.mresult)
         dpath = self.lfs.path[0]
         path, ftype = QFileDialog.getSaveFileName(self, "Save MDC Fitted Data", os.path.join(dpath, self.lfs.name[0]+"_mfit"), "NPZ files (*.npz)")
-        # path = fd.asksaveasfilename(title="Save MDC Fitted Data", initialdir=dpath,
-        #                             initialfile=name+"_mfit", filetype=[("NPZ files", ".npz"),], defaultextension=".npz")
         try:
             self.raise_()
             self.activateWindow()
-            # mgg.focus_force()
         except:
             pass
         if len(path) > 2:
@@ -1708,7 +1589,6 @@ class main(QMainWindow):
             smresult = self.smresult
             smcst = self.smcst
             
-            # mendg.destroy()
             shape=data.shape
             mdet=data.data[shape[0]//2, shape[1]//2]
             np.savez(path, path=dpath, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
@@ -1718,336 +1598,12 @@ class main(QMainWindow):
             self.g_exp.show()
             self.g_exp.raise_()
             self.g_exp.activateWindow()
-            # mendg.focus_force()
             self.close_flag = 1
-
-
-    def mjob(self):     # MDC Fitting GUI
-        # global g, mfiti, mfitfig, mfitout, mgg, mxdata, mydata, mdxdata, mdydata, miout, mifig, mfi, mfi_err, mfi_x, mbrmv, flmrmv, mbcgl2, mfp, flmcgl2, fpr, mst, mstate, mwf1, mwf2, maf1, maf2, mxf1, mxf2, mlind, mrind, mbcomp1, flmcomp1, mbcomp2, flmcomp2, min_w1, min_w2, min_a1, min_a2, min_x1, min_x2, lm1, lm2, lm3, lm4, lm5, lm6, mresult, smresult, mbposcst, flmposcst, smcst, mbreject, flmreject, mfitprfig1, mfitprout1, mfitprfig2, mfitprout2, mfitprfig3, mfitprout3, mfpr, mpr, b_pr, mbgv, fdo
-        # mgg = tk.Toplevel(g, bg='white')
-        # mgg.protocol("WM_DELETE_WINDOW", mgg_close)
-        # mdpi = mgg.winfo_fpixels('1i')
-        # t_sc_w = windll.user32.GetSystemMetrics(0)
-        # tx = int(t_sc_w*windll.shcore.GetScaleFactorForDevice(0)/100) if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
-        # mgg.geometry(f"1900x1000+{tx}+{sc_y}")
-        # mgg.title('MDC Lorentz Fit')
-        # self.fdo=0
-        mpr=0   #button flag 1:ON 0:OFF initial 0:OFF
-        # b_pr = tk.Button(mgg, text='Real Time Preview ON', command=f_pr, width=20, height=2, font=('Arial', _size(12), "bold"), bg='white')
-        # b_pr.grid(row=0, column=0)
-        
-        mfpr = 0    #preview plot pcolormesh flag 1:setdata 0:pcolormesh
-        # fr_pr1 = tk.Frame(master=mgg, bg='white')
-        # fr_pr1.grid(row=1, column=0)
-        # b_pr = tk.Button(fr_pr1, text='Real Time Preview OFF', command=f_pr, width=20, height=2, font=('Arial', _size(12), "bold"), bg='white',fg='red')
-        # b_pr.grid(row=0, column=0)
-        # mfitprfig2 = Figure(figsize=(3*scale, 3*scale), layout='constrained')
-        # mfitprout2 = FigureCanvasTkAgg(mfitprfig2, master=fr_pr1)
-        # mfitprout2.get_tk_widget().grid(row=1, column=0)
-        # mfitprfig3 = Figure(figsize=(3*scale, 3*scale), layout='constrained')
-        # mfitprout3 = FigureCanvasTkAgg(mfitprfig3, master=fr_pr1)
-        # mfitprout3.get_tk_widget().grid(row=2, column=0)
-        
-        # fr_pr2 = tk.Frame(master=mgg, bg='white')
-        # fr_pr2.grid(row=2, column=0)
-        # mfitprfig1 = Figure(figsize=(3*scale, 2*scale), layout='constrained')
-        # mfitprout1 = FigureCanvasTkAgg(mfitprfig1, master=fr_pr2)
-        # mfitprout1.get_tk_widget().grid(row=0, column=0)
-        # mst = queue.Queue(maxsize=0)
-        # mstate = tk.Label(mgg, text='', font=(
-        #     "Arial", _size(14), "bold"), bg="white", fg="black")
-        # mstate.grid(row=0, column=1)
-        # fr = tk.Frame(master=mgg, bg='white')
-        # fr.grid(row=1, column=1)
-        # frind = tk.Frame(master=fr, bg='white')
-        # frind.grid(row=0, column=0)
-        # mlind = tk.Button(frind, text='<<', command=mflind, width=10,
-        #                 height=2, font=('Arial', _size(14), "bold"), bg='white')
-        # mlind.grid(row=0, column=0)
-        # mrind = tk.Button(frind, text='>>', command=mfrind, width=10,
-        #                 height=2, font=('Arial', _size(14), "bold"), bg='white')
-        # mrind.grid(row=0, column=2)
-
-        # mfiti = tk.IntVar()
-        # mfiti.set(0)
-        # mfiti.trace_add('write', fchki)
-        # if ScaleFactor <= 100:
-        #     tlength = int(1/0.975*6*mdpi)  # 100
-        #     twidth = int(1/0.975*0.2*mdpi)
-        # elif ScaleFactor <= 125:
-        #     tlength = int(1/0.985*6*mdpi)  # 125
-        #     twidth = int(1/0.985*0.2*mdpi)
-        # elif ScaleFactor <= 150:
-        #     tlength = int(1*6*mdpi)  # 150
-        #     twidth = int(1*0.2*mdpi)
-        # elif ScaleFactor <= 175:
-        #     tlength = int(0.99*6*mdpi)  # 175
-        #     twidth = int(0.99*0.2*mdpi)
-        # elif ScaleFactor <= 200:
-        #     tlength = int(0.985*6*mdpi)  # 200
-        #     twidth = int(0.985*0.2*mdpi)
-        # elif ScaleFactor <= 225:
-        #     tlength = int(0.98*6*mdpi)  # 225
-        #     twidth = int(0.98*0.2*mdpi)
-        # elif ScaleFactor <= 250:
-        #     tlength = int(0.977*6*mdpi)  # 250
-        #     twidth = int(0.977*0.2*mdpi)
-        # elif ScaleFactor <= 275:
-        #     tlength = int(0.975*6*mdpi)  # 275
-        #     twidth = int(0.975*0.2*mdpi)
-        # elif ScaleFactor <= 300:
-        #     tlength = int(0.97*6*mdpi)  # 300
-        #     twidth = int(0.97*0.2*mdpi)
-        # tlength = int(tlength*scale)
-        # twidth = int(twidth*scale)
-        # chi = tk.Scale(frind, label='Index', from_=0, to=len(ev)-1, orient='horizontal',
-        #             variable=mfiti, state='active', bg='white', fg='black', length=tlength, width=twidth, resolution=1)
-        # chi.grid(row=0, column=1)
-
-        # mfi, mfi_err, mfi_x = [], [], [i for i in range(len(ev))]
-        # mifig = Figure(figsize=(6*scale, 0.2*scale), layout='tight')
-        # miout = FigureCanvasTkAgg(mifig, master=frind)
-        # miout.get_tk_widget().grid(row=1, column=1)
-
-        # mfitfig = Figure(figsize=(8*scale, 6*scale), layout='constrained')
-        # mfitout = FigureCanvasTkAgg(mfitfig, master=fr)
-        # mfitout.get_tk_widget().grid(row=1, column=0)
-        # mfitout.mpl_connect('motion_notify_event', mmove)
-        # mfitout.mpl_connect('button_press_event', mpress)
-        # mfitout.mpl_connect('button_release_event', mrelease)
-
-        # xydata = tk.Frame(master=fr, bd=5, bg='white')
-        # xydata.grid(row=2, column=0)
-
-        # mxdata = tk.Label(xydata, text='xdata:', font=(
-        #     "Arial", _size(12), "bold"), width='15', height='1', bd=5, bg='white')
-        # mxdata.grid(row=0, column=0)
-        # mydata = tk.Label(xydata, text='ydata:', font=(
-        #     "Arial", _size(12), "bold"), width='15', height='1', bd=5, bg='white')
-        # mydata.grid(row=0, column=1)
-        # mdxdata = tk.Label(xydata, text='dx:', font=(
-        #     "Arial", _size(12), "bold"), width='15', height='1', bd=5, bg='white')
-        # mdxdata.grid(row=0, column=2)
-        # mdydata = tk.Label(xydata, text='dy:', font=(
-        #     "Arial", _size(12), "bold"), width='15', height='1', bd=5, bg='white')
-        # mdydata.grid(row=0, column=3)
-
-        # bstop=tk.Button(gg,command=stop,text='Stop',font=('Arial',20),bd=5)
-        # bstop.grid(row=1,column=0)
-
-        # frpara = tk.Frame(master=mgg, bd=5, bg='white')
-        # frpara.grid(row=1, column=2)
-        
-        # self.mfp = [1 for i in range(len(ev))]
-        # try:
-        #     if self.fpr == 1:
-        #         self.mfp = list(self.smfp)
-        #         self.mfi = list(self.smfi)
-        # except:
-        #     pass
-        # self.flmcgl2 = -1
-        # frre = tk.Frame(master=frpara, bd=5, bg='white')
-        # frre.grid(row=0, column=0)
-        # b_mundo = tk.Button(frre, text='Undo', command=mundo,width=25, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # b_mundo.grid(row=0, column=0)
-        # b_mredo = tk.Button(frre, text='Redo', command=mredo,width=25, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # b_mredo.grid(row=0, column=1)
-        # frpara00 = tk.Frame(master=frpara, bd=5, bg='white')
-        # frpara00.grid(row=1, column=0)
-
-        # frfitpar = tk.Frame(master=frpara00, bd=5, bg='white')
-        # frfitpar.grid(row=0, column=0)
-        # lm1 = tk.Label(frfitpar, anchor='w', text='', font=(
-        #     "Arial", _size(16), "bold"), width='50', height='1', bd=5, bg='white')
-        # lm1.grid(row=0, column=0)
-        # lm2 = tk.Label(frfitpar, anchor='w', text='', font=(
-        #     "Arial", _size(16), "bold"), width='50', height='1', bd=5, bg='white')
-        # lm2.grid(row=1, column=0)
-        # lm3 = tk.Label(frfitpar, anchor='w', text='', font=(
-        #     "Arial", _size(16), "bold"), width='50', height='1', bd=5, bg='white')
-        # lm3.grid(row=2, column=0)
-        # lm4 = tk.Label(frfitpar, anchor='w', text='', font=(
-        #     "Arial", _size(16), "bold"), width='50', height='1', bd=5, bg='white')
-        # lm4.grid(row=3, column=0)
-        # lm5 = tk.Label(frfitpar, anchor='w', text='', font=(
-        #     "Arial", _size(16), "bold"), width='50', height='1', bd=5, bg='white')
-        # lm5.grid(row=4, column=0)
-        # lm6 = tk.Label(frfitpar, anchor='w', text='', font=(
-        #     "Arial", _size(16), "bold"), width='50', height='1', bd=5, bg='white')
-        # lm6.grid(row=5, column=0)
-
-        # frYN = tk.Frame(master=frfitpar, bd=5, bg='white')
-        # frYN.grid(row=6, column=0)
-        # mbaccept = tk.Button(frYN, text='Accept', command=fmaccept,
-        #                     width=25, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # mbaccept.grid(row=0, column=0)
-        # mbreject = tk.Button(frYN, text='Reject', command=fmreject,
-        #                     width=25, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # mbreject.grid(row=0, column=1)
-
-        # l1 = tk.Label(frpara00, text='Index Operation', font=(
-        #     "Arial", _size(12), "bold"), width='15', height='1', bd=5, bg='white')
-        # l1.grid(row=1, column=0)
-        # froperind = tk.Frame(master=frpara00, bd=5, bg='white')
-        # froperind.grid(row=2, column=0)
-        # mbcgl2 = tk.Button(froperind, text='Add 2 Peaks', command=fmcgl2,
-        #                 width=25, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # mbcgl2.grid(row=0, column=0)
-        # mbrmv = tk.Button(froperind, text='Remove', command=fmrmv,
-        #                 width=25, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # mbrmv.grid(row=0, column=1)
-        # mbcomp1 = tk.Button(froperind, text='Comp 1', command=mfcomp1,
-        #                     width=14, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # mbcomp1.grid(row=1, column=0)
-        # mbcomp2 = tk.Button(froperind, text='Comp 2', command=mfcomp2,
-        #                     width=14, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # mbcomp2.grid(row=1, column=1)
-
-        # mbfitcp = tk.Button(master=frpara00, text='Fit Components', command=ffitcp,
-        #                     width=40, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # mbfitcp.grid(row=3, column=0)
-
-        # frwr = tk.Frame(master=frpara00, bd=5, bg='white')
-        # frwr.grid(row=4, column=0)
-        # l2 = tk.Label(frwr, text='FWHM Ratio', font=(
-        #     "Arial", _size(12), "bold"), width='15', height='1', bd=5, bg='white')
-        # l2.grid(row=0, column=1)
-        # l3 = tk.Label(frwr, text=':', font=("Arial", _size(12), "bold"),
-        #             width='15', height='1', bd=5, bg='white')
-        # l3.grid(row=1, column=1)
-        # mwf1 = tk.StringVar()
-        # mwf1.set('0')
-        # mwf1.trace_add('write', fmwf1)
-        # min_w1 = tk.Entry(frwr, font=("Arial", _size(12), "bold"),
-        #                 width=7, textvariable=mwf1, bd=5)
-        # min_w1.grid(row=1, column=0)
-        # mwf2 = tk.StringVar()
-        # mwf2.set('0')
-        # mwf2.trace_add('write', fmwf2)
-        # min_w2 = tk.Entry(frwr, font=("Arial", _size(12), "bold"),
-        #                 width=7, textvariable=mwf2, bd=5)
-        # min_w2.grid(row=1, column=2)
-
-        # frar = tk.Frame(master=frpara00, bd=5, bg='white')
-        # frar.grid(row=5, column=0)
-        # l2 = tk.Label(frar, text='Area Ratio', font=(
-        #     "Arial", _size(12), "bold"), width='15', height='1', bd=5, bg='white')
-        # l2.grid(row=0, column=1)
-        # l3 = tk.Label(frar, text=':', font=("Arial", _size(12), "bold"),
-        #             width='15', height='1', bd=5, bg='white')
-        # l3.grid(row=1, column=1)
-        # maf1 = tk.StringVar()
-        # maf1.set('0')
-        # maf1.trace_add('write', fmaf1)
-        # min_a1 = tk.Entry(frar, font=("Arial", _size(12), "bold"),
-        #                 width=7, textvariable=maf1, bd=5)
-        # min_a1.grid(row=1, column=0)
-        # maf2 = tk.StringVar()
-        # maf2.set('0')
-        # maf2.trace_add('write', fmaf2)
-        # min_a2 = tk.Entry(frar, font=("Arial", _size(12), "bold"),
-        #                 width=7, textvariable=maf2, bd=5)
-        # min_a2.grid(row=1, column=2)
-
-        # mbposcst = tk.Button(frpara00, text='Position constraint', command=fmposcst,
-        #                     width=25, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # mbposcst.grid(row=6, column=0)
-
-        # frxr = tk.Frame(master=frpara00, bd=5, bg='white', padx=30)
-        # frxr.grid(row=7, column=0)
-        # l3 = tk.Label(frxr, text='x2 =', font=("Arial", _size(12), "bold"),
-        #             width='5', height='1', bd=5, bg='white')
-        # l3.grid(row=0, column=0)
-        # mxf1 = tk.StringVar()
-        # mxf1.set('1')
-        # mxf1.trace_add('write', fmxf1)
-        # min_x1 = tk.Entry(frxr, font=("Arial", _size(12), "bold"), width=7,
-        #                 textvariable=mxf1, bd=5, state='disabled')
-        # min_x1.grid(row=0, column=1)
-        # l3 = tk.Label(frxr, text='* x1 +', font=("Arial", _size(12), "bold"),
-        #             width='5', height='1', bd=5, bg='white')
-        # l3.grid(row=0, column=2)
-        # mxf2 = tk.StringVar()
-        # mxf2.set('0')
-        # mxf2.trace_add('write', fmxf2)
-        # min_x2 = tk.Entry(frxr, font=("Arial", _size(12), "bold"), width=7,
-        #                 textvariable=mxf2, bd=5, state='disabled')
-        # min_x2.grid(row=0, column=3)
-
-        # frout = tk.Frame(master=mgg, bd=5, bg='white')
-        # frout.grid(row=2, column=1)
-        # bfall = tk.Button(frout, text='Fit All', command=fmfall,
-        #                 width=25, height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # bfall.grid(row=0, column=0)
-
-        flmreject = -1
-        flmposcst = -1
-        flmrmv = -1
-        flmcomp1 = -1
-        flmcomp2 = -1
-
-        # bprv = tk.Button(frout, text='Preview', command=fmpreview, width=25,
-        #                 height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # bprv.grid(row=1, column=0)
-        
-        # bend = tk.Button(frout, text='Export All', command=fmend, width=25,
-        #                 height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # bend.grid(row=2, column=0)
-
-        # frexp = tk.Frame(frout, bd=5, bg='white')
-        # frexp.grid(row=3, column=0)
-
-        # bend1 = tk.Button(frexp, text='Export Comp 1', command=fmend1, width=25,
-        #                 height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # bend1.grid(row=0, column=0)
-        
-        # bend2 = tk.Button(frexp, text='Export Comp 2', command=fmend2, width=25,
-        #                 height=1, font=('Arial', _size(14), "bold"), bg='white')
-        # bend2 .grid(row=0, column=1)
-        
-        # mbgv=0
-        # mgg.bind("<Up>",mfbgu)
-        # mgg.bind("<Down>",mfbgd)
-        # mgg.bind("<Left>",mfli)
-        # mgg.bind("<Right>",mfri)
-        
-        ##### test ##### 
-        # mprbg1()
-        # mprbg2()
-        # mprbg3()
-        
-        # self.mresult = [[]for i in range(len(ev))]
-        # try:
-        #     flsmresult = self.smresult
-        #     flsmcst = self.smcst
-        #     flsmresult = None
-        #     flsmcst = None
-        # except:
-        #     self.smcst=np.zeros(len(self.eV)*6).reshape(len(self.eV),6)
-        #     self.smresult = [1]
-        # if self.mprfit == 1:
-        #     self.fmfall()
-        # else:
-        #     self.mfitplot()
-        # tt = threading.Thread(target=tmstate)
-        # tt.daemon = True
-        # tt.start()
-        # mgg.update()
-        # screen_width = mgg.winfo_reqwidth()
-        # screen_height = mgg.winfo_reqheight()
-        # tx = int(t_sc_w*windll.shcore.GetScaleFactorForDevice(0)/100) if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
-        # mgg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
-        # mgg.update()
-
     
     def fmfall(self):
         QTimer.singleShot(100, self.mfitjob)
     
     def fitm(self): # init fitter
-        # if mgg is not None:
-        #     mgg.lift()
-        #     return
-        # init_pars(mdc_pars)
         # global ev, phi, data, mvv, maa1, maa2, fmxx, fmyy, fmx, fmy, kmin, kmax, cki, mbase, mprfit, mf_prswap, smresult, klim, fpr
         self.mprfit = 0
         self.cki = []        
@@ -2698,11 +2254,6 @@ class main(QMainWindow):
             elif self.mfp[i] == 2:
                 self.maa2[i, :] = a2
             pbar.update(1)
-            # print('Fitting MDC '+str(round((i+1)/len(self.eV)*100))+'%'+' ('+str(len(self.eV))+')')
-            # st.put('Fitting MDC '+str(round((i+1)/len(self.eV)*100)) +
-            #     '%'+' ('+str(len(self.eV))+')')
-            # mst.put('Fitting MDC '+str(round((i+1)/len(self.eV)*100)) +
-            #         '%'+' ('+str(len(self.eV))+')')
         pbar.close()
         self.mfitplot()
 
@@ -2765,25 +2316,6 @@ class main(QMainWindow):
             self.reg.setMovable(False)
             self.b_comp1.setText('Comp 1')
             self.b_comp1.setStyleSheet("")
-
-    # def mfitplot(self):
-    #     x = self.phi
-    #     if not self.lfs.f_npz[0]:
-    #         x = np.sqrt(2*m*e*self.eV[self.index])/hbar * np.sin((self.phi+self.k_offset)/180*np.pi) * 1e-10
-    #     y = self.data.data[self.index, :]
-    #     region = self.reg.getRegion()
-    #     mask = (x >= region[0]) & (x <= region[1])
-    #     x_fit = x[mask]
-    #     y_fit = y[mask]
-    #     if len(x_fit) < 2:
-    #         return
-    #     y_fit_line = self.lnr_bg(y_fit)
-        
-    #     if hasattr(self, 'fit_line'):
-    #         self.plot.removeItem(self.fit_line)
-        
-    #     self.fit_line = self.plot.plot(x_fit, y_fit_line, pen=pg.mkPen(color='g', width=2, style=Qt.DashLine))
-    
         
     def mfitplot(self):  # mfiti Scale
         # global mfitax, mxl, myl, klmin, klmax, tmxl, kmin, kmax, maa2, flmcomp, lm1, lm2, lm3, lm4, lm5, lm6, mxf1, mxf2, mwf1, mwf2, maf1, maf2, mt1, mt2, mt3, mt4, mt5, fdo, mf_prswap
@@ -2807,15 +2339,6 @@ class main(QMainWindow):
         
         i = self.index
         self.update_plot()
-        # mfitfig.clear()
-        # mfitax = mfitfig.subplots()
-        # if emf=='KE':
-        #     mfitax.set_title('Kinetic Energy:' + str(round(mvv[i], 3))+' eV, '+str(mfp[i])+' Peak')
-        # else:
-        #     mfitax.set_title('Binding Energy:' + str(round(vfe-mvv[i], 3))+' eV, '+str(mfp[i])+' Peak')
-        # mfitax.scatter(fmx[i, :], fmy[i, :], c='k', s=scale*scale*4)
-        # tyl = mfitax.get_ylim()
-        # txl = mfitax.get_xlim()
         txl = self.plot.viewRange()[0]
         tyl = self.plot.viewRange()[1]
         dy = (tyl[1]-tyl[0])/20
@@ -2826,15 +2349,11 @@ class main(QMainWindow):
         txmax = txl[1]
         self.plot.plot([txmin-dx*10, txmax+dx*10], [tymax+dy, tymax+dy], pen=pg.mkPen(color='grey', width=1, style=Qt.SolidLine))
         self.plot.setRange(yRange=(tymin, tymax+3*dy))
-        # mfitax.axhline(tymax+dy, c='grey')
-        # x = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
-        # y = fmyy[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
         x, x_arg = filter(fmx[i, :], kmin[i], kmax[i])
         y = fmy[i, x_arg]
         lbg = self.lnr_bg(y)
         if i in mfi_x:
             for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], ['', '', '', '', '', '']):
-                # l.config(text=v)
                 l.setText(v)
             try:
                 mxf1.setText(str(smcst[i][0]))
@@ -2857,38 +2376,28 @@ class main(QMainWindow):
                 pass
             if maa1[i, 0] == (kmin[i]+kmax[i])/2 and maa1[i, 2] == 0.5:
                 self.fit_line = self.plot.plot(x, gl1(x, *maa1[i, :])+lbg, pen=pg.mkPen(color='r', width=5, style=Qt.DashLine))
-                # fl, = mfitax.plot(x, gl1(x, *maa1[i, :])+lbg, 'r-', lw=2)
             else:
                 gl1_1 = gl1(x, *maa1[i, :])+lbg
                 self.fit_line = self.plot.plot(x, gl1_1, pen=pg.mkPen(color='grey', width=5))
                 self.base=self.plot.plot(x, lbg, pen=pg.mkPen(None))
                 fill = pg.FillBetweenItem(self.fit_line, self.base, brush=pg.mkBrush(0, 0, 255, 128))
                 self.plot.addItem(fill)
-                # fl, = mfitax.plot(x, gl1(x, *maa1[i, :])+lbg, 'b-', lw=2)
-                # mfitax.fill_between(x, lbg, gl1_1, facecolor='blue', alpha=0.5)
             if i in mfi_err or i in mfi:
                 if i in mfi:
                     self.plot.plot(x, gl1(x, *maa1[i, :]) + lbg-y+tymax+dy, pen=pg.mkPen(color='gray', width=1, style=Qt.SolidLine))
-                    # mfitax.plot(x, gl1(x, *maa1[i, :]) +
-                    #             lbg-y+tymax+dy, color='gray', lw=1)
                 else:
                     self.plot.plot(x, gl1(x, *maa1[i, :]) + lbg-y+tymax+dy, pen=pg.mkPen(color='red', width=1, style=Qt.SolidLine))
-                    # mfitax.plot(x, gl1(x, *maa1[i, :]) +
-                    #             lbg-y+tymax+dy, color='red', lw=1)
                 # s=(np.sum((gl1(x,*maa1[i,:])+lbg-y)**2)/(max(x)-min(x)))**0.5
                 s = np.std(gl1(x, *maa1[i, :])+lbg-y)  # STD
                 mt1 = pg.TextItem('Residual STD: '+str(round(s, 2)), color='w', anchor=(0, 0))
                 mt1.setFont(QFont("Arial", 12))
                 mt1.setPos(txmin+dx, tymax-dy)  # 設定位置
                 self.plot.addItem(mt1)
-                # mt1=mfitax.text(txmin+dx, tymax-dy, 'Residual STD: '+str(round(s, 2)), fontsize=_size(12))
                 s = np.sqrt(np.mean((gl1(x, *maa1[i, :])+lbg-y)**2))  # RMS
                 mt2 = pg.TextItem('Residual RMS: '+str(round(s, 2)), color='w', anchor=(0, 0))
                 mt2.setFont(QFont("Arial", 12))
                 mt2.setPos(txmin+dx, tymax-2*dy)  # 設定位置
                 self.plot.addItem(mt2)
-                # mt2=mfitax.text(txmin+dx, tymax-2*dy,
-                #             'Residual RMS: '+str(round(s, 2)), fontsize=_size(12))
                 ty = gl1(x, *maa1[i, :])
                 s = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
                         # Area
@@ -2897,7 +2406,6 @@ class main(QMainWindow):
                 mt3.setFont(QFont("Arial", 12))
                 mt3.setPos(txmin+dx, tymax-3*dy)  # 設定位置
                 self.plot.addItem(mt3)
-                # mt3=mfitax.text(txmin+dx, tymax-3*dy, 'Area: '+str(round(s, 2)), fontsize=_size(12))
                 vv = []
                 for ii in range(6):
                     if ii > 2:
@@ -2905,15 +2413,11 @@ class main(QMainWindow):
                     else:
                         vv.append(f"{gformat(maa1[i, ii])}")
                 for l, n, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], [f"x: ", f"h: ", f"w: ", f"", f"", f""], vv):
-                    # l.config(text=n+v)
-                    # l.config(anchor='center')
                     l.setText(n+v)
                     l.setAlignment(Qt.AlignCenter)
                 try:
                     vv = smresult[i]
                     for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], vv):
-                        # l.config(text=v)
-                        # l.config(anchor='w')
                         l.setText(v)
                         l.setAlignment(Qt.AlignLeft)
                 except:
@@ -2926,7 +2430,6 @@ class main(QMainWindow):
             self.flmcomp = 0
             if maa2[i, 0] == (kmin[i]+kmax[i])/2 and maa2[i, 2] == 0.5:
                 self.fit_line = self.plot.plot(x, gl2(x, *maa2[i, :])+lbg, pen=pg.mkPen(color='grey', width=5, style=Qt.DashLine))
-                # fl, = mfitax.plot(x, gl2(x, *maa2[i, :])+lbg, 'r-', lw=2)
             else:
                 if self.flmcomp1 == 1:
                     if lbg[np.argwhere(abs(x-self.mcpx1) < 0.01)].flatten().size > 0:
@@ -2946,32 +2449,22 @@ class main(QMainWindow):
                 self.plot.addItem(fill)
                 fill = pg.FillBetweenItem(self.plot.plot(x, gl2_2, pen=pg.mkPen(None)), self.base, brush=pg.mkBrush(128, 0, 128, 128))
                 self.plot.addItem(fill)
-                # fl, = mfitax.plot(x, gl2(x, *maa2[i, :])+lbg, 'b-', lw=2)
-                # mfitax.fill_between(x, lbg, gl2_1, facecolor='green', alpha=0.5)
-                # mfitax.fill_between(x, lbg, gl2_2, facecolor='purple', alpha=0.5)
             if i in mfi_err or i in mfi:
                 if i in mfi:
                     self.plot.plot(x, gl2(x, *maa2[i, :]) + lbg-y+tymax+dy, pen=pg.mkPen(color='gray', width=1, style=Qt.SolidLine))
-                    # mfitax.plot(x, gl2(x, *maa2[i, :]) +
-                    #             lbg-y+tymax+dy, color='gray', lw=1)
                 else:
                     self.plot.plot(x, gl2(x, *maa2[i, :]) + lbg-y+tymax+dy, pen=pg.mkPen(color='red', width=1, style=Qt.SolidLine))
-                    # mfitax.plot(x, gl2(x, *maa2[i, :]) +
-                    #             lbg-y+tymax+dy, color='red', lw=1)
                 # s=(np.sum((gl2(x,*maa2[i,:])+lbg-y)**2)/(max(x)-min(x)))**0.5
                 s = np.std(gl2(x, *maa2[i, :])+lbg-y)  # STD
                 mt1 = pg.TextItem('Residual STD: '+str(round(s, 2)), color='w', anchor=(0, 0))
                 mt1.setFont(QFont("Arial", 12))
                 mt1.setPos(txmin+dx, tymax-dy)  # 設定位置
                 self.plot.addItem(mt1)
-                # mt1=mfitax.text(txmin+dx, tymax-dy, 'Residual STD: '+str(round(s, 2)), fontsize=_size(12))
                 s = np.sqrt(np.mean((gl2(x, *maa2[i, :])+lbg-y)**2))  # RMS
                 mt2 = pg.TextItem('Residual RMS: '+str(round(s, 2)), color='w', anchor=(0, 0))
                 mt2.setFont(QFont("Arial", 12))
                 mt2.setPos(txmin+dx, tymax-2*dy)  # 設定位置
                 self.plot.addItem(mt2)
-                # mt2=mfitax.text(txmin+dx, tymax-2*dy,
-                #             'Residual RMS: '+str(round(s, 2)), fontsize=_size(12))
                 ty = gl1(x, *maa2[i, :4])
                 s = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
                         # Area 1
@@ -2980,7 +2473,6 @@ class main(QMainWindow):
                 mt3.setFont(QFont("Arial", 12))
                 mt3.setPos(txmin+dx, tymax-3*dy)  # 設定位置
                 self.plot.addItem(mt3)
-                # mt3=mfitax.text(txmin+dx, tymax-3*dy, 'Area 1: '+str(round(s, 2)), fontsize=_size(12))
                 ty = gl1(x, *maa2[i, -4:])
                 s = np.sum(np.array([((ty[i]+ty[i+1])/2)for i in range(len(x)-1)])
                         # Area 2
@@ -2989,14 +2481,12 @@ class main(QMainWindow):
                 mt4.setFont(QFont("Arial", 12))
                 mt4.setPos(txmin+dx, tymax-4*dy)  # 設定位置
                 self.plot.addItem(mt4)
-                # mt4=mfitax.text(txmin+dx, tymax-4*dy, 'Area 2: '+str(round(s, 2)), fontsize=_size(12))
                 try:
                     if smcst[i][4] != 0 and smcst[i][5] != 0:
                         mt5 = pg.TextItem('A1:A2='+str(smcst[i][4]) +':'+str(smcst[i][5]), color='w', anchor=(0, 0))
                         mt5.setFont(QFont("Arial", 12))
                         mt5.setPos(txmin+dx, tymax-5*dy)  # 設定位置
                         self.plot.addItem(mt5)
-                        # mt5=mfitax.text(txmin+dx, tymax-5*dy, 'A1:A2='+str(smcst[i][4])+':'+str(smcst[i][5]), fontsize=_size(12))
                     mxf1.setText(str(smcst[i][0]))
                     mxf2.setText(str(smcst[i][1]))
                     mwf1.setText(str(smcst[i][2]))
@@ -3013,16 +2503,12 @@ class main(QMainWindow):
                         vv.append(f"{gformat(maa2[i, ii+1])}")
 
                 for l, n, v in zip([lm1, lm3, lm5, lm2, lm4, lm6], [f"x1: ", f"h1: ", f"w1: ", f"x2: ", f"h2: ", f"w2: "], vv):
-                    # l.config(text=n+v)
-                    # l.config(anchor='center')
                     l.setText(n+v)
                     l.setAlignment(Qt.AlignCenter)
                 try:
                     vv = smresult[i]
                     for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], vv):
                         if 'nofit' not in v:
-                            # l.config(text=v)
-                            # l.config(anchor='w')
                             l.setText(v)
                             l.setAlignment(Qt.AlignLeft)
                 except:
@@ -3040,32 +2526,7 @@ class main(QMainWindow):
                             pass
                 except:
                     pass
-        # mfitax.plot(fmxx[i, np.argwhere(fmxx[i, :] >= -20)], lbg, 'g--')
-        # mfitax.plot(x, lbg, 'g--')
-        # if bg_warn==1:  #shirley base line warn
-        #     mfitax.plot(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],lbg,'r--')
-        # else:
-        #     mfitax.plot(fmxx[i,np.argwhere(fmxx[i,:]>=-20)],lbg,'g--')
-
-        # mfitax.scatter(fmxx[i, np.argwhere(fmxx[i, :] >= -20)], y, c='g', s=scale*scale*4)
-        # mfitax.scatter(x, y, c='g', s=scale*scale*4)
-        # if (kmin[i], kmax[i]) != (klim.min[i], klim.max[i]):
-        #     klmin = mfitax.axvline(kmin[i], c='r')
-        #     klmax = mfitax.axvline(kmax[i], c='r')
-        # else:
-        #     klmin = mfitax.axvline(kmin[i], c='grey')
-        #     klmax = mfitax.axvline(kmax[i], c='grey')
-        #     fl.set_alpha(0.3)
-        # mfitax.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', fontsize=_size(14))
-        # mfitax.set_ylabel('Intensity (Counts)', fontsize=_size(14))
-        # mfitax.set_xticklabels(np.round(mfitax.get_xticks(),2), fontsize=_size(12))
-        # mfitax.set_yticklabels(np.round(mfitax.get_yticks(),2), fontsize=_size(12))
-        # mxl = mfitax.get_xlim()
-        # myl = mfitax.get_ylim()
-        # tmxl = np.copy(mxl)
-        # mfitout.draw()
         x, x_arg, y, lbg, vv, ty, fl, txl, tyl, dx, dy = None, None, None, None, None, None, None, None, None, None, None
-        # mplfi()
 
     
     def lnr_bg(self, x: np.ndarray, n_samples=5) -> np.ndarray:
@@ -3923,9 +3384,6 @@ class main(QMainWindow):
                 flag = False
                 break
         if flag:
-            # mgg.destroy()
-            # clear(mgg)
-            # mgg=True
             pass
         else:
             self.mprend()
@@ -3938,18 +3396,7 @@ class main(QMainWindow):
                 'Do you want to save before closing?',
                 QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
                 QMessageBox.Cancel
-            )
-            # if messagebox.askyesno("MDC Fitter", "Unsaved changes detected. Do you want to exit without saving?", default='no', icon='warning'):
-            #     try:
-            #         mgg.destroy()
-            #         clear(mgg)
-            #         mgg=True
-            #     except:
-            #         pass
-            # else:
-            #     self.fmend()
-            #     self.savemfit()
-        
+            )        
             if reply == QMessageBox.Save:
                 self.fmend()
                 self.savemfit()

@@ -27,13 +27,8 @@ for i in range(5):
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 
 from MDC_cut_utility import *
-from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
-from tool.spectrogram import spectrogram, lfs_exp_casa
-from tool.util import laplacian_filter  # for originpro: from MDC_cut import *
-from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
-from tool.SO_Fitter import SO_Fitter
-from tool.CEC import CEC, call_cec
-from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
+from tool.loader import loadfiles
+from tool.util import IconManager
 
 def get_hwnd():
     try:
