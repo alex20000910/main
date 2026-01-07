@@ -810,11 +810,7 @@ class main(QMainWindow):
         self.plot.getAxis('left').setStyle(tickFont=pg.QtGui.QFont("Arial", 18))
         self.plot.scene().sigMouseMoved.connect(self.mouse_moved_event)
         self.plot.sigRangeChanged.connect(self.update_plot_raw)
-        # self.plot.setAspectLocked(True)  # 鎖定比例
-        # self.plot.plotItem.vb.mouseMoveEvent = lambda event: self.mouse_moved_event(event)
-        # self.plot.plotItem.vb.mousePressEvent = lambda event: self.mouse_pressed_event(event)
         self.plot.scene().sigMouseClicked.connect(self.mouse_clicked_event)
-        # self.plot.plotItem.vb.mouseReleaseEvent = lambda event: self.mouse_released_event(event)
         self.move_flag = False
         
         self.flmreject = -1
@@ -3144,24 +3140,7 @@ class main(QMainWindow):
         self.statusbar.setStyleSheet("font-size: 30px;")
         self.statusbar.showMessage(f"x={mouse_point.x():.2f}  y={mouse_point.y():.2f}")
         # pg.ViewBox.mouseMoveEvent(vb, event)
-        
-    def mouse_pressed_event(self, event):
-        # vb = self.plot.getViewBox()
-        # mouse_point = vb.mapSceneToView(event.scenePos())
-        vb = self.plot.plotItem.vb
-        
-        # 檢查事件位置是否在 ViewBox 內
-        if vb.sceneBoundingRect().contains(event.pos()):
-            mouse_point = vb.mapSceneToView(event.pos())
-        # self.statusbar.showMessage(f"Pressed at x={mouse_point.x():.2f}  y={mouse_point.y():.2f} type={event.button()}", 3000)
-            if event.button() == Qt.LeftButton:
-                self.mmof = -1
-                if (abs(mouse_point.y()-self.c0.yData)<0.1).any():
-                    self.move_flag = True
-                else:
-                    self.move_flag = False
-        pg.ViewBox.mousePressEvent(vb, event)
-            
+
     def mouse_clicked_event(self, event):
         # vb = self.plot.plotItem.vb
         # mouse_point = vb.mapSceneToView(event.pos())
