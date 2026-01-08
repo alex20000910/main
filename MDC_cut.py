@@ -297,7 +297,7 @@ v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
 if os.path.exists(v_check_path):
     with open(v_check_path, mode='r') as f:
         ver = f.read().strip()
-    if cal_ver(ver) < cal_ver('8.0'):
+    if cal_ver(ver) < cal_ver('8.5.1'):
         get_src()
         with open(v_check_path, mode='w') as f:
             f.write(__version__)
