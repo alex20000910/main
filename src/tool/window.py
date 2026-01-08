@@ -671,7 +671,7 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                             if os.path.exists(v_check_path):
                                 with open(v_check_path, mode='w') as f:
                                     f.write(remote_ver)
-                            src = os.path.join(cdir, '.MDC_cut', f'{app_name}.py')
+                            src = os.path.join(cdir, '.MDC_cut', 'MDC_cut.py')
                             dst = os.path.join(cdir, f'{app_name}.py')
                             if os.name == 'nt':
                                 os.system(f'copy "{src}" "{dst}" > nul')
