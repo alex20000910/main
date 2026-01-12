@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.5.1"
-__release_date__ = "2026-01-08"
+__version__ = "8.5.2"
+__release_date__ = "2026-01-12"
 # Name                     Version          Build               Channel
 # asteval                   1.0.6                    pypi_0    pypi
 # bzip2                     1.0.8                h2bbff1b_6  
@@ -123,7 +123,8 @@ else:
     "zarr==3.1.1",
     "PyQt5==5.15.11",
     "pyqtgraph==0.13.7",
-    "tkinterdnd2==0.4.3"
+    "tkinterdnd2==0.4.3",
+    "google-crc32c==1.8.0"  # for numcodecs
     ]
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -358,12 +359,18 @@ def install(s: str = ''):
     print('Some Modules Not Found')
     a = input('pip install all the missing modules ???\nProceed (Y/n)? ')
     if a.lower() == 'y':
-        try:
-            for i in REQUIREMENTS:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", i])
-        except subprocess.CalledProcessError:
-            for i in REQUIREMENTS:
-                subprocess.check_call([sys.executable, "-m", "pip3", "install", i])
+        if s == '':
+            try:
+                for i in REQUIREMENTS:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", i])
+            except subprocess.CalledProcessError:
+                for i in REQUIREMENTS:
+                    subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", i])
+        else:
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", s])
+            except subprocess.CalledProcessError:
+                subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", s])
     else:
         quit()
 
@@ -410,6 +417,8 @@ try:
         import originpro as op
     from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
     import psutil
+    if VERSION >= 3130:
+        import google_crc32c    # for numcodecs
     if __name__ == '__main__':
         import cpuinfo
         import zarr
