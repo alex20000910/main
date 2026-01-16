@@ -15,6 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib as mpl
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':

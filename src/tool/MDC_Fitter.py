@@ -19,6 +19,8 @@ import matplotlib as mpl
 from scipy.interpolate import griddata
 from lmfit import Parameters, Minimizer
 from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':
@@ -34,8 +36,6 @@ sys.path.append(os.path.join(cdir, mod_dir))
 from MDC_cut_utility import *
 from tool.loader import loadfiles
 from tool.util import IconManager
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 m = 9.110938356e-31  # electron mass
 e = 1.602176634e-19  # elementary charge

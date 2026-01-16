@@ -391,6 +391,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=matplotlib.MatplotlibDeprecationWarning)
 warnings.filterwarnings("ignore", category=SyntaxWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 h=6.62607015*10**-34
 m=9.10938356*10**-31
 mp, ep, mf, ef = 1, 1, 1, 1
