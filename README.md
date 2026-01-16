@@ -29,6 +29,7 @@ The user manual is currently out of date. For the latest changes and new feature
 ![](src/img/view1.gif)
 ![](src/img/view2.gif)
 ![](src/img/view3.gif)
+![](src/img/view4.gif)
 
 </div>
 

@@ -1,68 +1,6 @@
 # MDC cut GUI
 __version__ = "8.5.3"
 __release_date__ = "2026-01-16"
-# Name                     Version          Build               Channel
-# asteval                   1.0.6                    pypi_0    pypi
-# bzip2                     1.0.8                h2bbff1b_6  
-# ca-certificates           2025.9.9             haa95532_0  
-# colorama                  0.4.6                    pypi_0    pypi
-# contourpy                 1.3.3                    pypi_0    pypi
-# crc32c                    2.7.1                    pypi_0    pypi
-# cycler                    0.12.1                   pypi_0    pypi
-# dill                      0.4.0                    pypi_0    pypi
-# donfig                    0.8.1.post1              pypi_0    pypi
-# expat                     2.7.1                h8ddb27b_0
-# fonttools                 4.60.1                   pypi_0    pypi
-# h5py                      3.14.0                   pypi_0    pypi
-# kiwisolver                1.4.9                    pypi_0    pypi
-# libffi                    3.4.4                hd77b12b_1
-# libmpdec                  4.0.0                h827c3e9_0
-# libzlib                   1.3.1                h02ab6af_0
-# lmfit                     1.3.4                    pypi_0    pypi
-# matplotlib                3.10.5                   pypi_0    pypi
-# numcodecs                 0.16.3                   pypi_0    pypi
-# numpy                     2.2.6                    pypi_0    pypi
-# opencv-python             4.12.0.88                pypi_0    pypi
-# openssl                   3.0.18               h543e019_0
-# originext                 1.2.4                    pypi_0    pypi
-# originpro                 1.1.13                   pypi_0    pypi
-# packaging                 25.0                     pypi_0    pypi
-# pandas                    2.3.3                    pypi_0    pypi
-# pillow                    11.3.0                   pypi_0    pypi
-# pip                       25.2               pyhc872135_0
-# psutil                    7.0.0                    pypi_0    pypi
-# py-cpuinfo                9.0.0                    pypi_0    pypi
-# pyparsing                 3.2.5                    pypi_0    pypi
-# pyqt5                     5.15.11                  pypi_0    pypi
-# pyqt5-qt5                 5.15.2                   pypi_0    pypi
-# pyqt5-sip                 12.17.1                  pypi_0    pypi
-# pyqtgraph                 0.13.7                   pypi_0    pypi
-# python                    3.13.5          h286a616_100_cp313
-# python-dateutil           2.9.0.post0              pypi_0    pypi
-# python_abi                3.13                    1_cp313
-# pytz                      2025.2                   pypi_0    pypi
-# pywin32                   311                      pypi_0    pypi
-# pyyaml                    6.0.3                    pypi_0    pypi
-# scipy                     1.16.1                   pypi_0    pypi
-# setuptools                78.1.1          py313haa95532_0
-# six                       1.17.0                   pypi_0    pypi
-# sqlite                    3.50.2               hda9a48d_1
-# tk                        8.6.15               hf199647_0
-# tkinterdnd2               0.4.3                    pypi_0    pypi
-# tqdm                      4.67.1                   pypi_0    pypi
-# typing-extensions         4.15.0                   pypi_0    pypi
-# tzdata                    2025.2                   pypi_0    pypi
-# ucrt                      10.0.22621.0         haa95532_0
-# uncertainties             3.2.3                    pypi_0    pypi
-# vc                        14.3                h2df5915_10
-# vc14_runtime              14.44.35208         h4927774_10
-# vs2015_runtime            14.44.35208         ha6b5a95_10
-# wheel                     0.45.1          py313haa95532_0
-# xarray                    2025.7.1                 pypi_0    pypi
-# xz                        5.6.4                h4754444_1
-# zarr                      3.1.1                    pypi_0    pypi
-# zlib                      1.3.1                h02ab6af_0
-
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -1449,9 +1387,12 @@ def flowlim(*e):
 @pool_protect
 def o_reload(*e):
     global k_offset, fev, ophi, rpos, pos, ffphi, fwhm, fk, st, kmin, kmax, smresult, smcst, smaa1, smaa2, smfp, smfi, skmin, skmax, epos, efwhm, ffphi, fk, emin, emax, seaa1, seaa2, sefp, sefi, semin, semax
-    if '' == k_offset.get():
-        k_offset.set('0')
-        koffset.select_range(0, 1)
+    try:
+        if '' == k_offset.get():
+            k_offset.set('0')
+            koffset.select_range(0, 1)
+    except RuntimeError:
+        return
     try:
         ophi = np.arcsin(rpos/np.sqrt(2*m*fev*1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
     except NameError:
