@@ -290,6 +290,12 @@ class main(QMainWindow):
                 background: #FFD700;
                 color: #222;
             }
+            QToolTip {
+                background-color: #222;
+                color: #EEE;
+                border: 5px solid white;
+                font-size: 20pt;
+            }
         """)
         
         self.setWindowIcon(qicon)
@@ -371,6 +377,7 @@ class main(QMainWindow):
         #### mjob ####
             
         self.keyPressEvent = self.on_key_press
+        QMessageBox.information(self, "Info", "Use Ctrl+Z to Undo, Ctrl+Y to Redo.\nUse Left/Right Key to move index.\nUse Up/Down Key to adjust baseline.\nUse \"<<\" and \">>\" buttons to jump to previous/next index with different fitting status.")
     
     def init_data(self):
         self.data = self.lfs.get(0)
@@ -445,9 +452,9 @@ class main(QMainWindow):
     
     def on_key_press(self, event):
         if event.key() == Qt.Key_Z and (event.modifiers() & Qt.ControlModifier):
-            self.undo()
+            self.mundo()
         elif event.key() == Qt.Key_Y and (event.modifiers() & Qt.ControlModifier):
-            self.redo()
+            self.mredo()
         elif event.key() == Qt.Key_Left:
             self.mflind()
         elif event.key() == Qt.Key_Right:
@@ -832,6 +839,7 @@ class main(QMainWindow):
         mid_layout.addWidget(b_fit_all, alignment=Qt.AlignCenter)
         
         b_pr = QPushButton("Preview")
+        b_pr.setToolTip("Show Fitting Residual, Area, FWHM, Imaginary Self-Energy")
         b_pr.clicked.connect(self.fmpreview)
         b_pr.setFixedWidth(300)
         mid_layout.addWidget(b_pr, alignment=Qt.AlignCenter)
