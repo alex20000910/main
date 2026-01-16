@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
     QButtonGroup, QFileDialog, QProgressBar, QDialog, QTextEdit, QComboBox, QMessageBox
 )
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor, QFontMetrics
+from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor, QFontMetrics, QMovie
 import pyqtgraph as pg
 
 import os, inspect, time, sys, argparse
@@ -19,6 +19,8 @@ import matplotlib as mpl
 from scipy.interpolate import griddata
 from lmfit import Parameters, Minimizer
 from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':
@@ -98,6 +100,114 @@ def putfitpar(inpars, modelpars=None, show_correl=True, min_correl=0.1,
                 add(f"    {nout} {par.value: .7g} (fixed)")
     return buff
 
+def to_raw_url(url: str) -> str:
+    # 將 github blob 連結轉成 raw 連結
+    if "github.com" in url and "/blob/" in url:
+        return url.replace("https://github.com/", "https://raw.githubusercontent.com/").replace("/blob/", "/")
+    return url
+
+def download(url: str, out_path: str, token: str = None) -> None:
+    try:
+        import requests
+    except Exception:
+        requests = None
+
+    headers = {}
+    if token:
+        headers["Authorization"] = f"token {token}"
+
+    url = to_raw_url(url)
+
+    if requests:
+        with requests.get(url, headers=headers, stream=True) as r:
+            r.raise_for_status()
+            total = r.headers.get("Content-Length")
+            if total and total.isdigit():
+                total = int(total)
+            with open(out_path, "wb") as f:
+                downloaded = 0
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                # optionally you could print progress here
+    else:
+        # fallback to standard library
+        import urllib.request
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req) as resp, open(out_path, "wb") as out:
+            out.write(resp.read())
+            
+def get_file_from_github(url: str, out_path: str, token: str = None):
+    # p = argparse.ArgumentParser(description="Download a file from a GitHub URL")
+    # p.add_argument("url", help="GitHub file URL (github.com/.../blob/... or raw.githubusercontent.com/... )")
+    # p.add_argument("-o", "--output", help="Output filename or path. If omitted, uses the filename from the URL.")
+    # p.add_argument("--token", help="GitHub token for private repos (optional)", default=None)
+    # args = p.parse_args()
+
+    # url = args.url.strip()
+    args = argparse.Namespace(output=out_path, token=None)
+    raw = to_raw_url(url)
+    if not args.output:
+        # try to extract filename
+        parts = raw.rstrip("/").split("/")
+        if len(parts) >= 1:
+            filename = parts[-1]
+        else:
+            print("Please use -o to specify the output filename.", file=sys.stderr)
+        out_path = filename
+    else:
+        out_path = args.output
+
+    # ensure output dir exists
+    out_dir = os.path.dirname(out_path)
+    if out_dir and not os.path.exists(out_dir):
+        os.makedirs(out_dir, exist_ok=True)
+
+    try:
+        download(url, out_path, args.token)
+    except Exception as e:
+        print("Failed to download source file:", e, file=sys.stderr)
+        print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
+
+class HelpWindow(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("MDC Fitter Demo")
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+        self.setup_ui()
+        QApplication.restoreOverrideCursor()
+        self.showMaximized()
+        self.show()
+        self.raise_()
+        self.activateWindow()
+    
+    def setup_ui(self):
+        layout = QVBoxLayout()
+        
+        # GIF 標籤
+        self.gif_label = QLabel(self)
+        self.gif_label.setAlignment(Qt.AlignCenter)
+        
+        # 載入 GIF 動畫
+        url = r"https://github.com/alex20000910/main/blob/main/src/img/view4.gif"
+        path = os.path.join(cdir,'.MDC_cut', 'img', 'view4.gif')
+        get_file_from_github(url, path)
+        if os.path.exists(path)==False:
+            self.gif_label.setText('No Network')
+        else:
+            self.movie = QMovie(path)
+            self.gif_label.setMovie(self.movie)
+            self.movie.start()
+        
+        layout.addWidget(self.gif_label)
+        
+        # 確定按鈕
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(self.accept)
+        layout.addWidget(ok_button)
+        
+        self.setLayout(layout)
 
 class ProgressDialog(QDialog):
     def __init__(self, max_val=100, qicon=None):
@@ -195,8 +305,6 @@ class main(QMainWindow):
         self.mdata = mfit_data()    # pos 改為 mpos
         self.ko, self.fev, self.rpos, self.ophi, self.fwhm, self.mpos, self.kmin, self.kmax, self.skmin, self.skmax, self.smaa1, self.smaa2, self.smfp, self.smfi, self.smresult, self.smcst, self.fpr, self.mdet = self.mdata.get()
         self.smresult_original = copy.deepcopy(self.smresult)
-        self.init_data()
-        # 以上初始化皆待修
                 
         icon = IconManager().icon
         pixmap = QPixmap()
@@ -221,6 +329,7 @@ class main(QMainWindow):
                 font-family: Arial;
                 font-size: 24px;
             }
+            QMessageBox { font-size: 18pt; }
             QStatusBar {
                 background-color: #D7D7D7;
                 color: #222;
@@ -290,9 +399,16 @@ class main(QMainWindow):
                 background: #FFD700;
                 color: #222;
             }
+            QToolTip {
+                background-color: #222;
+                color: #EEE;
+                border: 5px solid white;
+                font-size: 20pt;
+            }
         """)
         
         self.setWindowIcon(qicon)
+        self.init_data()
         # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -322,6 +438,10 @@ class main(QMainWindow):
             act_cmap.setChecked(cmap_name=='prevac_cmap')
             act_cmap.triggered.connect(lambda checked, name=cmap_name: self.set_cmap(name))
             self.cmap_menu.addAction(act_cmap)
+        help_window = QAction("Help", self)
+        help_window.triggered.connect(self.help_window)
+        self.menu_bar.addAction(help_window)
+        
 
         # Layouts
         main_layout = QHBoxLayout()
@@ -354,6 +474,7 @@ class main(QMainWindow):
         self.statusbar.addPermanentWidget(right_label)
         
         self.showMaximized()
+        self.w, self.h = self.width(), self.height()
         
         self.fitm()
         #### mjob ####
@@ -371,6 +492,7 @@ class main(QMainWindow):
         #### mjob ####
             
         self.keyPressEvent = self.on_key_press
+        QMessageBox.information(self, "Info", "Use Ctrl+Z to Undo, Ctrl+Y to Redo.\nUse Left/Right Key to move index.\nUse Up/Down Key to adjust baseline.\nUse \"<<\" and \">>\" buttons to jump to previous/next index with different fitting status.")
     
     def init_data(self):
         self.data = self.lfs.get(0)
@@ -381,13 +503,24 @@ class main(QMainWindow):
         self.k_offset = 0   #維持原始 不做偏移
         self.vfe = 21.2     #維持原始 不做偏移
         if not self.lfs.f_npz[0]:
-            QMessageBox.warning(None, "Warning", "Please be noted that the raw data is in Energy-Angle space.\nThe k-range might be inaccurate.")
+            QMessageBox.warning(self, "Warning", "Please be noted that the raw data is in Energy-Angle space.\nThe k-range might be inaccurate.")
             self.kdata, self.xlim, self.ylim = self.warp_data(self.data.data, self.phi, self.eV)
         klim = oklim(self.lfs.f_npz[0], self.eV, self.phi)
         self.klim = klim
         shape=self.data.shape
         det=self.data.data[shape[0]//2, shape[1]//2]
-        if self.mdet != det:
+        if self.mdet == -1:
+            QMessageBox.warning(
+                self, 
+                "Legacy File Warning", 
+                "The loaded mfit file was generated from an older version of MDC_cut "
+                "and does not contain mdet information.\n\n"
+                "mdet is used to verify compatibility with raw data.\n\n"
+                "The Fitter will proceed, but fitting curves might be inaccurate.\n\n"
+                "Please consider re-generating the mfit file with the latest version by Exporting it again using MDC Fitter with the correct raw data loaded."
+            )
+            pass    # 放行所有無mdet且因跨裝置傳輸無法嘗試計算mdet的舊mfit檔
+        elif self.mdet != det:
             self.fpr = 0
         self.scki = []
         if self.fpr == 1:
@@ -420,6 +553,9 @@ class main(QMainWindow):
         self.mredo_stack = []
         self.mbase = [0 for i in range(len(self.eV))]
     
+    def help_window(self):
+        HelpWindow(self)
+    
     def load_file(self):
         file = QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF5 Files (*.h5 *.hdf5);;NPZ Files (*.npz);;JSON Files (*.json);;TXT Files (*.txt)")[0]
         if file:
@@ -445,9 +581,9 @@ class main(QMainWindow):
     
     def on_key_press(self, event):
         if event.key() == Qt.Key_Z and (event.modifiers() & Qt.ControlModifier):
-            self.undo()
+            self.mundo()
         elif event.key() == Qt.Key_Y and (event.modifiers() & Qt.ControlModifier):
-            self.redo()
+            self.mredo()
         elif event.key() == Qt.Key_Left:
             self.mflind()
         elif event.key() == Qt.Key_Right:
@@ -765,9 +901,11 @@ class main(QMainWindow):
         
         
         self.b_left = QPushButton("<<")
+        self.b_left.setToolTip("Jump to previous index with different fitting status")
         self.b_left.clicked.connect(self.mflind)
         self.b_left.setFixedHeight(90)
         self.b_right = QPushButton(">>")
+        self.b_right.setToolTip("Jump to next index with different fitting status")
         self.b_right.clicked.connect(self.mfrind)
         self.b_right.setFixedHeight(90)
         hbox = QHBoxLayout()
@@ -832,6 +970,7 @@ class main(QMainWindow):
         mid_layout.addWidget(b_fit_all, alignment=Qt.AlignCenter)
         
         b_pr = QPushButton("Preview")
+        b_pr.setToolTip("Show Fitting Residual, Area, FWHM, Imaginary Self-Energy")
         b_pr.clicked.connect(self.fmpreview)
         b_pr.setFixedWidth(300)
         mid_layout.addWidget(b_pr, alignment=Qt.AlignCenter)
@@ -1724,6 +1863,7 @@ class main(QMainWindow):
             self.maa2[i, :] = a2
             try:
                 self.smresult[i, :]=smr
+                self.smresult_original[i, :] = copy.deepcopy(smr)
             except:
                 pass
             pbar.update(1)
@@ -2012,6 +2152,11 @@ class main(QMainWindow):
         
         self.msave_state()
         pbar = tqdm.tqdm(total=len(self.eV), desc='Fitting MDC', colour='green')
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+        pr_bar = ProgressDialog(len(self.eV), self.icon)
+        pr_bar.resize(self.w//3, self.h//4)
+        pr_bar.show()
+        pr_bar.increaseProgress('Fitting MDC')
         for i in range(len(self.eV)):
             # self.mbase[i] = int(base.get())  # 待調整
             self.mbase[i] = 0  # 待調整
@@ -2199,43 +2344,43 @@ class main(QMainWindow):
                     pass
                 if self.fit_warn == 0:
                     if i not in mfi:
-                        self.mfi.append(i)
+                        mfi.append(i)
                     if i in mfi_x:
-                        self.mfi_x.remove(i)
+                        mfi_x.remove(i)
                     if i in mfi_err:
-                        self.mfi_err.remove(i)
+                        mfi_err.remove(i)
                 elif self.fit_warn == 2:
                     if i not in mfi_x:
-                        self.mfi_x.append(i)
+                        mfi_x.append(i)
                     if i in mfi:
-                        self.mfi.remove(i)
+                        mfi.remove(i)
                     if i in mfi_err:
-                        self.mfi_err.remove(i)
+                        mfi_err.remove(i)
                 else:
                     if i not in mfi_err:
-                        self.mfi_err.append(i)
+                        mfi_err.append(i)
                     if i in mfi_x:
-                        self.mfi_x.remove(i)
+                        mfi_x.remove(i)
                     if i in mfi:
-                        self.mfi.remove(i)
+                        mfi.remove(i)
             except RuntimeError:
                 print('runtime error')
                 if i not in mfi_err:
-                    self.mfi_err.append(i)
+                    mfi_err.append(i)
                 if i in mfi_x:
-                    self.mfi_x.remove(i)
+                    mfi_x.remove(i)
                 if i in mfi:
-                    self.mfi.remove(i)
+                    mfi.remove(i)
                 a1 = [(kmin[i]+kmax[i])/2, (np.max(y)-self.mbase[i]), 5, self.mbase[i]]
                 a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-self.mbase[i]), 5, self.mbase[i],
                     (kmin[i]+kmax[i])/2, (np.max(y)-self.mbase[i]), 5, self.mbase[i]]
             except IndexError:
                 if i not in mfi_err:
-                    self.mfi_err.append(i)
+                    mfi_err.append(i)
                 if i in mfi_x:
-                    self.mfi_x.remove(i)
+                    mfi_x.remove(i)
                 if i in mfi:
-                    self.mfi.remove(i)
+                    mfi.remove(i)
                 a1 = [(kmin[i]+kmax[i])/2, (np.max(y)-self.mbase[i]), 5, self.mbase[i]]
                 a2 = [(kmin[i]+kmax[i])/2, (np.max(y)-self.mbase[i]), 5, self.mbase[i],
                     (kmin[i]+kmax[i])/2, (np.max(y)-self.mbase[i]), 5, self.mbase[i]]
@@ -2250,7 +2395,11 @@ class main(QMainWindow):
             elif self.mfp[i] == 2:
                 self.maa2[i, :] = a2
             pbar.update(1)
+            pr_bar.increaseProgress()
+        self.mfi, self.mfi_err, self.mfi_x = mfi, mfi_err, mfi_x
         pbar.close()
+        pr_bar.close()
+        QApplication.restoreOverrideCursor()
         self.mfitplot()
 
     
@@ -2557,9 +2706,11 @@ class main(QMainWindow):
         
         confirm_layout = QHBoxLayout()
         b_accept = QPushButton("Accept")
+        b_accept.setToolTip("Accept current fit results")
         b_accept.clicked.connect(self.fmaccept)
         confirm_layout.addWidget(b_accept)
         self.b_reject = QPushButton("Reject")
+        self.b_reject.setToolTip("Reject current fit results")
         self.b_reject.clicked.connect(self.fmreject)
         confirm_layout.addWidget(self.b_reject)
         right_layout.addLayout(confirm_layout)
@@ -2570,9 +2721,11 @@ class main(QMainWindow):
         
         index_op_layout = QHBoxLayout()
         self.b_add2 = QPushButton("Add 2 Peaks")
+        self.b_add2.setToolTip("Set current index as a starting point for adding 2 peaks")
         self.b_add2.clicked.connect(self.fmcgl2)
         index_op_layout.addWidget(self.b_add2)
         self.b_remove = QPushButton("Remove")
+        self.b_remove.setToolTip("Set current index as a starting point for removing peaks and base line")
         self.b_remove.clicked.connect(self.fmrmv)
         index_op_layout.addWidget(self.b_remove)
         right_layout.addLayout(index_op_layout)
@@ -2635,6 +2788,7 @@ class main(QMainWindow):
         right_layout.addWidget(ar_container, alignment=Qt.AlignCenter)
         
         self.b_pos = QPushButton("Position Constraint")
+        self.b_pos.setToolTip("Enable position constraints for 2-peak fitting")
         self.flmposcst = -1
         self.b_pos.pressed.connect(self.fmposcst)
         right_layout.addWidget(self.b_pos)
@@ -2765,10 +2919,12 @@ class main(QMainWindow):
         self.flmposcst *= -1
         if self.flmposcst == 1:
             self.b_pos.setStyleSheet("background-color: purple;")  # 恢復預設樣式
+            self.b_pos.setToolTip("Disable position constraints for 2-peak fitting")
             self.mxf1.setEnabled(True)
             self.mxf2.setEnabled(True)
         else:
             self.b_pos.setStyleSheet("")
+            self.b_pos.setToolTip("Enable position constraints for 2-peak fitting")
             self.mxf1.setEnabled(False)
             self.mxf2.setEnabled(False)
     
@@ -2841,6 +2997,7 @@ class main(QMainWindow):
         if self.flmrmv == 1:
             self.mirmv = i
             self.b_remove.setText('End Remove')
+            self.b_remove.setToolTip("Set current index as an ending point for removing peaks and remove all the results in between")
             self.b_remove.setStyleSheet("background-color: red;")
         else:
             ti = sorted([i, self.mirmv])
@@ -2865,6 +3022,7 @@ class main(QMainWindow):
             # mplfi()
             self.b_remove.setText('Remove')
             self.b_remove.setStyleSheet("")
+            self.b_remove.setToolTip("Set current index as a starting point for removing peaks and base line")
             self.mfitplot()
 
 
@@ -2881,6 +3039,7 @@ class main(QMainWindow):
         if self.flmcgl2 == 1:
             self.micgl2 = i
             self.b_add2.setText('End Add 2 Peaks')
+            self.b_add2.setToolTip("Set current index as an ending point for adding 2 peaks and set 2 peaks fitting for indexes in between")
             self.b_add2.setStyleSheet("background-color: red;")
             # mbcgl2.config(text='End Add 2 Peaks', bg='red')
         else:
@@ -2894,6 +3053,7 @@ class main(QMainWindow):
                 if i in self.mfi_err:
                     self.mfi_err.remove(i)
             self.b_add2.setText('Add 2 Peaks')
+            self.b_add2.setToolTip("Set current index as a starting point for adding 2 peaks")
             self.b_add2.setStyleSheet("")
             # mbcgl2.config(text='Add 2 Peaks', bg='white')
             self.mfitplot()
@@ -3358,10 +3518,16 @@ class main(QMainWindow):
                 self.hist_widget_container.close()
         flag = True
         smresult = self.pack_fitpar(self.mresult)
-        for i, j in zip(smresult, self.smresult_original):
-            if not np.array_equal(i, j):
+        if len(self.smresult_original) != 0:    # mfit.npz exsist
+            mask = smresult!=['', '', '', '', '', '']
+            if np.argwhere(mask == True).size != 0:
+                for i, j in zip(smresult[mask], self.smresult_original[mask]):
+                    if not np.array_equal(i, j):
+                        flag = False
+                        break
+        else:
+            if len(self.mfi) != 0:
                 flag = False
-                break
         if flag:
             pass
         else:

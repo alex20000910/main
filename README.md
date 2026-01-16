@@ -29,6 +29,7 @@ The user manual is currently out of date. For the latest changes and new feature
 ![](src/img/view1.gif)
 ![](src/img/view2.gif)
 ![](src/img/view3.gif)
+![](src/img/view4.gif)
 
 </div>
 
@@ -54,6 +55,9 @@ The user manual is currently out of date. For the latest changes and new feature
 - Please download [`MDC_cut.py`](MDC_cut.py) and place it in the directory you want.
 - Create a virtual environment (e.g., via [![Anaconda](https://img.shields.io/badge/Anaconda-white?logo=anaconda&logoColor=%23)](https://www.anaconda.com/download)) with the required Python version to avoid changing your main environment, then run `MDC_cut.py` to automatically install the dependencies.
 - If you don’t mind the environment, execute `MDC_cut.py` and check that it automatically installs the required dependencies.
+- Test the functionality using sample data from [**here**](test_data/):
+  - **HDF5 file**: Load via the **Load Raw Data** button (Available with multiple files for **Batch Master**)
+  - **Zarr file**: Load via the **Volume Viewer** button (select the `data_cube.zarr` folder)
 
 ### What will `MDC_cut.py` do?
 1. Download the required files from this repository and place them into the working PATH of `MDC_cut.py`.

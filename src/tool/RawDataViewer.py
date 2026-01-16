@@ -15,6 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib as mpl
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':
@@ -126,8 +128,8 @@ class c_fermi_level(QDialog):
         layout.addWidget(self.ok_button)
         self.setLayout(layout)
         
-        
-        self.force_to_front()
+        self.raise_()
+        self.activateWindow()
         
     def showEvent(self, event):
         """當視窗顯示時確保 QLineEdit 獲得焦點"""
@@ -136,23 +138,6 @@ class c_fermi_level(QDialog):
         from PyQt5.QtCore import QTimer
         QTimer.singleShot(100, lambda: self.input.setFocus())
         QTimer.singleShot(100, lambda: self.input.selectAll())
-    
-    def force_to_front(self):
-        """使用 Windows API 強制視窗置頂"""
-        hwnd = int(self.winId())
-        SWP_NOMOVE = 0x0002
-        SWP_NOSIZE = 0x0001
-        HWND_TOPMOST = -1
-        HWND_NOTOPMOST = -2
-        
-        # 設為最上層
-        windll.user32.SetWindowPos(
-            hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE
-        )
-        
-        # 設定焦點
-        windll.user32.SetForegroundWindow(hwnd)
         
     def accept(self, event):
         eflag = True

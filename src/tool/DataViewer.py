@@ -16,6 +16,8 @@ import shutil, psutil, argparse
 import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 if __name__ == "__main__":
     cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -1559,7 +1561,9 @@ class SliceBrowser(QMainWindow):
         img_item.setLevels(np.min(arr), np.max(arr))
         self.hist.setImageItem(img_item)
         self.plot.clear()
-        self.plot.setLimits(xMin=self.xl-self.dx/2, xMax=self.xh+self.dx/2, yMin=self.yl-self.dy/2, yMax=self.yh+self.dy/2)
+        self.plot.getViewBox().state['limits']['xLimits'] = [self.xl - self.dx/2, self.xh + self.dx/2]
+        self.plot.getViewBox().state['limits']['yLimits'] = [self.yl - self.dy/2, self.yh + self.dy/2]
+        # self.plot.setLimits(xMin=self.xl-self.dx/2, xMax=self.xh+self.dx/2, yMin=self.yl-self.dy/2, yMax=self.yh+self.dy/2)   # ViewBox Line:776 RuntimeError
         self.plot.setRange(xRange=self.xRange, yRange=self.yRange, padding=0)
 
         # self.plot.enableAutoRange()
