@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor, QFontMetrics, QMovie
-from matplotlib.pylab import f
 import pyqtgraph as pg
 
 import os, inspect, time, sys, argparse
