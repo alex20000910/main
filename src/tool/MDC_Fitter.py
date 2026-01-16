@@ -702,24 +702,24 @@ class main(QMainWindow):
         self.plot_fwhm2.clear()
         self.plot_fwhm1.plot([self.vfe-self.eV[self.index], self.vfe-self.eV[self.index]], self.plot_fwhm1.getViewBox().viewRange()[1], pen=pg.mkPen(color='g', width=1, style=Qt.SolidLine))
         self.plot_fwhm2.plot([self.vfe-self.eV[self.index], self.vfe-self.eV[self.index]], self.plot_fwhm2.getViewBox().viewRange()[1], pen=pg.mkPen(color='r', width=1, style=Qt.SolidLine))
-        self.plot_fwhm1.plot(x1, y1, symbol='o', symbolBrush='w', symbolPen=None, symbolSize=5, pen=pg.mkPen(color='g', width=2, style=Qt.SolidLine), name='Comp 1')    #plot
-        self.plot_fwhm2.plot(x2, y2, symbol='o', symbolBrush='w', symbolPen=None, symbolSize=5, pen=pg.mkPen(color='r', width=2, style=Qt.SolidLine), name='Comp 2')    #plot
+        self.plot_fwhm1.plot(x1, y1, symbol='o', symbolBrush='w', symbolPen=None, symbolSize=5, pen=pg.mkPen(color='g', width=2, style=Qt.SolidLine), name='<b>Comp 1</b>')    #plot
+        self.plot_fwhm2.plot(x2, y2, symbol='o', symbolBrush='w', symbolPen=None, symbolSize=5, pen=pg.mkPen(color='r', width=2, style=Qt.SolidLine), name='<b>Comp 2</b>')    #plot
         legend1 = self.plot_fwhm1.addLegend(
                 offset=(10, 10),                    # 距離右上角的偏移
                 brush=pg.mkBrush(255, 255, 255, 50),    # 背景: 半透明黑色
-                pen=pg.mkPen('w', width=2),         # 邊框: 白色, 2像素寬
-                labelTextColor='w',                 # 文字顏色: 白色
+                pen=pg.mkPen('g', width=2),         # 邊框: 白色, 2像素寬
+                labelTextColor='g',                 # 文字顏色: 白色
             )
         legend1.setLabelTextSize('16pt')
-        legend1.setLabelTextColor('w')
+        legend1.setLabelTextColor('g')
         legend2 = self.plot_fwhm2.addLegend(
                 offset=(10, 10),                    # 距離右上角的偏移
                 brush=pg.mkBrush(255, 255, 255, 50),    # 背景: 半透明黑色
-                pen=pg.mkPen('w', width=2),         # 邊框: 白色, 2像素寬
-                labelTextColor='w',                 # 文字顏色: 白色
+                pen=pg.mkPen('r', width=2),         # 邊框: 白色, 2像素寬
+                labelTextColor='r',                 # 文字顏色: 白色
             )
         legend2.setLabelTextSize('16pt')
-        legend2.setLabelTextColor('w')
+        legend2.setLabelTextColor('r')
     
     def toggle_grid(self, checked):
         if checked:
