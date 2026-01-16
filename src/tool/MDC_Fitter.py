@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor, QFontMetrics, QMovie
+from matplotlib.pylab import f
 import pyqtgraph as pg
 
 import os, inspect, time, sys, argparse
@@ -438,9 +439,13 @@ class main(QMainWindow):
             act_cmap.setChecked(cmap_name=='prevac_cmap')
             act_cmap.triggered.connect(lambda checked, name=cmap_name: self.set_cmap(name))
             self.cmap_menu.addAction(act_cmap)
-        help_window = QAction("Help", self)
+        help_menu = self.menu_bar.addMenu("Help")
+        help_window = QAction("Demo", self)
         help_window.triggered.connect(self.help_window)
-        self.menu_bar.addAction(help_window)
+        help_menu.addAction(help_window)
+        shortcut_list = QAction("Shortcuts", self)
+        shortcut_list.triggered.connect(self.show_shortcuts)
+        help_menu.addAction(shortcut_list)
         
 
         # Layouts
@@ -555,6 +560,47 @@ class main(QMainWindow):
     
     def help_window(self):
         HelpWindow(self)
+        
+    def show_shortcuts(self):
+        tg = QDialog(self)
+        tg.setWindowTitle("Keyboard Shortcuts")
+        tg.setLayout(QHBoxLayout())
+        key_layout = QVBoxLayout()
+        action_layout = QVBoxLayout()
+        label_dict = {
+            "Shortcut": "Action",
+            "Ctrl+O": "Load File",
+            "Ctrl+Q": "Quit",
+            "Ctrl+Z": "Undo",
+            "Ctrl+Y": "Redo",
+            "Left Arrow": "Move to previous index",
+            "Right Arrow": "Move to next index",
+            "Up Arrow": "Increase baseline value and fit",
+            "Down Arrow": "Decrease baseline value and fit",
+            "Enter/Return": "Fit component and update plot"
+        }
+        font = QFont("Arial", 24)
+        tl = 0
+        for key, action in label_dict.items():
+            key_label = QLabel(f"<b>{key}</b>")
+            if tl ==0:
+                action_label = QLabel(f"<b>{action}</b>")
+            else:
+                action_label = QLabel(action)
+            key_label.setAlignment(Qt.AlignCenter)
+            action_label.setAlignment(Qt.AlignCenter)
+            kl = QFontMetrics(font).width(key)
+            al = QFontMetrics(font).width(action)
+            if kl+al > tl:
+                tl = kl+al
+            key_layout.addWidget(key_label)
+            action_layout.addWidget(action_label)
+        tg.layout().addLayout(key_layout)
+        tg.layout().addLayout(action_layout)
+        tg.setFixedWidth(int(tl*1.5))        
+        tg.show()
+        tg.raise_()
+        tg.activateWindow()
     
     def load_file(self):
         file = QFileDialog.getOpenFileName(self, "Open Data File", "", "HDF5 Files (*.h5 *.hdf5);;NPZ Files (*.npz);;JSON Files (*.json);;TXT Files (*.txt)")[0]
@@ -702,24 +748,24 @@ class main(QMainWindow):
         self.plot_fwhm2.clear()
         self.plot_fwhm1.plot([self.vfe-self.eV[self.index], self.vfe-self.eV[self.index]], self.plot_fwhm1.getViewBox().viewRange()[1], pen=pg.mkPen(color='g', width=1, style=Qt.SolidLine))
         self.plot_fwhm2.plot([self.vfe-self.eV[self.index], self.vfe-self.eV[self.index]], self.plot_fwhm2.getViewBox().viewRange()[1], pen=pg.mkPen(color='r', width=1, style=Qt.SolidLine))
-        self.plot_fwhm1.plot(x1, y1, symbol='o', symbolBrush='w', symbolPen=None, symbolSize=5, pen=pg.mkPen(color='g', width=2, style=Qt.SolidLine), name='Comp 1')    #plot
-        self.plot_fwhm2.plot(x2, y2, symbol='o', symbolBrush='w', symbolPen=None, symbolSize=5, pen=pg.mkPen(color='r', width=2, style=Qt.SolidLine), name='Comp 2')    #plot
+        self.plot_fwhm1.plot(x1, y1, symbol='o', symbolBrush='w', symbolPen=None, symbolSize=5, pen=pg.mkPen(color='g', width=2, style=Qt.SolidLine), name='<b>Comp 1</b>')    #plot
+        self.plot_fwhm2.plot(x2, y2, symbol='o', symbolBrush='w', symbolPen=None, symbolSize=5, pen=pg.mkPen(color='r', width=2, style=Qt.SolidLine), name='<b>Comp 2</b>')    #plot
         legend1 = self.plot_fwhm1.addLegend(
                 offset=(10, 10),                    # 距離右上角的偏移
                 brush=pg.mkBrush(255, 255, 255, 50),    # 背景: 半透明黑色
-                pen=pg.mkPen('w', width=2),         # 邊框: 白色, 2像素寬
-                labelTextColor='w',                 # 文字顏色: 白色
+                pen=pg.mkPen('g', width=2),         # 邊框: 白色, 2像素寬
+                labelTextColor='g',                 # 文字顏色: 白色
             )
         legend1.setLabelTextSize('16pt')
-        legend1.setLabelTextColor('w')
+        legend1.setLabelTextColor('g')
         legend2 = self.plot_fwhm2.addLegend(
                 offset=(10, 10),                    # 距離右上角的偏移
                 brush=pg.mkBrush(255, 255, 255, 50),    # 背景: 半透明黑色
-                pen=pg.mkPen('w', width=2),         # 邊框: 白色, 2像素寬
-                labelTextColor='w',                 # 文字顏色: 白色
+                pen=pg.mkPen('r', width=2),         # 邊框: 白色, 2像素寬
+                labelTextColor='r',                 # 文字顏色: 白色
             )
         legend2.setLabelTextSize('16pt')
-        legend2.setLabelTextColor('w')
+        legend2.setLabelTextColor('r')
     
     def toggle_grid(self, checked):
         if checked:
