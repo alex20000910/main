@@ -49,7 +49,8 @@ class RestrictedToplevel(tk.Toplevel):
         set_center(parent, self, 0, 0)
         self.parent = parent
         dpi=parent.winfo_fpixels('1i')
-        path = os.path.join('.MDC_cut','odpi')
+        cdir = os.path.dirname(os.path.abspath(__file__))   # .MDC_cut
+        path = os.path.join(cdir,'odpi')
         with open(path, 'r') as f:
             s=f.read()
             odpi=float(s)

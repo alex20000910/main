@@ -377,6 +377,7 @@ try:
         from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
+        from tool.VolumeSlicer import wait
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
 except ImportError as e:
     print(e)
@@ -775,6 +776,43 @@ def f_help(*e):
 def about(*e):
     AboutWindow(master=g, scale=scale, version=__version__, release_date=__release_date__)
 
+@pool_protect
+def sample_data(*e):
+    tg = wait(g, app_pars)
+    tg.text('Preparing sample data...')
+    R1 = np.linspace(5, 25, 201)
+    if not os.path.exists(os.path.join(cdir, 'test_data')):
+        os.makedirs(os.path.join(cdir, 'test_data'))
+    files=[]
+    for r1 in R1:
+        tpath = os.path.join(cdir, 'test_data', rf"simulated_R1_{r1:.1f}_R2_0.h5")
+        files.append(tpath)
+        if os.path.exists(tpath)==False:
+            get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
+    tg.done()
+    tg = wait(g, app_pars)
+    tg.text('Loading sample data...')
+    o_load(drop=True, files=files)
+    tg.done()
+    g.after(500, lambda: print('Batch Master, k-Plane'))
+    t_cec = CEC(g, lfs.path, cmap=value3.get(), app_pars=lfs.app_pars)
+    g.after(2000, lambda: print('Transmission Mode --> Reciprocal Mode'))
+    t_cec.view.change_mode()
+    t_cec.view.text_e.set('21.200')
+    t_cec.view.set_slim()
+    g.after(1000, lambda: print('Symmetrical Extend'))
+    t_cec.view.symmetry()
+    g.after(1000, lambda: print('6-Fold Rotation'))
+    t_cec.view.symmetry_(6)
+    t_cec.view.grab_set()
+    t_cec.view.focus_set()
+    tg = wait(g, app_pars)
+    tg.label_wait.pack_forget()
+    b = tk.Button(tg, text='OK', command=tg.done)
+    b.pack()
+    tg.bind('<Return>', lambda e: tg.done())
+    tg.text('Press Export to generate data cube.(May take few minutes)')
+    
 @pool_protect
 def fit_so_app(*args):
     global fit_so
@@ -1988,6 +2026,7 @@ if __name__ == '__main__':
     helpmenu = tk.Menu(menubar, tearoff=0, bg="white")
     menubar.add_cascade(label="Help", menu=helpmenu)
     helpmenu.add_command(label="About MDC_Cut...", command=about)
+    helpmenu.add_command(label="Sample Data Demo", command=sample_data)
     helpmenu.add_command(label="Help", command=f_help)
     
     g.config(menu=menubar)
