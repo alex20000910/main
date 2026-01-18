@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.5.4"
-__release_date__ = "2026-01-16"
+__version__ = "8.5.5"
+__release_date__ = "2026-01-18"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -198,7 +198,8 @@ def get_src(ver=False):
            r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
            r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py"]
+           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/qt_util.py"]
     for i, v in enumerate(url):
         if i < 3:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
