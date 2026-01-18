@@ -386,7 +386,8 @@ class wait(tk.Toplevel):
         super().__init__(master, background='white')
         set_center(self.g, self)
         self.title('Info')
-        tk.Label(self, bg='white', text='Please wait...', font=('Arial', self.size(16), "bold")).pack(side=tk.TOP, pady=20)
+        self.label_wait = tk.Label(self, bg='white', text='Please wait...', font=('Arial', self.size(16), "bold"))
+        self.label_wait.pack(side=tk.TOP, pady=20)
         self.label_info = tk.Label(self, bg='white', text='', font=('Arial', self.size(14)))
         self.label_info.pack(side=tk.TOP, pady=20)
         self.grab_set()
@@ -737,9 +738,10 @@ class VolumeSlicer(tk.Frame):
         self.sym_g = RestrictedToplevel(self.g, background='white')
         self.sym_g.title('Symmetry')
         self.sym_g.resizable(False, False)
-        tk.Button(self.sym_g, text='2-fold symmetry', command=self.symmetry_2, bg='white', font=('Arial', self.size(16), "bold")).pack(side=tk.TOP, pady=5)
-        tk.Button(self.sym_g, text='3-fold symmetry', command=self.symmetry_3, bg='white', font=('Arial', self.size(16), "bold")).pack(side=tk.TOP, pady=5)
-        tk.Button(self.sym_g, text='4-fold symmetry', command=self.symmetry_4, bg='white', font=('Arial', self.size(16), "bold")).pack(side=tk.TOP, pady=5)
+        tk.Button(self.sym_g, text='2-fold symmetry', command=lambda: self.symmetry_(2), bg='white', font=('Arial', self.size(16), "bold")).pack(side=tk.TOP, pady=5)
+        tk.Button(self.sym_g, text='3-fold symmetry', command=lambda: self.symmetry_(3), bg='white', font=('Arial', self.size(16), "bold")).pack(side=tk.TOP, pady=5)
+        tk.Button(self.sym_g, text='4-fold symmetry', command=lambda: self.symmetry_(4), bg='white', font=('Arial', self.size(16), "bold")).pack(side=tk.TOP, pady=5)
+        tk.Button(self.sym_g, text='6-fold symmetry', command=lambda: self.symmetry_(6), bg='white', font=('Arial', self.size(16), "bold")).pack(side=tk.TOP, pady=5)
         set_center(self.g, self.sym_g, 50)
         self.sym_g.update()
         self.sym_g.limit_bind()
@@ -764,14 +766,8 @@ class VolumeSlicer(tk.Frame):
             copy_to_clipboard(self.fig)
             self.canvas.draw()
             
-    def symmetry_2(self):
-        self.gen_sym(2)
-    
-    def symmetry_3(self):
-        self.gen_sym(3)
-        
-    def symmetry_4(self):
-        self.gen_sym(4)
+    def symmetry_(self, n):
+        self.gen_sym(n)
         
     def set_xy_lim(self):
         '''
