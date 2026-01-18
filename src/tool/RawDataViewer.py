@@ -26,11 +26,11 @@ for i in range(5):
     cdir = os.path.dirname(cdir)
     if '.MDC_cut' in os.listdir(cdir):
         break
-sys.path.append(os.path.join(cdir, '.MDC_cut'))
 
+sys.path.append(os.path.join(cdir, '.MDC_cut'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles
-from tool.util import IconManager
+from tool.qt_util import MainWindow
 
 def get_hwnd():
     try:
@@ -39,49 +39,6 @@ def get_hwnd():
         return hwnd
     except Exception:
         return find_window()
-
-class ProgressDialog(QDialog):
-    def __init__(self, max_val=100, qicon=None):
-        super().__init__()
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #222;
-                color: #EEE;
-                font-family: Arial;
-                font-size: 24px;
-            }
-        """)
-        self.setWindowTitle('Progress')
-        self.setWindowIcon(qicon)
-        self.progress = QProgressBar(self)
-        self.progress.setMinimum(0)
-        self.progress.setMaximum(max_val)
-        self.progress.setValue(0)
-        self.label = QLabel(f"Progress: {self.progress.value()}/{self.progress.maximum()}", self)
-        self.label.setAlignment(Qt.AlignCenter)
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.progress)
-        vbox.addWidget(self.label)
-        self.setLayout(vbox)
-        QApplication.processEvents()  # Update the GUI immediately
-    
-    def increaseProgress(self, text=None):
-        value = self.progress.value()
-        self.progress.setValue(value + 1)
-        if value < self.progress.maximum()-1:
-            if text:
-                self.label.setText(text)
-            else:
-                self.label.setText(f"Progress: {self.progress.value()}/{self.progress.maximum()}")
-            QApplication.processEvents()
-        elif value == self.progress.maximum()-1:
-            if text:
-                self.label.setText(text)
-            else:
-                self.label.setText('Almost Done! Please Wait...')
-            QApplication.processEvents()
-            time.sleep(0.5)
-
 class c_fermi_level(QDialog):
     def __init__(self, vfe, icon):
         super().__init__()
@@ -152,15 +109,10 @@ class c_fermi_level(QDialog):
         self.close()
         QApplication.processEvents()
 
-class main(QMainWindow):
+class main(MainWindow):
     def __init__(self, lfs: FileSequence, hwnd=None):
-        self.lfs = lfs
-        icon = IconManager().icon
-        pixmap = QPixmap()
-        pixmap.loadFromData(b64decode(icon))
-        qicon = QIcon(pixmap)
-        self.icon = qicon
         super().__init__()
+        self.lfs = lfs
         self.hwnd=hwnd
         self.setWindowTitle("Raw Data Viewer")
         self.setAcceptDrops(True)
@@ -170,75 +122,6 @@ class main(QMainWindow):
         # self.resize(geo.width(), geo.height())
         # self.resize(1200, 1000)
         # self.setFixedSize(1200, 1000)
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #000;
-                color: #EEE;
-                font-family: Arial;
-                font-size: 24px;
-            }
-            QStatusBar {
-                background-color: #D7D7D7;
-                color: #222;
-                font-size: 30px;
-            }
-            QMenuBar, QMenu, QSlider, QSpinBox, QLineEdit, QLabel, QRadioButton {
-                background-color: #000;
-                color: #EEE;
-            }
-            QMenuBar {
-                padding: 8px;
-            }
-            QPushButton {
-                background-color: #333;
-                color: #EEE;
-                font-family: Arial;
-                font-weight: bold;
-            }
-            QRadioButton::indicator {
-                background-color: #999;
-                width: 16px;
-                height: 16px;
-                border-radius: 8px;
-            }
-            QRadioButton::indicator:checked {
-                background-color: #FCFCFC;
-                width: 20px;
-                height: 20px;
-                border-radius: 10px;
-            }
-            QPushButton:hover {
-                background-color: #555;
-                color: #FFD700;
-            }
-            QMenuBar::item {
-                background-color: #000;
-                color: #EEE;
-                font-family: Arial;
-            }
-            QMenuBar::item:selected {
-                background: #555;
-                color: #FFD700;
-            }
-            QMenu {
-                background-color: #222;
-                color: #EEE;
-                font-family: Arial;
-            }
-            QMenu::item {
-                background: #222;
-                color: #EEE;
-                padding: 6px 24px;
-                font-family: Arial;
-            }
-            QMenu::item:selected {
-                background: #FFD700;
-                color: #222;
-            }
-        """)
-        
-        self.setWindowIcon(qicon)
-        
         
         # 主視窗
         central = QWidget()

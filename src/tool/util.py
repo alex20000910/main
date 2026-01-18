@@ -118,10 +118,11 @@ class Button(tk.Button):
         self.config(bg="white")
 
 class MenuIconManager:
-    def __init__(self, scale, ScaleFactor, odpi, dpi):
+    def __init__(self, scale=1, ScaleFactor=100, odpi=96, dpi=96, qt=False):
         self.icons = {}
         self.mini_icons = {}
         self.giant_icons = {}
+        self.qt = qt
         self.size = (int(30*ScaleFactor/100), int(30*ScaleFactor/100))
         self.mini_size = (int(20*ScaleFactor/100), int(20*ScaleFactor/100))
         self.giant_size = (int(60*ScaleFactor/100), int(60*ScaleFactor/100))
@@ -135,8 +136,11 @@ class MenuIconManager:
         self.create_icons()
     
     def gen_icon(self, icon):
-        icon = Image.open(io.BytesIO(b64decode(icon))).resize(self.size)
-        return ImageTk.PhotoImage(icon), ImageTk.PhotoImage(icon.resize(self.mini_size)), ImageTk.PhotoImage(icon.resize(self.giant_size))
+        if self.qt:
+            return icon, icon, icon
+        else:
+            icon = Image.open(io.BytesIO(b64decode(icon))).resize(self.size)
+            return ImageTk.PhotoImage(icon), ImageTk.PhotoImage(icon.resize(self.mini_size)), ImageTk.PhotoImage(icon.resize(self.giant_size))
     
     def create_icons(self):
         """創建各種圖示"""
