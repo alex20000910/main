@@ -2711,4 +2711,3 @@ if __name__ == '__main__':
     # for index, stat in enumerate(top_stats[:10], 1):
     #     print(f"{index}. {stat}")
     g.mainloop()
-    
