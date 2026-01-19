@@ -668,9 +668,7 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                             print('\033[36m\nUpdating to the latest version...\nPlease wait...\033[0m')
                             self.get_src()
                             v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
-                            if os.path.exists(v_check_path):
-                                with open(v_check_path, mode='w') as f:
-                                    f.write(remote_ver)
+                            os.remove(v_check_path)
                             src = path
                             dst = os.path.join(cdir, f'{app_name}.py')
                             if os.name == 'nt':
