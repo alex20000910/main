@@ -268,23 +268,24 @@ def force_update():
         for line in f:
             if line.startswith('__version__ =') or line.startswith("__version__="):
                 remote_ver = line.split('=')[1].strip().strip('"').strip("'")
-                if cal_ver(remote_ver) > cal_ver(__version__):
-                    src = path
-                    dst = os.path.join(cdir, f'{app_name}.py')
-                    if os.name == 'nt':
-                        os.system(f'copy "{src}" "{dst}" > nul')
-                        os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                    elif os.name == 'posix':
-                        try:
-                            os.system(f'cp "{src}" "{dst}"')
-                            os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                        except:
-                            os.system(f'cp "{src}" "{dst}"')
-                            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                    os.remove(src)
-                    quit()
                 break
-        os.system(f'del {path}')
+    if cal_ver(remote_ver) > cal_ver(__version__):
+        src = path
+        dst = os.path.join(cdir, f'{app_name}.py')
+        os.chdir(cdir)
+        if os.name == 'nt':
+            os.system(f'copy "{src}" "{dst}" > nul')
+            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+        elif os.name == 'posix':
+            try:
+                os.system(f'cp "{src}" "{dst}"')
+                os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+            except:
+                os.system(f'cp "{src}" "{dst}"')
+                os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+        os.remove(src)
+        quit()
+    os.system(f'del {path}')
 
 # set up .MDC_cut folder
 os.chdir(cdir)
