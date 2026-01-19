@@ -225,10 +225,72 @@ def cal_ver(ver: str) -> int:
     ver = ver[0]*10000 + ver[1]*100 + ver[2]
     return ver
 
+
+def check_github_connection() -> bool:
+    try:
+        import requests
+    except ImportError:
+        requests = None
+        
+    url = "https://github.com"
+    if requests:
+        try:
+            response = requests.get(url, timeout=5)  # 設定 5 秒的超時時間
+            if response.status_code == 200:
+                return True
+            else:
+                return False
+        except requests.ConnectionError:
+            return False
+        except requests.Timeout:
+            return False
+        except Exception:
+            return False
+    else:
+        import urllib.request
+        try:
+            with urllib.request.urlopen(url, timeout=5) as response:
+                if response.status == 200:
+                    return True
+                else:
+                    return False
+        except Exception:
+            return False
+
+def force_update():
+    f = check_github_connection()
+    if not f:
+        print('\n\033[31mPlease check your network connection!\033[0m\n')
+        return
+    get_src(ver=True)
+    path = os.path.join(cdir, '.MDC_cut', 'MDC_cut.py')
+    with open(path, mode='r', encoding='utf-8') as f:
+        for line in f:
+            if line.startswith('__version__ =') or line.startswith("__version__="):
+                remote_ver = line.split('=')[1].strip().strip('"').strip("'")
+                if cal_ver(remote_ver) > cal_ver(__version__):
+                    src = path
+                    dst = os.path.join(cdir, f'{app_name}.py')
+                    if os.name == 'nt':
+                        os.system(f'copy "{src}" "{dst}" > nul')
+                        os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                    elif os.name == 'posix':
+                        try:
+                            os.system(f'cp "{src}" "{dst}"')
+                            os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                        except:
+                            os.system(f'cp "{src}" "{dst}"')
+                            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                    os.remove(src)
+                    quit()
+                break
+        os.system(f'del {path}')
+
 # set up .MDC_cut folder
 os.chdir(cdir)
 if not os.path.exists('.MDC_cut'):
     os.makedirs('.MDC_cut')
+    force_update()
 os.system('attrib +h +s .MDC_cut')
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 
