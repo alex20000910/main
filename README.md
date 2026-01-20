@@ -1,5 +1,6 @@
 # MDC_cut: An ARPES data analysis tool
 ![Python Version](https://img.shields.io/badge/Python-3.12_|_3.13-3776AB?logo=python&logoColor=%233776AB&style=plastic)
+[![codecov](https://codecov.io/github/alex20000910/main/graph/badge.svg?token=8OSRR75JVV)](https://codecov.io/github/alex20000910/main)
 [![GitHub License](https://img.shields.io/github/license/alex20000910/main?logo=licenses&logoColor=white&style=plastic)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/alex20000910/main?style=plastic)](https://github.com/alex20000910/main/releases)
 ![GitHub Release Date](https://img.shields.io/github/release-date/alex20000910/main?style=plastic)
