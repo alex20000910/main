@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: pip install pytest pytest-cov
 
+      - name: Add Path
+        run: echo ${GITHUB_WORKSPACE}\main\tests>> $GITHUB_PATH
+
       - name: Install project requirements
         run: pip install -r requirements.txt
         
