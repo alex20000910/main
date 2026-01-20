@@ -78,8 +78,14 @@ try:
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
 except ImportError as e:
     print(e)
-    
+
 path = os.path.abspath(os.path.join('.','test_data', 'simulated_R1_5.0_R2_0.h5'))
-lfs = loadfiles([f"{path}"], mode ='eager')
-assert isinstance(lfs, FileSequence)
-assert isinstance(lfs.get(0), xr.DataArray)
+
+def test_loadfiles():
+    lfs = loadfiles([f"{path}"], mode ='eager')
+    assert isinstance(lfs, FileSequence)
+    assert isinstance(lfs.get(0), xr.DataArray)
+
+def test_load_h5():
+    data = load_h5(path)
+    assert isinstance(data, xr.DataArray)
