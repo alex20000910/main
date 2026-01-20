@@ -21,9 +21,9 @@ jobs:
           cache-dependency-path: '**/requirements.txt'
       - run: pip install pytest pytest-cov
       - run: pip install -r $env:GITHUB_WORKSPACE\tests\requirements.txt
-      
+
       - name: Run tests
-        run: pytest --debug=trace
+        run: pytest
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
