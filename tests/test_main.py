@@ -64,6 +64,7 @@ except ModuleNotFoundError:
 try:
     tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
     sys.path.append(tdir)
+    sys.path.append(os.path.dirname(tdir))
     from MDC_cut_utility import *
     from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
@@ -78,7 +79,5 @@ except ImportError as e:
     print(e)
     
 path = os.path.abspath(os.path.join('.','test_data', 'simulated_R1_5.0_R2_0.h5'))
-print(path)
-print(tdir)
 lfs = loadfiles([path], mode ='eager')
 assert isinstance(lfs, FileSequence)
