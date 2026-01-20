@@ -62,7 +62,7 @@ except ModuleNotFoundError:
     quit()
 
 try:
-    tdir = os.path.join('..', 'src')
+    tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
     sys.path.append(tdir)
     from MDC_cut_utility import *
     from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
@@ -77,6 +77,6 @@ try:
 except ImportError as e:
     print(e)
     
-path = os.path.abspath(os.path.join('..', 'test_data', 'simulated_R1_5.0_R2_0.h5'))
+path = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data', 'simulated_R1_5.0_R2_0.h5'))
 lfs = loadfiles(path)
 assert isinstance(lfs, FileSequence)
