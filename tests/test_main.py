@@ -65,6 +65,7 @@ try:
     tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
     sys.path.append(tdir)
     sys.path.append(os.path.dirname(tdir))
+    sys.path.append(os.path.join(os.path.dirname(os.path.dirname(tdir)), '.MDC_cut'))
     from MDC_cut_utility import *
     from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
