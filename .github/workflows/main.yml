@@ -22,7 +22,7 @@ jobs:
         run: pip install pytest pytest-cov
 
       - name: Install project requirements
-        run: pip install -r $env:GITHUB_WORKSPACE\main\tests\requirements.txt
+        run: pip install -r $env:GITHUB_WORKSPACE\tests\requirements.txt
         
       - name: Run tests
         run: pytest --debug=trace
