@@ -6,7 +6,7 @@ on:
 jobs:
   test:
     name: Run tests and collect coverage
-    runs-on: self-hosted
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
         run: pip install pytest pytest-cov
         
       - name: Run tests
-        run: pytest --cov --cov-branch --debug=trace --cov-report=xml
+        run: pytest --debug=trace
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
