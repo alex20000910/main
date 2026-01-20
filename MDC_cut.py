@@ -294,6 +294,7 @@ if not os.path.exists('.MDC_cut'):
     force_update()
 os.system('attrib +h +s .MDC_cut')
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
+sys.path.append(os.path.join(cdir, 'src'))
 
 # upgrade check
 v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
