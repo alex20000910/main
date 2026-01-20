@@ -72,7 +72,8 @@ def restart():
 
 def install(s: str = ''):
     print('Some Modules Not Found')
-    a = input('pip install all the missing modules ???\nProceed (Y/n)? ')
+    # a = input('pip install all the missing modules ???\nProceed (Y/n)? ')
+    a = 'y'
     if a.lower() == 'y':
         if s == '':
             try:
