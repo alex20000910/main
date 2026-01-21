@@ -18,7 +18,7 @@ jobs:
         run: git lfs pull  # 確保下載 LFS 檔案
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
           cache: 'pip'
