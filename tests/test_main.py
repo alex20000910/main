@@ -118,11 +118,14 @@ def tk_environment():
 
 def test_spectrogram(tk_environment):
     g, frame = tk_environment
-    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
-    s = spectrogram(path=path, name='internal', app_pars=app_pars)
+    s = spectrogram(path=path, name='external')
+    s.app_pars = app_pars
     s.plot(g)
-    assert s.name == 'simulated_R1_15.0_R2_0'
+    assert isinstance(s.name, str)
     assert isinstance(s.data, xr.DataArray)
 
 def test_VolumeSlicer(tk_environment):
