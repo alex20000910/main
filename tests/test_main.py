@@ -76,42 +76,10 @@ from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_w
 
 
 def test_loadfiles():
-    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
-    print('file check:',os.path.exists(path))
-    # 檢查檔案大小（Git LFS 指標檔案通常很小，<1KB）
-    file_size = os.path.getsize(path)
-    if file_size < 1024:  # 小於 1KB
-        with open(path, 'rb') as f:
-            header = f.read(100)
-            if b'version https://git-lfs.github.com' in header:
-                raise ValueError(
-                    f"H5 file appears to be a Git LFS pointer file.\n"
-                    f"File size: {file_size} bytes\n"
-                    f"Please run 'git lfs pull' to download the actual file."
-                )
-
-    # 驗證 HDF5 檔案簽名
-    with open(path, 'rb') as f:
-        signature = f.read(8)
-        # HDF5 檔案應該以 \x89HDF\r\n\x1a\n 開頭
-        if not signature.startswith(b'\x89HDF'):
-            raise ValueError(
-                f"Invalid HDF5 file signature.\n"
-                f"Expected: \\x89HDF..., Got: {signature[:4]}\n"
-                f"File may be corrupted or is a Git LFS pointer."
-            )  
-    lfs = loadfiles(f"{path}", mode ='eager')
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    lfs = loadfiles(path)
     assert isinstance(lfs, FileSequence)
     assert isinstance(lfs.get(0), xr.DataArray)
-
-def test_load_h5():
-    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
-    print('file check:',os.path.exists(path))
-    data = load_h5(f"{path}")
-    assert isinstance(data, xr.DataArray)
-
-def test_load_json():
-    path = os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json')
-    print('file check:',os.path.exists(path))
-    data = load_json(f"{path}")
-    assert isinstance(data, xr.DataArray)
+    assert isinstance(lfs.get(1), xr.DataArray)
