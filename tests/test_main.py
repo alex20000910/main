@@ -79,7 +79,7 @@ def test_loadfiles():
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
     try:
-        lfs = loadfiles([f"{path}"], mode ='eager')
+        lfs = loadfiles(f"{path}", mode ='eager')
         assert isinstance(lfs, FileSequence)
         assert isinstance(lfs.get(0), xr.DataArray)
     except Exception as e:
