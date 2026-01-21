@@ -12,10 +12,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-          lfs: true  # 啟用 Git LFS
-      
-      - name: Checkout LFS objects
-        run: git lfs pull  # 確保下載 LFS 檔案
 
       - name: Set up Python
         uses: actions/setup-python@v5
