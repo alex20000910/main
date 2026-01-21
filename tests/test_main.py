@@ -91,7 +91,8 @@ def test_spectrogram():
 def test_k_map():
     from tool.VolumeSlicer import VolumeSlicer
     
-    data = load_h5(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
+    data = load_h5(path)
     odata = []
     r1 = np.linspace(10, 20, 11)
     for i in range(len(r1)):
@@ -103,8 +104,11 @@ def test_k_map():
     g = tk.Tk()
     g.withdraw()
     frame = tk.Frame(g)
-    vs = VolumeSlicer(parent=frame, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
+    vs = VolumeSlicer(parent=frame, path=path, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
     vs.change_mode()
+    assert vs.surface.shape ==(vs.density, vs.density)
+    assert vs.surface.dtype == np.float32
+    assert vs.surface.flatten().max() > 0
     xlim=[10, 20]
     ylim=[-10, 10]
     vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
@@ -120,3 +124,6 @@ def test_k_map():
     shape = (int(density/(vs.xmax-vs.xmin)*(txlim[1]-txlim[0])), int(density/(vs.ymax-vs.ymin)*(tylim[1]-tylim[0])))
     assert data.dtype == np.float32
     assert data.T.shape == shape
+    vs.det_core_num()
+    vs.t_cut_job_y()
+    vs.t_cut_job_x()
