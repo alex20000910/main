@@ -79,10 +79,10 @@ try:
 except ImportError as e:
     print(e)
 
-path = os.path.abspath(os.path.join('.', 'simulated_R1_15.0_R2_0.h5'))
+path = os.path.join('.', 'simulated_R1_15.0_R2_0.h5')
 
 def test_loadfiles():
-    lfs = loadfiles([f"{path}"], mode ='eager')
+    lfs = loadfiles(["simulated_R1_15.0_R2_0.h5"], mode ='eager')
     assert isinstance(lfs, FileSequence)
     assert isinstance(lfs.get(0), xr.DataArray)
 
