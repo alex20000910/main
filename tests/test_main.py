@@ -79,7 +79,7 @@ try:
 except ImportError as e:
     print(e)
 
-path = os.path.join('.', 'tests', 'simulated_R1_15.0_R2_0.h5')
+path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
 
 def test_loadfiles():
     lfs = loadfiles([path], mode ='eager')
