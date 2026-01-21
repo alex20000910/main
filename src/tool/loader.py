@@ -367,142 +367,136 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
         cec = None
         f_npz = True
     cec_pars = None
-    print('load_h5 before h5py.File')
-    print(path_to_file)
-    try:
-        with h5py.File(path_to_file, 'r') as f:
-            print('load_h5 inside h5py.File')
-            # f = h5py.File(path_to_file, 'r')
-            e_low = np.array(f.get('Region').get('LowEnergy').get('Value'))[0]
-            e_high = np.array(f.get('Region').get('HighEnergy').get('Value'))[0]
-            e_num = np.array(f.get('Data').get('XSize').get('Value'))[0]
-            e_photon = np.array(f.get('Region').get(
-                'ExcitationEnergy').get('Value'))[0]
-            a_low = np.array(f.get('Region').get('YScaleMin').get('Value'))[0]
-            a_high = np.array(f.get('Region').get('YScaleMax').get('Value'))[0]
-            a_num = np.array(f.get('Data').get('YSize').get('Value'))[0]
-            #   attrs
+    
+    with h5py.File(path_to_file, 'r') as f:
+        # f = h5py.File(path_to_file, 'r')
+        e_low = np.array(f.get('Region').get('LowEnergy').get('Value'))[0]
+        e_high = np.array(f.get('Region').get('HighEnergy').get('Value'))[0]
+        e_num = np.array(f.get('Data').get('XSize').get('Value'))[0]
+        e_photon = np.array(f.get('Region').get(
+            'ExcitationEnergy').get('Value'))[0]
+        a_low = np.array(f.get('Region').get('YScaleMin').get('Value'))[0]
+        a_high = np.array(f.get('Region').get('YScaleMax').get('Value'))[0]
+        a_num = np.array(f.get('Data').get('YSize').get('Value'))[0]
+        #   attrs
+        t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype=str)
+        t_LensMode = np.array(f.get('Region').get('LensMode'), dtype=str)
+        PassEnergy = np.array(f.get('Region').get(
+            'PassEnergy').get('Value'), dtype=str)[0]
+        Dwell = np.array(f.get('Region').get('Dwell').get('Value'), dtype=str)[0]
+        CenterEnergy = np.array(f.get('Region').get(
+            'CenterEnergy').get('Value'), dtype=str)[0]
+        Iterations = np.array(f.get('Region').get(
+            'Iterations').get('Value'), dtype=str)[0]
+        Step = np.array(f.get('Region').get('Step').get('Value'), dtype=str)[0]
+        t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
+        t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
+        try:
+            flag = np.array(f.get('Region').get('Name'), dtype=str)[1]
+            t_name = np.array(f.get('Region').get('Name'), dtype=str)
+        except:        
+            t_name = np.array(f.get('Region').get('Name'), dtype='S')  # Read as bytes
+            t_name = t_name.tobytes().decode('utf-8')   # Convert to string
+        try:
+            flag = np.array(f.get('Region').get('Description'), dtype=str)[1]
+            t_description = np.array(f.get('Region').get('Description'), dtype=str)
+        except:
+            t_description = np.array(f.get('Region').get('Description'), dtype='S')  # Read as bytes
+            t_description = t_description.tobytes().decode('utf-8')   # Convert to string
+        try:
+            flag = np.array(f.get('Region').get('EnergyMode'), dtype=str)[1]
             t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype=str)
             t_LensMode = np.array(f.get('Region').get('LensMode'), dtype=str)
-            PassEnergy = np.array(f.get('Region').get(
-                'PassEnergy').get('Value'), dtype=str)[0]
-            Dwell = np.array(f.get('Region').get('Dwell').get('Value'), dtype=str)[0]
-            CenterEnergy = np.array(f.get('Region').get(
-                'CenterEnergy').get('Value'), dtype=str)[0]
-            Iterations = np.array(f.get('Region').get(
-                'Iterations').get('Value'), dtype=str)[0]
-            Step = np.array(f.get('Region').get('Step').get('Value'), dtype=str)[0]
             t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
             t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
+        except:
+            flag = 'pass_byte'
+            t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype='S')  # Read as bytes
+            t_e_mode = t_e_mode.tobytes().decode('utf-8')   # Convert to string
+            t_LensMode = np.array(f.get('Region').get('LensMode'), dtype='S')  # Read as bytes
+            t_LensMode = t_LensMode.tobytes().decode('utf-8')   # Convert to string
+            t_Slit = np.array(f.get('Region').get('Slit'), dtype='S')  # Read as bytes
+            t_Slit = t_Slit.tobytes().decode('utf-8')   # Convert to string
+            t_aq = np.array(f.get('Region').get('Acquisition'), dtype='S')  # Read as bytes
+            t_aq = t_aq.tobytes().decode('utf-8')   # Convert to string        
+            
+        e_mode = ''
+        LensMode = ''
+        Slit = ''
+        aq = ''
+        name = ''
+        description = ''
+        if flag != 'pass_byte':
+            for i in range(60):  # proper length long enough
+                e_mode += t_e_mode[i]
+                LensMode += t_LensMode[i]
+                Slit += t_Slit[i]
+                aq += t_aq[i]
+        else:
+            e_mode = t_e_mode
+            LensMode = t_LensMode
+            Slit = t_Slit
+            aq = t_aq
+        for i in range(600):
             try:
-                flag = np.array(f.get('Region').get('Name'), dtype=str)[1]
-                t_name = np.array(f.get('Region').get('Name'), dtype=str)
-            except:        
-                t_name = np.array(f.get('Region').get('Name'), dtype='S')  # Read as bytes
-                t_name = t_name.tobytes().decode('utf-8')   # Convert to string
-            try:
-                flag = np.array(f.get('Region').get('Description'), dtype=str)[1]
-                t_description = np.array(f.get('Region').get('Description'), dtype=str)
+                name += t_name[i]
             except:
-                t_description = np.array(f.get('Region').get('Description'), dtype='S')  # Read as bytes
-                t_description = t_description.tobytes().decode('utf-8')   # Convert to string
-            try:
-                flag = np.array(f.get('Region').get('EnergyMode'), dtype=str)[1]
-                t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype=str)
-                t_LensMode = np.array(f.get('Region').get('LensMode'), dtype=str)
-                t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
-                t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
-            except:
-                flag = 'pass_byte'
-                t_e_mode = np.array(f.get('Region').get('EnergyMode'), dtype='S')  # Read as bytes
-                t_e_mode = t_e_mode.tobytes().decode('utf-8')   # Convert to string
-                t_LensMode = np.array(f.get('Region').get('LensMode'), dtype='S')  # Read as bytes
-                t_LensMode = t_LensMode.tobytes().decode('utf-8')   # Convert to string
-                t_Slit = np.array(f.get('Region').get('Slit'), dtype='S')  # Read as bytes
-                t_Slit = t_Slit.tobytes().decode('utf-8')   # Convert to string
-                t_aq = np.array(f.get('Region').get('Acquisition'), dtype='S')  # Read as bytes
-                t_aq = t_aq.tobytes().decode('utf-8')   # Convert to string        
-                
-            e_mode = ''
-            LensMode = ''
-            Slit = ''
-            aq = ''
-            name = ''
-            description = ''
-            if flag != 'pass_byte':
-                for i in range(60):  # proper length long enough
-                    e_mode += t_e_mode[i]
-                    LensMode += t_LensMode[i]
-                    Slit += t_Slit[i]
-                    aq += t_aq[i]
-            else:
-                e_mode = t_e_mode
-                LensMode = t_LensMode
-                Slit = t_Slit
-                aq = t_aq
-            for i in range(600):
-                try:
-                    name += t_name[i]
-                except:
-                    pass
-                try:
-                    description += t_description[i]
-                except:
-                    pass
-            if e_mode == 'Kinetic':
-                e = np.linspace(e_low, e_high, e_num)
-                CenterEnergy = str(CenterEnergy)+' eV'
-                e_low = str(e_low)+' eV (K.E.)'
-                e_high = str(e_high)+' eV (K.E.)'
-            else:
-                e = np.linspace(e_photon-e_high, e_photon-e_low, e_num)
-                CenterEnergy = str(CenterEnergy)+' eV'
-                e_low = str(e_low)+' eV (B.E.)'
-                e_high = str(e_high)+' eV (B.E.)'
-            if aq == 'VolumeSlicer':
-                if 'cec' in kwargs and 'f_npz' in kwargs:
-                    if f_npz is False:
-                        f_npz = True
-                        cec = 'CEC_Object'
-                    PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
-                    cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
-                
-            a = np.linspace(a_low, a_high, a_num)
-            d = np.asarray(f.get('Spectrum')).transpose()
-            if flag != 'pass_byte':
                 pass
-            else:
-                Dwell = Dwell.removesuffix(' s')
-                PassEnergy = PassEnergy.removesuffix(' eV')
-                d = d.T
-            data = xr.DataArray(
-                data=d,
-                coords={
-                    'eV': e,
-                    'phi': a
-                },
-                name='Spectrum',
-                attrs={
-                    'Name': name,
-                    'Acquisition': aq,
-                    'EnergyMode': e_mode,
-                    'ExcitationEnergy': str(e_photon)+' eV',
-                    'CenterEnergy': CenterEnergy,
-                    'HighEnergy': e_high,
-                    'LowEnergy': e_low,
-                    'Step': str(Step)+' eV',
-                    'LensMode': LensMode,
-                    'PassEnergy': str(PassEnergy)+' eV',
-                    'Slit': Slit,
-                    'Dwell': str(Dwell)+' s',
-                    'Iterations': Iterations,
-                    'Description': description,
-                    'Path': path_to_file
-                }
-            )
-    except Exception as e:
-        print('\033[31mError loading HDF5 file:', e, '\033[0m')
-        raise e
+            try:
+                description += t_description[i]
+            except:
+                pass
+        if e_mode == 'Kinetic':
+            e = np.linspace(e_low, e_high, e_num)
+            CenterEnergy = str(CenterEnergy)+' eV'
+            e_low = str(e_low)+' eV (K.E.)'
+            e_high = str(e_high)+' eV (K.E.)'
+        else:
+            e = np.linspace(e_photon-e_high, e_photon-e_low, e_num)
+            CenterEnergy = str(CenterEnergy)+' eV'
+            e_low = str(e_low)+' eV (B.E.)'
+            e_high = str(e_high)+' eV (B.E.)'
+        if aq == 'VolumeSlicer':
+            if 'cec' in kwargs and 'f_npz' in kwargs:
+                if f_npz is False:
+                    f_npz = True
+                    cec = 'CEC_Object'
+                PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
+                cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
+            
+        a = np.linspace(a_low, a_high, a_num)
+        d = np.asarray(f.get('Spectrum')).transpose()
+        if flag != 'pass_byte':
+            pass
+        else:
+            Dwell = Dwell.removesuffix(' s')
+            PassEnergy = PassEnergy.removesuffix(' eV')
+            d = d.T
+        data = xr.DataArray(
+            data=d,
+            coords={
+                'eV': e,
+                'phi': a
+            },
+            name='Spectrum',
+            attrs={
+                'Name': name,
+                'Acquisition': aq,
+                'EnergyMode': e_mode,
+                'ExcitationEnergy': str(e_photon)+' eV',
+                'CenterEnergy': CenterEnergy,
+                'HighEnergy': e_high,
+                'LowEnergy': e_low,
+                'Step': str(Step)+' eV',
+                'LensMode': LensMode,
+                'PassEnergy': str(PassEnergy)+' eV',
+                'Slit': Slit,
+                'Dwell': str(Dwell)+' s',
+                'Iterations': Iterations,
+                'Description': description,
+                'Path': path_to_file
+            }
+        )
     if 'cec' in kwargs and 'f_npz' in kwargs:
         return data, cec, f_npz, cec_pars
     else:
