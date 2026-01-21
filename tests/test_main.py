@@ -89,7 +89,7 @@ def test_loadfiles():
                     f"File size: {file_size} bytes\n"
                     f"Please run 'git lfs pull' to download the actual file."
                 )
-    
+
     # 驗證 HDF5 檔案簽名
     with open(path, 'rb') as f:
         signature = f.read(8)
