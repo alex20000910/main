@@ -571,7 +571,7 @@ class spectrogram:
         except:
             pass
         
-    def __ups(self):
+    def ups(self):
         self.root = tk.Toplevel(self.g,bg='white')
         self.root.title('UPS spectrum')
         
@@ -767,7 +767,7 @@ class spectrogram:
             
         .. Methods Called:
         --------
-            - __ups
+            - ups
             - __export
             - __export_casa
             - __copy_to_clipboard
@@ -889,7 +889,7 @@ class spectrogram:
         self.l_dy.grid(row=5,column=0)
         
         if self.type != 'fd':
-            self.b_ups = tk.Button(self.fr_info, text='Fermi Level Fitting', command=self.__ups, width=30, height=1, font=('Arial', self.size(12), "bold"), bg='white', bd=5)
+            self.b_ups = tk.Button(self.fr_info, text='Fermi Level Fitting', command=self.ups, width=30, height=1, font=('Arial', self.size(12), "bold"), bg='white', bd=5)
             self.b_ups.grid(row=6, column=0)
         
         self.b_exp = tk.Button(self.fr_info, text='Export Data ( .txt )', command=self.__export, width=30, height=1, font=('Arial', self.size(12), "bold"), bg='white', bd=5)

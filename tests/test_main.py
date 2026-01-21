@@ -126,6 +126,7 @@ def test_spectrogram(tk_environment):
     s.plot(g)
     s.cf_up()
     s.cf_down()
+    s.ups()
     assert isinstance(s.name, str)
     assert isinstance(s.data, xr.DataArray)
 
