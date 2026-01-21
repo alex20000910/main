@@ -368,7 +368,9 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
         f_npz = True
     cec_pars = None
     print('load_h5 before h5py.File')
+    print(path_to_file)
     with h5py.File(path_to_file, 'r') as f:
+        print('load_h5 inside h5py.File')
         # f = h5py.File(path_to_file, 'r')
         e_low = np.array(f.get('Region').get('LowEnergy').get('Value'))[0]
         e_high = np.array(f.get('Region').get('HighEnergy').get('Value'))[0]
@@ -391,7 +393,6 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
         Step = np.array(f.get('Region').get('Step').get('Value'), dtype=str)[0]
         t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
         t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
-        print('load_h5 before try')
         try:
             flag = np.array(f.get('Region').get('Name'), dtype=str)[1]
             t_name = np.array(f.get('Region').get('Name'), dtype=str)
@@ -420,7 +421,6 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
             t_Slit = t_Slit.tobytes().decode('utf-8')   # Convert to string
             t_aq = np.array(f.get('Region').get('Acquisition'), dtype='S')  # Read as bytes
             t_aq = t_aq.tobytes().decode('utf-8')   # Convert to string        
-        print('load_h5 before e_mode =')
             
         e_mode = ''
         LensMode = ''
@@ -458,7 +458,6 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
             CenterEnergy = str(CenterEnergy)+' eV'
             e_low = str(e_low)+' eV (B.E.)'
             e_high = str(e_high)+' eV (B.E.)'
-        print('load_h5 before VolumeSlicer')
         if aq == 'VolumeSlicer':
             if 'cec' in kwargs and 'f_npz' in kwargs:
                 if f_npz is False:
