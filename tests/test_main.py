@@ -83,3 +83,9 @@ def test_loadfiles():
     assert isinstance(lfs, FileSequence)
     assert isinstance(lfs.get(0), xr.DataArray)
     assert isinstance(lfs.get(1), xr.DataArray)
+
+def test_spectrogram():
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
+    s = spectrogram(path)
+    assert s.name == 'simulated_R1_15.0_R2_0'
+    assert isinstance(s.data, xr.DataArray)
