@@ -99,3 +99,12 @@ def test_load_h5():
         assert isinstance(data, xr.DataArray)
     except Exception as e:
         pytest.fail(f"load_h5 failed: {e}")
+
+def test_load_json():
+    path = os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json')
+    print('file check:',os.path.exists(path))
+    try:
+        data = load_json(f"{path}")
+        assert isinstance(data, xr.DataArray)
+    except Exception as e:
+        pytest.fail(f"load_json failed: {e}")
