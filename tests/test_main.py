@@ -78,6 +78,8 @@ from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_w
 def test_loadfiles():
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
+    path = os.path.normpath(path)
+    print('edited path:',path)    
     lfs = loadfiles(f"{path}", mode ='eager')
     assert isinstance(lfs, FileSequence)
     assert isinstance(lfs.get(0), xr.DataArray)
