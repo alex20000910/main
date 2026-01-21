@@ -85,26 +85,17 @@ def test_loadfiles():
 
 @pytest.fixture
 def tk_environment():
-    """根據環境決定使用真實或 Mock Tkinter"""
-    is_ci = os.getenv('CI', 'false').lower() == 'true'
     import tkinter as tk
-    
-    if is_ci:
-        # CI 環境：使用 Mock
-        from unittest.mock import Mock
-        root = Mock(spec=tk.Tk)
-        root.withdraw = Mock()
-        frame = Mock(spec=tk.Frame)
-    else:
-        # 本地環境：使用真實 Tkinter
-        root = tk.Tk()
-        root.withdraw()
-        frame = tk.Frame(root)
+    root = tk.Tk()
+    root.withdraw()
+    frame = tk.Frame(root)
     
     yield root, frame
     
-    if not is_ci:
+    try:
         root.destroy()
+    except:
+        pass
 
 def test_spectrogram(tk_environment):
     g, frame = tk_environment
