@@ -82,14 +82,42 @@ def test_loadfiles():
     assert isinstance(lfs.get(0), xr.DataArray)
     assert isinstance(lfs.get(1), xr.DataArray)
 
-def test_spectrogram():
+
+@pytest.fixture
+def tk_environment():
+    """根據環境決定使用真實或 Mock Tkinter"""
+    is_ci = os.getenv('CI', 'false').lower() == 'true'
+    
+    if is_ci:
+        # CI 環境：使用 Mock
+        from unittest.mock import Mock
+        root = Mock(spec=tk.Tk)
+        root.withdraw = Mock()
+        frame = Mock(spec=tk.Frame)
+    else:
+        # 本地環境：使用真實 Tkinter
+        import tkinter as tk
+        root = tk.Tk()
+        root.withdraw()
+        frame = tk.Frame(root)
+    
+    yield root, frame
+    
+    if not is_ci:
+        root.destroy()
+
+def test_spectrogram(tk_environment):
+    g, frame = tk_environment
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
-    s = spectrogram(path=path)
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
+    s = spectrogram(path=path, name='internal', app_pars=app_pars)
+    s.plot(g)
     assert s.name == 'simulated_R1_15.0_R2_0'
     assert isinstance(s.data, xr.DataArray)
 
-def test_k_map():
+def test_VolumeSlicer(tk_environment):
     from tool.VolumeSlicer import VolumeSlicer
+    g, frame = tk_environment
     
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
     data = load_h5(path)
@@ -101,9 +129,6 @@ def test_k_map():
     
     ev, phi = odata[0].indexes.values()
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
-    g = tk.Tk()
-    g.withdraw()
-    frame = tk.Frame(g)
     vs = VolumeSlicer(parent=frame, path=path, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
     vs.change_mode()
     assert vs.surface.shape ==(vs.density, vs.density)
