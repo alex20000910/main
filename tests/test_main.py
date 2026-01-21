@@ -84,12 +84,18 @@ except ImportError as e:
 def test_loadfiles():
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data', 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
-    lfs = loadfiles([f"{path}"], mode ='eager')
-    assert isinstance(lfs, FileSequence)
-    assert isinstance(lfs.get(0), xr.DataArray)
+    try:
+        lfs = loadfiles([f"{path}"], mode ='eager')
+        assert isinstance(lfs, FileSequence)
+        assert isinstance(lfs.get(0), xr.DataArray)
+    except Exception as e:
+        pytest.fail(f"loadfiles failed: {e}")
 
 def test_load_h5():
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data', 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
-    data = load_h5(f"{path}")
-    assert isinstance(data, xr.DataArray)
+    try:
+        data = load_h5(f"{path}")
+        assert isinstance(data, xr.DataArray)
+    except Exception as e:
+        pytest.fail(f"load_h5 failed: {e}")
