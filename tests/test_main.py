@@ -80,6 +80,7 @@ except ImportError as e:
     print(e)
 
 path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
+print(os.path.exists(path))
 
 def test_loadfiles():
     lfs = loadfiles([path], mode ='eager')
