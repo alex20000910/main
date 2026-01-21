@@ -367,7 +367,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
         cec = None
         f_npz = True
     cec_pars = None
-    
+    print('load_h5 before h5py.File')
     with h5py.File(path_to_file, 'r') as f:
         # f = h5py.File(path_to_file, 'r')
         e_low = np.array(f.get('Region').get('LowEnergy').get('Value'))[0]
@@ -456,6 +456,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
             CenterEnergy = str(CenterEnergy)+' eV'
             e_low = str(e_low)+' eV (B.E.)'
             e_high = str(e_high)+' eV (B.E.)'
+        print('load_h5 before VolumeSlicer')
         if aq == 'VolumeSlicer':
             if 'cec' in kwargs and 'f_npz' in kwargs:
                 if f_npz is False:
