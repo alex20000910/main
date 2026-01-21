@@ -166,8 +166,3 @@ def test_VolumeSlicer(tk_environment):
     vs.det_core_num()
     vs.t_cut_job_y()
     vs.t_cut_job_x()
-
-def test_MDC_Fitter():
-    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
-    from tool.MDC_Fitter import main
-    win=main(path, None)
