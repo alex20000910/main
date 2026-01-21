@@ -76,7 +76,7 @@ from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_w
 
 
 def test_loadfiles():
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data', 'simulated_R1_15.0_R2_0.h5')
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
     try:
         lfs = loadfiles([f"{path}"], mode ='eager')
@@ -86,7 +86,7 @@ def test_loadfiles():
         pytest.fail(f"loadfiles failed: {e}")
 
 def test_load_h5():
-    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data', 'simulated_R1_15.0_R2_0.h5')
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
     try:
         data = load_h5(f"{path}")
