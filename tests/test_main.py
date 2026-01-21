@@ -90,23 +90,33 @@ def test_spectrogram():
 
 def test_k_map():
     from tool.VolumeSlicer import VolumeSlicer
-    e = 1.602e-19
-    hbar = 6.626e-34/2/np.pi
-    phi = np.linspace(-30, 30, 21)
-    r1 = np.linspace(60, 40, 7)
-    ev = 21.2
-    k = (ev*e*(2*9.11e-31))**0.5/hbar*1e-10
-    x, y = np.meshgrid(r1, phi)
-    x, y = k*np.sin(np.radians(x))*np.cos(np.radians(y)), k*np.sin(np.radians(y))
     
-    density = 50
-    kx = np.linspace(-2.5, 2.5, density, endpoint=False)
-    ky = np.linspace(-2.5, 2.5, density, endpoint=False)
-    kx += (kx[1]-kx[0])/2
-    ky += (ky[1]-ky[0])/2
-    kx, ky = np.meshgrid(kx, ky)
-    data = x*0+1
+    data = load_h5(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    odata = []
+    r1 = np.linspace(10, 20, 11)
+    for i in range(len(r1)):
+        odata.append(data)
+    odataframe = np.stack([i.transpose() for i in odata], axis=0, dtype=np.float32)
     
-    vs = VolumeSlicer(tk.Tk(), x=phi, y=r1)
-    data = vs.k_map(data, density=density+1, xlim=[40, 60], ylim=[-30, 30], kxlim=[x.min(), x.max()], kylim=[y.min(), y.max()], ev=ev)
-    assert data.shape == (density+1, density+1)
+    ev, phi = odata[0].indexes.values()
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
+    g = tk.Tk()
+    g.withdraw()
+    frame = tk.Frame(g)
+    vs = VolumeSlicer(parent=frame, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
+    vs.change_mode()
+    xlim=[10, 20]
+    ylim=[-10, 10]
+    vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
+    r1 = np.linspace(xlim[0], xlim[1], int(vs.cdensity/180*(xlim[1]-xlim[0])+1))
+    phi = np.linspace(ylim[0], ylim[1], int(vs.cdensity/180*(ylim[1]-ylim[0])))
+    ev = ev[-1]
+    x = np.sqrt(2*vs.m*vs.e*ev)/vs.hbar*10**-10*np.sin(r1[:, None]/180*np.pi) * np.cos(phi[None, :]/180*np.pi)  # x: r1, y: phi, at r2=0
+    y = np.sqrt(2*vs.m*vs.e*ev)/vs.hbar*10**-10*np.sin(phi[None, :]/180*np.pi)
+    txlim, tylim = [np.min(x), np.max(x)], [np.min(y), np.max(y)]
+    data = vs.ovolume[:, vs.slim[0]:vs.slim[1]+1, -1]
+    density = vs.cdensity
+    data = vs.k_map(data, density=density, xlim=xlim, ylim=ylim, kxlim=txlim, kylim=tylim, ev=ev)
+    shape = (int(density/(vs.xmax-vs.xmin)*(txlim[1]-txlim[0])), int(density/(vs.ymax-vs.ymin)*(tylim[1]-tylim[0])))
+    assert data.dtype == np.float32
+    assert data.T.shape == shape
