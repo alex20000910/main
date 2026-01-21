@@ -391,6 +391,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
         Step = np.array(f.get('Region').get('Step').get('Value'), dtype=str)[0]
         t_Slit = np.array(f.get('Region').get('Slit'), dtype=str)
         t_aq = np.array(f.get('Region').get('Acquisition'), dtype=str)
+        print('load_h5 before try')
         try:
             flag = np.array(f.get('Region').get('Name'), dtype=str)[1]
             t_name = np.array(f.get('Region').get('Name'), dtype=str)
@@ -419,6 +420,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
             t_Slit = t_Slit.tobytes().decode('utf-8')   # Convert to string
             t_aq = np.array(f.get('Region').get('Acquisition'), dtype='S')  # Read as bytes
             t_aq = t_aq.tobytes().decode('utf-8')   # Convert to string        
+        print('load_h5 before e_mode =')
             
         e_mode = ''
         LensMode = ''

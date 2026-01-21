@@ -78,27 +78,18 @@ from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_w
 def test_loadfiles():
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
-    try:
-        lfs = loadfiles(f"{path}", mode ='eager')
-        assert isinstance(lfs, FileSequence)
-        assert isinstance(lfs.get(0), xr.DataArray)
-    except Exception as e:
-        pytest.fail(f"loadfiles failed: {e}")
+    lfs = loadfiles(f"{path}", mode ='eager')
+    assert isinstance(lfs, FileSequence)
+    assert isinstance(lfs.get(0), xr.DataArray)
 
 def test_load_h5():
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
-    try:
-        data = load_h5(f"{path}")
-        assert isinstance(data, xr.DataArray)
-    except Exception as e:
-        pytest.fail(f"load_h5 failed: {e}")
+    data = load_h5(f"{path}")
+    assert isinstance(data, xr.DataArray)
 
 def test_load_json():
     path = os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json')
     print('file check:',os.path.exists(path))
-    try:
-        data = load_json(f"{path}")
-        assert isinstance(data, xr.DataArray)
-    except Exception as e:
-        pytest.fail(f"load_json failed: {e}")
+    data = load_json(f"{path}")
+    assert isinstance(data, xr.DataArray)
