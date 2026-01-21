@@ -82,14 +82,14 @@ except ImportError as e:
 
 
 def test_loadfiles():
-    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data', 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
     lfs = loadfiles([f"{path}"], mode ='eager')
     assert isinstance(lfs, FileSequence)
     assert isinstance(lfs.get(0), xr.DataArray)
 
 def test_load_h5():
-    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data', 'simulated_R1_15.0_R2_0.h5')
     print('file check:',os.path.exists(path))
-    data = load_h5(path)
+    data = load_h5(f"{path}")
     assert isinstance(data, xr.DataArray)
