@@ -92,7 +92,26 @@ def tk_environment():
     
     yield root, frame
     
+    # 確保所有子視窗都被關閉
     try:
+        for widget in root.winfo_children():
+            try:
+                widget.destroy()
+            except:
+                pass
+    except:
+        pass
+    
+    # 更新事件循環
+    try:
+        root.update_idletasks()
+        root.update()
+    except:
+        pass
+    
+    # 最後銷毀 root
+    try:
+        root.quit()
         root.destroy()
     except:
         pass
