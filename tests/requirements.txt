@@ -17,3 +17,4 @@ PyQt5==5.15.11
 pyqtgraph==0.13.7
 tkinterdnd2==0.4.3
 google-crc32c==1.8.0
+pyparsing==3.0.9
