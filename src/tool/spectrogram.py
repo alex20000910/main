@@ -715,11 +715,11 @@ class spectrogram:
     
     def __scroll(self, event):
         if event.delta>0:
-            self.__cf_up()
+            self.cf_up()
         elif event.delta<0:
-            self.__cf_down()
+            self.cf_down()
     
-    def __cf_up(self, *args):
+    def cf_up(self, *args):
         now = self.namevar.get()
         for i, j in enumerate(self.lfs.name):
             if now == j:
@@ -729,7 +729,7 @@ class spectrogram:
                     self.namevar.set(self.lfs.name[i-1])
         self.__change_file()
 
-    def __cf_down(self, *args):
+    def cf_down(self, *args):
         now = self.namevar.get()
         for i, j in enumerate(self.lfs.name):
             if now == j:
@@ -909,8 +909,8 @@ class spectrogram:
         # self.tpg.update()
         self.tpg.bind("<Return>", self.__rg_entry)
         if self.lfs is not None:
-            self.tpg.bind('<Up>', self.__cf_up)
-            self.tpg.bind('<Down>', self.__cf_down)
+            self.tpg.bind('<Up>', self.cf_up)
+            self.tpg.bind('<Down>', self.cf_down)
             self.tpg.bind('<MouseWheel>', self.__scroll)
         if g is not None:
             self.tpg.update()

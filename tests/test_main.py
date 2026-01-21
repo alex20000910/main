@@ -124,6 +124,8 @@ def test_spectrogram(tk_environment):
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
     s = spectrogram(path=path, app_pars=app_pars)
     s.plot(g)
+    s.cf_up()
+    s.cf_down()
     assert isinstance(s.name, str)
     assert isinstance(s.data, xr.DataArray)
 
