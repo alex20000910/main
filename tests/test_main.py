@@ -87,6 +87,7 @@ def test_loadfiles():
 def tk_environment():
     """根據環境決定使用真實或 Mock Tkinter"""
     is_ci = os.getenv('CI', 'false').lower() == 'true'
+    import tkinter as tk
     
     if is_ci:
         # CI 環境：使用 Mock
@@ -96,7 +97,6 @@ def tk_environment():
         frame = Mock(spec=tk.Frame)
     else:
         # 本地環境：使用真實 Tkinter
-        import tkinter as tk
         root = tk.Tk()
         root.withdraw()
         frame = tk.Frame(root)
