@@ -73,8 +73,6 @@ from tool.CEC import CEC, call_cec
 from tool.VolumeSlicer import wait
 from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
 
-
-
 def test_loadfiles():
     path = []
     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
@@ -86,6 +84,27 @@ def test_loadfiles():
 
 def test_spectrogram():
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
-    s = spectrogram(path)
+    s = spectrogram(path=path)
     assert s.name == 'simulated_R1_15.0_R2_0'
     assert isinstance(s.data, xr.DataArray)
+
+def test_k_map():
+    from tool.VolumeSlicer import k_map
+    e = 1.602e-19
+    hbar = 6.626e-34/2/np.pi
+    phi = np.linspace(-30, 30, 21)
+    r1 = np.linspace(60, 40, 7)
+    ev = 21.2
+    k = (ev*e*(2*9.11e-31))**0.5/hbar*1e-10
+    x, y = np.meshgrid(r1, phi)
+    x, y = k*np.sin(np.radians(x))*np.cos(np.radians(y)), k*np.sin(np.radians(y))
+    
+    density = 50
+    kx = np.linspace(-2.5, 2.5, density, endpoint=False)
+    ky = np.linspace(-2.5, 2.5, density, endpoint=False)
+    kx += (kx[1]-kx[0])/2
+    ky += (ky[1]-ky[0])/2
+    kx, ky = np.meshgrid(kx, ky)
+    data = x*0+1
+    data = k_map(data, density=density+1, xlim=[40, 60], ylim=[-30, 30], kxlim=[x.min(), x.max()], kylim=[y.min(), y.max()], ev=ev)
+    assert data.shape == (density+1, density+1)
