@@ -56,9 +56,9 @@ class spectrogram:
             self.data = self.lfs.get(0)
             if self.lfs.f_npz[0]:self.npzf = True
         else:
-            if 'app_pars' in kwargs:
-                self.app_pars = kwargs['app_pars']
             self.data = data
+        if 'app_pars' in kwargs:
+            self.app_pars = kwargs['app_pars']
         self.__preload(self.data)
         self.rr1 = self.phi[0]
         self.rr2 = self.phi[-1]
