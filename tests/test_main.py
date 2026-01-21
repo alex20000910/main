@@ -89,7 +89,7 @@ def test_spectrogram():
     assert isinstance(s.data, xr.DataArray)
 
 def test_k_map():
-    from tool.VolumeSlicer import k_map
+    from tool.VolumeSlicer import VolumeSlicer
     e = 1.602e-19
     hbar = 6.626e-34/2/np.pi
     phi = np.linspace(-30, 30, 21)
@@ -106,5 +106,7 @@ def test_k_map():
     ky += (ky[1]-ky[0])/2
     kx, ky = np.meshgrid(kx, ky)
     data = x*0+1
-    data = k_map(data, density=density+1, xlim=[40, 60], ylim=[-30, 30], kxlim=[x.min(), x.max()], kylim=[y.min(), y.max()], ev=ev)
+    
+    vs = VolumeSlicer(tk.Tk(), x=phi, y=r1)
+    data = vs.k_map(data, density=density+1, xlim=[40, 60], ylim=[-30, 30], kxlim=[x.min(), x.max()], kylim=[y.min(), y.max()], ev=ev)
     assert data.shape == (density+1, density+1)
