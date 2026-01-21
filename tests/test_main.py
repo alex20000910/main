@@ -28,22 +28,22 @@ try:
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
     import matplotlib.pyplot as plt
     from matplotlib.figure import Figure
-    if __name__ == '__main__':
-        from matplotlib.colors import LinearSegmentedColormap
-        # from matplotlib.widgets import SpanSelector
-        # from matplotlib.widgets import RectangleSelector
-        import matplotlib as mpl
-        # from matplotlib.widgets import Cursor
-        # from matplotlib.widgets import Slider
+    # if __name__ == '__main__':
+    from matplotlib.colors import LinearSegmentedColormap
+    # from matplotlib.widgets import SpanSelector
+    # from matplotlib.widgets import RectangleSelector
+    import matplotlib as mpl
+    # from matplotlib.widgets import Cursor
+    # from matplotlib.widgets import Slider
     import numpy as np
     import xarray as xr
     import h5py
     from PIL import Image, ImageTk
-    if __name__ == '__main__':
-        # from scipy.optimize import curve_fit
-        from scipy.signal import hilbert
-        # from lmfit import Parameters, Minimizer
-        from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
+    # if __name__ == '__main__':
+    # from scipy.optimize import curve_fit
+    from scipy.signal import hilbert
+    # from lmfit import Parameters, Minimizer
+    from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
     import tqdm
     import win32clipboard
     if __name__ == '__main__':
@@ -52,12 +52,12 @@ try:
     import psutil
     if VERSION >= 3130:
         import google_crc32c    # for numcodecs
-    if __name__ == '__main__':
-        import cpuinfo
-        import zarr
-        import PyQt5
-        import pyqtgraph
-        from tkinterdnd2 import DND_FILES, TkinterDnD
+    # if __name__ == '__main__':
+    import cpuinfo
+    import zarr
+    import PyQt5
+    import pyqtgraph
+    from tkinterdnd2 import DND_FILES, TkinterDnD
 except ModuleNotFoundError:
     quit()
 
@@ -70,12 +70,12 @@ try:
     from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
     from tool.spectrogram import spectrogram, lfs_exp_casa
     from tool.util import laplacian_filter  # for originpro: from MDC_cut import *
-    if __name__ == '__main__':
-        from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
-        from tool.SO_Fitter import SO_Fitter
-        from tool.CEC import CEC, call_cec
-        from tool.VolumeSlicer import wait
-        from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
+    # if __name__ == '__main__':
+    from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
+    from tool.SO_Fitter import SO_Fitter
+    from tool.CEC import CEC, call_cec
+    from tool.VolumeSlicer import wait
+    from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
 except ImportError as e:
     print(e)
 
