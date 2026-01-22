@@ -202,6 +202,7 @@ def test_CEC(tk_environment):
     tg = wait(g, app_pars)
     tg.text('Preparing sample data...')
     R1 = np.linspace(5, 25, 201)
+    os.remove(os.path.join(cdir, 'test_data'))
     if not os.path.exists(os.path.join(cdir, 'test_data')):
         os.makedirs(os.path.join(cdir, 'test_data'))
     files=[]
