@@ -198,21 +198,15 @@ def test_CEC(tk_environment):
     from tool.MDC_Fitter import get_file_from_github
     g, frame = tk_environment
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
-    cdir = os.path.dirname(os.path.dirname(__file__))
-    test_dir = "test_data"
     tg = wait(g, app_pars)
     tg.text('Preparing sample data...')
-    R1 = np.linspace(5, 25, 201)
-    if not os.path.exists(os.path.join(cdir, test_dir)):
-        os.makedirs(os.path.join(cdir, test_dir))
-    files=[]
-    for r1 in R1:
-        path = rf"simulated_R1_{r1:.1f}_R2_0.h5"
-        tpath = os.path.join(cdir, test_dir, rf"simulated_R1_{r1:.1f}_R2_0.h5")
-        files.append(tpath)
-        if os.path.exists(tpath)==False:
-            get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
-    os.system('git lfs pull')
+    path = rf"simulated_R1_15.0_R2_0.h5"
+    tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0.h5")
+    if os.path.exists(tpath)==False:
+        get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
+    files = []
+    files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1_R2_0.h5'))
     tg.done()
     tg = wait(g, app_pars)
     tg.text('Loading sample data...')
