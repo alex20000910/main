@@ -199,7 +199,7 @@ def test_CEC(tk_environment):
     g, frame = tk_environment
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
     cdir = os.path.dirname(os.path.dirname(__file__))
-    test_dir = "temp_test"
+    test_dir = "test_data"
     tg = wait(g, app_pars)
     tg.text('Preparing sample data...')
     R1 = np.linspace(5, 25, 201)
@@ -212,6 +212,7 @@ def test_CEC(tk_environment):
         files.append(tpath)
         if os.path.exists(tpath)==False:
             get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
+    os.system('git lfs pull')
     tg.done()
     tg = wait(g, app_pars)
     tg.text('Loading sample data...')
