@@ -199,16 +199,16 @@ def test_CEC(tk_environment):
     g, frame = tk_environment
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
     cdir = os.path.dirname(os.path.dirname(__file__))
+    test_dir = "temp_test"
     tg = wait(g, app_pars)
     tg.text('Preparing sample data...')
     R1 = np.linspace(5, 25, 201)
-    os.remove(os.path.join(cdir, 'test_data'))
-    if not os.path.exists(os.path.join(cdir, 'test_data')):
-        os.makedirs(os.path.join(cdir, 'test_data'))
+    if not os.path.exists(os.path.join(cdir, test_dir)):
+        os.makedirs(os.path.join(cdir, test_dir))
     files=[]
     for r1 in R1:
         path = rf"simulated_R1_{r1:.1f}_R2_0.h5"
-        tpath = os.path.join(cdir, 'test_data', rf"simulated_R1_{r1:.1f}_R2_0.h5")
+        tpath = os.path.join(cdir, test_dir, rf"simulated_R1_{r1:.1f}_R2_0.h5")
         files.append(tpath)
         if os.path.exists(tpath)==False:
             get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
