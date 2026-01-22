@@ -54,7 +54,10 @@ class RestrictedToplevel(tk.Toplevel):
         with open(path, 'r') as f:
             s=f.read()
             odpi=float(s)
-        size = int(str(tk.Menu(parent).cget('font')).split(' ')[1])
+        try:
+            size = int(str(tk.Menu(parent).cget('font')).split(' ')[1])
+        except ValueError:
+            size = int(str(tk.Menu(parent).cget('font')).split(' ')[-1])
         bd = int(tk.Menu(parent).cget('bd'))
         self.menusize=int((size*dpi/odpi+bd*2*2)*windll.shcore.GetScaleFactorForDevice(0)/100)
         

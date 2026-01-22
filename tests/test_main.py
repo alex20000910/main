@@ -61,7 +61,7 @@ from tkinterdnd2 import DND_FILES, TkinterDnD
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
 sys.path.append(tdir)
 sys.path.append(os.path.dirname(tdir))
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(tdir)), '.MDC_cut'))
+# sys.path.append(os.path.join(os.path.dirname(os.path.dirname(tdir)), '.MDC_cut'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
 from tool.spectrogram import spectrogram, lfs_exp_casa
@@ -82,6 +82,26 @@ def test_loadfiles():
     assert isinstance(lfs.get(0), xr.DataArray)
     assert isinstance(lfs.get(1), xr.DataArray)
 
+class tkDnD(tkDnD_loader):
+    """
+    A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
+    
+    Attributes:
+        root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
+    """
+    def __init__(self, root: tk.Misc):
+        super().__init__(root)
+    
+    @override
+    def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
+        pass
+
+def test_tkDnD():
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    files = tkDnD.load_raw(path)
+    assert isinstance(files, list)
 
 @pytest.fixture
 def tk_environment():
@@ -133,7 +153,11 @@ def test_spectrogram(tk_environment):
 def test_VolumeSlicer(tk_environment):
     from tool.VolumeSlicer import VolumeSlicer
     g, frame = tk_environment
-    
+    odpi=g.winfo_fpixels('1i')
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'odpi')
+    with open(path, 'w') as f:
+        f.write(f'{odpi}')  #for RestrictedToplevel
+        f.close()
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
     data = load_h5(path)
     odata = []
@@ -165,5 +189,43 @@ def test_VolumeSlicer(tk_environment):
     assert data.dtype == np.float32
     assert data.T.shape == shape
     vs.det_core_num()
+    vs.symmetry()
+    vs.symmetry_(6)
     vs.t_cut_job_y()
     vs.t_cut_job_x()
+
+def test_CEC(tk_environment):
+    from tool.MDC_Fitter import get_file_from_github
+    g, frame = tk_environment
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
+    tg = wait(g, app_pars)
+    tg.text('Preparing sample data...')
+    path = rf"simulated_R1_15.0_R2_0.h5"
+    tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0.h5")
+    if os.path.exists(tpath)==False:
+        get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
+    files = []
+    files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1_R2_0.h5'))
+    tg.done()
+    tg = wait(g, app_pars)
+    tg.text('Loading sample data...')
+    lfs = loadfiles(files)
+    tg.done()
+    t_cec = CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
+
+def test_interp():
+    y = interp(1.5, [1, 2], [2, 3])
+    assert y == 2.5
+    y_array = interp([1.5, 2.5], [1, 2], [2, 3])
+    assert np.allclose(y_array, [2.5, 3.5])
+
+def test_get_bar_pos():
+    pos = get_bar_pos()
+    assert isinstance(pos, str)
+
+def test_get_hwnd():
+    from tool.MDC_Fitter import get_hwnd
+    hwnd = get_hwnd()
+    assert isinstance(hwnd, int)
+
