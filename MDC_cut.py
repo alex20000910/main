@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.5.6"
-__release_date__ = "2026-01-19"
+__version__ = "8.5.7"
+__release_date__ = "2026-01-22"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -850,6 +850,7 @@ def sample_data(*e):
         os.makedirs(os.path.join(cdir, 'test_data'))
     files=[]
     for r1 in R1:
+        path = rf"simulated_R1_{r1:.1f}_R2_0.h5"
         tpath = os.path.join(cdir, 'test_data', rf"simulated_R1_{r1:.1f}_R2_0.h5")
         files.append(tpath)
         if os.path.exists(tpath)==False:
