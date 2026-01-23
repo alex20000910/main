@@ -113,7 +113,7 @@ def test_spectrogram(tk_environment):
     s = spectrogram(data, name='internal', app_pars=app_pars)
     s.setdata(ev, y, dtype='smooth', unit='Counts')
     s.plot(g)
-    s = spectrogram(path=path, app_pars=app_pars)
+    s = spectrogram(path=path, name='external', app_pars=app_pars)
     s.plot(g)
     s.cf_up()
     s.cf_down()
@@ -123,6 +123,8 @@ def test_spectrogram(tk_environment):
     for option in s.fit_options:
         s.selected_fit.set(option)
         s.update_plot()
+        if option in ["Fermi-Dirac Fitting", "ERFC Fit"]:
+            s.update_fit()
 
 def test_VolumeSlicer(tk_environment):
     g, frame = tk_environment
