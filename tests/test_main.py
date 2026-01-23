@@ -75,7 +75,7 @@ from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_w
 
 def test_loadfiles():
     path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     lfs = loadfiles(path)
     assert isinstance(lfs, FileSequence)
@@ -98,7 +98,7 @@ class tkDnD(tkDnD_loader):
 
 def test_tkDnD():
     path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     files = tkDnD.load_raw(path)
     assert isinstance(files, list)
@@ -139,7 +139,7 @@ def tk_environment():
 def test_spectrogram(tk_environment):
     g, frame = tk_environment
     path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
     s = spectrogram(path=path, app_pars=app_pars)
@@ -151,14 +151,14 @@ def test_spectrogram(tk_environment):
     assert isinstance(s.data, xr.DataArray)
 
 def test_VolumeSlicer(tk_environment):
-    from tool.VolumeSlicer import VolumeSlicer
     g, frame = tk_environment
+    from tool.VolumeSlicer import VolumeSlicer
     odpi=g.winfo_fpixels('1i')
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'odpi')
     with open(path, 'w') as f:
         f.write(f'{odpi}')  #for RestrictedToplevel
         f.close()
-    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
     data = load_h5(path)
     odata = []
     r1 = np.linspace(10, 20, 11)
@@ -195,24 +195,30 @@ def test_VolumeSlicer(tk_environment):
     vs.t_cut_job_x()
 
 def test_CEC(tk_environment):
-    from tool.MDC_Fitter import get_file_from_github
     g, frame = tk_environment
+    from tool.MDC_Fitter import get_file_from_github
+    from MDC_cut_utility import file_walk
+    import time
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
     tg = wait(g, app_pars)
     tg.text('Preparing sample data...')
-    path = rf"simulated_R1_15.0_R2_0.h5"
-    tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0.h5")
+    path = rf"simulated_R1_15.0_R2_0#id#0d758f03.h5"
+    tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0#id#0d758f03.h5")
     if os.path.exists(tpath)==False:
         get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
-    files = []
-    files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
-    files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1_R2_0.h5'))
+    path = os.path.dirname(__file__)
+    files = file_walk(path)
     tg.done()
     tg = wait(g, app_pars)
     tg.text('Loading sample data...')
     lfs = loadfiles(files)
     tg.done()
     t_cec = CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
+    time.sleep(2)
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
 
 def test_interp():
     y = interp(1.5, [1, 2], [2, 3])

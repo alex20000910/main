@@ -222,7 +222,7 @@ class CEC(loadfiles, CEC_Object):
                     self.l1.insert(tk.END, self.r1s[2]+'='+str(v))
             self.l1.config(width=ls)
     
-    def __check(self, *args, f=False):
+    def check(self, *args, f=False):
         name = self.lb.name
         t = self.preserve
         for i, v in enumerate(self.name):
@@ -279,7 +279,7 @@ class CEC(loadfiles, CEC_Object):
                     
     def __check_file(self):
         self.gg = RestrictedToplevel(self.g, bg='white')
-        self.gg.protocol("WM_DELETE_WINDOW", self.__check)
+        self.gg.protocol("WM_DELETE_WINDOW", self.check)
         self.gg.title('File Check')
         text = 'Same File Name Exists\nSelect the file you want to preserve'
         tk.Label(self.gg, text=text, width=len(text), height=2, font=('Arial', self.size(14), "bold"), bg='white', bd=5).grid(row=0, column=0)
@@ -359,9 +359,9 @@ class CEC(loadfiles, CEC_Object):
             elif self.sort == 'r1':
                 self.lb.add(ss[i], r1[i], self.r1s[2], self.r2s[2])
                 
-        tk.Button(self.gg, text='OK', command=self.__check, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5).grid(row=2, column=0)
+        tk.Button(self.gg, text='OK', command=self.check, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5).grid(row=2, column=0)
         self.f1 = False
-        self.gg.bind('<Return>', self.__check)
+        self.gg.bind('<Return>', self.check)
         set_center(self.g, self.gg, 0, 0)
         self.gg.limit_bind()
         return
@@ -369,7 +369,7 @@ class CEC(loadfiles, CEC_Object):
     def __select_file(self):
         if self.f2:
             self.gg = RestrictedToplevel(self.g, bg='white')
-            self.gg.protocol("WM_DELETE_WINDOW", self.__check)
+            self.gg.protocol("WM_DELETE_WINDOW", self.check)
             self.gg.title('File Check')
             if self.sort == 'r1r2':
                 text = f'Same {self.r1s[2]} and {self.r2s[2]} Exists\nSelect the file you want to preserve'
@@ -394,7 +394,11 @@ class CEC(loadfiles, CEC_Object):
                 while t < len(ti):
                     s=''
                     for i in range(len(np.argwhere(self.r1 == self.r1[ti[t]]))):
-                        s+=self.name[ti[t]]+'\n'
+                        print(len(self.name))
+                        print(len(ti))
+                        print(t)
+                        if t < len(ti):
+                            s+=self.name[ti[t]]+'\n'
                         t+=1
                     if s != '':
                         tt.append(t-1)
@@ -413,7 +417,8 @@ class CEC(loadfiles, CEC_Object):
                 while t < len(ti):
                     s=''
                     for i in range(len(np.argwhere(self.r1 == self.r1[ti[t]]))):
-                        s+=self.name[ti[t]]+'\n'
+                        if t < len(ti):
+                            s+=self.name[ti[t]]+'\n'
                         t+=1
                     if s != '':
                         tt.append(t-1)
@@ -422,13 +427,13 @@ class CEC(loadfiles, CEC_Object):
                 for i, v in enumerate(ss):
                     self.lb.add(v, self.r1[tt[i]], self.r1s[2], self.r2s[2])
                     
-            tk.Button(self.gg, text='OK', command=self.__check, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5).grid(row=2, column=0)
+            tk.Button(self.gg, text='OK', command=self.check, width=15, height=1, font=('Arial', self.size(14), "bold"), bg='white', bd=5).grid(row=2, column=0)
             self.f2 = False
-            self.gg.bind('<Return>', self.__check)
+            self.gg.bind('<Return>', self.check)
             set_center(self.g, self.gg ,0 ,0)
             self.gg.limit_bind()
         else:
-            self.__check(f=True)
+            self.check(f=True)
         return
         
     def __prework(self):
