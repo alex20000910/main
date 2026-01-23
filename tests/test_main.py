@@ -108,7 +108,7 @@ def test_spectrogram(tk_environment):
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     data = load_h5(path[0])
     ev, phi = data.indexes.values()
-    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
     s = spectrogram(data, name='internal', app_pars=app_pars)
     s.setdata(ev, y, dtype='smooth', unit='Counts')
@@ -125,6 +125,15 @@ def test_spectrogram(tk_environment):
         s.update_plot()
         if option in ["Fermi-Dirac Fitting", "ERFC Fit"]:
             s.update_fit()
+
+def test_lfs_exp_casa():
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    lfs = loadfiles(path, init=True, mode='eager', name='internal', spectrogram=True)
+    explfs = lfs_exp_casa(lfs)
+    path = os.path.join(os.path.dirname(__file__), 'exp_casa.vms')
+    explfs.export_casa(path)
 
 def test_VolumeSlicer(tk_environment):
     g, frame = tk_environment
@@ -153,7 +162,7 @@ def test_VolumeSlicer(tk_environment):
     r1 = np.array([15.0, 15.1, 15.5])
     
     ev, phi = odata[0].indexes.values()
-    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     vs = VolumeSlicer(parent=frame, path=opath, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
     vs.test = True
     vs.change_mode()
@@ -225,7 +234,7 @@ def test_CEC(tk_environment):
     from tool.MDC_Fitter import get_file_from_github
     from MDC_cut_utility import file_walk
     import time
-    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     tg = wait(g, app_pars)
     tg.text('Preparing sample data...')
     path = rf"simulated_R1_15.0_R2_0#id#0d758f03.h5"
@@ -252,7 +261,7 @@ def test_CEC(tk_environment):
     
 def test_call_cec(tk_environment):
     g, frame = tk_environment
-    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     lfs = loadfiles([os.path.join(os.path.dirname(__file__), 'test_cut.h5')], init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
     call_cec(g, lfs)
 
