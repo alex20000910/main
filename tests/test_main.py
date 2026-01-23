@@ -174,7 +174,6 @@ def test_VolumeSlicer(tk_environment):
     assert data.dtype == np.float32
     assert data.T.shape == shape
     vs.symmetry()
-    vs.sym_g.geometry(f"+{g.winfo_x()-5}+{g.winfo_y()}")
     vs.symmetry_(6)
     vs.set_slim()
     vs.stop_event = threading.Event()
@@ -256,8 +255,10 @@ def test_call_cec(tk_environment):
     call_cec(g, lfs)
 
 def test_interp():
-    y = interp(1.5, [1, 2], [2, 3])
-    assert y == 2.5
+    y = interp(0, [1, 2], [2, 3])
+    assert y == 1
+    y = interp(2.5, [2, 1], [3, 2])
+    assert y == 3.5
     y_array = interp([0, 1.5, 2.5], [1, 2], [2, 3])
     assert np.allclose(y_array, [1, 2.5, 3.5])
     y_array = interp(np.array([0, 1.5, 2.5]), np.array([2, 1]), np.array([3, 2]))
