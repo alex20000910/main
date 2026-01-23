@@ -100,7 +100,7 @@ def cut_job_x(args):
 
 
 class g_cut_plot(tk.Toplevel):
-    def __init__(self, master, data_cut, cx, cy, cdx, cdy, cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, stop_event, pool, path, e_photon, slim, sym, xmin, xmax, ymin, ymax, cube, app_pars):
+    def __init__(self, master, data_cut, cx, cy, cdx, cdy, cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, stop_event, pool, path, e_photon, slim, sym, xmin, xmax, ymin, ymax, cube, app_pars, test=False):
     # def __init__(self, master, data_cut, cx, cy, cdx, cdy, cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, stop_event, pool, path, e_photon, slim, sym, xmin, xmax, ymin, ymax):
         super().__init__(master, background='white')
         self.cx_cut = cx
@@ -131,7 +131,8 @@ class g_cut_plot(tk.Toplevel):
         self.ymin = ymin
         self.ymax = ymax
         self.app_pars = app_pars
-        self.save_cube()
+        if test is False:
+            self.save_cube()
         self.create_window()
 
     def size(self, s: int) -> int:
@@ -261,9 +262,10 @@ class g_cut_plot(tk.Toplevel):
             elif os.path.isdir(item_path):
                 os.system(f'attrib +h +s "{item_path}"')
 
-    def save_cube(self, event=None):
+    def save_cube(self, event=None, path=None):
         try:
-            path = fd.asksaveasfilename(title="Save Data Cube as Zarr Folder", filetypes=(("Zarr folders", "*.zarr"),), initialdir=self.path[0], initialfile='data_cube', defaultextension=".zarr")
+            if not path:
+                path = fd.asksaveasfilename(title="Save Data Cube as Zarr Folder", filetypes=(("Zarr folders", "*.zarr"),), initialdir=self.path[0], initialfile='data_cube', defaultextension=".zarr")
             if not path:
                 print('Save operation cancelled')
             else:
@@ -274,9 +276,10 @@ class g_cut_plot(tk.Toplevel):
             print(f"An error occurred while saving the data cube: {e}")
         return
 
-    def save_cut(self, event=None):
+    def save_cut(self, event=None, path=None):
         try:
-            path = fd.asksaveasfilename(title="Save as", filetypes=(("HDF5 files", "*.h5"), ("NPZ files", "*.npz"),), initialdir=self.path[0], initialfile='data_cut', defaultextension=".h5")
+            if not path:
+                path = fd.asksaveasfilename(title="Save as", filetypes=(("HDF5 files", "*.h5"), ("NPZ files", "*.npz"),), initialdir=self.path[0], initialfile='data_cut', defaultextension=".h5")
             if not path:
                 print('Save operation cancelled')
                 return
@@ -454,6 +457,7 @@ class VolumeSlicer(tk.Frame):
         self.sym = 1
         self.g = g
         self.app_pars = app_pars
+        self.test = False
         
         if x is not None and y is not None:
             # if __name__ != '__main__':
@@ -879,7 +883,7 @@ class VolumeSlicer(tk.Frame):
             if r2 is None:
                 fr2=False
                 r2, self.z = 0, [0, 0]
-            if int(self.cdensity/180*(xlim[1]-xlim[0])) ==0: # at least 1 pixel
+            if int(self.cdensity/180*(xlim[1]-xlim[0])) == 0: # at least 1 pixel
                 d = 1/self.cdensity*180/2
                 c = (xlim[0]+xlim[1])/2
                 xlim = [float(c-d), float(c+d)]
@@ -972,7 +976,7 @@ class VolumeSlicer(tk.Frame):
         #             ti.append(max(ti)+1)
         #     return ind[ti]
         self.cut_show = False
-        if i ==100:
+        if i == 100:
             self.cut_show = True
         xlim, zlim = sorted(xlim), sorted(zlim)
         if self.z is None: # for 1 cube
@@ -1773,12 +1777,13 @@ class VolumeSlicer(tk.Frame):
             if r2 is None:
                 fr2=False
                 r2, self.z = 0, [0, 0]
-            if int(self.density/180*(xlim[1]-xlim[0])) ==0: # at least 1 pixel
+            if int(self.density/180*(xlim[1]-xlim[0])) == 0: # at least 1 pixel
                 d = 1/self.density*180/2
                 c = (xlim[0]+xlim[1])/2
                 xlim = [float(c-d), float(c+d)]
                 print(f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
-                messagebox.showwarning("Warning",f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
+                if self.test is False:
+                    messagebox.showwarning("Warning",f'Warning: R1-axis density is too low (R2=%.2f)'%r2)
                 self.focus_set()
             r1 = np.linspace(xlim[0], xlim[1], int(self.density/180*(xlim[1]-xlim[0]))*4)
             phi = np.linspace(ylim[0], ylim[1], int(self.density/180*(ylim[1]-ylim[0]))*4)

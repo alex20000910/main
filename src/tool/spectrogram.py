@@ -577,6 +577,7 @@ class spectrogram:
         
         # OptionMenu 設定
         fit_options = ["Raw Data", "Smooth Data", "Fermi-Dirac Fitting", "Linear Fits", "ERFC Fit", "First Derivative", "Second Derivative", "Smooth Data with First Derivative", "Segmented Tangents"]
+        self.fit_options = fit_options
         self.selected_fit = tk.StringVar(self.root)
         self.selected_fit.set(fit_options[4])  # 初始選項
 

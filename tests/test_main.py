@@ -1,63 +1,6 @@
 import pytest
-import os, inspect
-import json
-import tkinter as tk
-from tkinter import filedialog as fd
-import io
-from base64 import b64decode
-import queue
-import threading
-import warnings
-import sys, shutil
-from ctypes import windll
-import copy
-import gc
-from tkinter import messagebox, colorchooser
-# import ttkbootstrap as ttk
-import subprocess
-import argparse
-import importlib
-from typing import override, Literal
-    
-VERSION = sys.version.split()[0]
-VERSION = int(''.join(VERSION.split('.')))
-
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-# if __name__ == '__main__':
-from matplotlib.colors import LinearSegmentedColormap
-# from matplotlib.widgets import SpanSelector
-# from matplotlib.widgets import RectangleSelector
-import matplotlib as mpl
-# from matplotlib.widgets import Cursor
-# from matplotlib.widgets import Slider
-import numpy as np
-import xarray as xr
-import h5py
-from PIL import Image, ImageTk
-# if __name__ == '__main__':
-# from scipy.optimize import curve_fit
-from scipy.signal import hilbert
-# from lmfit import Parameters, Minimizer
-from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
-import tqdm
-import win32clipboard
-# if __name__ == '__main__':
-import originpro as op
-from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
-import psutil
-# if VERSION >= 3130:
-import google_crc32c    # for numcodecs
-# if __name__ == '__main__':
-import cpuinfo
-import zarr
-import PyQt5
-import pyqtgraph
-from tkinterdnd2 import DND_FILES, TkinterDnD
-
+import os, sys
+from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
 sys.path.append(tdir)
 sys.path.append(os.path.dirname(tdir))
@@ -75,7 +18,7 @@ from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_w
 
 def test_loadfiles():
     path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     lfs = loadfiles(path)
     assert isinstance(lfs, FileSequence)
@@ -98,82 +41,126 @@ class tkDnD(tkDnD_loader):
 
 def test_tkDnD():
     path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     files = tkDnD.load_raw(path)
     assert isinstance(files, list)
 
-@pytest.fixture
-def tk_environment():
+@pytest.fixture(scope="module")
+def tk_root():
+    """模組級別的 Tk root,確保整個測試過程只有一個實例"""
     import tkinter as tk
-    root = tk.Tk()
-    root.withdraw()
-    frame = tk.Frame(root)
     
-    yield root, frame
+    # 確保沒有其他 Tk 實例
+    try:
+        root = tk.Tk()
+    except tk.TclError:
+        # 如果失敗,嘗試清理並重試
+        import gc
+        gc.collect()
+        root = tk.Tk()
     
-    # 確保所有子視窗都被關閉
+    root.withdraw()  # 隱藏主視窗
+    
+    yield root
+    
+    # 清理
     try:
         for widget in root.winfo_children():
             try:
                 widget.destroy()
             except:
                 pass
+        root.quit()
+        root.destroy()
+    except:
+        pass
+
+@pytest.fixture
+def tk_environment(tk_root):
+    """使用共用的 root,每個測試創建獨立的 frame"""
+    frame = tk.Frame(tk_root)
+    
+    yield tk_root, frame
+    
+    # 清理 frame
+    try:
+        for widget in frame.winfo_children():
+            try:
+                widget.destroy()
+            except:
+                pass
+        frame.destroy()
     except:
         pass
     
     # 更新事件循環
     try:
-        root.update_idletasks()
-        root.update()
-    except:
-        pass
-    
-    # 最後銷毀 root
-    try:
-        root.quit()
-        root.destroy()
+        tk_root.update_idletasks()
+        tk_root.update()
     except:
         pass
 
 def test_spectrogram(tk_environment):
     g, frame = tk_environment
     path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    data = load_h5(path[0])
+    ev, phi = data.indexes.values()
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
-    s = spectrogram(path=path, app_pars=app_pars)
+    y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
+    s = spectrogram(data, name='internal', app_pars=app_pars)
+    s.setdata(ev, y, dtype='smooth', unit='Counts')
+    s.plot(g)
+    s = spectrogram(path=path, name='external', app_pars=app_pars)
     s.plot(g)
     s.cf_up()
     s.cf_down()
-    s.ups()
     assert isinstance(s.name, str)
     assert isinstance(s.data, xr.DataArray)
+    s.ups()
+    for option in s.fit_options:
+        s.selected_fit.set(option)
+        s.update_plot()
+        if option in ["Fermi-Dirac Fitting", "ERFC Fit"]:
+            s.update_fit()
 
 def test_VolumeSlicer(tk_environment):
-    from tool.VolumeSlicer import VolumeSlicer
     g, frame = tk_environment
+    from tool.VolumeSlicer import VolumeSlicer, g_cut_plot
+    import cpuinfo
+    import psutil
+    import zarr
+    import inspect
     odpi=g.winfo_fpixels('1i')
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'odpi')
     with open(path, 'w') as f:
         f.write(f'{odpi}')  #for RestrictedToplevel
         f.close()
-    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5')
-    data = load_h5(path)
     odata = []
-    r1 = np.linspace(10, 20, 11)
-    for i in range(len(r1)):
-        odata.append(data)
+    opath = []
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    odata.append(load_h5(path))
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1_R2_0#id#d7bebfaa.h5')
+    odata.append(load_h5(path))
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.5_R2_0#id#1ee3c8fd.h5')
+    odata.append(load_h5(path))
+    opath.append(path)
     odataframe = np.stack([i.transpose() for i in odata], axis=0, dtype=np.float32)
+    r1 = np.array([15.0, 15.1, 15.5])
     
     ev, phi = odata[0].indexes.values()
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
-    vs = VolumeSlicer(parent=frame, path=path, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
+    vs = VolumeSlicer(parent=frame, path=opath, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
+    vs.test = True
     vs.change_mode()
     assert vs.surface.shape ==(vs.density, vs.density)
     assert vs.surface.dtype == np.float32
     assert vs.surface.flatten().max() > 0
-    xlim=[10, 20]
+    xlim=[15.0, 15.5]
     ylim=[-10, 10]
     vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
     r1 = np.linspace(xlim[0], xlim[1], int(vs.cdensity/180*(xlim[1]-xlim[0])+1))
@@ -188,37 +175,97 @@ def test_VolumeSlicer(tk_environment):
     shape = (int(density/(vs.xmax-vs.xmin)*(txlim[1]-txlim[0])), int(density/(vs.ymax-vs.ymin)*(tylim[1]-tylim[0])))
     assert data.dtype == np.float32
     assert data.T.shape == shape
-    vs.det_core_num()
     vs.symmetry()
     vs.symmetry_(6)
+    vs.set_slim()
+    vs.stop_event = threading.Event()
+    vs.set_xy_lim()
+    vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
+    print('\nSampling Density: \033[31m500 per 2pi/Angstrom')
+    print('\033[0mProcessing \033[32m%d x %d x %d \033[0msize data cube'%(vs.cdensity, vs.cdensity, len(vs.ev)))
+    print('\n\033[33mProcessor:\033[36m',cpuinfo.get_cpu_info()['brand_raw'])
+    print('\033[33mPhysical CPU cores:\033[36m', psutil.cpu_count(logical=False))
+    vs.det_core_num()
+    print('\033[0mPlease wait...\n')
+    print('\nThe following shows the progress bar and the estimation of the processing time')
+    angle = vs.angle
+    vs.cx_cut = vs.cx
+    vs.cy_cut = vs.cy
+    vs.cdx_cut = vs.cdx
+    vs.cdy_cut = vs.cdy
+    x = [vs.cx-vs.cdx/2, vs.cx+vs.cdx/2]
+    z = [vs.cy-vs.cdy/2, vs.cy+vs.cdy/2]
+    ty = vs.ev
+    vs.data_cut = np.zeros((len(ty), vs.cdensity), dtype=np.float32)
+    # vs.data_cube = np.zeros((len(ty), vs.cdensity, vs.cdensity), dtype=np.float32)
+    vs.data_cube = np.empty((len(ty), vs.cdensity, vs.cdensity), dtype=np.uint8)
+    phi_offset = vs.phi_offset
+    vs.r1_offset = 15.25 # for test boost the speed
+    r1_offset = vs.r1_offset
+    phi1_offset = vs.phi1_offset
+    r11_offset = vs.r11_offset
+    vs.slim_cut = vs.slim.copy()
+    vs.sym_cut = vs.sym
     vs.t_cut_job_y()
     vs.t_cut_job_x()
+    tempdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    tempdir = os.path.dirname(tempdir)
+    for i in range(len(ty)):
+        try:
+            vs.data_cut[i] = zarr.open_array(os.path.join(tempdir, 'cut_temp_save', f'cut_{i}.zarr'))
+            # vs.data_cube[i] = zarr.open_array(os.path.join(tempdir, 'cube_temp_save', f'cube_{i}.zarr'))
+        except FileNotFoundError:
+            pass
+    gcp = g_cut_plot(vs, vs.data_cut, vs.cx, vs.cy, vs.cdx, vs.cdy, vs.cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, vs.stop_event, vs.pool, vs.path, vs.e_photon, vs.slim_cut, vs.sym_cut, vs.xmin, vs.xmax, vs.ymin, vs.ymax, vs.data_cube, vs.app_pars, test=True)
+    gcp.save_cut(path=os.path.join(os.path.dirname(__file__), 'test_cut.h5'))
+    gcp.save_cube(path=os.path.join(os.path.dirname(__file__), 'test_cube.zarr'))
 
 def test_CEC(tk_environment):
-    from tool.MDC_Fitter import get_file_from_github
     g, frame = tk_environment
+    from tool.MDC_Fitter import get_file_from_github
+    from MDC_cut_utility import file_walk
+    import time
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
     tg = wait(g, app_pars)
     tg.text('Preparing sample data...')
-    path = rf"simulated_R1_15.0_R2_0.h5"
-    tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0.h5")
+    path = rf"simulated_R1_15.0_R2_0#id#0d758f03.h5"
+    tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0#id#0d758f03.h5")
     if os.path.exists(tpath)==False:
         get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
-    files = []
-    files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0.h5'))
-    files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1_R2_0.h5'))
+    path = os.path.dirname(__file__)
+    files = file_walk(path)
+    for file in files:
+        if 'simulated' not in file:
+            files.remove(file)
     tg.done()
     tg = wait(g, app_pars)
     tg.text('Loading sample data...')
     lfs = loadfiles(files)
     tg.done()
     t_cec = CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
+    time.sleep(2)
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
+    t_cec.info()
+    
+def test_call_cec(tk_environment):
+    g, frame = tk_environment
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
+    lfs = loadfiles([os.path.join(os.path.dirname(__file__), 'test_cut.h5')], init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
+    call_cec(g, lfs)
 
 def test_interp():
-    y = interp(1.5, [1, 2], [2, 3])
-    assert y == 2.5
-    y_array = interp([1.5, 2.5], [1, 2], [2, 3])
-    assert np.allclose(y_array, [2.5, 3.5])
+    y = interp(0, [1, 2], [2, 3])
+    assert y == 1
+    y = interp(2.5, [2, 1], [3, 2])
+    assert y == 3.5
+    y_array = interp([0, 1.5, 2.5], [1, 2], [2, 3])
+    assert np.allclose(y_array, [1, 2.5, 3.5])
+    y_array = interp(np.array([0, 1.5, 2.5]), np.array([2, 1]), np.array([3, 2]))
+    assert np.allclose(y_array, [1, 2.5, 3.5])
+
 
 def test_get_bar_pos():
     pos = get_bar_pos()
