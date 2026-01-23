@@ -136,23 +136,29 @@ def test_VolumeSlicer(tk_environment):
     with open(path, 'w') as f:
         f.write(f'{odpi}')  #for RestrictedToplevel
         f.close()
-    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
-    data = load_h5(path)
     odata = []
-    r1 = np.linspace(14.9, 15.1, 3)
-    for i in range(len(r1)):
-        odata.append(data)
+    opath = []
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    odata.append(load_h5(path))
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1_R2_0#id#d7bebfaa.h5')
+    odata.append(load_h5(path))
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.5_R2_0#id#1ee3c8fd.h5')
+    odata.append(load_h5(path))
+    opath.append(path)
     odataframe = np.stack([i.transpose() for i in odata], axis=0, dtype=np.float32)
+    r1 = np.array([15.0, 15.1, 15.5])
     
     ev, phi = odata[0].indexes.values()
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
-    vs = VolumeSlicer(parent=frame, path=path, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
+    vs = VolumeSlicer(parent=frame, path=opath, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
     vs.test = True
     vs.change_mode()
     assert vs.surface.shape ==(vs.density, vs.density)
     assert vs.surface.dtype == np.float32
     assert vs.surface.flatten().max() > 0
-    xlim=[14.6, 15.1]
+    xlim=[15.0, 15.5]
     ylim=[-10, 10]
     vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
     r1 = np.linspace(xlim[0], xlim[1], int(vs.cdensity/180*(xlim[1]-xlim[0])+1))
@@ -168,6 +174,7 @@ def test_VolumeSlicer(tk_environment):
     assert data.dtype == np.float32
     assert data.T.shape == shape
     vs.symmetry()
+    vs.sym_g.geometry(f"+{g.winfo_x()-5}+{g.winfo_y()}")
     vs.symmetry_(6)
     vs.set_slim()
     vs.stop_event = threading.Event()
@@ -192,7 +199,7 @@ def test_VolumeSlicer(tk_environment):
     # vs.data_cube = np.zeros((len(ty), vs.cdensity, vs.cdensity), dtype=np.float32)
     vs.data_cube = np.empty((len(ty), vs.cdensity, vs.cdensity), dtype=np.uint8)
     phi_offset = vs.phi_offset
-    vs.r1_offset = 15 # for test boost the speed
+    vs.r1_offset = 15.25 # for test boost the speed
     r1_offset = vs.r1_offset
     phi1_offset = vs.phi1_offset
     r11_offset = vs.r11_offset
@@ -209,8 +216,8 @@ def test_VolumeSlicer(tk_environment):
         except FileNotFoundError:
             pass
     gcp = g_cut_plot(vs, vs.data_cut, vs.cx, vs.cy, vs.cdx, vs.cdy, vs.cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, vs.stop_event, vs.pool, vs.path, vs.e_photon, vs.slim_cut, vs.sym_cut, vs.xmin, vs.xmax, vs.ymin, vs.ymax, vs.data_cube, vs.app_pars, test=True)
-    gcp.save_cut(path=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'temp_cube', 'test_cut.h5'))
-    gcp.save_cube(path=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'temp_cube', 'test_cube.zarr'))
+    gcp.save_cut(path=os.path.join(os.path.dirname(__file__), 'test_cut.h5'))
+    gcp.save_cube(path=os.path.join(os.path.dirname(__file__), 'test_cube.zarr'))
 
 def test_CEC(tk_environment):
     g, frame = tk_environment
@@ -226,6 +233,9 @@ def test_CEC(tk_environment):
         get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
     path = os.path.dirname(__file__)
     files = file_walk(path)
+    for file in files:
+        if 'simulated' not in file:
+            files.remove(file)
     tg.done()
     tg = wait(g, app_pars)
     tg.text('Loading sample data...')
@@ -237,14 +247,22 @@ def test_CEC(tk_environment):
         t_cec.check()
     if t_cec.gg.winfo_exists():
         t_cec.check()
+    t_cec.info()
+    
+def test_call_cec(tk_environment):
+    g, frame = tk_environment
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=8)
+    lfs = loadfiles([os.path.join(os.path.dirname(__file__), 'test_cut.h5')], init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
+    call_cec(g, lfs)
 
 def test_interp():
     y = interp(1.5, [1, 2], [2, 3])
     assert y == 2.5
-    y_array = interp([1.5, 2.5], [1, 2], [2, 3])
-    assert np.allclose(y_array, [2.5, 3.5])
-    y_array = interp(np.array([1.5, 2.5]), np.array([2, 1]), np.array([3, 2]))
-    assert np.allclose(y_array, [2.5, 3.5])
+    y_array = interp([0, 1.5, 2.5], [1, 2], [2, 3])
+    assert np.allclose(y_array, [1, 2.5, 3.5])
+    y_array = interp(np.array([0, 1.5, 2.5]), np.array([2, 1]), np.array([3, 2]))
+    assert np.allclose(y_array, [1, 2.5, 3.5])
+
 
 def test_get_bar_pos():
     pos = get_bar_pos()
