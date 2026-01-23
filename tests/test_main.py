@@ -21,6 +21,7 @@ def test_loadfiles():
     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     lfs = loadfiles(path)
+    print(lfs)
     assert isinstance(lfs, FileSequence)
     assert isinstance(lfs.get(0), xr.DataArray)
     assert isinstance(lfs.get(1), xr.DataArray)
@@ -130,7 +131,7 @@ def test_lfs_exp_casa():
     path = []
     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
-    lfs = loadfiles(path, init=True, mode='eager', name='internal', spectrogram=True)
+    lfs = loadfiles(path, init=True, mode='eager', name='external', spectrogram=True)
     explfs = lfs_exp_casa(lfs)
     path = os.path.join(os.path.dirname(__file__), 'exp_casa.vms')
     explfs.export_casa(path)
