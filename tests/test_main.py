@@ -336,7 +336,7 @@ def test_mfit_data():
     lowlim = '0'
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim)
     ml.loadparam('0', '0', True, 1)
-    ml.loadmfit_(os.path.join(cdir, 'PE10A20S-175_mfit.npz'))
+    ml.loadmfit_(os.path.join(cdir, 'tests', 'PE10A20S-175_mfit.npz'))
     mdata = mfit_data()
     ko, fev, rpos, ophi, fwhm, mpos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, fpr, mdet = mdata.get()
     assert isinstance(ko, str)
