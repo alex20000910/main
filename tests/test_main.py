@@ -337,7 +337,7 @@ def test_mfit_data():
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim)
     ml.loadparam('0', '0', True, 1)
     ml.loadmfit_(os.path.join(cdir, 'tests', 'simulated_R1_14.0_R2_0_mfit.npz'), src='tests')
-    mdata = mfit_data(src='tests')
+    mdata = mfit_data(cdir=cdir, src='tests')
     ko, fev, rpos, ophi, fwhm, mpos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, fpr, mdet = mdata.get()
     assert isinstance(ko, str)
     info = ['    x1: -0.04088383 +/- 3.2355e-04 (0.79%) (init = -0.06451523)',
