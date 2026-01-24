@@ -336,15 +336,15 @@ def test_mfit_data():
     lowlim = '0'
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim)
     ml.loadparam('0', '0', True, 1)
-    ml.loadmfit_(os.path.join(cdir, 'tests', 'PE10A20S-175_mfit.npz'), src='tests')
+    ml.loadmfit_(os.path.join(cdir, 'tests', 'simulated_R1_14.0_R2_0_mfit.npz'), src='tests')
     mdata = mfit_data(src='tests')
     ko, fev, rpos, ophi, fwhm, mpos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, fpr, mdet = mdata.get()
     assert isinstance(ko, str)
-    info = ['    x1:  0.02395765 +/- 9.7840e-04 (4.08%) (init = 0.02395765)',
-            '    x2: -0.06248461 +/- 3.5897e-04 (0.57%) (init = -0.06248461)',
-            '    h1:  9282.52618 +/- 158.752592 (1.71%) (init = 9282.526)',
-            '    h2:  3242.16642 +/- 151.605771 (4.68%) (init = 3242.166)',
-            '    w1:  0.03781176 +/- 0.00301822 (7.98%) (init = 0.03781176)',
-            '    w2:  0.03439985 +/- 0.00110031 (3.20%) (init = 0.03439985)']
-    for i, j in zip(info, smresult[176]):
+    info = ['    x1: -0.04088383 +/- 3.2355e-04 (0.79%) (init = -0.06451523)',
+            '    x2:  0.03889559 +/- 5.5296e-04 (1.42%) (init = 0.06826833)',
+            '    h1:  8229.22392 +/- 164.752546 (2.00%) (init = 8913)',
+            '    h2:  5771.04494 +/- 1456.15965 (25.23%) (init = 8913)',
+            '    w1:  0.02869309 +/- 9.8838e-04 (3.44%) (init = 0.02)',
+            '    w2:  0.04064557 +/- 0.00169512 (4.17%) (init = 0.02)']
+    for i, j in zip(info, smresult[510]):
         assert i == str(j)
