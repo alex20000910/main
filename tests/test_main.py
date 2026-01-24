@@ -321,6 +321,21 @@ def test_SO_Fitter(tk_environment):
     g, frame = tk_environment
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     so_fitter = SO_Fitter(g, app_pars)
+    so_fitter.v_r2.set(20)
+    so_fitter.v_r1.set(20)
+    so_fitter.v_phi.set(0)
+    so_fitter.add_point()
+    so_fitter.v_r2.set(80)
+    so_fitter.v_r1.set(22.5)
+    so_fitter.v_phi.set(-0.2)
+    so_fitter.add_point()
+    so_fitter.v_r2.set(206)
+    so_fitter.v_r1.set(19.5)
+    so_fitter.v_phi.set(0)
+    so_fitter.add_point()
+    so_fitter.set_tolerance()
+    so_fitter._fit()
+    so_fitter.clear_points()
     so_fitter.on_closing()
 
 def test_mfit_data():
