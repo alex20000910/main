@@ -394,9 +394,6 @@ class CEC(loadfiles, CEC_Object):
                 while t < len(ti):
                     s=''
                     for i in range(len(np.argwhere(self.r1 == self.r1[ti[t]]))):
-                        print(len(self.name))
-                        print(len(ti))
-                        print(t)
                         if t < len(ti):
                             s+=self.name[ti[t]]+'\n'
                         t+=1

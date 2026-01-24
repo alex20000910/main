@@ -202,7 +202,7 @@ class g_cut_plot(tk.Toplevel):
                             shape=merged_shape,
                             dtype=np.float32)
         end = data.shape[0]
-        max_val = 0
+        max_val = np.float32(0)
         tempdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         tempdir = os.path.dirname(tempdir)
         for i in range(0, end, step):
@@ -900,6 +900,10 @@ class VolumeSlicer(tk.Frame):
             x, y = None, None
             ####### new method start
             data = self.k_map(data, self.cdensity, xlim, ylim, txlim, tylim, ev)
+            if data.shape[0]>self.cdensity:
+                data = cv2.resize(data, (data.shape[1], self.cdensity), interpolation=cv2.INTER_CUBIC)
+            if data.shape[1]>self.cdensity:
+                data = cv2.resize(data, (self.cdensity, data.shape[0]), interpolation=cv2.INTER_CUBIC)
             ####################### new method end
             
             ############## original method start
@@ -1796,6 +1800,10 @@ class VolumeSlicer(tk.Frame):
             ####### new method start
             # t=time.perf_counter()
             data = self.k_map(data, self.density, xlim, ylim, txlim, tylim, ev)
+            if data.shape[0]>self.density:
+                data = cv2.resize(data, (data.shape[1], self.density), interpolation=cv2.INTER_CUBIC)
+            if data.shape[1]>self.density:
+                data = cv2.resize(data, (self.density, data.shape[0]), interpolation=cv2.INTER_CUBIC)
             ####################### new method end
             
             ####################### original plot start

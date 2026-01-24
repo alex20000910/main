@@ -164,7 +164,8 @@ def test_VolumeSlicer(tk_environment):
     
     ev, phi = odata[0].indexes.values()
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
-    vs = VolumeSlicer(parent=frame, path=opath, volume=odataframe, x=phi, y=r1, ev=ev, g=g, app_pars=app_pars)
+    e_photon = float(odata[0].attrs['ExcitationEnergy'].removesuffix(' eV'))
+    vs = VolumeSlicer(parent=frame, path=opath, volume=odataframe, x=phi, y=r1, ev=ev, e_photon=e_photon, g=g, app_pars=app_pars)
     vs.test = True
     vs.change_mode()
     assert vs.surface.shape ==(vs.density, vs.density)
@@ -189,7 +190,7 @@ def test_VolumeSlicer(tk_environment):
     vs.symmetry_(6)
     vs.set_slim()
     vs.r1_offset = 15.25 # for test boost the speed
-    set_entry_value(vs.entry_phi_offset, str(15.25))
+    set_entry_value(vs.entry_r1_offset, str(vs.r1_offset))
     vs.stop_event = threading.Event()
     vs.set_xy_lim()
     vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
