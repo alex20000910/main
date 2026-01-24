@@ -363,3 +363,8 @@ def test_mfit_data():
             '    w2:  0.04064557 +/- 0.00169512 (4.17%) (init = 0.02)']
     for i, j in zip(info, smresult[510]):
         assert i == str(j)
+
+def test_Icon():
+    from tool.util import IconManager, MenuIconManager
+    icon_manager = IconManager()
+    menu_icon_manager = MenuIconManager(qt=True)
