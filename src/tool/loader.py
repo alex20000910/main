@@ -1564,7 +1564,7 @@ class mloader:
             self.st.put('Done')
             # lmgg.destroy()
     
-    def loadmfit_(self, file: str):
+    def loadmfit_(self, file: str, src='.MDC_cut'):
         # file = fd.askopenfilename(title="Select MDC Fitted file", filetypes=(("NPZ files", "*.npz"), ("VMS files", "*.vms"),))
         # global h, m, fwhm, fev, pos, limg, img, name, ophi, rpos, st, kmax, kmin, lmgg
         # global data, rdd, skmin, skmax, smaa1, smaa2, smfp, smfi, fpr, mfi_x, smresult, smcst
@@ -1866,11 +1866,11 @@ class mloader:
         self.smaa1, self.smaa2 = smaa1, smaa2
         self.smfp, self.smfi = smfp, smfi
         if ".vms" in file:
-            np.savez(os.path.join(self.cdir, '.MDC_cut', 'mfit.npz'), ko=self.k_offset, fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
+            np.savez(os.path.join(self.cdir, src, 'mfit.npz'), ko=self.k_offset, fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=kmin,
                     kmax=kmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi)
             self.kmin, self.kmax = kmin, kmax
         elif ".npz" in file:
-            np.savez(os.path.join(self.cdir, '.MDC_cut', 'mfit.npz'), ko=self.k_offset, fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=skmin,
+            np.savez(os.path.join(self.cdir, src, 'mfit.npz'), ko=self.k_offset, fev=fev, rpos=rpos, ophi=ophi, fwhm=fwhm, pos=pos, kmin=skmin,
                     kmax=skmax, skmin=skmin, skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst, mdet=mdet)
             self.kmin, self.kmax = skmin, skmax
             self.smresult, self.smcst = smresult, smcst
