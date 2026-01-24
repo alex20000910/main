@@ -1670,8 +1670,9 @@ class lfs_exp_casa(loadfiles):
     def __init__(self, lfs: FileSequence):
         super().__init__(lfs.path, init=True, name='internal', spectrogram=True)
     
-    def export_casa(self):
-        path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.path[0], initialfile=self.name[0], defaultextension='.vms')
+    def export_casa(self, path=None):
+        if path is None:
+            path = fd.asksaveasfilename(title="Save as", filetypes=(("VMS files", "*.vms"),), initialdir=self.path[0], initialfile=self.name[0], defaultextension='.vms')
         if path.split('.')[-1] != 'vms':
             path += '.vms'
         if path != '.vms':

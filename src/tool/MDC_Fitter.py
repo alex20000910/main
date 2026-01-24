@@ -222,9 +222,9 @@ class oklim():
             self.max = np.asarray((2*m*ev*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi), dtype=float)
 
 class mfit_data():
-    def __init__(self):
+    def __init__(self, cdir=cdir, src='.MDC_cut'):
         try:
-            with np.load(os.path.join(cdir,'.MDC_cut', 'mfit.npz'), 'rb') as f:
+            with np.load(os.path.join(cdir, src, 'mfit.npz'), 'rb') as f:
                 ko = str(f['ko'])
                 fev, rpos, ophi, fwhm, pos = f['fev'], f['rpos'], f['ophi'], f['fwhm'], f['pos']
                 kmin, kmax, skmin, skmax = f['kmin'], f['kmax'], f['skmin'], f['skmax']
@@ -240,7 +240,7 @@ class mfit_data():
                     pass
             self.status = 'prloaded'
             self.fpr = 1
-        except:
+        except Exception as e:
             ko = '0'
             fev, rpos, ophi, fwhm, pos = [], [], [], [], []
             kmin, kmax, skmin, skmax = [], [], [], []
@@ -249,6 +249,7 @@ class mfit_data():
             mdet = -1
             self.status = 'no'
             self.fpr = 0
+            raise e
         self.ko = ko
         self.fev, self.rpos, self.ophi, self.fwhm, self.pos = fev, rpos, ophi, fwhm, pos
         self.kmin, self.kmax, self.skmin, self.skmax = kmin, kmax, skmin, skmax
