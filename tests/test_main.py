@@ -4,17 +4,13 @@ from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
 sys.path.append(tdir)
 sys.path.append(os.path.dirname(tdir))
-# sys.path.append(os.path.join(os.path.dirname(os.path.dirname(tdir)), '.MDC_cut'))
 from MDC_cut_utility import *
-from tool.loader import loadfiles, mloader, eloader, tkDnD_loader, file_loader, data_loader, load_h5, load_json, load_npz, load_txt
+from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
-from tool.util import laplacian_filter  # for originpro: from MDC_cut import *
-# if __name__ == '__main__':
-from tool.util import app_param, MDC_param, EDC_param, Button, MenuIconManager, ToolTip_util, IconManager, origin_util, motion, plots_util, exp_util
+from tool.util import app_param
 from tool.SO_Fitter import SO_Fitter
 from tool.CEC import CEC, call_cec
 from tool.VolumeSlicer import wait
-from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
 
 def test_loadfiles():
     path = []
@@ -173,8 +169,17 @@ def test_VolumeSlicer(tk_environment):
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.5_R2_0#id#1ee3c8fd.h5')
     odata.append(load_h5(path))
     opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.0_R2_60#id#67245b5a.h5")
+    odata.append(load_h5(path))
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.1_R2_60#id#1e8223d1.h5")
+    odata.append(load_h5(path))
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.5_R2_60#id#56c06b00.h5")
+    odata.append(load_h5(path))
+    opath.append(path)
     odataframe = np.stack([i.transpose() for i in odata], axis=0, dtype=np.float32)
-    r1 = np.array([15.0, 15.1, 15.5])
+    r1 = np.array([15.0, 15.1, 15.5, 15.0, 15.1, 15.5])
     
     ev, phi = odata[0].indexes.values()
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
@@ -200,10 +205,10 @@ def test_VolumeSlicer(tk_environment):
     shape = (int(density/(vs.xmax-vs.xmin)*(txlim[1]-txlim[0])), int(density/(vs.ymax-vs.ymin)*(tylim[1]-tylim[0])))
     assert data.dtype == np.float32
     assert data.T.shape == shape
-    vs.symmetry()
-    vs.symmetry_(6)
     vs.set_window()
     vs.set_slim()
+    vs.symmetry()
+    vs.symmetry_(6)
     vs.r1_offset = 15.25 # for test boost the speed
     set_entry_value(vs.entry_r1_offset, str(vs.r1_offset))
     vs.stop_event = threading.Event()
@@ -312,3 +317,34 @@ def test_get_hwnd():
     hwnd = get_hwnd()
     assert isinstance(hwnd, int)
 
+def test_SO_Fitter(tk_environment):
+    g, frame = tk_environment
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
+    so_fitter = SO_Fitter(g, app_pars)
+    so_fitter.on_closing()
+
+def test_mfit_data():
+    from tool.MDC_Fitter import mfit_data
+    from tool.loader import mloader
+    import queue
+    st = queue.Queue()
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    data = load_h5(path)
+    ev, phi = data.indexes.values()
+    rdd = path
+    cdir = os.path.dirname(os.path.dirname(__file__))
+    lowlim = '0'
+    ml = mloader(st, data, ev, phi, rdd, cdir, lowlim)
+    ml.loadparam('0', '0', True, 1)
+    ml.loadmfit_(os.path.join(cdir, 'PE10A20S-175_mfit.npz'))
+    mdata = mfit_data()
+    ko, fev, rpos, ophi, fwhm, mpos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, fpr, mdet = mdata.get()
+    assert isinstance(ko, str)
+    info = ['    x1:  0.02395765 +/- 9.7840e-04 (4.08%) (init = 0.02395765)',
+            '    x2: -0.06248461 +/- 3.5897e-04 (0.57%) (init = -0.06248461)',
+            '    h1:  9282.52618 +/- 158.752592 (1.71%) (init = 9282.526)',
+            '    h2:  3242.16642 +/- 151.605771 (4.68%) (init = 3242.166)',
+            '    w1:  0.03781176 +/- 0.00301822 (7.98%) (init = 0.03781176)',
+            '    w2:  0.03439985 +/- 0.00110031 (3.20%) (init = 0.03439985)']
+    for i, j in zip(info, smresult[176]):
+        assert i == str(j)
