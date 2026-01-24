@@ -222,9 +222,9 @@ class oklim():
             self.max = np.asarray((2*m*ev*1.602176634*10**-19)**0.5*np.sin(0.5/180*np.pi)*10**-10/(h/2/np.pi), dtype=float)
 
 class mfit_data():
-    def __init__(self):
+    def __init__(self, src='.MDC_cut'):
         try:
-            with np.load(os.path.join(cdir,'.MDC_cut', 'mfit.npz'), 'rb') as f:
+            with np.load(os.path.join(cdir, src, 'mfit.npz'), 'rb') as f:
                 ko = str(f['ko'])
                 fev, rpos, ophi, fwhm, pos = f['fev'], f['rpos'], f['ophi'], f['fwhm'], f['pos']
                 kmin, kmax, skmin, skmax = f['kmin'], f['kmax'], f['skmin'], f['skmax']
