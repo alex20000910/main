@@ -188,6 +188,8 @@ def test_VolumeSlicer(tk_environment):
     vs.symmetry()
     vs.symmetry_(6)
     vs.set_slim()
+    vs.r1_offset = 15.25 # for test boost the speed
+    set_entry_value(vs.entry_phi_offset, str(15.25))
     vs.stop_event = threading.Event()
     vs.set_xy_lim()
     vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
@@ -210,7 +212,6 @@ def test_VolumeSlicer(tk_environment):
     # vs.data_cube = np.zeros((len(ty), vs.cdensity, vs.cdensity), dtype=np.float32)
     vs.data_cube = np.empty((len(ty), vs.cdensity, vs.cdensity), dtype=np.uint8)
     phi_offset = vs.phi_offset
-    vs.r1_offset = 15.25 # for test boost the speed
     r1_offset = vs.r1_offset
     phi1_offset = vs.phi1_offset
     r11_offset = vs.r11_offset
