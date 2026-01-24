@@ -136,9 +136,23 @@ def test_lfs_exp_casa():
     path = os.path.join(os.path.dirname(__file__), 'exp_casa.vms')
     explfs.export_casa(path)
 
+def init_tempdir():
+    import inspect, shutil
+    tempdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    tempdir = os.path.dirname(tempdir)
+    os.chdir(os.path.join(tempdir))
+    if os.path.exists(os.path.join(tempdir, 'stop_signal')):
+        os.remove(os.path.join(tempdir, 'stop_signal'))
+    if os.path.exists('cut_temp_save'):
+        shutil.rmtree('cut_temp_save')
+    os.mkdir('cut_temp_save')
+    if os.path.exists('cube_temp_save'):
+        shutil.rmtree('cube_temp_save')
+    os.mkdir('cube_temp_save')
+
 def test_VolumeSlicer(tk_environment):
     g, frame = tk_environment
-    from tool.VolumeSlicer import VolumeSlicer, g_cut_plot
+    from tool.VolumeSlicer import VolumeSlicer, g_cut_plot, cut_job_x, cut_job_y
     import cpuinfo
     import psutil
     import zarr
@@ -188,6 +202,7 @@ def test_VolumeSlicer(tk_environment):
     assert data.T.shape == shape
     vs.symmetry()
     vs.symmetry_(6)
+    vs.set_window()
     vs.set_slim()
     vs.r1_offset = 15.25 # for test boost the speed
     set_entry_value(vs.entry_r1_offset, str(vs.r1_offset))
@@ -218,6 +233,14 @@ def test_VolumeSlicer(tk_environment):
     r11_offset = vs.r11_offset
     vs.slim_cut = vs.slim.copy()
     vs.sym_cut = vs.sym
+    self_x = vs.ox[vs.slim[0]:vs.slim[1]+1]
+    self_volume = vs.ovolume[:, vs.slim[0]:vs.slim[1]+1, :]
+    i = 200
+    args = (i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume[:, :, i], vs.cdensity, vs.xmax, vs.xmin, vs.ymax, vs.ymin, z, x, vs.z, vs.y, vs.ev, vs.e_photon, vs.sym)
+    init_tempdir()
+    cut_job_y(args)
+    init_tempdir()
+    cut_job_x(args)
     vs.t_cut_job_y()
     vs.t_cut_job_x()
     tempdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -231,6 +254,7 @@ def test_VolumeSlicer(tk_environment):
     gcp = g_cut_plot(vs, vs.data_cut, vs.cx, vs.cy, vs.cdx, vs.cdy, vs.cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, vs.stop_event, vs.pool, vs.path, vs.e_photon, vs.slim_cut, vs.sym_cut, vs.xmin, vs.xmax, vs.ymin, vs.ymax, vs.data_cube, vs.app_pars, test=True)
     gcp.save_cut(path=os.path.join(os.path.dirname(__file__), 'test_cut.h5'))
     gcp.save_cube(path=os.path.join(os.path.dirname(__file__), 'test_cube.zarr'))
+    vs.change_mode()  # back to real mode
 
 def test_CEC(tk_environment):
     g, frame = tk_environment
