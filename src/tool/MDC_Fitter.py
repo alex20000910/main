@@ -240,7 +240,7 @@ class mfit_data():
                     pass
             self.status = 'prloaded'
             self.fpr = 1
-        except:
+        except Exception as e:
             ko = '0'
             fev, rpos, ophi, fwhm, pos = [], [], [], [], []
             kmin, kmax, skmin, skmax = [], [], [], []
@@ -249,6 +249,7 @@ class mfit_data():
             mdet = -1
             self.status = 'no'
             self.fpr = 0
+            raise e
         self.ko = ko
         self.fev, self.rpos, self.ophi, self.fwhm, self.pos = fev, rpos, ophi, fwhm, pos
         self.kmin, self.kmax, self.skmin, self.skmax = kmin, kmax, skmin, skmax
