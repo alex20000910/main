@@ -356,6 +356,15 @@ def test_VolumeSlicer(tk_environment):
     gcp.save_cube(path=os.path.join(os.path.dirname(__file__), 'test_cube.zarr'))
     vs.change_mode()  # back to real mode
 
+def test_DataViewer():
+    from tool.DataViewer import find_window, disp_zarr_save, load_zarr
+    hwnd = find_window()
+    assert isinstance(hwnd, int)
+    path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
+    output = os.path.join(os.path.dirname(__file__), 'test_cube_disp.zarr')
+    mode, shape, xmin, xmax, ymin, ymax, E = load_zarr(path)
+    disp_zarr_save(path, output, shape, max_val=10750)
+
 def test_CEC(tk_environment):
     g, frame = tk_environment
     from tool.MDC_Fitter import get_file_from_github
