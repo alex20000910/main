@@ -342,10 +342,16 @@ def get_cec_attr(path_to_file: str, f: h5py.File | Any) -> tuple[str, str, str, 
                     td=load_txt(tpath)
             except:
                 pass
-    PassEnergy = td.attrs['PassEnergy']
-    Dwell = td.attrs['Dwell']
-    Iterations = td.attrs['Iterations']
-    Slit = td.attrs['Slit']
+    if td is None:
+        PassEnergy = 'Unknown'
+        Dwell = 'Unknown'
+        Iterations = 'Unknown'
+        Slit = 'Unknown'
+    else:
+        PassEnergy = td.attrs['PassEnergy']
+        Dwell = td.attrs['Dwell']
+        Iterations = td.attrs['Iterations']
+        Slit = td.attrs['Slit']
     return PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath
 
 def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
@@ -648,6 +654,7 @@ class loadfiles(FileSequence):
                 clear(data)
             except Exception as e:
                 print(f'\033[31mError loading file {v}: {e}\033[0m')
+                print('line:',sys.exc_info()[2].tb_lineno)
             if '.npz' in os.path.basename(v) or tf:
                 self.f_npz[i] = True
                 self.n.append(i)
