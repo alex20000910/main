@@ -5,6 +5,8 @@ from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
 sys.path.append(tdir)
 sys.path.append(os.path.dirname(tdir))
+cdir = os.path.dirname(os.path.dirname(__file__))
+os.mkdir(os.path.join(cdir, '.MDC_cut'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
@@ -151,8 +153,7 @@ def test_data_loader(tk_environment):
         @override
         def pars(self):
             pass
-    os.mkdir(os.path.join(cdir, '.MDC_cut'))
-    print('checking .MDC rd.npz', os.path.exists(os.path.join(cdir, '.MDC_cut', 'rd.npz')))
+        
     for i in range(len(lfs.name)):
         pr_load(lfs.get(i))
     
@@ -443,8 +444,8 @@ def test_mfit_data():
     lowlim = '0'
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim)
     ml.loadparam('0', '0', True, 1)
-    ml.loadmfit_(os.path.join(cdir, 'tests', 'simulated_R1_14.0_R2_0_mfit.npz'), src='tests')
-    mdata = mfit_data(cdir=cdir, src='tests')
+    ml.loadmfit_(os.path.join(cdir, 'tests', 'simulated_R1_14.0_R2_0_mfit.npz'))
+    mdata = mfit_data(cdir=cdir)
     ko, fev, rpos, ophi, fwhm, mpos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, fpr, mdet = mdata.get()
     assert isinstance(ko, str)
     info = ['    x1: -0.04088383 +/- 3.2355e-04 (0.79%) (init = -0.06451523)',
