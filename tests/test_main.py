@@ -13,7 +13,7 @@ from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
 from tool.util import app_param
 from tool.SO_Fitter import SO_Fitter
-from tool.CEC import CEC, call_cec
+from tool.CEC import CEC, call_cec, CEC_Object
 from tool.VolumeSlicer import wait
 
 def test_loadfiles():
@@ -409,7 +409,13 @@ def test_call_cec(tk_environment):
     g, frame = tk_environment
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     lfs = loadfiles([os.path.join(os.path.dirname(__file__), 'test_cut.h5')], init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
-    call_cec(g, lfs)
+    lfs = call_cec(g, lfs)
+    assert isinstance(lfs.cec, CEC_Object)
+    lfs.cec.info()
+    lfs.cec.on_closing()
+    lfs = loadfiles([os.path.join(os.path.dirname(__file__), 'data_cut.h5')], init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
+    lfs = call_cec(g, lfs)
+    assert lfs.cec is None
 
 def test_interp():
     y = interp(0, [1, 2], [2, 3])
