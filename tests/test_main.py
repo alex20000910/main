@@ -300,12 +300,21 @@ def test_VolumeSlicer(tk_environment):
     shape = (int(density/(vs.xmax-vs.xmin)*(txlim[1]-txlim[0])), int(density/(vs.ymax-vs.ymin)*(tylim[1]-tylim[0])))
     assert data.dtype == np.float32
     assert data.T.shape == shape
+    vs.fit_so_app()
+    vs.set_density()
     vs.set_window()
+    vs.text_e.set(str(f'%.3f'%vs.ev[400]))
     vs.set_slim()
+    vs.text_a.set(str(30))
+    vs.angle_slider.set_val(-30)
     vs.symmetry()
     vs.symmetry_(6)
     vs.r1_offset = 15.25 # for test boost the speed
     set_entry_value(vs.entry_r1_offset, str(vs.r1_offset))
+    set_entry_value(vs.cut_xy_x_entry, '1')
+    set_entry_value(vs.cut_xy_y_entry, '1')
+    set_entry_value(vs.cut_xy_dx_entry, '0.5')
+    set_entry_value(vs.cut_xy_dy_entry, '0.5')
     vs.stop_event = threading.Event()
     vs.set_xy_lim()
     vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
@@ -354,11 +363,12 @@ def test_VolumeSlicer(tk_environment):
     gcp = g_cut_plot(vs, vs.data_cut, vs.cx, vs.cy, vs.cdx, vs.cdy, vs.cdensity, ty, z, x, angle, phi_offset, r1_offset, phi1_offset, r11_offset, vs.stop_event, vs.pool, vs.path, vs.e_photon, vs.slim_cut, vs.sym_cut, vs.xmin, vs.xmax, vs.ymin, vs.ymax, vs.data_cube, vs.app_pars, test=True)
     gcp.save_cut(path=os.path.join(os.path.dirname(__file__), 'test_cut.h5'))
     gcp.save_cube(path=os.path.join(os.path.dirname(__file__), 'test_cube.zarr'))
+    gcp.on_closing()
     vs.change_mode()  # back to real mode
 
 def test_DataViewer():
-    from tool.DataViewer import find_window, disp_zarr_save, load_zarr
-    hwnd = find_window()
+    from tool.DataViewer import get_hwnd, disp_zarr_save, load_zarr
+    hwnd = get_hwnd()
     assert isinstance(hwnd, int)
     path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
     output = os.path.join(os.path.dirname(__file__), 'test_cube_disp.zarr')

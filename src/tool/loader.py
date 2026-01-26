@@ -621,7 +621,7 @@ class loadfiles(FileSequence):
             cmap = kwargs['cmap']
         else:
             cmap = 'viridis'
-        for i, v in enumerate(files):
+        for i, v in enumerate(files):   # 測試是否有cec
             tf=False
             try:
                 if '.npz' in os.path.basename(v):
@@ -637,8 +637,8 @@ class loadfiles(FileSequence):
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
                     tf=True
                 clear(data)
-            except Exception as e:
-                print('\033[31mError loading file:', v, '\n', e, '\033[0m')
+            except:
+                pass
             if '.npz' in os.path.basename(v) or tf:
                 self.f_npz[i] = True
                 self.n.append(i)
