@@ -151,7 +151,8 @@ def test_data_loader(tk_environment):
         @override
         def pars(self):
             pass
-    
+    os.mkdir(os.path.join(cdir, '.MDC_cut'))
+    print('checking .MDC rd.npz', os.path.exists(os.path.join(cdir, '.MDC_cut', 'rd.npz')))
     for i in range(len(lfs.name)):
         pr_load(lfs.get(i))
     
