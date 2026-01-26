@@ -1,5 +1,6 @@
 import pytest
 import os, sys
+import queue
 from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
 sys.path.append(tdir)
@@ -98,6 +99,92 @@ def tk_environment(tk_root):
     except:
         pass
 
+def set_globals(var, glob):
+    if var is not None:
+        globals()[glob] = var
+
+def test_data_loader(tk_environment):
+    g, frame = tk_environment
+    from tool.loader import data_loader, file_loader
+    from tool.util import IconManager
+    from base64 import b64decode
+    from PIL import Image, ImageTk
+    menu1 = tk.OptionMenu(frame, tk.StringVar(value='Option1'), 'Option1', 'Option2')
+    menu2 = tk.OptionMenu(frame, tk.StringVar(value='OptionA'), 'OptionA', 'OptionB')
+    menu3 = tk.OptionMenu(frame, tk.StringVar(value='ChoiceX'), 'ChoiceX', 'ChoiceY')
+    in_fit = tk.Entry(frame)
+    b_fit = tk.Button(frame, text='Fit')
+    l_path = tk.Text(frame)
+    info = tk.Text(frame)
+    cdir = os.path.dirname(os.path.dirname(__file__))
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
+    lfs = loadfiles(path, init=True, name='internal', cmap='viridis', app_pars=app_pars)
+    scale = 1.0
+    
+    
+    dpath = lfs.path[0]
+    st = queue.Queue()
+    limg = tk.Label(frame)
+    icon = IconManager()
+    img = []
+    Icon = [icon.icon0]
+    timg = Image.open(io.BytesIO(b64decode(Icon[0]))).resize([250, 250])
+    tk_img = ImageTk.PhotoImage(timg)
+    img.append(tk_img)
+    b_name = tk.Button(frame, text='Set Name')
+    b_excitation = tk.Button(frame, text='Set Excitation')
+    b_desc = tk.Button(frame, text='Set Description')
+    koffset = tk.Entry(frame)
+    k_offset = tk.StringVar(value='0')
+    fr_tool = tk.Frame(frame)
+    b_tools = tk.Button(frame, text='Tools')
+    l_name = tk.OptionMenu(frame, tk.StringVar(value='Name1'), 'Name1', 'Name2')
+    scale = 1.0
+    class pr_load(data_loader):
+        def __init__(self, data: xr.DataArray):
+            super().__init__(menu1, menu2, menu3, in_fit, b_fit, l_path, info, cdir, lfs, scale)
+            self.pr_load(data)
+
+        @override
+        def pars(self):
+            pass
+    
+    for i in range(len(lfs.name)):
+        pr_load(lfs.get(i))
+    
+    class main_loader(file_loader):
+        def __init__(self, files: tuple[str]|Literal['']):
+            super().__init__(files, dpath, 'viridis', lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale, test=True)
+        
+        @override
+        def call_cec(self, g, lfs) -> FileSequence:
+            return call_cec(g, lfs)
+
+        @override
+        def pr_load(self, data):
+            pr_load(data)
+        
+        @override
+        def change_file(self, *args):
+            pass
+            
+        @override
+        def tools(self, *args):
+            pass
+        
+        @override
+        def set_k_offset(self):
+            pass
+        
+        @override
+        def pars(self):
+            pass
+    main_loader('')
+    main_loader(lfs.path)
+
 def test_spectrogram(tk_environment):
     g, frame = tk_environment
     path = []
@@ -110,6 +197,11 @@ def test_spectrogram(tk_environment):
     s = spectrogram(data, name='internal', app_pars=app_pars)
     s.setdata(ev, y, dtype='smooth', unit='Counts')
     s.plot(g)
+    s.info.event_generate('<FocusIn>')
+    for i in [s.rpo, s.tpo, s.rgo]:
+        i.get_tk_widget().event_generate('<Motion>', x=100, y=100)
+        i.get_tk_widget().event_generate('<Button-1>', x=100, y=100)
+        i.get_tk_widget().event_generate('<ButtonRelease-1>', x=100, y=100)
     s = spectrogram(path=path, name='external', app_pars=app_pars)
     s.plot(g)
     s.cf_up()
@@ -341,7 +433,6 @@ def test_SO_Fitter(tk_environment):
 def test_mfit_data():
     from tool.MDC_Fitter import mfit_data
     from tool.loader import mloader
-    import queue
     st = queue.Queue()
     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
     data = load_h5(path)
@@ -365,6 +456,26 @@ def test_mfit_data():
         assert i == str(j)
 
 def test_Icon():
-    from tool.util import IconManager, MenuIconManager
+    from tool.util import IconManager
     icon_manager = IconManager()
-    menu_icon_manager = MenuIconManager(qt=True)
+
+def test_ToolTip(tk_environment):
+    g, frame = tk_environment
+    from tool.util import ToolTip_util, MenuIconManager, Button
+    scaled_font_size = 1
+    icon_manager = MenuIconManager()
+    class ToolTip(ToolTip_util):
+        def __init__(self, widget: tk.Widget, text: str, accelerator=None):
+            super().__init__(widget, text, accelerator,
+                             icon_manager, scaled_font_size)
+    button = Button(frame, text="Load Raw Data", image=icon_manager.get_icon('raw_data'))
+    button.pack()
+    tt = ToolTip(button, "This is a tooltip", "Ctrl+O")
+    event = tk.Event()
+    event.x = 10
+    event.y = 10
+    event.x_root = 100
+    event.y_root = 100
+    tt.show_tooltip(event)
+    tt.hide_tooltip(event)
+    tt.update_position(event=event)

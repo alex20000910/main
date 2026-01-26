@@ -2233,7 +2233,7 @@ class tkDnD_loader(ABC):
         return ''
 
 class file_loader(ABC):
-    def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar, fr_tool: tk.Frame, b_tools: tk.Button, l_name: tk.OptionMenu, scale: float):
+    def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar, fr_tool: tk.Frame, b_tools: tk.Button, l_name: tk.OptionMenu, scale: float, test=False):
         self.files = files
         self.lfs = lfs
         self.k_offset = k_offset
@@ -2241,8 +2241,11 @@ class file_loader(ABC):
         self.scale = scale
         
         if len(files) > 0:
-            clear(self.lfs)
-            self.lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
+            if test:
+                pass
+            else:
+                clear(self.lfs)
+                self.lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
             print(self.lfs)
             if self.lfs.cec_pars:
                 self.lfs = self.call_cec(g, self.lfs)
