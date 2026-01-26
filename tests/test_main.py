@@ -102,130 +102,130 @@ def tk_environment(tk_root):
     except:
         pass
 
-# def set_globals(var, glob):
-#     if var is not None:
-#         globals()[glob] = var
+def set_globals(var, glob):
+    if var is not None:
+        globals()[glob] = var
 
-# def test_data_loader(tk_environment):
-#     g, frame = tk_environment
-#     from tool.loader import data_loader, file_loader
-#     from tool.util import IconManager
-#     from base64 import b64decode
-#     from PIL import Image, ImageTk
-#     menu1 = tk.OptionMenu(frame, tk.StringVar(value='Option1'), 'Option1', 'Option2')
-#     menu2 = tk.OptionMenu(frame, tk.StringVar(value='OptionA'), 'OptionA', 'OptionB')
-#     menu3 = tk.OptionMenu(frame, tk.StringVar(value='ChoiceX'), 'ChoiceX', 'ChoiceY')
-#     in_fit = tk.Entry(frame)
-#     b_fit = tk.Button(frame, text='Fit')
-#     l_path = tk.Text(frame)
-#     info = tk.Text(frame)
-#     cdir = os.path.dirname(os.path.dirname(__file__))
-#     path = []
-#     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
-#     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
-#     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
-#     lfs = loadfiles(path, init=True, name='internal', cmap='viridis', app_pars=app_pars)
-#     scale = 1.0
+def test_data_loader(tk_environment):
+    g, frame = tk_environment
+    from tool.loader import data_loader, file_loader
+    from tool.util import IconManager
+    from base64 import b64decode
+    from PIL import Image, ImageTk
+    menu1 = tk.OptionMenu(frame, tk.StringVar(value='Option1'), 'Option1', 'Option2')
+    menu2 = tk.OptionMenu(frame, tk.StringVar(value='OptionA'), 'OptionA', 'OptionB')
+    menu3 = tk.OptionMenu(frame, tk.StringVar(value='ChoiceX'), 'ChoiceX', 'ChoiceY')
+    in_fit = tk.Entry(frame)
+    b_fit = tk.Button(frame, text='Fit')
+    l_path = tk.Text(frame)
+    info = tk.Text(frame)
+    cdir = os.path.dirname(os.path.dirname(__file__))
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
+    lfs = loadfiles(path, init=True, name='internal', cmap='viridis', app_pars=app_pars)
+    scale = 1.0
     
     
-#     dpath = lfs.path[0]
-#     st = queue.Queue()
-#     limg = tk.Label(frame)
-#     icon = IconManager()
-#     img = []
-#     Icon = [icon.icon0]
-#     timg = Image.open(io.BytesIO(b64decode(Icon[0]))).resize([250, 250])
-#     tk_img = ImageTk.PhotoImage(timg)
-#     img.append(tk_img)
-#     b_name = tk.Button(frame, text='Set Name')
-#     b_excitation = tk.Button(frame, text='Set Excitation')
-#     b_desc = tk.Button(frame, text='Set Description')
-#     koffset = tk.Entry(frame)
-#     k_offset = tk.StringVar(value='0')
-#     fr_tool = tk.Frame(frame)
-#     b_tools = tk.Button(frame, text='Tools')
-#     l_name = tk.OptionMenu(frame, tk.StringVar(value='Name1'), 'Name1', 'Name2')
-#     scale = 1.0
-#     class pr_load(data_loader):
-#         def __init__(self, data: xr.DataArray):
-#             super().__init__(menu1, menu2, menu3, in_fit, b_fit, l_path, info, cdir, lfs, scale)
-#             self.pr_load(data)
+    dpath = lfs.path[0]
+    st = queue.Queue()
+    limg = tk.Label(frame)
+    icon = IconManager()
+    img = []
+    Icon = [icon.icon0]
+    timg = Image.open(io.BytesIO(b64decode(Icon[0]))).resize([250, 250])
+    tk_img = ImageTk.PhotoImage(timg)
+    img.append(tk_img)
+    b_name = tk.Button(frame, text='Set Name')
+    b_excitation = tk.Button(frame, text='Set Excitation')
+    b_desc = tk.Button(frame, text='Set Description')
+    koffset = tk.Entry(frame)
+    k_offset = tk.StringVar(value='0')
+    fr_tool = tk.Frame(frame)
+    b_tools = tk.Button(frame, text='Tools')
+    l_name = tk.OptionMenu(frame, tk.StringVar(value='Name1'), 'Name1', 'Name2')
+    scale = 1.0
+    class pr_load(data_loader):
+        def __init__(self, data: xr.DataArray):
+            super().__init__(menu1, menu2, menu3, in_fit, b_fit, l_path, info, cdir, lfs, scale)
+            self.pr_load(data)
 
-#         @override
-#         def pars(self):
-#             pass
+        @override
+        def pars(self):
+            pass
         
-#     for i in range(len(lfs.name)):
-#         pr_load(lfs.get(i))
+    for i in range(len(lfs.name)):
+        pr_load(lfs.get(i))
     
-#     class main_loader(file_loader):
-#         def __init__(self, files: tuple[str]|Literal['']):
-#             super().__init__(files, dpath, 'viridis', lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale, test=True)
+    class main_loader(file_loader):
+        def __init__(self, files: tuple[str]|Literal['']):
+            super().__init__(files, dpath, 'viridis', lfs, g, app_pars, st, limg, img, b_name, b_excitation, b_desc, koffset, k_offset, fr_tool, b_tools, l_name, scale, test=True)
         
-#         @override
-#         def call_cec(self, g, lfs) -> FileSequence:
-#             return call_cec(g, lfs)
+        @override
+        def call_cec(self, g, lfs) -> FileSequence:
+            return call_cec(g, lfs, test=True)
 
-#         @override
-#         def pr_load(self, data):
-#             pr_load(data)
+        @override
+        def pr_load(self, data):
+            pr_load(data)
         
-#         @override
-#         def change_file(self, *args):
-#             pass
+        @override
+        def change_file(self, *args):
+            pass
             
-#         @override
-#         def tools(self, *args):
-#             pass
+        @override
+        def tools(self, *args):
+            pass
         
-#         @override
-#         def set_k_offset(self):
-#             pass
+        @override
+        def set_k_offset(self):
+            pass
         
-#         @override
-#         def pars(self):
-#             pass
-#     main_loader('')
-#     main_loader(lfs.path)
+        @override
+        def pars(self):
+            pass
+    main_loader('')
+    main_loader(lfs.path)
 
-# def test_spectrogram(tk_environment):
-#     g, frame = tk_environment
-#     path = []
-#     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
-#     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
-#     data = load_h5(path[0])
-#     ev, phi = data.indexes.values()
-#     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
-#     y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
-#     s = spectrogram(data, name='internal', app_pars=app_pars)
-#     s.setdata(ev, y, dtype='smooth', unit='Counts')
-#     s.plot(g)
-#     s.info.event_generate('<FocusIn>')
-#     for i in [s.rpo, s.tpo, s.rgo]:
-#         i.get_tk_widget().event_generate('<Motion>', x=100, y=100)
-#         i.get_tk_widget().event_generate('<Button-1>', x=100, y=100)
-#         i.get_tk_widget().event_generate('<ButtonRelease-1>', x=100, y=100)
-#     s = spectrogram(path=path, name='external', app_pars=app_pars)
-#     s.plot(g)
-#     s.cf_up()
-#     s.cf_down()
-#     assert isinstance(s.name, str)
-#     assert isinstance(s.data, xr.DataArray)
-#     s.ups()
-#     for option in s.fit_options:
-#         s.selected_fit.set(option)
-#         s.update_plot()
-#         if option in ["Fermi-Dirac Fitting", "ERFC Fit"]:
-#             s.update_fit()
+def test_spectrogram(tk_environment):
+    g, frame = tk_environment
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    data = load_h5(path[0])
+    ev, phi = data.indexes.values()
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
+    y=smooth(np.sum(data.to_numpy().transpose(),axis=0),l=13)
+    s = spectrogram(data, name='internal', app_pars=app_pars)
+    s.setdata(ev, y, dtype='smooth', unit='Counts')
+    s.plot(g)
+    s.info.event_generate('<FocusIn>')
+    for i in [s.rpo, s.tpo, s.rgo]:
+        i.get_tk_widget().event_generate('<Motion>', x=100, y=100)
+        i.get_tk_widget().event_generate('<Button-1>', x=100, y=100)
+        i.get_tk_widget().event_generate('<ButtonRelease-1>', x=100, y=100)
+    s = spectrogram(path=path, name='external', app_pars=app_pars)
+    s.plot(g)
+    s.cf_up()
+    s.cf_down()
+    assert isinstance(s.name, str)
+    assert isinstance(s.data, xr.DataArray)
+    s.ups()
+    for option in s.fit_options:
+        s.selected_fit.set(option)
+        s.update_plot()
+        if option in ["Fermi-Dirac Fitting", "ERFC Fit"]:
+            s.update_fit()
 
-# def test_lfs_exp_casa():
-#     path = []
-#     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
-#     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
-#     lfs = loadfiles(path, init=True, mode='eager', name='external', spectrogram=True)
-#     explfs = lfs_exp_casa(lfs)
-#     path = os.path.join(os.path.dirname(__file__), 'exp_casa.vms')
-#     explfs.export_casa(path)
+def test_lfs_exp_casa():
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    lfs = loadfiles(path, init=True, mode='eager', name='external', spectrogram=True)
+    explfs = lfs_exp_casa(lfs)
+    path = os.path.join(os.path.dirname(__file__), 'exp_casa.vms')
+    explfs.export_casa(path)
 
 def init_tempdir():
     import inspect, shutil
@@ -366,147 +366,145 @@ def test_VolumeSlicer(tk_environment):
     gcp.on_closing()
     vs.change_mode()  # back to real mode
 
-# def test_DataViewer():
-#     from tool.DataViewer import get_hwnd, disp_zarr_save, load_zarr
-#     hwnd = get_hwnd()
-#     assert isinstance(hwnd, int)
-#     path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
-#     output = os.path.join(os.path.dirname(__file__), 'test_cube_disp.zarr')
-#     mode, shape, xmin, xmax, ymin, ymax, E = load_zarr(path)
-#     disp_zarr_save(path, output, shape, max_val=10750)
+def test_DataViewer():
+    from tool.DataViewer import get_hwnd, disp_zarr_save, load_zarr
+    hwnd = get_hwnd()
+    assert isinstance(hwnd, int)
+    path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
+    output = os.path.join(os.path.dirname(__file__), 'test_cube_disp.zarr')
+    mode, shape, xmin, xmax, ymin, ymax, E = load_zarr(path)
+    disp_zarr_save(path, output, shape, max_val=10750)
 
-# def test_CEC(tk_environment):
-#     g, frame = tk_environment
-#     from tool.MDC_Fitter import get_file_from_github
-#     from MDC_cut_utility import file_walk
-#     import time
-#     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
-#     tg = wait(g, app_pars)
-#     tg.text('Preparing sample data...')
-#     path = rf"simulated_R1_15.0_R2_0#id#0d758f03.h5"
-#     tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0#id#0d758f03.h5")
-#     if os.path.exists(tpath)==False:
-#         get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
-#     path = os.path.dirname(__file__)
-#     files = file_walk(path)
-#     for file in files:
-#         if 'simulated' not in file:
-#             files.remove(file)
-#     tg.done()
-#     tg = wait(g, app_pars)
-#     tg.text('Loading sample data...')
-#     lfs = loadfiles(files)
-#     tg.done()
-#     t_cec = CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
-#     time.sleep(2)
-#     if t_cec.gg.winfo_exists():
-#         t_cec.check()
-#     if t_cec.gg.winfo_exists():
-#         t_cec.check()
-#     t_cec.info()
+def test_CEC(tk_environment):
+    g, frame = tk_environment
+    from tool.MDC_Fitter import get_file_from_github
+    from MDC_cut_utility import file_walk
+    import time
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
+    tg = wait(g, app_pars)
+    tg.text('Preparing sample data...')
+    path = rf"simulated_R1_15.0_R2_0#id#0d758f03.h5"
+    tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0#id#0d758f03.h5")
+    if os.path.exists(tpath)==False:
+        get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
+    path = os.path.dirname(__file__)
+    files = file_walk(path)
+    for file in files:
+        if 'simulated' not in file:
+            files.remove(file)
+    tg.done()
+    tg = wait(g, app_pars)
+    tg.text('Loading sample data...')
+    lfs = loadfiles(files)
+    tg.done()
+    t_cec = CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
+    time.sleep(2)
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
+    t_cec.info()
     
 def test_call_cec(tk_environment):
     g, frame = tk_environment
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     lfs = loadfiles(os.path.join(os.path.dirname(__file__), 'test_cut.h5'), init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
-    lfs = call_cec(g, lfs)
+    lfs = call_cec(g, lfs, test=True)
     assert isinstance(lfs.cec, CEC_Object)
     lfs.cec.info()
     lfs.cec.on_closing()
-    clear(lfs)
     lfs = loadfiles(os.path.join(os.path.dirname(__file__), 'data_cut.h5'), init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
-    print('print lfs', lfs)
-    lfs = call_cec(g, lfs)
+    lfs = call_cec(g, lfs, test=True)
     assert lfs.cec is None
 
-# def test_interp():
-#     y = interp(0, [1, 2], [2, 3])
-#     assert y == 1
-#     y = interp(2.5, [2, 1], [3, 2])
-#     assert y == 3.5
-#     y_array = interp([0, 1.5, 2.5], [1, 2], [2, 3])
-#     assert np.allclose(y_array, [1, 2.5, 3.5])
-#     y_array = interp(np.array([0, 1.5, 2.5]), np.array([2, 1]), np.array([3, 2]))
-#     assert np.allclose(y_array, [1, 2.5, 3.5])
+def test_interp():
+    y = interp(0, [1, 2], [2, 3])
+    assert y == 1
+    y = interp(2.5, [2, 1], [3, 2])
+    assert y == 3.5
+    y_array = interp([0, 1.5, 2.5], [1, 2], [2, 3])
+    assert np.allclose(y_array, [1, 2.5, 3.5])
+    y_array = interp(np.array([0, 1.5, 2.5]), np.array([2, 1]), np.array([3, 2]))
+    assert np.allclose(y_array, [1, 2.5, 3.5])
 
 
-# def test_get_bar_pos():
-#     pos = get_bar_pos()
-#     assert isinstance(pos, str)
+def test_get_bar_pos():
+    pos = get_bar_pos()
+    assert isinstance(pos, str)
 
-# def test_get_hwnd():
-#     from tool.MDC_Fitter import get_hwnd
-#     hwnd = get_hwnd()
-#     assert isinstance(hwnd, int)
+def test_get_hwnd():
+    from tool.MDC_Fitter import get_hwnd
+    hwnd = get_hwnd()
+    assert isinstance(hwnd, int)
 
-# def test_SO_Fitter(tk_environment):
-#     g, frame = tk_environment
-#     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
-#     so_fitter = SO_Fitter(g, app_pars)
-#     so_fitter.v_r2.set(20)
-#     so_fitter.v_r1.set(20)
-#     so_fitter.v_phi.set(0)
-#     so_fitter.add_point()
-#     so_fitter.v_r2.set(80)
-#     so_fitter.v_r1.set(22.5)
-#     so_fitter.v_phi.set(-0.2)
-#     so_fitter.add_point()
-#     so_fitter.v_r2.set(206)
-#     so_fitter.v_r1.set(19.5)
-#     so_fitter.v_phi.set(0)
-#     so_fitter.add_point()
-#     so_fitter.set_tolerance()
-#     so_fitter._fit()
-#     so_fitter.clear_points()
-#     so_fitter.on_closing()
+def test_SO_Fitter(tk_environment):
+    g, frame = tk_environment
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
+    so_fitter = SO_Fitter(g, app_pars)
+    so_fitter.v_r2.set(20)
+    so_fitter.v_r1.set(20)
+    so_fitter.v_phi.set(0)
+    so_fitter.add_point()
+    so_fitter.v_r2.set(80)
+    so_fitter.v_r1.set(22.5)
+    so_fitter.v_phi.set(-0.2)
+    so_fitter.add_point()
+    so_fitter.v_r2.set(206)
+    so_fitter.v_r1.set(19.5)
+    so_fitter.v_phi.set(0)
+    so_fitter.add_point()
+    so_fitter.set_tolerance()
+    so_fitter._fit()
+    so_fitter.clear_points()
+    so_fitter.on_closing()
 
-# def test_mfit_data():
-#     from tool.MDC_Fitter import mfit_data
-#     from tool.loader import mloader
-#     st = queue.Queue()
-#     path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
-#     data = load_h5(path)
-#     ev, phi = data.indexes.values()
-#     rdd = path
-#     cdir = os.path.dirname(os.path.dirname(__file__))
-#     lowlim = '0'
-#     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim)
-#     ml.loadparam('0', '0', True, 1)
-#     ml.loadmfit_(os.path.join(cdir, 'tests', 'rev_PE10A20f -170 VIV_pass.vms'))
-#     ml.loadmfit_(os.path.join(cdir, 'tests', 'simulated_R1_14.0_R2_0_mfit.npz'))
-#     mdata = mfit_data(cdir=cdir)
-#     ko, fev, rpos, ophi, fwhm, mpos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, fpr, mdet = mdata.get()
-#     assert isinstance(ko, str)
-#     info = ['    x1: -0.04088383 +/- 3.2355e-04 (0.79%) (init = -0.06451523)',
-#             '    x2:  0.03889559 +/- 5.5296e-04 (1.42%) (init = 0.06826833)',
-#             '    h1:  8229.22392 +/- 164.752546 (2.00%) (init = 8913)',
-#             '    h2:  5771.04494 +/- 1456.15965 (25.23%) (init = 8913)',
-#             '    w1:  0.02869309 +/- 9.8838e-04 (3.44%) (init = 0.02)',
-#             '    w2:  0.04064557 +/- 0.00169512 (4.17%) (init = 0.02)']
-#     for i, j in zip(info, smresult[510]):
-#         assert i == str(j)
+def test_mfit_data():
+    from tool.MDC_Fitter import mfit_data
+    from tool.loader import mloader
+    st = queue.Queue()
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    data = load_h5(path)
+    ev, phi = data.indexes.values()
+    rdd = path
+    cdir = os.path.dirname(os.path.dirname(__file__))
+    lowlim = '0'
+    ml = mloader(st, data, ev, phi, rdd, cdir, lowlim)
+    ml.loadparam('0', '0', True, 1)
+    ml.loadmfit_(os.path.join(cdir, 'tests', 'rev_PE10A20f -170 VIV_pass.vms'))
+    ml.loadmfit_(os.path.join(cdir, 'tests', 'simulated_R1_14.0_R2_0_mfit.npz'))
+    mdata = mfit_data(cdir=cdir)
+    ko, fev, rpos, ophi, fwhm, mpos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, fpr, mdet = mdata.get()
+    assert isinstance(ko, str)
+    info = ['    x1: -0.04088383 +/- 3.2355e-04 (0.79%) (init = -0.06451523)',
+            '    x2:  0.03889559 +/- 5.5296e-04 (1.42%) (init = 0.06826833)',
+            '    h1:  8229.22392 +/- 164.752546 (2.00%) (init = 8913)',
+            '    h2:  5771.04494 +/- 1456.15965 (25.23%) (init = 8913)',
+            '    w1:  0.02869309 +/- 9.8838e-04 (3.44%) (init = 0.02)',
+            '    w2:  0.04064557 +/- 0.00169512 (4.17%) (init = 0.02)']
+    for i, j in zip(info, smresult[510]):
+        assert i == str(j)
 
-# def test_Icon():
-#     from tool.util import IconManager
-#     icon_manager = IconManager()
+def test_Icon():
+    from tool.util import IconManager
+    icon_manager = IconManager()
 
-# def test_ToolTip(tk_environment):
-#     g, frame = tk_environment
-#     from tool.util import ToolTip_util, MenuIconManager, Button
-#     scaled_font_size = 1
-#     icon_manager = MenuIconManager()
-#     class ToolTip(ToolTip_util):
-#         def __init__(self, widget: tk.Widget, text: str, accelerator=None):
-#             super().__init__(widget, text, accelerator,
-#                              icon_manager, scaled_font_size)
-#     button = Button(frame, text="Load Raw Data", image=icon_manager.get_icon('raw_data'))
-#     button.pack()
-#     tt = ToolTip(button, "This is a tooltip", "Ctrl+O")
-#     event = tk.Event()
-#     event.x = 10
-#     event.y = 10
-#     event.x_root = 100
-#     event.y_root = 100
-#     tt.show_tooltip(event)
-#     tt.hide_tooltip(event)
-#     tt.update_position(event=event)
+def test_ToolTip(tk_environment):
+    g, frame = tk_environment
+    from tool.util import ToolTip_util, MenuIconManager, Button
+    scaled_font_size = 1
+    icon_manager = MenuIconManager()
+    class ToolTip(ToolTip_util):
+        def __init__(self, widget: tk.Widget, text: str, accelerator=None):
+            super().__init__(widget, text, accelerator,
+                             icon_manager, scaled_font_size)
+    button = Button(frame, text="Load Raw Data", image=icon_manager.get_icon('raw_data'))
+    button.pack()
+    tt = ToolTip(button, "This is a tooltip", "Ctrl+O")
+    event = tk.Event()
+    event.x = 10
+    event.y = 10
+    event.x_root = 100
+    event.y_root = 100
+    tt.show_tooltip(event)
+    tt.hide_tooltip(event)
+    tt.update_position(event=event)

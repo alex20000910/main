@@ -577,7 +577,7 @@ def find_path(path: list[str]) -> bool:
         f = False
     return f
 
-def call_cec(g: tk.Misc, lfs: FileSequence) -> FileSequence:
+def call_cec(g: tk.Misc, lfs: FileSequence, test=False) -> FileSequence:
     app_pars = lfs.app_pars
     path_to_file, name, lf_path, tlfpath, cmap = lfs.cec_pars.path_to_file, lfs.cec_pars.name, lfs.cec_pars.lf_path, lfs.cec_pars.tlfpath, lfs.cec_pars.cmap
     lfs.cec = None
@@ -599,14 +599,16 @@ def call_cec(g: tk.Misc, lfs: FileSequence) -> FileSequence:
         print(lf_path)
         print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
         message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
-        messagebox.showwarning("Warning", message)
+        if test is False:
+            messagebox.showwarning("Warning", message)
     except Exception as ecp:
         if app_pars:
             windll.user32.ShowWindow(app_pars.hwnd, 9)
             windll.user32.SetForegroundWindow(app_pars.hwnd)
         print(f"An error occurred: {ecp}")
         message = f"An error occurred:\n{ecp}"
-        messagebox.showerror("Error", message)
+        if test is False:
+            messagebox.showerror("Error", message)
         lfs.cec.tlg.destroy()
         clear(lfs.cec)
         lfs.cec = None
