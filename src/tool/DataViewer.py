@@ -79,6 +79,42 @@ def disp_zarr_save(input_path, output_path, shape, max_val):
     ang = zarr.open(os.path.join(output_path, 'ang'), mode='r+')
     ang[1] = 0
 
+def load_zarr(path: str):
+    try:
+        data = zarr.open(path, mode='r+', dtype=np.float32)
+        xmin,xmax = data[0, 1, -1], data[1, 1, -1]
+        ymin,ymax = data[2, 1, -1], data[3, 1, -1]
+        E = data[:, 0, -1]
+        shape = data.shape[:-1] + (data.shape[2]-1,)
+        ang_path = os.path.join(path, '__disp__.zarr', 'ang')
+        if os.path.exists(ang_path):
+            ang = zarr.open(ang_path, mode='r')
+            if ang[0] != ang[-1]:
+                os.chdir(path)
+                shutil.rmtree('__disp__.zarr')
+        # zpath = os.path.join(path, '__disp__.zarr')
+        # if not os.path.exists(zpath):
+        #     # data = zarr.open(path, mode='r+', dtype=np.float32)[:,:,:data.shape[2]-1]  # Remove the last attribute dimension
+        # else:
+        #     shape = list(data.shape)
+        #     shape[2] -= 1
+        #     data = np.zeros(tuple(shape))
+        mode = 'standard'
+        return mode, shape, xmin, xmax, ymin, ymax, E
+    except:
+        try:
+            data = zarr.open_group(path, mode='r+')
+            xmin,xmax = data['attr_array'][0, 1], data['attr_array'][1, 1]
+            ymin,ymax = data['attr_array'][2, 1], data['attr_array'][3, 1]
+            E = data['attr_array'][:, 0]
+            data = data['data']
+            shape = data.shape
+            mode = 'display'
+            return mode, shape, xmin, xmax, ymin, ymax, E
+        except Exception as e:
+            print(f"Error loading data from {path}: {e}")
+            quit()
+
 class SliceBrowser(MainWindow):
     def __init__(self, path=None, hwnd=None):
         super().__init__()
@@ -99,38 +135,7 @@ class SliceBrowser(MainWindow):
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         t=time.perf_counter()
-        try:
-            data = zarr.open(path, mode='r+', dtype=np.float32)
-            xmin,xmax = data[0, 1, -1], data[1, 1, -1]
-            ymin,ymax = data[2, 1, -1], data[3, 1, -1]
-            E = data[:, 0, -1]
-            self.shape = data.shape[:-1] + (data.shape[2]-1,)
-            ang_path = os.path.join(path, '__disp__.zarr', 'ang')
-            if os.path.exists(ang_path):
-                ang = zarr.open(ang_path, mode='r')
-                if ang[0] != ang[-1]:
-                    os.chdir(path)
-                    shutil.rmtree('__disp__.zarr')
-            # zpath = os.path.join(path, '__disp__.zarr')
-            # if not os.path.exists(zpath):
-            #     # data = zarr.open(path, mode='r+', dtype=np.float32)[:,:,:data.shape[2]-1]  # Remove the last attribute dimension
-            # else:
-            #     shape = list(data.shape)
-            #     shape[2] -= 1
-            #     data = np.zeros(tuple(shape))
-            self.mode = 'standard'
-        except:
-            try:
-                data = zarr.open_group(path, mode='r+')
-                xmin,xmax = data['attr_array'][0, 1], data['attr_array'][1, 1]
-                ymin,ymax = data['attr_array'][2, 1], data['attr_array'][3, 1]
-                E = data['attr_array'][:, 0]
-                data = data['data']
-                self.shape = data.shape
-                self.mode = 'display'
-            except Exception as e:
-                print(f"Error loading data from {path}: {e}")
-                quit()
+        self.mode, self.shape, xmin, xmax, ymin, ymax, E = load_zarr(path)
                 
         if path is None:
             self.path = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -373,6 +378,8 @@ class SliceBrowser(MainWindow):
         # xlow/xhigh 控制
         self.xlow_edit = QLineEdit(f'{min(xmin, ymin):.3f}')
         self.xhigh_edit = QLineEdit(f'{max(xmax, ymax):.3f}')
+        for i in [self.xlow_edit, self.xhigh_edit]:
+            i.setStyleSheet("qproperty-alignment: 'AlignLeft';")
         self.xlow_label = QLabel("xlow")
         self.xhigh_label = QLabel("xhigh")
         right_layout.addWidget(self.xlow_label)
@@ -404,6 +411,7 @@ class SliceBrowser(MainWindow):
         self.rotate_slider.setMaximum(3600)  # 0.1度精度
         self.rotate_slider.setValue(0)
         self.rotate_edit = QLineEdit("0.0")
+        self.rotate_edit.setStyleSheet("qproperty-alignment: 'AlignLeft';")
         self.rotate_btn = QPushButton("Rotate Data Cube")
         right_layout.addWidget(self.rotate_label)
         right_layout.addWidget(self.rotate_slider)

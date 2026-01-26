@@ -342,10 +342,16 @@ def get_cec_attr(path_to_file: str, f: h5py.File | Any) -> tuple[str, str, str, 
                     td=load_txt(tpath)
             except:
                 pass
-    PassEnergy = td.attrs['PassEnergy']
-    Dwell = td.attrs['Dwell']
-    Iterations = td.attrs['Iterations']
-    Slit = td.attrs['Slit']
+    if td is None:
+        PassEnergy = 'Unknown'
+        Dwell = 'Unknown'
+        Iterations = 'Unknown'
+        Slit = 'Unknown'
+    else:
+        PassEnergy = td.attrs['PassEnergy']
+        Dwell = td.attrs['Dwell']
+        Iterations = td.attrs['Iterations']
+        Slit = td.attrs['Slit']
     return PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath
 
 def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
@@ -463,7 +469,6 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
                     cec = 'CEC_Object'
                 PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
                 cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
-            
         a = np.linspace(a_low, a_high, a_num)
         d = np.asarray(f.get('Spectrum')).transpose()
         if flag != 'pass_byte':
@@ -621,7 +626,7 @@ class loadfiles(FileSequence):
             cmap = kwargs['cmap']
         else:
             cmap = 'viridis'
-        for i, v in enumerate(files):
+        for i, v in enumerate(files):   # 測試是否有cec
             tf=False
             try:
                 if '.npz' in os.path.basename(v):
@@ -637,8 +642,8 @@ class loadfiles(FileSequence):
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
                     tf=True
                 clear(data)
-            except Exception as e:
-                print('\033[31mError loading file:', v, '\n', e, '\033[0m')
+            except:
+                pass
             if '.npz' in os.path.basename(v) or tf:
                 self.f_npz[i] = True
                 self.n.append(i)
@@ -2233,7 +2238,7 @@ class tkDnD_loader(ABC):
         return ''
 
 class file_loader(ABC):
-    def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar, fr_tool: tk.Frame, b_tools: tk.Button, l_name: tk.OptionMenu, scale: float):
+    def __init__(self, files: tuple[str]|Literal[''], path: str, cmap: str, lfs: FileSequence|None, g: tk.Misc, app_pars: app_param, st: queue.Queue, limg: tk.Label, img: list[tk.PhotoImage], b_name: tk.Button, b_excitation: tk.Button, b_desc: tk.Button, koffset: tk.Entry, k_offset: tk.StringVar, fr_tool: tk.Frame, b_tools: tk.Button, l_name: tk.OptionMenu, scale: float, test=False):
         self.files = files
         self.lfs = lfs
         self.k_offset = k_offset
@@ -2241,8 +2246,11 @@ class file_loader(ABC):
         self.scale = scale
         
         if len(files) > 0:
-            clear(self.lfs)
-            self.lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
+            if test:
+                pass
+            else:
+                clear(self.lfs)
+                self.lfs = loadfiles(files, name='internal', cmap=cmap, app_pars=app_pars)
             print(self.lfs)
             if self.lfs.cec_pars:
                 self.lfs = self.call_cec(g, self.lfs)

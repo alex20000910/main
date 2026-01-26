@@ -1721,14 +1721,19 @@ class main(MainWindow):
                 if i in self.smfi and self.fpr == 1:
                     a1 = self.smaa1[i, :]
                     a2 = self.smaa2[i, :]
-                    smrx1 = self.smresult[i, 0]
-                    smrx2 = self.smresult[i, 1]
-                    smrh1 = self.smresult[i, 2]
-                    smrh2 = self.smresult[i, 3]
-                    smrw1 = self.smresult[i, 4]
-                    smrw2 = self.smresult[i, 5]
+                    if self.smresult == []: # 讀取vms時的狀況
+                        # smrx1, smrx2, smrh1, smrh2, smrw1, smrw2 = '', '', '', '', '', ''
+                        pass
+                    else:
+                        smrx1 = self.smresult[i, 0]
+                        smrx2 = self.smresult[i, 1]
+                        smrh1 = self.smresult[i, 2]
+                        smrh2 = self.smresult[i, 3]
+                        smrw1 = self.smresult[i, 4]
+                        smrw2 = self.smresult[i, 5]
                     if self.smaa1[i, 1] == 10 or self.smaa2[i, 1] == 10:
-                        self.mprfit = 1
+                        # self.mprfit = 1   # 需要重新fit找完整參數 暫時關閉
+                        pass
                     else:
                         # fmxx[i, :len(xx)] = xx
                         # tx = fmxx[i, np.argwhere(fmxx[i, :] >= -20)].flatten()
