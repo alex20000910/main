@@ -462,9 +462,6 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
             CenterEnergy = str(CenterEnergy)+' eV'
             e_low = str(e_low)+' eV (B.E.)'
             e_high = str(e_high)+' eV (B.E.)'
-        print('print aq:', aq)
-        print('''if 'cec' in kwargs and 'f_npz' in kwargs:''', 'cec' in kwargs and 'f_npz' in kwargs)
-        print('f_npz:', f_npz)
         if aq == 'VolumeSlicer':
             if 'cec' in kwargs and 'f_npz' in kwargs:
                 if f_npz is False:
@@ -472,8 +469,6 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
                     cec = 'CEC_Object'
                 PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
                 cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
-        print(cec)
-        print(cec_pars)
         a = np.linspace(a_low, a_high, a_num)
         d = np.asarray(f.get('Spectrum')).transpose()
         if flag != 'pass_byte':
@@ -640,21 +635,15 @@ class loadfiles(FileSequence):
                     else:
                         data = load_npz(v)
                 else:
-                    print('self.cec is ', self.cec)
                     if self.cec is None:
-                        print('files:', v)
                         data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap) #stuck here
-                        print('loaded h5 with cec:', v)
                     else:
-                        print('files:', v)
                         data = load_h5(v)
-                        print('loaded h5 with cec:', v)
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
                     tf=True
                 clear(data)
-            except Exception as e:
-                print(f'\033[31mError loading file {v}: {e}\033[0m')
-                print('line:',sys.exc_info()[2].tb_lineno)
+            except:
+                pass
             if '.npz' in os.path.basename(v) or tf:
                 self.f_npz[i] = True
                 self.n.append(i)
