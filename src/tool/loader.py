@@ -457,6 +457,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
             e_low = str(e_low)+' eV (B.E.)'
             e_high = str(e_high)+' eV (B.E.)'
         print('print aq:', aq)
+        print('''if 'cec' in kwargs and 'f_npz' in kwargs:''', 'cec' in kwargs and 'f_npz' in kwargs)
         if aq == 'VolumeSlicer':
             if 'cec' in kwargs and 'f_npz' in kwargs:
                 if f_npz is False:
@@ -465,6 +466,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
                 PassEnergy, Dwell, Iterations, Slit, lf_path, tlfpath = get_cec_attr(path_to_file, f)
                 cec_pars = cec_param(path_to_file, name, lf_path, tlfpath, cmap)
         print(cec)
+        print(cec_pars)
         a = np.linspace(a_low, a_high, a_num)
         d = np.asarray(f.get('Spectrum')).transpose()
         if flag != 'pass_byte':

@@ -413,7 +413,9 @@ def test_call_cec(tk_environment):
     assert isinstance(lfs.cec, CEC_Object)
     lfs.cec.info()
     lfs.cec.on_closing()
+    clear(lfs)
     lfs = loadfiles([os.path.join(os.path.dirname(__file__), 'data_cut.h5')], init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
+    print('print lfs', lfs)
     lfs = call_cec(g, lfs)
     assert lfs.cec is None
 
