@@ -636,7 +636,7 @@ class loadfiles(FileSequence):
                         data = load_npz(v)
                 else:
                     if self.cec is None:
-                        data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap) #stuck here
+                        data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap)
                     else:
                         data = load_h5(v)
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
