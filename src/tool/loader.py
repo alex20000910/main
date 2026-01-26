@@ -633,8 +633,11 @@ class loadfiles(FileSequence):
                     else:
                         data = load_npz(v)
                 else:
+                    print('self.cec is ', self.cec)
                     if self.cec is None:
+                        print('files:', v)
                         data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap)
+                        print('loaded h5 with cec:', v)
                     else:
                         data = load_h5(v)
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
