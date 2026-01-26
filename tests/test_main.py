@@ -408,13 +408,13 @@ def test_VolumeSlicer(tk_environment):
 def test_call_cec(tk_environment):
     g, frame = tk_environment
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
-    lfs = loadfiles([os.path.join(os.path.dirname(__file__), 'test_cut.h5')], init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
+    lfs = loadfiles(os.path.join(os.path.dirname(__file__), 'test_cut.h5'), init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
     lfs = call_cec(g, lfs)
     assert isinstance(lfs.cec, CEC_Object)
     lfs.cec.info()
     lfs.cec.on_closing()
     clear(lfs)
-    lfs = loadfiles([os.path.join(os.path.dirname(__file__), 'data_cut.h5')], init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
+    lfs = loadfiles(os.path.join(os.path.dirname(__file__), 'data_cut.h5'), init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
     print('print lfs', lfs)
     lfs = call_cec(g, lfs)
     assert lfs.cec is None

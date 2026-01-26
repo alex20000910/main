@@ -458,6 +458,7 @@ def load_h5(path_to_file: str, **kwargs) -> xr.DataArray:
             e_high = str(e_high)+' eV (B.E.)'
         print('print aq:', aq)
         print('''if 'cec' in kwargs and 'f_npz' in kwargs:''', 'cec' in kwargs and 'f_npz' in kwargs)
+        print('f_npz:', f_npz)
         if aq == 'VolumeSlicer':
             if 'cec' in kwargs and 'f_npz' in kwargs:
                 if f_npz is False:
@@ -636,7 +637,7 @@ class loadfiles(FileSequence):
                     print('self.cec is ', self.cec)
                     if self.cec is None:
                         print('files:', v)
-                        data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap)
+                        data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap) #stuck here
                         print('loaded h5 with cec:', v)
                     else:
                         data = load_h5(v)
