@@ -640,12 +640,14 @@ class loadfiles(FileSequence):
                         data, self.cec, self.f_npz_, self.cec_pars = load_h5(v, cec=self.cec, f_npz=self.f_npz_, cmap=cmap) #stuck here
                         print('loaded h5 with cec:', v)
                     else:
+                        print('files:', v)
                         data = load_h5(v)
+                        print('loaded h5 with cec:', v)
                 if data.attrs['Acquisition'] in ['VolumeSlicer', 'DataCube']:
                     tf=True
                 clear(data)
-            except:
-                pass
+            except Exception as e:
+                print(f'\033[31mError loading file {v}: {e}\033[0m')
             if '.npz' in os.path.basename(v) or tf:
                 self.f_npz[i] = True
                 self.n.append(i)
