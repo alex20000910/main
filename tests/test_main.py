@@ -216,7 +216,7 @@ def test_spectrogram(tk_environment):
     s.rgo.get_tk_widget().event_generate('<ButtonRelease-1>', x=13, y=250)
     s.rgo.get_tk_widget().event_generate('<Button-3>', x=13, y=200)
     s.rgo.get_tk_widget().event_generate('<ButtonRelease-3>', x=13, y=200)
-    time.sleep(2)
+    s.tpg.update()
     s.grg.event_generate('<KeyPress>', keysym='Return')
     s.closing()
     s = spectrogram(path=path, name='external', app_pars=app_pars)
@@ -423,11 +423,12 @@ def test_CEC(tk_environment):
     if t_cec.gg.winfo_exists():
         t_cec.check()
     t_cec.info()
+    tfiles = files.copy()
     for i in files:
         if 'R2_0' in i:
-            files.remove(i)
-    lfs = loadfiles(files)
-    CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
+            tfiles.remove(i)
+    lfs = loadfiles(tfiles)
+    t_cec = CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
     
 def test_call_cec(tk_environment):
     g, frame = tk_environment
