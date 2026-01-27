@@ -1,5 +1,7 @@
 import pytest
+from PyQt5 import QtWidgets, QtCore
 import os, sys
+import time
 import queue
 from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
@@ -200,11 +202,32 @@ def test_spectrogram(tk_environment):
     s = spectrogram(data, name='internal', app_pars=app_pars)
     s.setdata(ev, y, dtype='smooth', unit='Counts')
     s.plot(g)
+    s.b_exp.invoke()
+    s.copy_button.invoke()
     s.info.event_generate('<FocusIn>')
-    for i in [s.rpo, s.tpo, s.rgo]:
-        i.get_tk_widget().event_generate('<Motion>', x=100, y=100)
-        i.get_tk_widget().event_generate('<Button-1>', x=100, y=100)
-        i.get_tk_widget().event_generate('<ButtonRelease-1>', x=100, y=100)
+    for i in [s.rpo, s.tpo]:
+        i.get_tk_widget().event_generate('<Button-1>', x=400, y=250)
+        i.get_tk_widget().event_generate('<Motion>', x=450, y=250)
+        i.get_tk_widget().event_generate('<ButtonRelease-1>', x=500, y=250)
+    s.rgo.get_tk_widget().event_generate('<Button-1>', x=13, y=436)
+    s.rgo.get_tk_widget().event_generate('<Motion>', x=13, y=300)
+    s.rgo.get_tk_widget().event_generate('<ButtonRelease-1>', x=13, y=300)
+    s.rgo.get_tk_widget().event_generate('<Button-1>', x=13, y=200)
+    s.rgo.get_tk_widget().event_generate('<Motion>', x=13, y=250)
+    s.rgo.get_tk_widget().event_generate('<ButtonRelease-1>', x=13, y=250)
+    s.tpg.event_generate('<Return>')
+    t=time.time()
+    while time.time()-t<60:
+        try:
+            if s.grg.winfo_exists():
+                break
+        except:
+            pass
+    if time.time()-t>=60:
+        print('timeout 60s')
+    else:
+        s.grg.event_generate('<Return>')
+    s.closing()
     s = spectrogram(path=path, name='external', app_pars=app_pars)
     s.plot(g)
     s.cf_up()
@@ -217,6 +240,12 @@ def test_spectrogram(tk_environment):
         s.update_plot()
         if option in ["Fermi-Dirac Fitting", "ERFC Fit"]:
             s.update_fit()
+            s.canvas.get_tk_widget().event_generate('<Motion>', x=765, y=300)
+            s.canvas.get_tk_widget().event_generate('<Button-1>', x=780, y=300)
+            s.canvas.get_tk_widget().event_generate('<ButtonRelease-1>', x=780, y=300)
+            s.canvas.get_tk_widget().event_generate('<Motion>', x=950, y=300)
+            s.canvas.get_tk_widget().event_generate('<Button-1>', x=860, y=300)
+            s.canvas.get_tk_widget().event_generate('<ButtonRelease-1>', x=860, y=300)
 
 def test_lfs_exp_casa():
     path = []
@@ -275,11 +304,12 @@ def test_VolumeSlicer(tk_environment):
     opath.append(path)
     odataframe = np.stack([i.transpose() for i in odata], axis=0, dtype=np.float32)
     r1 = np.array([15.0, 15.1, 15.5, 15.0, 15.1, 15.5])
+    r2 = np.array([0.0, 0.0, 0.0, 60.0, 60.0, 60.0])
     
     ev, phi = odata[0].indexes.values()
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     e_photon = float(odata[0].attrs['ExcitationEnergy'].removesuffix(' eV'))
-    vs = VolumeSlicer(parent=frame, path=opath, volume=odataframe, x=phi, y=r1, ev=ev, e_photon=e_photon, g=g, app_pars=app_pars)
+    vs = VolumeSlicer(parent=frame, path=opath, volume=odataframe, x=phi, y=r1, z=r2, ev=ev, e_photon=e_photon, g=g, app_pars=app_pars)
     vs.test = True
     vs.change_mode()
     assert vs.surface.shape ==(vs.density, vs.density)
@@ -311,10 +341,10 @@ def test_VolumeSlicer(tk_environment):
     vs.symmetry_(6)
     vs.r1_offset = 15.25 # for test boost the speed
     set_entry_value(vs.entry_r1_offset, str(vs.r1_offset))
-    set_entry_value(vs.cut_xy_x_entry, '1')
-    set_entry_value(vs.cut_xy_y_entry, '1')
-    set_entry_value(vs.cut_xy_dx_entry, '0.5')
-    set_entry_value(vs.cut_xy_dy_entry, '0.5')
+    set_entry_value(vs.cut_xy_x_entry, '0.35')
+    set_entry_value(vs.cut_xy_y_entry, '0.35')
+    set_entry_value(vs.cut_xy_dx_entry, '0.2')
+    set_entry_value(vs.cut_xy_dy_entry, '0.2')
     vs.stop_event = threading.Event()
     vs.set_xy_lim()
     vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
@@ -379,7 +409,6 @@ def test_CEC(tk_environment):
     g, frame = tk_environment
     from tool.MDC_Fitter import get_file_from_github
     from MDC_cut_utility import file_walk
-    import time
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     tg = wait(g, app_pars)
     tg.text('Preparing sample data...')
@@ -387,16 +416,33 @@ def test_CEC(tk_environment):
     tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0#id#0d758f03.h5")
     if os.path.exists(tpath)==False:
         get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
+    
+    r1files = []
+    r1files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0#id#86e3731a.h5'))
+    r1files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1#id#a57f6928.h5'))
+    r1files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.5#id#e19d4403.h5'))
+    r1files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0#id#86e3731a#d#20260127_161305.h5'))
     path = os.path.dirname(__file__)
     files = file_walk(path)
     for file in files:
         if 'simulated' not in file:
             files.remove(file)
+    for i in r1files:
+        if i in files:
+            files.remove(i)
     tg.done()
     tg = wait(g, app_pars)
     tg.text('Loading sample data...')
     lfs = loadfiles(files)
     tg.done()
+    t_cec = CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
+    time.sleep(2)
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
+    t_cec.info()
+    lfs = loadfiles(r1files)
     t_cec = CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
     time.sleep(2)
     if t_cec.gg.winfo_exists():
@@ -437,23 +483,46 @@ def test_get_hwnd():
     hwnd = get_hwnd()
     assert isinstance(hwnd, int)
 
+def set_point(so_fitter: SO_Fitter, r2: list=[20, 80, 206]):
+    so_fitter.v_r2.set(r2[0])
+    so_fitter.v_r1.set(20)
+    so_fitter.v_phi.set(0)
+    so_fitter.add_point()
+    so_fitter.v_r2.set(r2[1])
+    so_fitter.v_r1.set(22.5)
+    so_fitter.v_phi.set(-0.2)
+    so_fitter.add_point()
+    so_fitter.v_r2.set(r2[2])
+    so_fitter.v_r1.set(19.5)
+    so_fitter.v_phi.set(0)
+    so_fitter.add_point()
+    
 def test_SO_Fitter(tk_environment):
     g, frame = tk_environment
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     so_fitter = SO_Fitter(g, app_pars)
-    so_fitter.v_r2.set(20)
+    so_fitter.add_point()
+    set_point(so_fitter)
+    so_fitter.set_tolerance()
+    so_fitter._fit()
+    so_fitter.clear_points()
+    set_point(so_fitter, r2=[0, 31, 119])
+    so_fitter._fit()
+    so_fitter.clear_points()
+    set_point(so_fitter, r2=[0, 89, 182])
+    so_fitter._fit()
+    so_fitter.clear_points()
+    set_point(so_fitter, r2=[0, 121, 242])
+    so_fitter._fit()
+    so_fitter.clear_points()
+    so_fitter.v_r2.set(0)
     so_fitter.v_r1.set(20)
     so_fitter.v_phi.set(0)
     so_fitter.add_point()
-    so_fitter.v_r2.set(80)
+    so_fitter.v_r2.set(181)
     so_fitter.v_r1.set(22.5)
     so_fitter.v_phi.set(-0.2)
     so_fitter.add_point()
-    so_fitter.v_r2.set(206)
-    so_fitter.v_r1.set(19.5)
-    so_fitter.v_phi.set(0)
-    so_fitter.add_point()
-    so_fitter.set_tolerance()
     so_fitter._fit()
     so_fitter.clear_points()
     so_fitter.on_closing()
@@ -508,3 +577,57 @@ def test_ToolTip(tk_environment):
     tt.show_tooltip(event)
     tt.hide_tooltip(event)
     tt.update_position(event=event)
+
+@pytest.fixture
+def app(qtbot):
+    """創建 Qt 應用程式"""
+    test_app = QtWidgets.QApplication.instance()
+    if test_app is None:
+        test_app = QtWidgets.QApplication([])
+    return test_app
+
+def test_qt_widget(qtbot):
+    """測試 Qt widget"""
+    widget = QtWidgets.QPushButton("Click me")
+    qtbot.addWidget(widget)
+    
+    # 模擬點擊
+    qtbot.mouseClick(widget, QtCore.Qt.LeftButton)
+
+def test_MDC_Fitter(qtbot, monkeypatch):
+    from tool.MDC_Fitter import main
+    from PyQt5.QtWidgets import QMessageBox
+    # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
+    monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    
+    file = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    win = main(file=file)
+
+def test_DataViewer(qtbot, monkeypatch):
+    from tool.DataViewer import SliceBrowser
+    from PyQt5.QtWidgets import QMessageBox
+    # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
+    monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    
+    path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
+    win = SliceBrowser(path=path)
+
+def test_RawDataViewer(qtbot, monkeypatch):
+    from tool.RawDataViewer import main
+    from PyQt5.QtWidgets import QMessageBox
+    # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
+    monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    lfs = loadfiles(path, name='internal')
+    win = main(lfs)
