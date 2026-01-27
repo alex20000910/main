@@ -33,7 +33,7 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
-        run: pip install pytest pytest-cov
+        run: pip install pytest pytest-cov pytest-qt
         
       - name: Install test requirements
         run: pip install -r $env:GITHUB_WORKSPACE\tests\requirements.txt

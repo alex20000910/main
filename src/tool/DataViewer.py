@@ -13,7 +13,6 @@ import cv2, os, inspect
 import h5py, time, zarr
 from ctypes import windll
 import shutil, psutil, argparse
-import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
 import warnings
@@ -29,7 +28,7 @@ if __name__ == "__main__":
 
 sys.path.append(os.path.dirname(cdir))
 from tool.util import MenuIconManager
-from tool.qt_util import MainWindow, ProgressDialog
+from tool.qt_util import MainWindow, ProgressDialog, cmap_register
 
 def rotate(data: cv2.typing.MatLike, angle: float, size: tuple[int, int]) -> cv2.typing.MatLike:
     """
@@ -599,7 +598,7 @@ class SliceBrowser(MainWindow):
         # Create a custom colormap
         custom_cmap1 = LinearSegmentedColormap.from_list(
             'custom_cmap1', custom_colors1, N=256)
-        mpl.colormaps.register(custom_cmap1)
+        cmap_register(custom_cmap1)
 
         # Define your custom colors (as RGB tuples)
         # (value,(color))
@@ -614,7 +613,7 @@ class SliceBrowser(MainWindow):
         # Create a custom colormap
         custom_cmap2 = LinearSegmentedColormap.from_list(
             'custom_cmap2', custom_colors2, N=256)
-        mpl.colormaps.register(custom_cmap2)
+        cmap_register(custom_cmap2)
 
         # Define your custom colors (as RGB tuples)
         # (value,(color))
@@ -629,7 +628,7 @@ class SliceBrowser(MainWindow):
         # Create a custom colormap
         custom_cmap3 = LinearSegmentedColormap.from_list(
             'custom_cmap3', custom_colors3, N=256)
-        mpl.colormaps.register(custom_cmap3)
+        cmap_register(custom_cmap3)
 
         # Define your custom colors (as RGB tuples)
         # (value,(color))
@@ -644,7 +643,7 @@ class SliceBrowser(MainWindow):
         # Create a custom colormap
         custom_cmap4 = LinearSegmentedColormap.from_list(
             'custom_cmap4', custom_colors4, N=256)
-        mpl.colormaps.register(custom_cmap4)
+        cmap_register(custom_cmap4)
         
         # Define your custom colors (as RGB tuples)
         # (value,(color))
@@ -657,7 +656,7 @@ class SliceBrowser(MainWindow):
         # Create a custom colormap
         prevac_cmap = LinearSegmentedColormap.from_list(
             'prevac_cmap', prevac_colors, N=256)
-        mpl.colormaps.register(prevac_cmap)
+        cmap_register(prevac_cmap)
         
         self.cmap_colors_dict={
             'prevac_cmap': len(prevac_cmap._segmentdata['red']),

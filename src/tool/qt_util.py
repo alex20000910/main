@@ -4,6 +4,8 @@ import time
 from tool.util import IconManager
 from PyQt5.QtGui import QPixmap, QIcon
 from base64 import b64decode
+import matplotlib as mpl
+from matplotlib.colors import Colormap
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -143,3 +145,9 @@ class ProgressDialog(QDialog):
             time.sleep(0.5)
         self.raise_()
         self.activateWindow()
+
+def cmap_register(cmap: Colormap):
+    try:
+        mpl.colormaps.register(cmap)
+    except Exception as e:
+        print(f"Colormap {cmap.name} registration failed: {e}")

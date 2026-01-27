@@ -1,5 +1,5 @@
-from tkinter import N, NO
 import pytest
+from PyQt5 import QtWidgets, QtCore
 import os, sys
 import time
 import queue
@@ -577,3 +577,57 @@ def test_ToolTip(tk_environment):
     tt.show_tooltip(event)
     tt.hide_tooltip(event)
     tt.update_position(event=event)
+
+@pytest.fixture
+def app(qtbot):
+    """創建 Qt 應用程式"""
+    test_app = QtWidgets.QApplication.instance()
+    if test_app is None:
+        test_app = QtWidgets.QApplication([])
+    return test_app
+
+def test_qt_widget(qtbot):
+    """測試 Qt widget"""
+    widget = QtWidgets.QPushButton("Click me")
+    qtbot.addWidget(widget)
+    
+    # 模擬點擊
+    qtbot.mouseClick(widget, QtCore.Qt.LeftButton)
+
+def test_MDC_Fitter(qtbot, monkeypatch):
+    from tool.MDC_Fitter import main
+    from PyQt5.QtWidgets import QMessageBox
+    # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
+    monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    
+    file = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    win = main(file=file)
+
+def test_DataViewer(qtbot, monkeypatch):
+    from tool.DataViewer import SliceBrowser
+    from PyQt5.QtWidgets import QMessageBox
+    # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
+    monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    
+    path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
+    win = SliceBrowser(path=path)
+
+def test_RawDataViewer(qtbot, monkeypatch):
+    from tool.RawDataViewer import main
+    from PyQt5.QtWidgets import QMessageBox
+    # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
+    monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    lfs = loadfiles(path, name='internal')
+    win = main(lfs)

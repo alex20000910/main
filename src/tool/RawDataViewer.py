@@ -30,7 +30,7 @@ for i in range(5):
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles
-from tool.qt_util import MainWindow
+from tool.qt_util import MainWindow, cmap_register
 
 def get_hwnd():
     try:
@@ -672,7 +672,7 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
         # Create a custom colormap
         custom_cmap1 = LinearSegmentedColormap.from_list(
             'custom_cmap1', custom_colors1, N=256)
-        mpl.colormaps.register(custom_cmap1)
+        cmap_register(custom_cmap1)
 
         # Define your custom colors (as RGB tuples)
         # (value,(color))
@@ -687,7 +687,7 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
         # Create a custom colormap
         custom_cmap2 = LinearSegmentedColormap.from_list(
             'custom_cmap2', custom_colors2, N=256)
-        mpl.colormaps.register(custom_cmap2)
+        cmap_register(custom_cmap2)
 
         # Define your custom colors (as RGB tuples)
         # (value,(color))
@@ -702,7 +702,7 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
         # Create a custom colormap
         custom_cmap3 = LinearSegmentedColormap.from_list(
             'custom_cmap3', custom_colors3, N=256)
-        mpl.colormaps.register(custom_cmap3)
+        cmap_register(custom_cmap3)
 
         # Define your custom colors (as RGB tuples)
         # (value,(color))
@@ -717,7 +717,7 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
         # Create a custom colormap
         custom_cmap4 = LinearSegmentedColormap.from_list(
             'custom_cmap4', custom_colors4, N=256)
-        mpl.colormaps.register(custom_cmap4)
+        cmap_register(custom_cmap4)
         
         # Define your custom colors (as RGB tuples)
         # (value,(color))
@@ -730,7 +730,7 @@ X-Axis: {self.data.phi.values.min()} to {self.data.phi.values.max()}, {len(self.
         # Create a custom colormap
         prevac_cmap = LinearSegmentedColormap.from_list(
             'prevac_cmap', prevac_colors, N=256)
-        mpl.colormaps.register(prevac_cmap)
+        cmap_register(prevac_cmap)
         
         self.cmap_colors_dict={
             'prevac_cmap': len(prevac_cmap._segmentdata['red']),
