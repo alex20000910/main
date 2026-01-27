@@ -396,15 +396,6 @@ def test_VolumeSlicer(tk_environment):
     gcp.on_closing()
     vs.change_mode()  # back to real mode
 
-def test_DataViewer():
-    from tool.DataViewer import get_hwnd, disp_zarr_save, load_zarr
-    hwnd = get_hwnd()
-    assert isinstance(hwnd, int)
-    path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
-    output = os.path.join(os.path.dirname(__file__), 'test_cube_disp.zarr')
-    mode, shape, xmin, xmax, ymin, ymax, E = load_zarr(path)
-    disp_zarr_save(path, output, shape, max_val=10750)
-
 def test_CEC(tk_environment):
     g, frame = tk_environment
     from tool.MDC_Fitter import get_file_from_github
@@ -607,7 +598,7 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win = main(file=file)
 
 def test_DataViewer(qtbot, monkeypatch):
-    from tool.DataViewer import SliceBrowser
+    from tool.DataViewer import SliceBrowser, get_hwnd, disp_zarr_save, load_zarr
     from PyQt5.QtWidgets import QMessageBox
     # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
     monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
@@ -615,8 +606,15 @@ def test_DataViewer(qtbot, monkeypatch):
     monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
     
+    hwnd = get_hwnd()
+    assert isinstance(hwnd, int)
     path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
-    win = SliceBrowser(path=path)
+    output = os.path.join(os.path.dirname(__file__), 'test_cube_disp.zarr')
+    mode, shape, xmin, xmax, ymin, ymax, E = load_zarr(path)
+    disp_zarr_save(path, output, shape, max_val=10750)
+    
+    path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
+    win = SliceBrowser(path=path, hwnd=hwnd)
 
 def test_RawDataViewer(qtbot, monkeypatch):
     from tool.RawDataViewer import main
