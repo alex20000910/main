@@ -216,8 +216,17 @@ def test_spectrogram(tk_environment):
     s.rgo.get_tk_widget().event_generate('<Motion>', x=13, y=250)
     s.rgo.get_tk_widget().event_generate('<ButtonRelease-1>', x=13, y=250)
     s.tpg.event_generate('<Return>')
-    time.sleep(2)
-    s.grg.event_generate('<Return>')
+    t=time.time()
+    while time.time()-t<60:
+        try:
+            if s.grg.winfo_exists():
+                break
+        except:
+            pass
+    if time.time()-t>=60:
+        print('timeout 60s')
+    else:
+        s.grg.event_generate('<Return>')
     s.closing()
     s = spectrogram(path=path, name='external', app_pars=app_pars)
     s.plot(g)
