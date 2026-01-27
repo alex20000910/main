@@ -1,3 +1,4 @@
+from tkinter import N, NO
 import pytest
 import os, sys
 import time
@@ -406,11 +407,20 @@ def test_CEC(tk_environment):
     tpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'test_data_temp', rf"simulated_R1_15.0_R2_0#id#0d758f03.h5")
     if os.path.exists(tpath)==False:
         get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
+    
+    r1files = []
+    r1files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0#id#86e3731a.h5'))
+    r1files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1#id#a57f6928.h5'))
+    r1files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.5#id#e19d4403.h5'))
+    r1files.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0#id#86e3731a#d#20260127_161305.h5'))
     path = os.path.dirname(__file__)
     files = file_walk(path)
     for file in files:
         if 'simulated' not in file:
             files.remove(file)
+    for i in r1files:
+        if i in files:
+            files.remove(i)
     tg.done()
     tg = wait(g, app_pars)
     tg.text('Loading sample data...')
@@ -423,12 +433,14 @@ def test_CEC(tk_environment):
     if t_cec.gg.winfo_exists():
         t_cec.check()
     t_cec.info()
-    tfiles = files.copy()
-    for i in files:
-        if 'R2_0' in i:
-            tfiles.remove(i)
-    lfs = loadfiles(tfiles)
+    lfs = loadfiles(r1files)
     t_cec = CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
+    time.sleep(2)
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
+    if t_cec.gg.winfo_exists():
+        t_cec.check()
+    t_cec.info()
     
 def test_call_cec(tk_environment):
     g, frame = tk_environment
