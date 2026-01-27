@@ -1,5 +1,6 @@
 import pytest
 import os, sys
+import time
 import queue
 from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
@@ -214,6 +215,8 @@ def test_spectrogram(tk_environment):
     s.rgo.get_tk_widget().event_generate('<Motion>', x=13, y=250)
     s.rgo.get_tk_widget().event_generate('<ButtonRelease-1>', x=13, y=250)
     s.rgo.get_tk_widget().event_generate('<Button-3>', x=13, y=200)
+    s.rgo.get_tk_widget().event_generate('<ButtonRelease-3>', x=13, y=200)
+    time.sleep(2)
     s.grg.event_generate('<Return>')
     s.closing()
     s = spectrogram(path=path, name='external', app_pars=app_pars)
@@ -396,7 +399,6 @@ def test_CEC(tk_environment):
     g, frame = tk_environment
     from tool.MDC_Fitter import get_file_from_github
     from MDC_cut_utility import file_walk
-    import time
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     tg = wait(g, app_pars)
     tg.text('Preparing sample data...')
@@ -421,6 +423,11 @@ def test_CEC(tk_environment):
     if t_cec.gg.winfo_exists():
         t_cec.check()
     t_cec.info()
+    for i in files:
+        if 'R2_0' in i:
+            files.remove(i)
+    lfs = loadfiles(files)
+    CEC(g, lfs.path, cmap='viridis', app_pars=app_pars)
     
 def test_call_cec(tk_environment):
     g, frame = tk_environment
@@ -432,7 +439,7 @@ def test_call_cec(tk_environment):
     lfs.cec.on_closing()
     lfs = loadfiles(os.path.join(os.path.dirname(__file__), 'data_cut.h5'), init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
     lfs = call_cec(g, lfs, test=True)
-    # assert lfs.cec is None
+    assert lfs.cec is None
 
 def test_interp():
     y = interp(0, [1, 2], [2, 3])
