@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.5.10"
-__release_date__ = "2026-01-26"
+__version__ = "8.5.11"
+__release_date__ = "2026-01-27"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -448,6 +448,8 @@ except ImportError as e:
     print(e)
     print('Some source files missing. Downloading...')
     get_src()
+    restart()
+    quit()
 
 if __name__ == '__main__':
     pid = os.getpid()
