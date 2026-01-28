@@ -38,6 +38,7 @@ if not os.path.exists(os.path.join(cdir, '.MDC_cut')):
         os.system(f'copy "{src}" "{dst}" > nul')
 os.system('attrib +h +s .MDC_cut')
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
+sys.path.append(os.path.join(cdir, '.MDC_cut', 'tool'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
