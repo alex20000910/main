@@ -7,38 +7,38 @@ import time
 import queue
 from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
-# sys.path.append(tdir)
-# sys.path.append(os.path.dirname(tdir))
+sys.path.append(tdir)
+sys.path.append(os.path.dirname(tdir))
 cdir = os.path.dirname(os.path.dirname(__file__))
 if not os.path.exists(os.path.join(cdir, '.MDC_cut')):
     os.mkdir(os.path.join(cdir, '.MDC_cut'))
-    url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
-           r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
-           r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/util.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/qt_util.py"]
-    for i, v in enumerate(url):
-        if i < 3:
-            src = os.path.join(cdir, 'src', os.path.basename(v))
-            dst = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
-        else:
-            src = os.path.join(cdir, 'src', 'tool', os.path.basename(v))
-            dst = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
-        os.system(f'copy "{src}" "{dst}" > nul')
-os.system('attrib +h +s .MDC_cut')
-sys.path.append(os.path.join(cdir, '.MDC_cut'))
-sys.path.append(os.path.join(cdir, '.MDC_cut', 'tool'))
+#     url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
+#            r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/util.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py",
+#            r"https://github.com/alex20000910/main/blob/main/src/tool/qt_util.py"]
+#     for i, v in enumerate(url):
+#         if i < 3:
+#             src = os.path.join(cdir, 'src', os.path.basename(v))
+#             dst = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
+#         else:
+#             src = os.path.join(cdir, 'src', 'tool', os.path.basename(v))
+#             dst = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
+#         os.system(f'copy "{src}" "{dst}" > nul')
+# os.system('attrib +h +s .MDC_cut')
+# sys.path.append(os.path.join(cdir, '.MDC_cut'))
+# sys.path.append(os.path.join(cdir, '.MDC_cut', 'tool'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
