@@ -40,7 +40,7 @@ jobs:
 
       - name: Run tests
         env:
-          PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}/.MDC_cut:${{ github.workspace }}/.MDC_cut/tool
+          PYTHONPATH: ${{ github.workspace }}\src:${{ github.workspace }}\.MDC_cut:${{ github.workspace }}\.MDC_cut\tool
         run: pytest
         continue-on-error: true
 
