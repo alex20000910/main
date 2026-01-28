@@ -39,6 +39,8 @@ jobs:
         run: pip install -r $env:GITHUB_WORKSPACE\tests\requirements.txt
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}/.MDC_cut:${{ github.workspace }}/.MDC_cut/tool
         run: pytest
         continue-on-error: true
 
