@@ -1,15 +1,43 @@
 import pytest
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import QPointF, QPoint, Qt
+from PyQt5.QtGui import QWheelEvent
 import os, sys
 import time
 import queue
 from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
-sys.path.append(tdir)
-sys.path.append(os.path.dirname(tdir))
+# sys.path.append(tdir)
+# sys.path.append(os.path.dirname(tdir))
 cdir = os.path.dirname(os.path.dirname(__file__))
 if not os.path.exists(os.path.join(cdir, '.MDC_cut')):
     os.mkdir(os.path.join(cdir, '.MDC_cut'))
+    url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
+           r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
+           r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/util.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/qt_util.py"]
+    for i, v in enumerate(url):
+        if i < 3:
+            src = os.path.join(cdir, 'src', os.path.basename(v))
+            dst = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
+        else:
+            src = os.path.join(cdir, 'src', 'tool', os.path.basename(v))
+            dst = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
+        os.system(f'copy "{src}" "{dst}" > nul')
+os.system('attrib +h +s .MDC_cut')
+sys.path.append(os.path.join(cdir, '.MDC_cut'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
@@ -624,8 +652,86 @@ def test_RawDataViewer(qtbot, monkeypatch):
     monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    monkeypatch.setattr(QtWidgets.QDialog, 'exec_', lambda self: QMessageBox.Ok)
     path = []
     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     lfs = loadfiles(path, name='internal')
-    win = main(lfs)
+    win = main(lfs, test=True)
+    qtbot.waitExposed(win)
+    event = QtCore.QEvent(QtCore.QEvent.MouseButtonPress)
+    win.energy_mode(event)
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動到 plot widget
+    plot_widget = win.plot.viewport()
+    center = plot_widget.rect().center()
+    plot_widgetx = win.plotx.viewport()
+    centerx = plot_widgetx.rect().center()
+    
+    qtbot.mouseMove(plot_widget, pos=QPoint(250, 230))
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動到 plot widget
+    qtbot.mouseMove(plot_widget, pos=center)
+    qtbot.wait(100)
+    
+    # 模擬鼠標點擊
+    qtbot.mouseClick(plot_widget, Qt.LeftButton, pos=center)
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動
+    qtbot.mouseMove(plot_widgetx, pos=centerx)
+    qtbot.wait(100)
+    
+    win.range_changed()
+    qtbot.wait(100)
+    
+    
+    # 模擬鼠標移動到 plot widget
+    qtbot.mouseMove(plot_widget, pos=QPoint(250, 230))
+    qtbot.wait(100)
+    
+    # 模擬鼠標點擊
+    qtbot.mouseClick(plot_widget, Qt.LeftButton, pos=QPoint(250, 230))
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動到 plot widget
+    qtbot.mouseMove(plot_widget, pos=QPoint(255, 235))
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動
+    qtbot.mouseMove(plot_widgetx, pos=centerx)
+    qtbot.wait(100)
+    
+    win.range_changed()
+    qtbot.wait(100)
+    
+    wheel_event = QWheelEvent(
+        QPointF(center),  # pos (滑鼠位置)
+        QPointF(center),  # globalPos (全局位置)
+        QPoint(0, 0),     # pixelDelta
+        QPoint(0, 120),   # angleDelta (正值向上滾動,負值向下滾動)
+        Qt.NoButton,      # buttons
+        Qt.NoModifier,    # modifiers
+        Qt.ScrollUpdate,  # phase
+        False            # inverted
+    )
+    win.text_display.wheelEvent(wheel_event)
+    qtbot.wait(100)
+    
+    wheel_event = QWheelEvent(
+        QPointF(center),  # pos (滑鼠位置)
+        QPointF(center),  # globalPos (全局位置)
+        QPoint(0, 0),     # pixelDelta
+        QPoint(0, -120),   # angleDelta (正值向上滾動,負值向下滾動)
+        Qt.NoButton,      # buttons
+        Qt.NoModifier,    # modifiers
+        Qt.ScrollUpdate,  # phase
+        False            # inverted
+    )
+    win.text_display.wheelEvent(wheel_event)
+    qtbot.wait(100)
+
+    win.load_file(path)
+    qtbot.wait(100)
