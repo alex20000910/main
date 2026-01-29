@@ -621,6 +621,42 @@ def test_qt_widget(qtbot):
     # 模擬點擊
     qtbot.mouseClick(widget, QtCore.Qt.LeftButton)
 
+def drag_bl1(qtbot, plot_widget):
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(433, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(270, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(270, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(470, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(470, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(650, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(650, 300))
+    qtbot.wait(50)
+
+def drag_bl2(qtbot, plot_widget):
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(439, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(270, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(270, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(475, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(480, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(650, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(650, 300))
+    qtbot.wait(50)
+    
 def test_MDC_Fitter(qtbot, monkeypatch):
     from tool.MDC_Fitter import main
     from PyQt5.QtWidgets import QMessageBox
@@ -629,10 +665,57 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getOpenFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'), ''))
     
     file = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
     win = main(file=file)
     qtbot.waitExposed(win)
+    win.load_file()
+    qtbot.wait(100)
+    qtbot.keyClick(win, QtCore.Qt.Key_Right)
+    qtbot.keyClick(win, QtCore.Qt.Key_Left)
+    qtbot.wait(100)
+    
+    win.slider.setValue(200)
+    win.fmcgl2()
+    plot_widget = win.plot.viewport()
+    center = plot_widget.rect().center()
+
+    drag_bl1(qtbot, plot_widget)
+    win.slider.setValue(200)
+    win.fmcgl2()
+    qtbot.wait(100)
+    drag_bl2(qtbot, plot_widget)
+    qtbot.wait(100)
+    win.fmfall()
+    qtbot.wait(2)
+    
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=center)
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(450, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=center)
+    qtbot.wait(50)
+    qtbot.keyClick(win, QtCore.Qt.Key_Up)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Enter)
+    qtbot.wait(500)
+    
+    
+    win.mflind()
+    qtbot.wait(100)
+    win.mfrind()
+    qtbot.wait(100)
+    
+    win.show_shortcuts()
     win.close()
 
 def test_DataViewer(qtbot, monkeypatch):
