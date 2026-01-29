@@ -3,42 +3,43 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QPointF, QPoint, Qt
 from PyQt5.QtGui import QWheelEvent
 import os, sys
+import shutil, inspect
 import time
 import queue
 from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
-sys.path.append(tdir)
-sys.path.append(os.path.dirname(tdir))
+sys.path.insert(0, tdir)
+sys.path.insert(0, os.path.dirname(tdir))
 cdir = os.path.dirname(os.path.dirname(__file__))
 if not os.path.exists(os.path.join(cdir, '.MDC_cut')):
     os.mkdir(os.path.join(cdir, '.MDC_cut'))
-#     url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
-#            r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/util.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py",
-#            r"https://github.com/alex20000910/main/blob/main/src/tool/qt_util.py"]
-#     for i, v in enumerate(url):
-#         if i < 3:
-#             src = os.path.join(cdir, 'src', os.path.basename(v))
-#             dst = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
-#         else:
-#             src = os.path.join(cdir, 'src', 'tool', os.path.basename(v))
-#             dst = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
-#         os.system(f'copy "{src}" "{dst}" > nul')
-# os.system('attrib +h +s .MDC_cut')
-# sys.path.append(os.path.join(cdir, '.MDC_cut'))
-# sys.path.append(os.path.join(cdir, '.MDC_cut', 'tool'))
+    url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
+           r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
+           r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/util.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/qt_util.py"]
+    for i, v in enumerate(url):
+        if i < 3:
+            src = os.path.join(cdir, 'src', os.path.basename(v))
+            dst = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
+        else:
+            src = os.path.join(cdir, 'src', 'tool', os.path.basename(v))
+            dst = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
+        os.system(f'copy "{src}" "{dst}" > nul')
+os.system('attrib +h +s .MDC_cut')
+sys.path.append(os.path.join(cdir, '.MDC_cut'))
+sys.path.append(os.path.join(cdir, '.MDC_cut', 'tool'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
@@ -294,7 +295,6 @@ def test_lfs_exp_casa():
     explfs.export_casa(path)
 
 def init_tempdir():
-    import inspect, shutil
     tempdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     tempdir = os.path.dirname(tempdir)
     os.chdir(os.path.join(tempdir))
@@ -313,7 +313,6 @@ def test_VolumeSlicer(tk_environment):
     import cpuinfo
     import psutil
     import zarr
-    import inspect
     odpi=g.winfo_fpixels('1i')
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'odpi')
     with open(path, 'w') as f:
@@ -633,6 +632,8 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     
     file = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
     win = main(file=file)
+    qtbot.waitExposed(win)
+    win.close()
 
 def test_DataViewer(qtbot, monkeypatch):
     from tool.DataViewer import SliceBrowser, get_hwnd, disp_zarr_save, load_zarr
@@ -642,6 +643,7 @@ def test_DataViewer(qtbot, monkeypatch):
     monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ''))
     
     hwnd = get_hwnd()
     assert isinstance(hwnd, int)
@@ -652,6 +654,35 @@ def test_DataViewer(qtbot, monkeypatch):
     
     path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
     win = SliceBrowser(path=path, hwnd=hwnd)
+    qtbot.waitExposed(win)
+    win.on_radio_button_changed("E")
+    qtbot.wait(100)
+    win.on_radio_button_changed("kx")
+    qtbot.wait(100)
+    win.on_radio_button_changed("ky")
+    qtbot.wait(100)
+    win.rotate_slider.setValue(90)
+    win.sync_rotate_edit()
+    qtbot.wait(100)
+    win.apply_rotation()
+    shutil.rmtree(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ignore_errors=True)
+    win.export_slice()
+    win.on_radio_button_changed("kx")
+    qtbot.wait(100)
+    shutil.rmtree(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ignore_errors=True)
+    win.export_slice()
+    shutil.rmtree(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ignore_errors=True)
+    win.save_as_zarr_disp()    
+    win.close()
+    
+    win = SliceBrowser(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), hwnd)
+    qtbot.waitExposed(win)
+    win.close()
+    
+    shutil.rmtree(os.path.join(path, '__disp__.zarr'), ignore_errors=True)
+    win = SliceBrowser(path=path, hwnd=hwnd)
+    qtbot.waitExposed(win)
+    win.close()
 
 def test_RawDataViewer(qtbot, monkeypatch):
     from tool.RawDataViewer import main
