@@ -430,7 +430,7 @@ def test_VolumeSlicer(tk_environment):
     gcp.save_cut(path=os.path.join(os.path.dirname(__file__), 'test_cut.h5'))
     gcp.save_cube(path=os.path.join(os.path.dirname(__file__), 'test_cube.zarr'))
     gcp.on_closing()
-    vs.change_mode()  # back to real mode
+    vs.change_mode()
 
 def test_CEC(tk_environment):
     g, frame = tk_environment
@@ -659,7 +659,11 @@ def test_DataViewer(qtbot, monkeypatch):
     qtbot.wait(100)
     win.on_radio_button_changed("kx")
     qtbot.wait(100)
+    win.export_slice()
+    qtbot.wait(100)
     win.on_radio_button_changed("ky")
+    qtbot.wait(100)
+    win.export_slice()
     qtbot.wait(100)
     win.rotate_slider.setValue(90)
     win.sync_rotate_edit()
@@ -672,11 +676,17 @@ def test_DataViewer(qtbot, monkeypatch):
     shutil.rmtree(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ignore_errors=True)
     win.export_slice()
     shutil.rmtree(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ignore_errors=True)
-    win.save_as_zarr_disp()    
+    win.save_as_zarr_disp()
     win.close()
     
     win = SliceBrowser(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), hwnd)
     qtbot.waitExposed(win)
+    win.bin_e_spin.setValue(5)
+    win.on_bin_change()
+    win.on_radio_button_changed("kx")
+    win.on_bin_change()
+    win.on_radio_button_changed("ky")
+    win.on_bin_change()
     win.close()
     
     shutil.rmtree(os.path.join(path, '__disp__.zarr'), ignore_errors=True)
