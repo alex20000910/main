@@ -40,8 +40,9 @@ def get_hwnd():
     except Exception:
         return find_window()
 class c_fermi_level(QDialog):
-    def __init__(self, vfe, icon):
+    def __init__(self, vfe, icon, test=None):
         super().__init__()
+        self.test = test
         self.setStyleSheet("""
             QWidget {
                 background-color: #222;
@@ -107,13 +108,17 @@ class c_fermi_level(QDialog):
         self.vfe = vfe
         self.eflag = eflag
         self.close()
-        QApplication.processEvents()
+        if self.test:
+            self.exec_()
+        else:
+            QApplication.processEvents()
 
 class main(MainWindow):
-    def __init__(self, lfs: FileSequence, hwnd=None):
+    def __init__(self, lfs: FileSequence, hwnd=None, test=False):
         super().__init__()
         self.lfs = lfs
         self.hwnd=hwnd
+        self.test = test
         self.setWindowTitle("Raw Data Viewer")
         self.setAcceptDrops(True)
         # self.showFullScreen()
@@ -318,8 +323,9 @@ class main(MainWindow):
         self.showMaximized()
         self.w, self.h = self.width(), self.height()
     
-    def load_file(self):
-        file = QFileDialog.getOpenFileNames(self, "Open Data File", "", "HDF5 Files (*.h5 *.hdf5);;NPZ Files (*.npz);;JSON Files (*.json);;TXT Files (*.txt)")[0]
+    def load_file(self, file=None):
+        if file is None:
+            file = QFileDialog.getOpenFileNames(self, "Open Data File", "", "HDF5 Files (*.h5 *.hdf5);;NPZ Files (*.npz);;JSON Files (*.json);;TXT Files (*.txt)")[0]
         if file:
             self.lfs = loadfiles(file, name='external')
             self.file_name.clear()
@@ -328,8 +334,11 @@ class main(MainWindow):
     
     def energy_mode(self, event):
         if self.set_vfe is None:
-            self.set_vfe = c_fermi_level(self.vfe, self.icon)
-            QApplication.activeWindow().activateWindow()
+            if self.test:
+                self.set_vfe = c_fermi_level(self.vfe, self.icon, self.test)
+            else:
+                self.set_vfe = c_fermi_level(self.vfe, self.icon)
+                QApplication.activeWindow().activateWindow()
             self.set_vfe.exec_()
             self.vfe, self.eflag = self.set_vfe.vfe, self.set_vfe.eflag
             if self.eflag:

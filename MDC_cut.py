@@ -179,9 +179,11 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
 
     try:
         download(url, out_path, args.token)
+        return 0
     except Exception as e:
         print("Failed to download source file:", e, file=sys.stderr)
         print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
+        return -1
 
 def get_src(ver=False):
     url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
@@ -205,9 +207,10 @@ def get_src(ver=False):
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
         else:
             out_path = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
-        get_file_from_github(v, out_path)
+        status = get_file_from_github(v, out_path)
         if ver:
             break
+    return status
 
 def cal_ver(ver: str) -> int:
     '''
@@ -447,9 +450,12 @@ try:
 except ImportError as e:
     print(e)
     print('Some source files missing. Downloading...')
-    get_src()
-    restart()
-    quit()
+    status = get_src()
+    if status == 0:
+        restart()
+        quit()
+    else:
+        input('\n\033[31mPlease check your network connection!\033[0m\n')
 
 if __name__ == '__main__':
     pid = os.getpid()

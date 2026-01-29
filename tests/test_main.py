@@ -1,15 +1,45 @@
 import pytest
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import QPointF, QPoint, Qt
+from PyQt5.QtGui import QWheelEvent
 import os, sys
+import shutil, inspect
 import time
 import queue
 from typing import Literal, override
 tdir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src')
-sys.path.append(tdir)
-sys.path.append(os.path.dirname(tdir))
+sys.path.insert(0, tdir)
+sys.path.insert(0, os.path.dirname(tdir))
 cdir = os.path.dirname(os.path.dirname(__file__))
 if not os.path.exists(os.path.join(cdir, '.MDC_cut')):
     os.mkdir(os.path.join(cdir, '.MDC_cut'))
+    url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
+           r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
+           r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/util.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py",
+           r"https://github.com/alex20000910/main/blob/main/src/tool/qt_util.py"]
+    for i, v in enumerate(url):
+        if i < 3:
+            src = os.path.join(cdir, 'src', os.path.basename(v))
+            dst = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
+        else:
+            src = os.path.join(cdir, 'src', 'tool', os.path.basename(v))
+            dst = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
+        os.system(f'copy "{src}" "{dst}" > nul')
+os.system('attrib +h +s .MDC_cut')
+sys.path.append(os.path.join(cdir, '.MDC_cut'))
+sys.path.append(os.path.join(cdir, '.MDC_cut', 'tool'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
@@ -208,10 +238,18 @@ def test_spectrogram(tk_environment):
     for i in [s.rpo, s.tpo]:
         i.get_tk_widget().event_generate('<Button-1>', x=400, y=250)
         i.get_tk_widget().event_generate('<Motion>', x=450, y=250)
+        i.get_tk_widget().event_generate('<Motion>', x=480, y=250)
         i.get_tk_widget().event_generate('<ButtonRelease-1>', x=500, y=250)
+        i.get_tk_widget().event_generate('<Button-3>', x=400, y=250)
+        i.get_tk_widget().event_generate('<ButtonRelease-3>', x=400, y=250)
+        i.get_tk_widget().event_generate('<Button-1>', x=450, y=250)
+        i.get_tk_widget().event_generate('<ButtonRelease-1>', x=450, y=250)
     s.rgo.get_tk_widget().event_generate('<Button-1>', x=13, y=436)
     s.rgo.get_tk_widget().event_generate('<Motion>', x=13, y=300)
     s.rgo.get_tk_widget().event_generate('<ButtonRelease-1>', x=13, y=300)
+    s.rgo.get_tk_widget().event_generate('<Button-1>', x=13, y=40)
+    s.rgo.get_tk_widget().event_generate('<Motion>', x=13, y=150)
+    s.rgo.get_tk_widget().event_generate('<ButtonRelease-1>', x=13, y=150)
     s.rgo.get_tk_widget().event_generate('<Button-1>', x=13, y=200)
     s.rgo.get_tk_widget().event_generate('<Motion>', x=13, y=250)
     s.rgo.get_tk_widget().event_generate('<ButtonRelease-1>', x=13, y=250)
@@ -257,7 +295,6 @@ def test_lfs_exp_casa():
     explfs.export_casa(path)
 
 def init_tempdir():
-    import inspect, shutil
     tempdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     tempdir = os.path.dirname(tempdir)
     os.chdir(os.path.join(tempdir))
@@ -276,7 +313,6 @@ def test_VolumeSlicer(tk_environment):
     import cpuinfo
     import psutil
     import zarr
-    import inspect
     odpi=g.winfo_fpixels('1i')
     path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'odpi')
     with open(path, 'w') as f:
@@ -394,16 +430,7 @@ def test_VolumeSlicer(tk_environment):
     gcp.save_cut(path=os.path.join(os.path.dirname(__file__), 'test_cut.h5'))
     gcp.save_cube(path=os.path.join(os.path.dirname(__file__), 'test_cube.zarr'))
     gcp.on_closing()
-    vs.change_mode()  # back to real mode
-
-def test_DataViewer():
-    from tool.DataViewer import get_hwnd, disp_zarr_save, load_zarr
-    hwnd = get_hwnd()
-    assert isinstance(hwnd, int)
-    path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
-    output = os.path.join(os.path.dirname(__file__), 'test_cube_disp.zarr')
-    mode, shape, xmin, xmax, ymin, ymax, E = load_zarr(path)
-    disp_zarr_save(path, output, shape, max_val=10750)
+    vs.change_mode()
 
 def test_CEC(tk_environment):
     g, frame = tk_environment
@@ -540,6 +567,8 @@ def test_mfit_data():
     ml = mloader(st, data, ev, phi, rdd, cdir, lowlim)
     ml.loadparam('0', '0', True, 1)
     ml.loadmfit_(os.path.join(cdir, 'tests', 'rev_PE10A20f -170 VIV_pass.vms'))
+    ml.loadmfit_re(os.path.join(cdir, 'tests', 'PE10A20f -170 VIV.vms'))
+    ml.loadmfit_2p(os.path.join(cdir, 'tests', 'rev_PE10A20f -170 VIV.vms'))
     ml.loadmfit_(os.path.join(cdir, 'tests', 'simulated_R1_14.0_R2_0_mfit.npz'))
     mdata = mfit_data(cdir=cdir)
     ko, fev, rpos, ophi, fwhm, mpos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, fpr, mdet = mdata.get()
@@ -594,6 +623,50 @@ def test_qt_widget(qtbot):
     # 模擬點擊
     qtbot.mouseClick(widget, QtCore.Qt.LeftButton)
 
+def drag_bl1(qtbot, plot_widget):
+    qtbot.mouseMove(plot_widget, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(433, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(270, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(270, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(470, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(470, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(470, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(650, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(650, 300))
+    qtbot.wait(50)
+
+def drag_bl2(qtbot, plot_widget):
+    qtbot.mouseMove(plot_widget, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(439, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(270, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(270, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(475, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(475, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(480, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(650, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(650, 300))
+    qtbot.wait(50)
+    
 def test_MDC_Fitter(qtbot, monkeypatch):
     from tool.MDC_Fitter import main
     from PyQt5.QtWidgets import QMessageBox
@@ -602,21 +675,143 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getOpenFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'), ''))
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0_mfit.npz'), ''))
     
     file = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
     win = main(file=file)
+    qtbot.waitExposed(win)
+    win.load_file()
+    qtbot.wait(100)
+    qtbot.keyClick(win, QtCore.Qt.Key_Right)
+    qtbot.keyClick(win, QtCore.Qt.Key_Left)
+    qtbot.wait(100)
+    
+    win.slider.setValue(200)
+    win.fmcgl2()
+    plot_widget = win.plot.viewport()
+    center = plot_widget.rect().center()
+
+    drag_bl1(qtbot, plot_widget)
+    win.slider.setValue(520)
+    win.fmcgl2()
+    qtbot.wait(100)
+    drag_bl2(qtbot, plot_widget)
+    qtbot.wait(100)
+    win.fmfall()
+    qtbot.wait(2)
+    
+    qtbot.mouseMove(plot_widget, pos=QPoint(450, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=center)
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(400, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(450, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=center)
+    qtbot.wait(50)
+    qtbot.keyClick(win, QtCore.Qt.Key_Up)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Enter)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Z, Qt.ControlModifier)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Y, Qt.ControlModifier)
+    qtbot.wait(500)
+    
+    
+    win.mflind()
+    qtbot.wait(100)
+    win.mfrind()
+    qtbot.wait(100)
+    
+    win.fmpreview()
+    qtbot.waitExposed(win.tg)
+    win.fmpreview()
+    qtbot.waitExposed(win.tg)
+    win.fmresidual()
+    win.fmarea()
+    win.fmfwhm()
+    win.fmimse()
+    
+    
+    win.fmend()
+    qtbot.waitExposed(win.g_exp)
+    win.fmend()
+    qtbot.waitExposed(win.g_exp)
+    win.savemfit()
+    qtbot.wait(100)
+    
+    win.show_shortcuts()
+    win.close()
 
 def test_DataViewer(qtbot, monkeypatch):
-    from tool.DataViewer import SliceBrowser
+    from tool.DataViewer import SliceBrowser, get_hwnd, disp_zarr_save, load_zarr
     from PyQt5.QtWidgets import QMessageBox
     # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
     monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ''))
+    
+    hwnd = get_hwnd()
+    assert isinstance(hwnd, int)
+    path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
+    output = os.path.join(os.path.dirname(__file__), 'test_cube_disp.zarr')
+    mode, shape, xmin, xmax, ymin, ymax, E = load_zarr(path)
+    disp_zarr_save(path, output, shape, max_val=10750)
     
     path = os.path.join(os.path.dirname(__file__), 'test_cube.zarr')
-    win = SliceBrowser(path=path)
+    win = SliceBrowser(path=path, hwnd=hwnd)
+    qtbot.waitExposed(win)
+    win.on_radio_button_changed("E")
+    qtbot.wait(100)
+    win.on_radio_button_changed("kx")
+    qtbot.wait(100)
+    win.export_slice()
+    qtbot.wait(100)
+    win.on_radio_button_changed("ky")
+    qtbot.wait(100)
+    win.export_slice()
+    qtbot.wait(100)
+    win.rotate_slider.setValue(90)
+    win.sync_rotate_edit()
+    qtbot.wait(100)
+    win.apply_rotation()
+    shutil.rmtree(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ignore_errors=True)
+    win.export_slice()
+    win.on_radio_button_changed("kx")
+    qtbot.wait(100)
+    shutil.rmtree(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ignore_errors=True)
+    win.export_slice()
+    shutil.rmtree(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), ignore_errors=True)
+    win.save_as_zarr_disp()
+    win.close()
+    
+    win = SliceBrowser(os.path.join(os.path.dirname(__file__), 'test_save.zarr'), hwnd)
+    qtbot.waitExposed(win)
+    win.bin_e_spin.setValue(5)
+    win.on_bin_change()
+    win.on_radio_button_changed("kx")
+    win.on_bin_change()
+    win.on_radio_button_changed("ky")
+    win.on_bin_change()
+    win.close()
+    
+    shutil.rmtree(os.path.join(path, '__disp__.zarr'), ignore_errors=True)
+    win = SliceBrowser(path=path, hwnd=hwnd)
+    qtbot.waitExposed(win)
+    win.close()
 
 def test_RawDataViewer(qtbot, monkeypatch):
     from tool.RawDataViewer import main
@@ -626,8 +821,86 @@ def test_RawDataViewer(qtbot, monkeypatch):
     monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    monkeypatch.setattr(QtWidgets.QDialog, 'exec_', lambda self: QMessageBox.Ok)
     path = []
     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     lfs = loadfiles(path, name='internal')
-    win = main(lfs)
+    win = main(lfs, test=True)
+    qtbot.waitExposed(win)
+    event = QtCore.QEvent(QtCore.QEvent.MouseButtonPress)
+    win.energy_mode(event)
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動到 plot widget
+    plot_widget = win.plot.viewport()
+    center = plot_widget.rect().center()
+    plot_widgetx = win.plotx.viewport()
+    centerx = plot_widgetx.rect().center()
+    
+    qtbot.mouseMove(plot_widget, pos=QPoint(250, 230))
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動到 plot widget
+    qtbot.mouseMove(plot_widget, pos=center)
+    qtbot.wait(100)
+    
+    # 模擬鼠標點擊
+    qtbot.mouseClick(plot_widget, Qt.LeftButton, pos=center)
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動
+    qtbot.mouseMove(plot_widgetx, pos=centerx)
+    qtbot.wait(100)
+    
+    win.range_changed()
+    qtbot.wait(100)
+    
+    
+    # 模擬鼠標移動到 plot widget
+    qtbot.mouseMove(plot_widget, pos=QPoint(250, 230))
+    qtbot.wait(100)
+    
+    # 模擬鼠標點擊
+    qtbot.mouseClick(plot_widget, Qt.LeftButton, pos=QPoint(250, 230))
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動到 plot widget
+    qtbot.mouseMove(plot_widget, pos=QPoint(255, 235))
+    qtbot.wait(100)
+    
+    # 模擬鼠標移動
+    qtbot.mouseMove(plot_widgetx, pos=centerx)
+    qtbot.wait(100)
+    
+    win.range_changed()
+    qtbot.wait(100)
+    
+    wheel_event = QWheelEvent(
+        QPointF(center),  # pos (滑鼠位置)
+        QPointF(center),  # globalPos (全局位置)
+        QPoint(0, 0),     # pixelDelta
+        QPoint(0, 120),   # angleDelta (正值向上滾動,負值向下滾動)
+        Qt.NoButton,      # buttons
+        Qt.NoModifier,    # modifiers
+        Qt.ScrollUpdate,  # phase
+        False            # inverted
+    )
+    win.text_display.wheelEvent(wheel_event)
+    qtbot.wait(100)
+    
+    wheel_event = QWheelEvent(
+        QPointF(center),  # pos (滑鼠位置)
+        QPointF(center),  # globalPos (全局位置)
+        QPoint(0, 0),     # pixelDelta
+        QPoint(0, -120),   # angleDelta (正值向上滾動,負值向下滾動)
+        Qt.NoButton,      # buttons
+        Qt.NoModifier,    # modifiers
+        Qt.ScrollUpdate,  # phase
+        False            # inverted
+    )
+    win.text_display.wheelEvent(wheel_event)
+    qtbot.wait(100)
+
+    win.load_file(path)
+    qtbot.wait(100)
