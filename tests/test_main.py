@@ -766,11 +766,11 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     
     win.slider.setValue(200)
     qtbot.wait(100)
-    qtbot.mouseClick(win.b_remove, Qt.LeftButton)
+    win.fmrmv(test=True)
     qtbot.wait(100)
     win.slider.setValue(520)
     qtbot.wait(100)
-    qtbot.mouseClick(win.b_remove, Qt.LeftButton)
+    win.fmrmv(test=True)
     qtbot.wait(2)
     
     win.help_window()

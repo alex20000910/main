@@ -2912,7 +2912,7 @@ class main(MainWindow):
             l.setAlignment(Qt.AlignLeft)
     
     
-    def fmrmv(self):
+    def fmrmv(self, test=False):
         # global mbrmv, flmrmv, mirmv, kmin, kmax, mfi, mfi_err, mfi_x, cki, mfp, mresult, smresult, smcst
         self.msave_state()
         i = self.index
@@ -2935,7 +2935,8 @@ class main(MainWindow):
                     self.mfi_err.remove(i)
                 if i in self.cki:
                     self.cki.remove(i)
-                self.mresult[i] = []
+                if test is False:
+                    self.mresult[i] = []
                 try:
                     for j in range(6):
                         self.smresult[i][j] = 'nofit'
