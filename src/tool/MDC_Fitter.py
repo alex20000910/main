@@ -1227,10 +1227,7 @@ class main(MainWindow):
         yy1 = v1*fwhm1[1::]/2
         yy2 = v2*fwhm2[1::]/2
         xx/=2
-        print(len(y))
-        print(len(xx))
         x = ((y[-1:0:-1]+xx[::-1])-self.vfe)*1000
-        print(len(x))
         
         self.g_imse = QDialog(self)
         self.g_imse.closeEvent = lambda event: self.close_imse(event)
