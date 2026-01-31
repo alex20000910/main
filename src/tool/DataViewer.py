@@ -11,7 +11,8 @@ import pyqtgraph as pg
 from base64 import b64decode
 import cv2, os, inspect
 import h5py, time, zarr
-from ctypes import windll
+if os.name == 'nt':
+    from ctypes import windll
 import shutil, psutil, argparse
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
@@ -39,7 +40,8 @@ def rotate(data: cv2.typing.MatLike, angle: float, size: tuple[int, int]) -> cv2
     return data
 
 def find_window():
-    # Windows系統中 可能的終端機視窗名稱
+    if sys.platform != "win32":
+        return 0
     hwnd = windll.user32.FindWindowW(None, "命令提示字元")
     if not hwnd:
         hwnd = windll.user32.FindWindowW(None, "Command Prompt")

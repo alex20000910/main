@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from ctypes import windll
+import os
+if os.name == 'nt':
+    from ctypes import windll
 import gc
 
 class SO_Fitter(tk.Toplevel):
@@ -279,6 +281,8 @@ class SO_Fitter(tk.Toplevel):
         print('\033[33mPhi sample offset: ', '%.3f'%phi1,'\nR1 sample offset: ', '%.3f'%r11, '\n\033[0m')
         
         if self.app_pars:
+            if os.name != 'nt':
+                return
             windll.user32.ShowWindow(self.app_pars.hwnd, 9)
             windll.user32.SetForegroundWindow(self.app_pars.hwnd)
     

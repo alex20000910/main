@@ -926,7 +926,10 @@ def ejob():     # EDC Fitting GUI
     egg = tk.Toplevel(g, bg='white')
     egg.protocol("WM_DELETE_WINDOW", egg_close)
     edpi = egg.winfo_fpixels('1i')
-    t_sc_w = windll.user32.GetSystemMetrics(0)
+    if os.name == 'nt':
+        t_sc_w = windll.user32.GetSystemMetrics(0)
+    else:
+        t_sc_w = egg.winfo_screenwidth()
     tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
     egg.geometry(f"1900x1000+{tx}+{sc_y}")
     egg.title('EDC Lorentz Fit')
@@ -1097,7 +1100,10 @@ def ejob():     # EDC Fitting GUI
     egg.update()
     screen_width = egg.winfo_reqwidth()
     screen_height = egg.winfo_reqheight()
-    tx = int(t_sc_w*windll.shcore.GetScaleFactorForDevice(0)/100) if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+    if os.name == 'nt':
+        tx = int(t_sc_w*windll.shcore.GetScaleFactorForDevice(0)/100) if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
+    elif os.name == 'posix':
+        tx = t_sc_w if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
     egg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
     egg.update()
 

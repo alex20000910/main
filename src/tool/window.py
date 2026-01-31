@@ -11,7 +11,8 @@ from tkinter import filedialog as fd
 from threading import Thread
 from abc import ABC, abstractmethod
 from tkinter import colorchooser, messagebox
-from ctypes import windll
+if os.name == 'nt':
+    from ctypes import windll
 from typing import override
 from base64 import b64decode
 from PIL import Image, ImageTk
@@ -61,19 +62,19 @@ class AboutWindow:
         fr_title.pack()
         l_icon = tk.Label(fr_title, bg='white', image=self.icon)
         l_icon.pack(side=tk.LEFT, padx=2, pady=10)
-        l1 = tk.Label(fr_title, text='MDC_cut', font=('Arial', self.size(30), "bold"), bg='white')
+        l1 = tk.Label(fr_title, text='MDC_cut', font=('Arial', self.size(30), "bold"), bg='white', fg='black')
         l1.pack(side=tk.LEFT, pady=10)
         
-        l2 = tk.Label(fr, text='Version: '+self.version, font=('Arial', self.size(16)), bg='white')
+        l2 = tk.Label(fr, text='Version: '+self.version, font=('Arial', self.size(16)), bg='white', fg='black')
         l2.pack(pady=5)
-        l3 = tk.Label(fr, text='Release Date: '+self.release_date, font=('Arial', self.size(16)), bg='white')
+        l3 = tk.Label(fr, text='Release Date: '+self.release_date, font=('Arial', self.size(16)), bg='white', fg='black')
         l3.pack(pady=5)
-        l4 = tk.Label(fr, text='Developed by Chih-Keng Hung', font=('Arial', self.size(16)), bg='white')
+        l4 = tk.Label(fr, text='Developed by Chih-Keng Hung', font=('Arial', self.size(16)), bg='white', fg='black')
         l4.pack(pady=5)
         
         fr1 = tk.Frame(fr, bg='white')
         fr1.pack(pady=5)
-        l_e = tk.Label(fr, text='Email: ', font=('Arial', self.size(16)), bg='white')
+        l_e = tk.Label(fr, text='Email: ', font=('Arial', self.size(16)), bg='white', fg='black')
         l_e.pack(side=tk.LEFT, in_=fr1)
         str_email = 'alex1010512@gmail.com'
         t_email = tk.Text(fr1, width=20, height=1, font=('Arial', self.size(16)), bg='white', bd=0, wrap='none')
@@ -86,7 +87,7 @@ class AboutWindow:
         
         fr2 = tk.Frame(fr, bg='white')
         fr2.pack(pady=5)
-        l_github = tk.Label(fr, text='GitHub: ', font=('Arial', self.size(16)), bg='white')
+        l_github = tk.Label(fr, text='GitHub: ', font=('Arial', self.size(16)), bg='white', fg='black')
         l_github.pack(side=tk.LEFT, in_=fr2)
         str_github = 'https://github.com/alex20000910/main'
         t_github = tk.Text(fr2, width=31, height=1, font=('Arial', self.size(16)), bg='white', bd=0, wrap='none')
@@ -97,7 +98,7 @@ class AboutWindow:
         t_github.bind('<FocusIn>', self.select_all)
         t_github.bind('<FocusOut>', self.select_none)
         
-        text = tk.Text(fr, width=60, height=10, wrap='word', font=('Arial', self.size(14)), bg='white')
+        text = tk.Text(fr, width=60, height=10, wrap='word', font=('Arial', self.size(14)), bg='white', fg='black')
         text.pack(padx=10, pady=5)
         license_text = """MIT License
 

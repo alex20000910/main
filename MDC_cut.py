@@ -13,7 +13,8 @@ import queue
 import threading
 import warnings
 import sys, shutil
-from ctypes import windll
+if os.name == 'nt':
+    from ctypes import windll
 import copy
 import gc
 from tkinter import messagebox, colorchooser
@@ -282,20 +283,26 @@ def force_update():
         elif os.name == 'posix':
             try:
                 os.system(f'cp "{src}" "{dst}"')
-                os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                # os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
             except:
                 os.system(f'cp "{src}" "{dst}"')
-                os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                # os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
         os.remove(src)
         quit()
-    os.system(f'del {path}')
+    if os.name == 'nt':
+        os.system(f'del {path}')
+    elif os.name == 'posix':
+        os.system(f'rm {path}')
 
 # set up .MDC_cut folder
 os.chdir(cdir)
 if not os.path.exists('.MDC_cut'):
     os.makedirs('.MDC_cut')
     force_update()
-os.system('attrib +h +s .MDC_cut')
+if os.name == 'nt':
+    os.system('attrib +h +s .MDC_cut')
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 sys.path.append(os.path.join(cdir, 'src'))
 
@@ -418,9 +425,11 @@ try:
         # from lmfit import Parameters, Minimizer
         from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
     import tqdm
-    import win32clipboard
+    if os.name == 'nt':
+        import win32clipboard
     if __name__ == '__main__':
-        import originpro as op
+        if os.name == 'nt':
+            import originpro as op
     from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
     import psutil
     if VERSION >= 3130:
@@ -997,7 +1006,10 @@ def view_3d(*e):
 @pool_protect
 def DataViewer_PyQt5():
     def j():
-        os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
+        if os.name == 'nt':
+            os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
+        elif os.name == 'posix':
+            subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}'])
     threading.Thread(target=j,daemon=True).start()
 
 @pool_protect
@@ -1006,8 +1018,12 @@ def show_version():
     ax = fig.subplots()
     tim = np.asarray(Image.open(tdata), dtype=np.uint8)
     ax.imshow(tim, aspect='equal', alpha=0.4)
+    if os.name == 'nt':
+        ver_size = 40
+    elif os.name == 'posix':
+        ver_size = 30
     fontdict = {
-    'fontsize': size(40),
+    'fontsize': size(ver_size),
     'fontweight': 'bold',
     'fontname': 'Arial'
     }
@@ -1058,10 +1074,16 @@ def copy_to_clipboard(ff: Figure) -> None:
     image = Image.open(buf)
     output = io.BytesIO()
     
-    image.convert("RGB").save(output, "BMP")
-    data = output.getvalue()[14:]
-    output.close()
-    send_to_clipboard(win32clipboard.CF_DIB, data)
+    if os.name == 'nt':
+        image.convert("RGB").save(output, "BMP")
+        data = output.getvalue()[14:]
+        output.close()
+        send_to_clipboard(win32clipboard.CF_DIB, data)
+    elif os.name == 'posix':
+        image.convert("RGB").save(output, "PNG")
+        data = output.getvalue()
+        output.close()
+        send_to_clipboard('image/png', data)
     
 @pool_protect
 def send_to_clipboard(clip_type, data):
@@ -1193,7 +1215,10 @@ def change_file(*args):
 @pool_protect
 def qt_app(path: list[str]):
     def job():
-        subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+        if os.name == 'nt':
+            subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+        elif os.name == 'posix':
+            subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
     threading.Thread(target=job, daemon=True).start()
     if os.name == 'nt' and hwnd:
         windll.user32.ShowWindow(hwnd, 9)
@@ -1225,9 +1250,9 @@ def tools(*args):
         toolg.destroy()
     toolg = RestrictedToplevel(g)
     toolg.title('Batch Master')
-    b_raw_viewer = tk.Button(toolg, text='Raw Data Viewer', command=raw_data_viewer, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_raw_viewer = tk.Button(toolg, text='Raw Data Viewer', command=raw_data_viewer, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_raw_viewer.grid(row=0, column=0)
-    b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_spec.grid(row=0, column=1)
     try:
         flag = False
@@ -1237,9 +1262,9 @@ def tools(*args):
     except:
         pass
     if lfs.sort != 'no' and flag:
-        b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+        b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
         b_kplane.grid(row=0, column=2)
-    b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_exp_casa.grid(row=0, column=3)
     toolg.bind('<Return>', spec)
     set_center(g, toolg, 0, 0)
@@ -1357,7 +1382,10 @@ def cmfit(*e):
         return
     def job():
         src = '.MDC_cut'
-        subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
+        if os.name == 'nt':
+            subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
+        elif os.name == 'posix':
+            subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
     threading.Thread(target=job, daemon=True).start()
     if os.name == 'nt' and hwnd:
         windll.user32.ShowWindow(hwnd, 9)
@@ -1944,9 +1972,11 @@ if __name__ == '__main__':
             os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         elif os.name == 'posix':
             try:
-                os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
+                # os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
             except:
-                os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
+                # os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')
@@ -1956,11 +1986,25 @@ if __name__ == '__main__':
     with open(path, 'w') as f:
         f.write(f'{hwnd}')  #for DataViewer Qt GUI
         f.close()
-    ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
-    osf = windll.shcore.GetScaleFactorForDevice(0)
-    # print('ScaleFactor:',ScaleFactor)
-    t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
-    t_sc_h-=int(40*ScaleFactor/100)
+    if os.name == 'nt':
+        ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+        osf = windll.shcore.GetScaleFactorForDevice(0)
+        # print('ScaleFactor:',ScaleFactor)
+        t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
+        t_sc_h-=int(40*ScaleFactor/100)
+    elif os.name == 'posix':
+        temp_root = tk.Tk()
+        temp_root.withdraw()
+        t_sc_w = temp_root.winfo_screenwidth()
+        t_sc_h = temp_root.winfo_screenheight()
+        dpi = temp_root.winfo_fpixels('1i')
+        temp_root.destroy()
+        
+        # macOS 標準 DPI = 72
+        ScaleFactor = int((dpi / 72) * 100)
+        osf = ScaleFactor / 100
+        # t_sc_w, t_sc_h = 1512 * osf, 982 * osf
+        print(t_sc_w, t_sc_h)
     if bar_pos == 'top':    #taskbar on top
         sc_y = int(40*ScaleFactor/100)
     else:
@@ -1985,10 +2029,14 @@ if __name__ == '__main__':
     # prfactor = 1.03 if ScaleFactor <= 100 else 0.9 if ScaleFactor <= 125 else 0.8 if ScaleFactor <= 150 else 0.5
     prfactor = 1
     ScaleFactor /= prfactor*(ScaleFactor/100*1880/96*odpi/t_sc_w) if 1880/t_sc_w >= (950)/t_sc_h else prfactor*(ScaleFactor/100*(950)/96*odpi/t_sc_h)
-    g.tk.call('tk', 'scaling', ScaleFactor/100)
+    if os.name == 'nt':
+        g.tk.call('tk', 'scaling', ScaleFactor/100)
+    elif os.name == 'posix':
+        g.tk.call('tk', 'scaling', ScaleFactor/100*dpi/96)
     dpi=g.winfo_fpixels('1i')
     # print('dpi:',dpi)
-    windll.shcore.SetProcessDpiAwareness(1)
+    if os.name == 'nt':
+        windll.shcore.SetProcessDpiAwareness(1)
     scale = odpi / dpi
     base_font_size = 16
     scaled_font_size = int(base_font_size * scale)
@@ -2647,8 +2695,14 @@ if __name__ == '__main__':
 
     figfr = tk.Frame(fr_main, bg='white')
     figfr.grid(row=0, column=1, sticky='nsew')
-    figy = 8.5 if osf<=100 else 8.25 if osf<=150 else 8
-    figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
+    if os.name == 'nt':
+        figy = 8.5 if osf<=100 else 8.25 if osf<=150 else 8
+        figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
+        label_size = 16
+    elif os.name == 'posix':
+        figy = 6
+        figx = 5
+        label_size = 12
     fig = Figure(figsize=(figx*scale, figy*scale), layout='constrained')
     out = FigureCanvasTkAgg(fig, master=figfr)
     out.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -2663,22 +2717,22 @@ if __name__ == '__main__':
     xydata.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
     xdata = tk.Label(xydata, text='xdata:', font=(
-        "Arial", size(16), "bold"), width='15', height='1', bd=9, bg='white')
+        "Arial", size(label_size), "bold"), width='15', height='1', bd=9, bg='white')
     xdata.grid(row=0, column=0)
     ydata = tk.Label(xydata, text='ydata:', font=(
-        "Arial", size(16), "bold"), width='15', height='1', bd=9, bg='white')
+        "Arial", size(label_size), "bold"), width='15', height='1', bd=9, bg='white')
     ydata.grid(row=0, column=1)
     
     v_fe = tk.StringVar()
     v_fe.set(str(vfe))
-    b_emode = tk.Button(xydata, text='K.E.', fg='blue', font=("Arial", size(16), "bold"), width=5, height='1', command=emode, bd=9)
+    b_emode = tk.Button(xydata, text='K.E.', fg='blue', font=("Arial", size(label_size), "bold"), width=5, height='1', command=emode, bd=9)
     b_emode.grid(row=0, column=2)
-    b_copyimg = tk.Button(xydata, fg='red', text='Copy Image to Clipboard', font=('Arial', size(16), 'bold'), command=f_copy_to_clipboard, bd=9)
+    b_copyimg = tk.Button(xydata, fg='red', text='Copy Image to Clipboard', font=('Arial', size(label_size), 'bold'), command=f_copy_to_clipboard, bd=9)
     b_copyimg.grid(row=0, column=3)
     
     
     dl=0
-    b_sw = tk.Button(xydata, text='dot', font=('Arial', size(16), 'bold'), command=dl_sw, bd=9)
+    b_sw = tk.Button(xydata, text='dot', font=('Arial', size(label_size), 'bold'), command=dl_sw, bd=9)
 
     lcmp = tk.Frame(plots, bg='white')
     lcmp.grid(row=0, column=0)

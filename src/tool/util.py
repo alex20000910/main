@@ -326,12 +326,19 @@ class ToolTip_util:
     def _position_tooltip(self, mouse_x, mouse_y):
         if not self.tooltip:
             return
-        scale = windll.shcore.GetScaleFactorForDevice(0)/100
-        # 取得螢幕和提示框大小
-        screen_width = self.widget.winfo_screenwidth()
-        screen_height = self.widget.winfo_screenheight()
-        scw = windll.user32.GetSystemMetrics(0)
-        sch = windll.user32.GetSystemMetrics(1)
+        if os.name == 'nt':
+            scale = windll.shcore.GetScaleFactorForDevice(0)/100
+            # 取得螢幕和提示框大小
+            screen_width = self.widget.winfo_screenwidth()
+            screen_height = self.widget.winfo_screenheight()
+            scw = windll.user32.GetSystemMetrics(0)
+            sch = windll.user32.GetSystemMetrics(1)
+        elif os.name == 'posix':
+            scale = 1.0
+            screen_width = self.widget.winfo_screenwidth()
+            screen_height = self.widget.winfo_screenheight()
+            scw = screen_width // 2
+            sch = screen_height // 2
         tooltip_width = self.tooltip.winfo_width()
         tooltip_height = self.tooltip.winfo_height()
         
@@ -1007,7 +1014,11 @@ class motion:
                 pass
             if self.mof == -1 and self.value1.get() == '---Plot2---' and self.value2.get() != 'Real & Imaginary' and 'KK Transform' not in self.value2.get() and 'MDC Curves' not in self.value.get():
                 px2, py2 = event.x, event.y
-                self.out.get_tk_widget().create_rectangle((self.px1, int(self.figy*100)-self.py1), (px2, int(self.figy*100)-py2),
+                if os.name == 'nt':
+                    self.out.get_tk_widget().create_rectangle((self.px1, int(self.figy*100)-self.py1), (px2, int(self.figy*100)-py2),
+                                                    outline='black', width=2, tag='rec')
+                elif os.name == 'posix':
+                    self.out.get_tk_widget().create_rectangle((self.px1, int(self.figy*100*1.245)-self.py1), (px2, int(self.figy*100*1.245)-py2),
                                                     outline='black', width=2, tag='rec')
             if self.value is not None and self.ao is not None:
                 if self.value.get() == 'Raw Data':

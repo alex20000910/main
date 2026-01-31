@@ -9,7 +9,6 @@ import pyqtgraph as pg
 
 import os, inspect, time, sys, argparse
 from base64 import b64decode
-from ctypes import windll
 import copy, tqdm
 
 import numpy as np
@@ -249,7 +248,6 @@ class mfit_data():
             mdet = -1
             self.status = 'no'
             self.fpr = 0
-            raise e
         self.ko = ko
         self.fev, self.rpos, self.ophi, self.fwhm, self.pos = fev, rpos, ophi, fwhm, pos
         self.kmin, self.kmax, self.skmin, self.skmax = kmin, kmax, skmin, skmax
@@ -323,6 +321,17 @@ class main(MainWindow):
         help_menu.addAction(shortcut_list)
         
 
+        try:
+            screen = app.primaryScreen()
+            geometry = screen.geometry()
+            screen_width = geometry.width()
+            screen_height = geometry.height()
+        except Exception:
+            screen_width = 1920
+            screen_height = 1080
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        
         # Layouts
         main_layout = QHBoxLayout()
         central_widget.setLayout(main_layout)
@@ -372,6 +381,8 @@ class main(MainWindow):
         #### mjob ####
             
         self.keyPressEvent = self.on_key_press
+        if os.name == 'posix':
+            QMessageBox.warning(self, "Reminder", "Use the default system resolution scaling (100%) for best experience.")
         QMessageBox.information(self, "Info", "Use Ctrl+Z to Undo, Ctrl+Y to Redo.\nUse Left/Right Key to move index.\nUse Up/Down Key to adjust baseline.\nUse \"<<\" and \">>\" buttons to jump to previous/next index with different fitting status.")
     
     def init_data(self):
@@ -809,8 +820,9 @@ class main(MainWindow):
         
         self.indicator_layout.addWidget(self.slider)
         
+        h_ind_plot = int(50/900*self.screen_height)
         self.ind_plot = pg.PlotWidget()
-        self.ind_plot.setFixedHeight(50)
+        self.ind_plot.setFixedHeight(h_ind_plot)
         # self.ind_plot.setMenuEnabled(False)  # 禁用右鍵選單
         # self.ind_plot.getViewBox().setMouseEnabled(x=False, y=False)
         self.ind_plot.getAxis('bottom').hide()
@@ -821,14 +833,15 @@ class main(MainWindow):
         self.indicator_layout.addWidget(self.ind_plot)
         
         
+        h_b = int(90/900*self.screen_height)
         self.b_left = QPushButton("<<")
         self.b_left.setToolTip("Jump to previous index with different fitting status")
         self.b_left.clicked.connect(self.mflind)
-        self.b_left.setFixedHeight(90)
+        self.b_left.setFixedHeight(h_b)
         self.b_right = QPushButton(">>")
         self.b_right.setToolTip("Jump to next index with different fitting status")
         self.b_right.clicked.connect(self.mfrind)
-        self.b_right.setFixedHeight(90)
+        self.b_right.setFixedHeight(h_b)
         hbox = QHBoxLayout()
         hbox.addWidget(self.b_left)
         hbox.addLayout(self.indicator_layout)
@@ -885,31 +898,32 @@ class main(MainWindow):
         mid_layout.addWidget(self.xlabel)
         # self.update_plot()
         
+        b_width = int(300/1920*self.screen_width)
         b_fit_all = QPushButton("Fit All")
         b_fit_all.clicked.connect(self.fmfall)
-        b_fit_all.setFixedWidth(300)
+        b_fit_all.setFixedWidth(b_width)
         mid_layout.addWidget(b_fit_all, alignment=Qt.AlignCenter)
         
         b_pr = QPushButton("Preview")
         b_pr.setToolTip("Show Fitting Residual, Area, FWHM, Imaginary Self-Energy")
         b_pr.clicked.connect(self.fmpreview)
-        b_pr.setFixedWidth(300)
+        b_pr.setFixedWidth(b_width)
         mid_layout.addWidget(b_pr, alignment=Qt.AlignCenter)
         
         b_exp = QPushButton("Export All")
         b_exp.clicked.connect(self.fmend)
-        b_exp.setFixedWidth(300)
+        b_exp.setFixedWidth(b_width)
         mid_layout.addWidget(b_exp, alignment=Qt.AlignCenter)
         
         exp_container = QWidget()
         exp_layout = QHBoxLayout()
         b_exp1 = QPushButton("Export Comp 1")
         b_exp1.clicked.connect(lambda: self.fmend(1))
-        b_exp1.setFixedWidth(300)
+        b_exp1.setFixedWidth(b_width)
         exp_layout.addWidget(b_exp1)
         b_exp2 = QPushButton("Export Comp 2")
         b_exp2.clicked.connect(lambda: self.fmend(2))
-        b_exp2.setFixedWidth(300)
+        b_exp2.setFixedWidth(b_width)
         exp_layout.addWidget(b_exp2)
         exp_container.setLayout(exp_layout)
         mid_layout.addWidget(exp_container, alignment=Qt.AlignCenter)
@@ -2616,16 +2630,20 @@ class main(MainWindow):
         do_layout.addWidget(b_redo)
         right_layout.addLayout(do_layout)
         
-        self.lm1 = QLabel("")
-        self.lm2 = QLabel("")
-        self.lm3 = QLabel("")
-        self.lm4 = QLabel("")
-        self.lm5 = QLabel("")
-        self.lm6 = QLabel("")
+        self.lm1 = QLineEdit("")
+        self.lm2 = QLineEdit("")
+        self.lm3 = QLineEdit("")
+        self.lm4 = QLineEdit("")
+        self.lm5 = QLineEdit("")
+        self.lm6 = QLineEdit("")
         for i in [self.lm1, self.lm2, self.lm3, self.lm4, self.lm5, self.lm6]:
-            i.setFont(QFont("Arial", 16, QFont.Bold))
-            i.setFixedWidth(700)
-            right_layout.addWidget(i, alignment=Qt.AlignCenter)
+            # i.setFont(QFont("Arial", 16, QFont.Bold))
+            # i.setFixedWidth(700)
+            fs = int(16*self.screen_width/1920)
+            i.setFont(QFont("Arial", fs, QFont.Bold))
+            i.setFixedWidth(int(self.screen_width/1920*700))
+            i.setReadOnly(True)
+            right_layout.addWidget(i, alignment=Qt.AlignLeft)
         
         confirm_layout = QHBoxLayout()
         b_accept = QPushButton("Accept")
@@ -2859,8 +2877,9 @@ class main(MainWindow):
         for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], [x, h, w, '', '', '']):
             # l.config(text=v)
             # l.config(anchor='w')
-            l.setText(v)
+            l.setText(v.strip())
             l.setAlignment(Qt.AlignLeft)
+            l.setCursorPosition(0)
             
 
     def fitpar2(self, result, lm1, lm2, lm3, lm4, lm5, lm6):
@@ -2908,8 +2927,9 @@ class main(MainWindow):
         for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], [x1, x2, h1, h2, w1, w2]):
             # l.config(text=v)
             # l.config(anchor='w')
-            l.setText(v)
+            l.setText(v.strip())
             l.setAlignment(Qt.AlignLeft)
+            l.setCursorPosition(0)
     
     
     def fmrmv(self, test=False):

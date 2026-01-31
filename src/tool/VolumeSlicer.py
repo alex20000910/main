@@ -14,7 +14,8 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.widgets import Slider
-from ctypes import windll
+if os.name == 'nt':
+    from ctypes import windll
 import h5py
 import tqdm
 import time
@@ -243,8 +244,9 @@ class g_cut_plot(tk.Toplevel):
         # zdata = np.append(data, attr_array, axis=2)
         # zarr.save(path, zdata)
         if self.app_pars:
-            windll.user32.ShowWindow(self.app_pars.hwnd, 9)
-            windll.user32.SetForegroundWindow(self.app_pars.hwnd)
+            if os.name == 'nt':
+                windll.user32.ShowWindow(self.app_pars.hwnd, 9)
+                windll.user32.SetForegroundWindow(self.app_pars.hwnd)
         max_val = self.zarr_chunk_save(path, data=data, attr_array=attr_array)
         for name in os.listdir(path):
             item_path = os.path.join(path, name)
@@ -1163,8 +1165,9 @@ class VolumeSlicer(tk.Frame):
     
     def cut_plot(self):
         if self.app_pars:
-            windll.user32.ShowWindow(self.app_pars.hwnd, 9)
-            windll.user32.SetForegroundWindow(self.app_pars.hwnd)
+            if os.name == 'nt':
+                windll.user32.ShowWindow(self.app_pars.hwnd, 9)
+                windll.user32.SetForegroundWindow(self.app_pars.hwnd)
         self.stop_event = threading.Event()
         t1 = threading.Thread(target=self.listen_for_stop_command, daemon=True)
         t1.start()
@@ -1244,9 +1247,13 @@ class VolumeSlicer(tk.Frame):
         self.g.update_idletasks()
         w = self.g.winfo_reqwidth()
         h = self.g.winfo_reqheight()
-        t_sc_w = windll.user32.GetSystemMetrics(0)
-        tx = t_sc_w if self.g.winfo_x()+self.g.winfo_width()/2 > t_sc_w else 0
-        ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+        if os.name == 'nt':
+            t_sc_w = windll.user32.GetSystemMetrics(0)
+            tx = t_sc_w if self.g.winfo_x()+self.g.winfo_width()/2 > t_sc_w else 0
+            ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+        elif os.name == 'posix':
+            tx = self.g.winfo_x()
+            ScaleFactor = 100
         if self.app_pars.bar_pos == 'top':    #taskbar on top
             sc_y = int(40*ScaleFactor/100)
         else:

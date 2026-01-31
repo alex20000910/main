@@ -1,12 +1,13 @@
-import os, io
+import os, io, subprocess
 import tkinter as tk
 import threading
-from ctypes import windll
 from abc import ABC, abstractmethod
 import numpy as np
 import xarray as xr
 from PIL import Image
-import win32clipboard
+if os.name == 'nt':
+    from ctypes import windll
+    import win32clipboard
 import cv2
 import psutil
 
@@ -59,7 +60,10 @@ class RestrictedToplevel(tk.Toplevel):
         except ValueError:
             size = int(str(tk.Menu(parent).cget('font')).split(' ')[-1])
         bd = int(tk.Menu(parent).cget('bd'))
-        self.menusize=int((size*dpi/odpi+bd*2*2)*windll.shcore.GetScaleFactorForDevice(0)/100)
+        if os.name != 'nt':
+            self.menusize=int((size*dpi/odpi+bd*2*2)*dpi/72)
+        else:
+            self.menusize=int((size*dpi/odpi+bd*2*2)*windll.shcore.GetScaleFactorForDevice(0)/100)
         
     @property
     def width(self):
@@ -167,11 +171,18 @@ def copy_to_clipboard(ff) -> None:
     buf.seek(0)
     image = Image.open(buf)
     output = io.BytesIO()
-    
-    image.convert("RGB").save(output, "BMP")
-    data = output.getvalue()[14:]
-    output.close()
-    send_to_clipboard(win32clipboard.CF_DIB, data)
+    if os.name == 'nt':
+        image.convert("RGB").save(output, "BMP")
+        data = output.getvalue()[14:]
+        output.close()
+        send_to_clipboard(win32clipboard.CF_DIB, data)
+    elif os.name == 'posix':
+        image.save(output, format='PNG')
+        process = subprocess.Popen(['osascript', '-e', 
+            'set the clipboard to (read (POSIX file "/dev/stdin") as «class PNGf»)'],
+            stdin=subprocess.PIPE)
+        process.communicate(output.getvalue())
+        output.close()
     
 def send_to_clipboard(clip_type, data):
     win32clipboard.OpenClipboard()
@@ -272,13 +283,15 @@ def set_hidden(path):
     t.start()
 
 def find_window():
-    # Windows系統中 可能的終端機視窗名稱
-    hwnd = windll.user32.FindWindowW(None, "命令提示字元")
-    if not hwnd:
-        hwnd = windll.user32.FindWindowW(None, "Command Prompt")
-    if not hwnd:
-        hwnd = windll.user32.FindWindowW(None, "cmd")
-    return hwnd
+    if os.name == 'nt':
+        hwnd = windll.user32.FindWindowW(None, "命令提示字元")
+        if not hwnd:
+            hwnd = windll.user32.FindWindowW(None, "Command Prompt")
+        if not hwnd:
+            hwnd = windll.user32.FindWindowW(None, "cmd")
+        return hwnd
+    else:
+        return 0
 
 def set_entry_value(entry: tk.Entry, value: str) -> None:
     entry.delete(0, tk.END)
