@@ -5,7 +5,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py, json
-import os, io
+import os, io, subprocess
 import tkinter as tk
 from tkinter import filedialog as fd
 from threading import Thread
@@ -666,6 +666,8 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                             if os.name == 'nt' and hwnd:
                                 windll.user32.ShowWindow(hwnd, 9)
                                 windll.user32.SetForegroundWindow(hwnd)
+                            elif os.name == 'posix':
+                                subprocess.run(['open', '-a', 'Terminal'])
                             print('\033[36m\nUpdating to the latest version...\nPlease wait...\033[0m')
                             self.get_src()
                             v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
@@ -697,7 +699,10 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         self.grab_set()
                         self.focus_set()
                     break
-        os.system(f'del {path}')
+        if os.name == 'nt':
+            os.system(f'del {path}')
+        elif os.name == 'posix':
+            os.system(f'rm {path}')
         
     def size(self, s: int) -> int:
         return(int(self.scale*s))
@@ -786,8 +791,11 @@ class CalculatorWindow(tk.Toplevel):
         if '' == self.cale.get():
             self.cale.set('0')
             self.caleen.select_range(0, 1)
-        ans = np.arcsin(np.float64(self.calk.get())/np.sqrt(2*m*np.float64(self.cale.get())
+        try:
+            ans = np.arcsin(np.float64(self.calk.get())/np.sqrt(2*m*np.float64(self.cale.get())
                         * 1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+        except:
+            ans = np.nan
         self.caldeg.config(text='Deg = '+'%.5f' % ans)
 
     def cal(self, *e):

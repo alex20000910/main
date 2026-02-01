@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 if os.name == 'nt':
     from ctypes import windll
-import gc
+import gc, subprocess
 from typing import Literal, override
 
 class CEC(loadfiles, CEC_Object):
@@ -123,6 +123,8 @@ class CEC(loadfiles, CEC_Object):
             if os.name == 'nt':
                 windll.user32.ShowWindow(self.app_pars.hwnd, 9)
                 windll.user32.SetForegroundWindow(self.app_pars.hwnd)
+            elif os.name == 'posix':
+                subprocess.run(['open', '-a', 'Terminal'])
         return
     
     def __set_data(self, odata=[], density=800, *args):
@@ -181,8 +183,10 @@ class CEC(loadfiles, CEC_Object):
     def __rlist(self):
         self.frame0 = tk.Frame(self.tlg, bg='white')
         self.frame0.grid(row=0, column=0)
-        tk.Button(self.frame0, text='Info', width=6, height=2, font=('Arial', self.size(18), 'bold'), bg='white', bd=5, command=self.info).pack(side=tk.TOP, padx=2)
-        self.l1 = tk.Text(self.frame0, wrap='none', width=30, height=9, font=('Arial', self.size(12), 'bold'), bg='white', bd=5)
+        fs = 18 if os.name == 'nt' else 16
+        tk.Button(self.frame0, text='Info', width=6, height=2, font=('Arial', self.size(fs), 'bold'), bg='white', bd=5, command=self.info).pack(side=tk.TOP, padx=2)
+        info_w = 30 if os.name == 'nt' else 25
+        self.l1 = tk.Text(self.frame0, wrap='none', width=info_w, height=9, font=('Arial', self.size(12), 'bold'), bg='white', bd=5)
         self.l1.pack(side=tk.TOP)
         
         if self.sort == 'r1r2':
@@ -605,6 +609,8 @@ def call_cec(g: tk.Misc, lfs: FileSequence, test=False) -> FileSequence:
             if os.name == 'nt':
                 windll.user32.ShowWindow(app_pars.hwnd, 9)
                 windll.user32.SetForegroundWindow(app_pars.hwnd)
+            elif os.name == 'posix':
+                subprocess.run(['open', '-a', 'Terminal'])
         print('\033[31mPath not found:\033[34m')
         print(lf_path)
         print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
@@ -616,6 +622,8 @@ def call_cec(g: tk.Misc, lfs: FileSequence, test=False) -> FileSequence:
             if os.name == 'nt':
                 windll.user32.ShowWindow(app_pars.hwnd, 9)
                 windll.user32.SetForegroundWindow(app_pars.hwnd)
+            elif os.name == 'posix':
+                subprocess.run(['open', '-a', 'Terminal'])
         print(f"An error occurred: {ecp}")
         message = f"An error occurred:\n{ecp}"
         if test is False:

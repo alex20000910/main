@@ -281,14 +281,22 @@ def force_update():
             os.system(f'copy "{src}" "{dst}" > nul')
             os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         elif os.name == 'posix':
+            script = rf'''
+            tell application "Terminal"
+                activate
+                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
+            end tell
+            '''
             try:
                 os.system(f'cp "{src}" "{dst}"')
                 # os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
+                # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
+                subprocess.run(['osascript', '-e', script])
             except:
                 os.system(f'cp "{src}" "{dst}"')
                 # os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
+                # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
+                subprocess.run(['osascript', '-e', script])
         os.remove(src)
         quit()
     if os.name == 'nt':
@@ -844,6 +852,9 @@ def g_close(*e):
     try:
         g.destroy()
         plt.close('all')
+        if os.name == 'posix':
+            os.system(rf'''osascript -e 'tell application "Terminal" to quit' ''')
+            # os.system('killall Terminal')
         quit()
     except:
         pass
@@ -1009,7 +1020,14 @@ def DataViewer_PyQt5():
         if os.name == 'nt':
             os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
         elif os.name == 'posix':
-            subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}'])
+            script = rf'''
+            tell application "Terminal"
+                activate
+                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"
+            end tell
+            '''
+            subprocess.run(['osascript', '-e', script])
+            # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}'])
     threading.Thread(target=j,daemon=True).start()
 
 @pool_protect
@@ -1099,13 +1117,15 @@ def trans_plot(*e):
         messagebox.showwarning("Warning","No data loaded!")
         return
     global gtp
-    gtp=RestrictedToplevel(g)
+    if 'gtp' in globals():
+        gtp.destroy()
+    gtp=RestrictedToplevel(g, bg='white')
     gtp.title('Spectrogram')
-    b_raw = tk.Button(gtp, text='Raw', command=raw_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_raw = tk.Button(gtp, text='Raw', command=raw_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_raw.grid(row=0, column=0)
-    b_smooth = tk.Button(gtp, text='Smooth', command=smooth_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_smooth = tk.Button(gtp, text='Smooth', command=smooth_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_smooth.grid(row=0, column=1)
-    b_fd = tk.Button(gtp, text='First Derivative', command=fd_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_fd = tk.Button(gtp, text='First Derivative', command=fd_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_fd.grid(row=0, column=2)
     set_center(g, gtp, 0, 0)
     gtp.focus_set()
@@ -1218,11 +1238,20 @@ def qt_app(path: list[str]):
         if os.name == 'nt':
             subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
         elif os.name == 'posix':
-            subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+            script = rf'''
+            tell application "Terminal"
+                activate
+                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')} -f {data.attrs['Path']}"
+            end tell
+            '''
+            subprocess.run(['osascript', '-e', script])
+            # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
     threading.Thread(target=job, daemon=True).start()
     if os.name == 'nt' and hwnd:
         windll.user32.ShowWindow(hwnd, 9)
         windll.user32.SetForegroundWindow(hwnd)
+    elif os.name == 'posix':
+        subprocess.run(['open', '-a', 'Terminal'])
     print('\033[36m\nTransfering Data...\nPlease wait...\033[0m')
 
 @pool_protect
@@ -1385,15 +1414,26 @@ def cmfit(*e):
         if os.name == 'nt':
             subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
         elif os.name == 'posix':
-            subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
+            script = rf'''
+            tell application "Terminal"
+                activate
+                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {os.path.join(cdir, src, "tool", "MDC_Fitter.py")} -f {data.attrs['Path']}"
+            end tell
+            '''
+            subprocess.run(['osascript', '-e', script])
+            # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
     threading.Thread(target=job, daemon=True).start()
     if os.name == 'nt' and hwnd:
         windll.user32.ShowWindow(hwnd, 9)
         windll.user32.SetForegroundWindow(hwnd)
+    elif os.name == 'posix':
+        subprocess.run(['open', '-a', 'Terminal'])
     print('\033[36m\nTransfering Data...\nPlease wait...\033[0m')
 
 @pool_protect
 def cefit(*e):
+    messagebox.showwarning("Warning", "Temporarily Disabled")
+    return
     if data is None:
         st.put('No data loaded!')
         messagebox.showwarning("Warning","No data loaded!")
@@ -1971,11 +2011,19 @@ if __name__ == '__main__':
         if os.name == 'nt':
             os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         elif os.name == 'posix':
+            script = rf'''
+            tell application "Terminal"
+                activate
+                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
+            end tell
+            '''
             try:
-                subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
+                subprocess.run(['osascript', '-e', script])
+                # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{app_name}.py'])
                 # os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
             except:
-                subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
+                subprocess.run(['osascript', '-e', script])
+                # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{app_name}.py'])
                 # os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         quit()
     else:
@@ -2004,7 +2052,6 @@ if __name__ == '__main__':
         ScaleFactor = int((dpi / 72) * 100)
         osf = ScaleFactor / 100
         # t_sc_w, t_sc_h = 1512 * osf, 982 * osf
-        print(t_sc_w, t_sc_h)
     if bar_pos == 'top':    #taskbar on top
         sc_y = int(40*ScaleFactor/100)
     else:
@@ -2032,6 +2079,7 @@ if __name__ == '__main__':
     if os.name == 'nt':
         g.tk.call('tk', 'scaling', ScaleFactor/100)
     elif os.name == 'posix':
+        pass
         g.tk.call('tk', 'scaling', ScaleFactor/100*dpi/96)
     dpi=g.winfo_fpixels('1i')
     # print('dpi:',dpi)
@@ -2066,6 +2114,12 @@ if __name__ == '__main__':
     # 設定預設字體
     default_font = ('Arial', scaled_font_size)
     g.option_add('*Font', default_font)
+    g.option_add('*Foreground', 'black')
+    g.option_add('*Background', 'white')
+    g.option_add('*Button.Foreground', 'black')
+    g.option_add('*Button.Background', 'white')
+    g.option_add('*Label.Foreground', 'black')
+    g.option_add('*Label.Background', 'white')
     icon_manager = MenuIconManager(scale=scale, ScaleFactor=ScaleFactor, odpi=odpi, dpi=dpi)
     
     g.geometry(f'1900x1080+0+{sc_y}')
@@ -2828,6 +2882,10 @@ if __name__ == '__main__':
             lfs.cec.tlg.lift()
             lfs.cec.tlg.focus_force()
     version_check()
+    if os.name == 'posix':
+        messagebox.showinfo("Hint", "If the expected information is not visible in the current Terminal window, please check other Terminal windows.")
+        g.lift()
+        g.focus_force()
     # g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
     g_mem = psutil.Process(os.getpid()).memory_info().rss / 1024**3  # Main GUI memory in GB
     app_pars.g_mem = g_mem

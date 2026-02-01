@@ -268,14 +268,15 @@ def res(a: np.ndarray | list[float], b: np.ndarray | list[float]) -> np.ndarray:
     return np.array([b[i] for i in np.argsort(a)])
 
 def hidden_job(path):
-    os.system(f'attrib +h +s "{path}"')
-    for dirpath, dirnames, filenames in os.walk(path):
-        for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            os.system(f'attrib +h +s "{file_path}"')
-        for dirname in dirnames:
-            dir_path = os.path.join(dirpath, dirname)
-            os.system(f'attrib +h +s "{dir_path}"')
+    if os.name == 'nt':
+        os.system(f'attrib +h +s "{path}"')
+        for dirpath, dirnames, filenames in os.walk(path):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                os.system(f'attrib +h +s "{file_path}"')
+            for dirname in dirnames:
+                dir_path = os.path.join(dirpath, dirname)
+                os.system(f'attrib +h +s "{dir_path}"')
             
 def set_hidden(path):
     t = threading.Thread(target=hidden_job, args=(path,))
