@@ -706,13 +706,12 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                 os.system(f'cp "{src}" "{dst}"')
                 os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
                 os.system('clear')
-                os.system('exit')
             except:
                 os.system(f'cp "{src}" "{dst}"')
                 os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
                 os.system('clear')
-                os.system('exit')
         os.remove(src)
+        sys.exit()
         quit()
     
     def size(self, s: int) -> int:
