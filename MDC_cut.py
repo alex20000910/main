@@ -348,6 +348,7 @@ try:
             with open('pip_check.txt', 'w', encoding = 'utf-8') as f:
                 f.write('pip found')
                 f.close()
+            os.system('cls' if os.name == 'nt' else 'clear')
         except subprocess.CalledProcessError:
             try:
                 if os.name == 'nt':
@@ -2026,6 +2027,7 @@ if __name__ == '__main__':
                 do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
             end tell
             '''
+            os.system('clear')
             try:
                 subprocess.run(['osascript', '-e', script])
             except:
@@ -2336,7 +2338,8 @@ if __name__ == '__main__':
     value3 = tk.StringVar()
     value3.set('prevac_cmap')
     value3.trace_add('write', chcmp)
-
+    
+    os.system('cls' if os.name == 'nt' else 'clear')
     try:
         with np.load(os.path.join('.MDC_cut', 'rd.npz'), 'rb') as ff:
             path = str(ff['path'])

@@ -681,10 +681,14 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                                 import sys
                                 try:
                                     os.system(f'cp "{src}" "{dst}"')
+                                    os.system('clear')
                                     os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
+                                    os.system('exit')
                                 except:
                                     os.system(f'cp "{src}" "{dst}"')
+                                    os.system('clear')
                                     os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
+                                    os.system('exit')
                             os.remove(src)
                             quit()
                         yn_frame = tk.Frame(self, bg='white')
