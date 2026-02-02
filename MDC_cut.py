@@ -295,10 +295,12 @@ def force_update():
             '''
             try:
                 os.system(f'cp "{src}" "{dst}"')
-                subprocess.run(['osascript', '-e', script])
+                # subprocess.run(['osascript', '-e', script])
+                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
             except:
                 os.system(f'cp "{src}" "{dst}"')
-                subprocess.run(['osascript', '-e', script])
+                # subprocess.run(['osascript', '-e', script])
+                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
         os.remove(src)
         quit()
     if os.name == 'nt':
