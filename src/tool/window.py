@@ -682,15 +682,17 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                                 script = rf'''
                                 tell application "Terminal"
                                     activate
-                                    do script "{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
+                                    do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
                                 end tell
                                 '''
                                 try:
                                     os.system(f'cp "{src}" "{dst}"')
-                                    subprocess.run(['osascript', '-e', script])
+                                    # subprocess.run(['osascript', '-e', script])
+                                    os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
                                 except:
                                     os.system(f'cp "{src}" "{dst}"')
-                                    subprocess.run(['osascript', '-e', script])
+                                    # subprocess.run(['osascript', '-e', script])
+                                    os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
                             os.remove(src)
                             quit()
                         yn_frame = tk.Frame(self, bg='white')
