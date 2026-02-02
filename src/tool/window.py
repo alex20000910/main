@@ -678,12 +678,19 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                                 os.system(f'copy "{src}" "{dst}" > nul')
                                 os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
                             elif os.name == 'posix':
+                                import sys
+                                script = rf'''
+                                tell application "Terminal"
+                                    activate
+                                    do script "{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
+                                end tell
+                                '''
                                 try:
                                     os.system(f'cp "{src}" "{dst}"')
-                                    os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                                    subprocess.run(['osascript', '-e', script])
                                 except:
                                     os.system(f'cp "{src}" "{dst}"')
-                                    os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                                    subprocess.run(['osascript', '-e', script])
                             os.remove(src)
                             quit()
                         yn_frame = tk.Frame(self, bg='white')

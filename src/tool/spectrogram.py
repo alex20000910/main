@@ -676,12 +676,29 @@ class spectrogram:
             output.close()
             send_to_clipboard(win32clipboard.CF_DIB, data)
         elif os.name == 'posix':
-            image.save(output, format='PNG')
-            process = subprocess.Popen(['osascript', '-e', 
-                'set the clipboard to (read (POSIX file "/dev/stdin") as «class PNGf»)'],
-                stdin=subprocess.PIPE)
-            process.communicate(output.getvalue())
-            output.close()
+            image.convert("RGB").save(output, "PNG")
+            output.seek(0)
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                tmp.write(output.getvalue())
+                temp_path = tmp.name
+
+            try:
+                # 使用 AppleScript 將圖片複製到剪貼簿
+                applescript = f'''
+                set imagePath to POSIX file "{temp_path}"
+                set the clipboard to (read imagePath as «class PNGf»)
+                '''
+                
+                process = subprocess.Popen(['osascript', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                output, error = process.communicate(input=applescript.encode('utf-8'))
+                
+                if error:
+                    print(f"Error copying to clipboard: {error.decode()}")
+                else:
+                    print("Copied to clipboard successfully.")
+            finally:
+                # 清理臨時檔案
+                os.unlink(temp_path)
         
         # image.save(output, format='PNG')
         # data = output.getvalue()[14:]

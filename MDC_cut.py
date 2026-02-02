@@ -15,6 +15,8 @@ import warnings
 import sys, shutil
 if os.name == 'nt':
     from ctypes import windll
+else:
+    import tempfile
 import copy
 import gc
 from tkinter import messagebox, colorchooser
@@ -289,13 +291,9 @@ def force_update():
             '''
             try:
                 os.system(f'cp "{src}" "{dst}"')
-                # os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
                 subprocess.run(['osascript', '-e', script])
             except:
                 os.system(f'cp "{src}" "{dst}"')
-                # os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'"{app_name}.py"'])
                 subprocess.run(['osascript', '-e', script])
         os.remove(src)
         quit()
@@ -853,6 +851,7 @@ def g_close(*e):
         g.destroy()
         plt.close('all')
         if os.name == 'posix':
+            subprocess.run(['open', '-a', 'Terminal'])
             os.system(rf'''osascript -e 'tell application "Terminal" to quit' ''')
             # os.system('killall Terminal')
         quit()
@@ -1020,14 +1019,7 @@ def DataViewer_PyQt5():
         if os.name == 'nt':
             os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
         elif os.name == 'posix':
-            script = rf'''
-            tell application "Terminal"
-                activate
-                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"
-            end tell
-            '''
-            subprocess.run(['osascript', '-e', script])
-            # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}'])
+            os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}" &''')
     threading.Thread(target=j,daemon=True).start()
 
 @pool_protect
@@ -1098,15 +1090,27 @@ def copy_to_clipboard(ff: Figure) -> None:
         output.close()
         send_to_clipboard(win32clipboard.CF_DIB, data)
     elif os.name == 'posix':
-        image.save(output, format='PNG')
-        output.seek(0)
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+            tmp.write(buf.getvalue())
+            temp_path = tmp.name
+
         try:
-            process = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            process.communicate(input=output.getvalue())
-        except Exception as e:
-            print(f'pbcopy error: {e}')
+            # 使用 AppleScript 將圖片複製到剪貼簿
+            applescript = f'''
+            set imagePath to POSIX file "{temp_path}"
+            set the clipboard to (read imagePath as «class PNGf»)
+            '''
+            
+            process = subprocess.Popen(['osascript', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output, error = process.communicate(input=applescript.encode('utf-8'))
+            
+            if error:
+                print(f"Error copying to clipboard: {error.decode()}")
+            else:
+                print("Copied to clipboard successfully.")
         finally:
-            output.close()
+            # 清理臨時檔案
+            os.unlink(temp_path)
     
 @pool_protect
 def send_to_clipboard(clip_type, data):
@@ -1211,11 +1215,11 @@ def change_file(*args):
     global data, rdd, npzf
     name = namevar.get()
     if len(name) > 30:
-        l_name.config(font=('Arial', size(10), "bold"), width=lfs.max_name_len)
+        l_name.config(font=('Arial', size(f10), "bold"), width=lfs.max_name_len)
     elif len(name) > 20:
-        l_name.config(font=('Arial', size(12), "bold"), width=len(namevar.get()))
+        l_name.config(font=('Arial', size(f12), "bold"), width=len(namevar.get()))
     else:
-        l_name.config(font=('Arial', size(14), "bold"), width=len(namevar.get()))
+        l_name.config(font=('Arial', size(f14), "bold"), width=len(namevar.get()))
     for i, j, k, l in zip(lfs.name, lfs.data, lfs.path, lfs.f_npz):
         if name == i:
             data = lfs.get(j)
@@ -1247,14 +1251,7 @@ def qt_app(path: list[str]):
             for i in path:
                 tpath.append(str(i))
             spath = str(tpath).removeprefix('[').removesuffix(']').replace(', ', ' ')
-            script = rf'''
-            tell application "Terminal"
-                activate
-                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')} -f {spath}"
-            end tell
-            '''
-            subprocess.run(['osascript', '-e', script])
-            # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+            os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}" -f {spath} &''')
     threading.Thread(target=job, daemon=True).start()
     if os.name == 'nt' and hwnd:
         windll.user32.ShowWindow(hwnd, 9)
@@ -1423,14 +1420,7 @@ def cmfit(*e):
         if os.name == 'nt':
             subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
         elif os.name == 'posix':
-            script = rf'''
-            tell application "Terminal"
-                activate
-                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {os.path.join(cdir, src, "tool", "MDC_Fitter.py")} -f {data.attrs['Path']}"
-            end tell
-            '''
-            subprocess.run(['osascript', '-e', script])
-            # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
+            os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}" -f "{data.attrs['Path']}" &''')
     threading.Thread(target=job, daemon=True).start()
     if os.name == 'nt' and hwnd:
         windll.user32.ShowWindow(hwnd, 9)
@@ -2028,12 +2018,8 @@ if __name__ == '__main__':
             '''
             try:
                 subprocess.run(['osascript', '-e', script])
-                # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{app_name}.py'])
-                # os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
             except:
                 subprocess.run(['osascript', '-e', script])
-                # subprocess.Popen([sys.executable, '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{app_name}.py'])
-                # os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')
@@ -2159,7 +2145,7 @@ if __name__ == '__main__':
     filemenu.add_command(label="Load Bare Band File", image=icon_manager.get_mini_icon('bare_band'), command=bareband, compound='left', accelerator="F3")
     filemenu.add_separator()
     filemenu.add_cascade(label="Export Data", menu=filemenu2)
-    filemenu.add_command(label="Exit", command=g.quit)
+    filemenu.add_command(label="Exit", command=g_close, accelerator="Ctrl+Q")
     
     # filemenu.entryconfig("Load Raw Data", state='disabled')
     
@@ -2458,6 +2444,10 @@ if __name__ == '__main__':
     icon = IconManager()
     g.iconphoto(True, tk.PhotoImage(data=b64decode(icon.icon)))
 
+    f14 = 14 if os.name == 'nt' else 11
+    f12 = 12 if os.name == 'nt' else 10
+    f10 = 10 if os.name == 'nt' else 8
+    
     fr_main = tk.Frame(g, bg="white")
     fr_main.pack(side=tk.TOP, fill='both', expand=True)
     
@@ -2465,27 +2455,28 @@ if __name__ == '__main__':
     fr.grid(row=0, column=0, sticky='n', pady=10)
     fr_info = tk.Frame(fr,bg='white')
     fr_info.pack(side=tk.TOP)
-    fr_tool = tk.Frame(fr_info,bg='white',width=25)
+    w_info = 25 if os.name == 'nt' else 15
+    fr_tool = tk.Frame(fr_info,bg='white',width=w_info)
     fr_tool.pack(fill='x')
-    l_path = tk.Text(fr_info, wrap='word', font=("Arial", size(12), "bold"), bg="white", fg="black", state='disabled',height=3,width=25)
+    l_path = tk.Text(fr_info, wrap='word', font=("Arial", size(f12), "bold"), bg="white", fg="black", state='disabled',height=3,width=w_info)
     l_path.pack(fill='x')
     # info = tk.Label(fr_main,text='                                   \n\n\n\n\n\n\n\n\n\n\n\n\n', font=("Arial", size(14), "bold"), bg="white", fg="black",padx = 30,pady=30)
     xscroll = tk.Scrollbar(fr_info, orient='horizontal')
     xscroll.pack(side='bottom', fill='x')
     yscroll = tk.Scrollbar(fr_info, orient='vertical')
     yscroll.pack(side='right', fill='y')
-    info = tk.Text(fr_info, wrap='none', font=("Arial", size(14), "bold"), bg="white", fg="black", state='disabled',
-                height=10, width=25, xscrollcommand=xscroll.set, yscrollcommand=yscroll.set)
+    info = tk.Text(fr_info, wrap='none', font=("Arial", size(f14), "bold"), bg="white", fg="black", state='disabled',
+                height=10, width=w_info, xscrollcommand=xscroll.set, yscrollcommand=yscroll.set)
     info.pack(anchor='w')
     xscroll.config(command=info.xview)
     yscroll.config(command=info.yview)
     fr_mod = tk.Frame(fr,bg='white')
     fr_mod.pack(side=tk.TOP)
-    b_name = tk.Button(fr_mod, text='Modify Name', font=('Arial', size(10), 'bold'),command=cname)
+    b_name = tk.Button(fr_mod, text='Modify Name', font=('Arial', size(f10), 'bold'),command=cname)
     b_name.grid(row=0,column=0)
-    b_excitation = tk.Button(fr_mod, text='Modify Excitation Energy', font=('Arial', size(10), 'bold'),command=cexcitation)
+    b_excitation = tk.Button(fr_mod, text='Modify Excitation Energy', font=('Arial', size(f10), 'bold'),command=cexcitation)
     b_excitation.grid(row=0,column=1)
-    b_desc = tk.Button(fr_mod, text='Modify Description', font=('Arial', size(10), 'bold'),command=desc)
+    b_desc = tk.Button(fr_mod, text='Modify Description', font=('Arial', size(f10), 'bold'),command=desc)
     b_desc.grid(row=0,column=2)  
     
     
@@ -2523,10 +2514,10 @@ if __name__ == '__main__':
     cmbf.grid(row=0, column=0)
     
     bchcmp = tk.Button(cmbf, text='Change cmap', font=(
-        "Arial", size(12), "bold"), height='1', command=Chcmp, border=2)
+        "Arial", size(f12), "bold"), height='1', command=Chcmp, border=2)
     bchcmp.pack(side='left', padx=2, pady=2)
     bdefcmp = tk.Button(cmbf, text='User Defined cmap', font=(
-        "Arial", size(12), "bold"), height='1', command=def_cmap, border=2)
+        "Arial", size(f12), "bold"), height='1', command=def_cmap, border=2)
     bdefcmp.pack(side='left', padx=2, pady=2)
 
     cmlf = tk.Frame(cmf, bg='white')
@@ -2542,9 +2533,9 @@ if __name__ == '__main__':
     cm.grid(row=1, column=1)
 
     c1 = tk.Label(cmlf, text='Commonly Used:', font=(
-        "Arial", size(12)), bg="white", height='1')
+        "Arial", size(f12)), bg="white", height='1')
     c1.grid(row=0, column=0)
-    c2 = tk.Label(cmlf, text='All:', font=("Arial", size(12)), bg="white", height='1')
+    c2 = tk.Label(cmlf, text='All:', font=("Arial", size(f12)), bg="white", height='1')
     c2.grid(row=1, column=0)
     
     frraw = tk.Frame(fr, bg='white')
@@ -2598,13 +2589,13 @@ if __name__ == '__main__':
 
 
     m1 = tk.Label(frraw, text='Raw', font=(
-        "Arial", size(12), "bold"), bg="white", fg='red')
+        "Arial", size(f14), "bold"), bg="white", fg='red')
     m1.grid(row=0, column=0)
     m2 = tk.Label(frraw, text='Fit', font=(
-        "Arial", size(12), "bold"), bg="white", fg='blue')
+        "Arial", size(f14), "bold"), bg="white", fg='blue')
     m2.grid(row=1, column=0)
     m3 = tk.Label(frraw, text='Transform', font=(
-        "Arial", size(12), "bold"), bg="white", fg="blue")
+        "Arial", size(f14), "bold"), bg="white", fg="blue")
     m3.grid(row=2, column=0)
 
     
@@ -2613,7 +2604,7 @@ if __name__ == '__main__':
 
     st = queue.Queue(maxsize=0)
     state = tk.Label(fr_state, text=f"Version: {__version__}", font=(
-        "Arial", size(14), "bold"), bg="white", fg="black", wraplength=250, justify='center')
+        "Arial", size(f14), "bold"), bg="white", fg="black", wraplength=250, justify='center')
     state.grid(row=0, column=0, pady=20)
 
     # Icon = [icon.icon1, icon.icon2, icon.icon3, icon.icon4, icon.icon5, icon.icon6, icon.icon7, icon.icon8, icon.icon9, icon.icon10, icon.icon11, icon.icon12, icon.icon13, icon.icon14, icon.icon15, icon.icon16, icon.icon17, icon.icon18, icon.icon19, icon.icon20]
@@ -2647,9 +2638,10 @@ if __name__ == '__main__':
     lcmin = tk.Label(clim, text='Minimum', font=(
         "Arial", size(12)), bg='white', fg='white')
     lcmin.grid(row=1, column=0)
-    cmax = tk.Frame(clim, bg='white', width=15, bd=5)
+    w_15 = 15 if os.name == 'nt' else 12
+    cmax = tk.Frame(clim, bg='white', width=w_15, bd=5)
     cmax.grid(row=0, column=1)
-    cmin = tk.Frame(clim, bg='white', width=15, bd=5)
+    cmin = tk.Frame(clim, bg='white', width=w_15, bd=5)
     cmin.grid(row=1, column=1)
 
 
@@ -2680,7 +2672,7 @@ if __name__ == '__main__':
     #     "Arial", size(12), "bold"), bg="white", fg='blue')
     # l2.grid(row=1, column=0)
     l3 = tk.Label(step, text='k offset (deg)', font=(
-        "Arial", size(12), "bold"), bg="white", fg="black")
+        "Arial", size(f12), "bold"), bg="white", fg="black")
     l3.grid(row=2, column=0)
     # l4 = tk.Label(step, text='Step 3', font=(
     #     "Arial", size(12), "bold"), bg="white", fg='blue')
@@ -2711,12 +2703,12 @@ if __name__ == '__main__':
     #     "Arial", size(12), "bold"), width=8, height='1', command=angcut, bd=5, fg='black')
     # edccut.grid(row=0, column=1)
     l_lowlim = tk.Label(cut, text='Lower Limit', font=(
-        "Arial", size(10), "bold"), bg="white", fg="black", height=1)
+        "Arial", size(f10), "bold"), bg="white", fg="black", height=1)
     l_lowlim.grid(row=0, column=2)
     lowlim = tk.StringVar()
     lowlim.set('0')
     lowlim.trace_add('write', flowlim)
-    in_lowlim = tk.Entry(cut, font=("Arial", size(10), "bold"),
+    in_lowlim = tk.Entry(cut, font=("Arial", size(f10), "bold"),
                         width=7, textvariable=lowlim, bd=5)
     in_lowlim.grid(row=0, column=3)
 
@@ -2727,8 +2719,8 @@ if __name__ == '__main__':
     except:
         k_offset.set('0')
     k_offset.trace_add('write', reload)
-    koffset = tk.Entry(step, font=("Arial", size(12), "bold"),
-                    width=12, textvariable=k_offset, bd=9)
+    koffset = tk.Entry(step, font=("Arial", size(f12), "bold"),
+                    width=f12, textvariable=k_offset, bd=2)
     koffset.grid(row=2, column=1)
     
     bb_offset = tk.StringVar()
@@ -2737,8 +2729,8 @@ if __name__ == '__main__':
     except:
         bb_offset.set('0')
     bb_offset.trace_add('write', fbb_offset)
-    bboffset = tk.Entry(step, font=("Arial", size(12), "bold"),
-                        width=12, textvariable=bb_offset, bd=9)
+    bboffset = tk.Entry(step, font=("Arial", size(f12), "bold"),
+                        width=f12, textvariable=bb_offset, bd=2)
     bboffset.grid(row=3, column=1)
     bbk_offset = tk.StringVar()
     try:
@@ -2746,14 +2738,14 @@ if __name__ == '__main__':
     except:
         bbk_offset.set('1')
     bbk_offset.trace_add('write', fbbk_offset)
-    bbkoffset = tk.Entry(step, font=("Arial", size(12), "bold"),
-                        width=12, textvariable=bbk_offset, bd=9)
+    bbkoffset = tk.Entry(step, font=("Arial", size(f12), "bold"),
+                        width=f12, textvariable=bbk_offset, bd=2)
     bbkoffset.grid(row=4, column=1)
     l6 = tk.Label(step, text='Bare band E offset (meV)', font=(
-        "Arial", size(12), "bold"), bg="white", fg="black", height=1)
+        "Arial", size(f12), "bold"), bg="white", fg="black", height=1)
     l6.grid(row=3, column=0)
     l7 = tk.Label(step, text='Bare band k ratio', font=(
-        "Arial", size(12), "bold"), bg="white", fg="black", height=1)
+        "Arial", size(f12), "bold"), bg="white", fg="black", height=1)
     l7.grid(row=4, column=0)
 
     figfr = tk.Frame(fr_main, bg='white')
@@ -2764,7 +2756,7 @@ if __name__ == '__main__':
         label_size = 16
     elif os.name == 'posix':
         figy = 6
-        figx = 5
+        figx = 7.2
         label_size = 12
     fig = Figure(figsize=(figx*scale, figy*scale), layout='constrained')
     out = FigureCanvasTkAgg(fig, master=figfr)
@@ -2800,11 +2792,12 @@ if __name__ == '__main__':
     lcmp = tk.Frame(plots, bg='white')
     lcmp.grid(row=0, column=0)
 
-    lcmpd = Figure(figsize=(0.75*scale, 1*scale), layout='constrained')
+    w, h = (0.75, 1) if os.name == 'nt' else (0.2, 0.7)
+    lcmpd = Figure(figsize=(w*scale, h*scale), layout='constrained')
     cmpg = FigureCanvasTkAgg(lcmpd, master=lcmp)
     cmpg.get_tk_widget().grid(row=0, column=1)
     lsetcmap = tk.Label(lcmp, text='Colormap:', font=(
-        "Arial", size(12), "bold"), bg="white", height='1', bd=9)
+        "Arial", size(f12), "bold"), bg="white", height='1', bd=1)
     lsetcmap.grid(row=0, column=0)
     chcmp()
 
@@ -2831,7 +2824,7 @@ if __name__ == '__main__':
         b_desc.config(state='disable')
     if data is not None:
         pr_load(data)
-        b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
+        b_tools = tk.Button(fr_tool, text='Batch\nMaster', command=tools, height=2, font=('Arial', size(14), "bold"), bg='white')
         nlist = lfs.name
         namevar = tk.StringVar(value=nlist[0])
         l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)
@@ -2891,10 +2884,6 @@ if __name__ == '__main__':
             lfs.cec.tlg.lift()
             lfs.cec.tlg.focus_force()
     version_check()
-    if os.name == 'posix':
-        messagebox.showinfo("Hint", "If the expected information is not visible in the current Terminal window, please check other Terminal windows.")
-        g.lift()
-        g.focus_force()
     # g_mem = (g_mem - psutil.virtual_memory().available)/1024**3   # Main GUI memory in GB
     g_mem = psutil.Process(os.getpid()).memory_info().rss / 1024**3  # Main GUI memory in GB
     app_pars.g_mem = g_mem
