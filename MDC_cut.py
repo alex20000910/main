@@ -1098,10 +1098,15 @@ def copy_to_clipboard(ff: Figure) -> None:
         output.close()
         send_to_clipboard(win32clipboard.CF_DIB, data)
     elif os.name == 'posix':
-        image.convert("RGB").save(output, "PNG")
-        data = output.getvalue()
-        output.close()
-        send_to_clipboard('image/png', data)
+        image.save(output, format='PNG')
+        output.seek(0)
+        try:
+            process = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process.communicate(input=output.getvalue())
+        except Exception as e:
+            print(f'pbcopy error: {e}')
+        finally:
+            output.close()
     
 @pool_protect
 def send_to_clipboard(clip_type, data):
@@ -1238,10 +1243,14 @@ def qt_app(path: list[str]):
         if os.name == 'nt':
             subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
         elif os.name == 'posix':
+            tpath = []
+            for i in path:
+                tpath.append(str(i))
+            spath = str(tpath).removeprefix('[').removesuffix(']').replace(', ', ' ')
             script = rf'''
             tell application "Terminal"
                 activate
-                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')} -f {data.attrs['Path']}"
+                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')} -f {spath}"
             end tell
             '''
             subprocess.run(['osascript', '-e', script])
