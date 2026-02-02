@@ -713,7 +713,11 @@ class loadfiles(FileSequence):
                 exist_f = True
                 match_f = self.__check_name
                 if not self.init:
-                    shutil.rmtree(self.zpath)
+                    if os.name == 'nt':
+                        shutil.rmtree(self.zpath)
+                        # os.system(f'rmdir /s /q "{self.zpath}"')
+                    else:
+                        os.system(f'rm -rf "{self.zpath}"')
             if not exist_f or not self.init or not match_f:
                 try:
                     os.makedirs(self.zpath, exist_ok=True)

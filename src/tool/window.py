@@ -709,7 +709,7 @@ class VersionCheckWindow(tk.Toplevel, ABC):
         if os.name == 'nt':
             os.system(f'del {path}')
         elif os.name == 'posix':
-            os.system(f'rm {path}')
+            os.system(f'rm -rf {path}')
         
     def size(self, s: int) -> int:
         return(int(self.scale*s))

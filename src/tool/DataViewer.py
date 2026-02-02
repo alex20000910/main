@@ -23,7 +23,11 @@ cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if __name__ == "__main__":
     os.chdir(cdir)
     if os.path.exists('.MDC_cut_DataViewer'):
-        shutil.rmtree('.MDC_cut_DataViewer')
+        if os.name == 'nt':
+            shutil.rmtree('.MDC_cut_DataViewer')
+            # os.system('rd /s /q ".MDC_cut_DataViewer"')
+        else:
+            os.system('rm -rf .MDC_cut_DataViewer')
     os.mkdir('.MDC_cut_DataViewer')
     if os.name == 'nt':
         os.system(f'attrib +h +s ".MDC_cut_DataViewer"')
@@ -93,7 +97,11 @@ def load_zarr(path: str):
             ang = zarr.open(ang_path, mode='r')
             if ang[0] != ang[-1]:
                 os.chdir(path)
-                shutil.rmtree('__disp__.zarr')
+                if os.name == 'nt':
+                    shutil.rmtree('__disp__.zarr')
+                    # os.system('rd /s /q "__disp__.zarr"')
+                else:
+                    os.system('rm -rf __disp__.zarr')
         # zpath = os.path.join(path, '__disp__.zarr')
         # if not os.path.exists(zpath):
         #     # data = zarr.open(path, mode='r+', dtype=np.float32)[:,:,:data.shape[2]-1]  # Remove the last attribute dimension
@@ -1591,7 +1599,11 @@ class SliceBrowser(MainWindow):
                     # pr_bar.increaseProgress()
                 os.chdir(self.path)
                 if os.path.exists('__disp__.zarr'):
-                    shutil.rmtree('__disp__.zarr')
+                    if os.name == 'nt':
+                        shutil.rmtree('__disp__.zarr')
+                        # os.system('rd /s /q "__disp__.zarr"')
+                    else:
+                        os.system('rm -rf __disp__.zarr')
                 
                 zarr.save_group(path, data=raw_data_show, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
                 raw_data_show = None
@@ -1616,7 +1628,11 @@ class SliceBrowser(MainWindow):
                 pr_bar.increaseProgress()
             os.chdir(self.path)
             if os.path.exists('__disp__.zarr'):
-                shutil.rmtree('__disp__.zarr')
+                if os.name == 'nt':
+                    shutil.rmtree('__disp__.zarr')
+                    # os.system('rd /s /q "__disp__.zarr"')
+                else:
+                    os.system('rm -rf __disp__.zarr')                
             zdata = np.asarray(self.raw_data/self.max_value*255, dtype=np.uint8)
             zarr.save_group(path, data=zdata, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
             zdata = None
@@ -1669,7 +1685,11 @@ class SliceBrowser(MainWindow):
             os.chdir(self.path)
             if self.mode == 'standard':
                 if os.path.exists('__disp__.zarr'):
-                    shutil.rmtree('__disp__.zarr')
+                    if os.name == 'nt':
+                        shutil.rmtree('__disp__.zarr')
+                        # os.system('rd /s /q "__disp__.zarr"')
+                    else:
+                        os.system('rm -rf __disp__.zarr')
             elif self.mode == 'display':
                 os.chdir(os.path.dirname(self.path))
                 for filename in os.listdir(path):
@@ -1677,7 +1697,11 @@ class SliceBrowser(MainWindow):
                     if os.path.isfile(file_path) or os.path.islink(file_path):
                         os.unlink(file_path)  # 刪除檔案或符號連結
                     elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)  # 刪除子資料夾
+                        if os.name == 'nt':
+                            shutil.rmtree(file_path)
+                            # os.system(f'rd /s /q "{file_path}"')
+                        else:
+                            os.system(f'rm -rf "{file_path}"')
             zdata = np.asarray(raw_data_show, dtype=np.uint8)
             if self.mode == 'standard':
                 zarr.save_group(path, data=zdata, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))

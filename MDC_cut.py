@@ -67,6 +67,9 @@ else:
     "tkinterdnd2==0.4.3",
     "google-crc32c==1.8.0"  # for numcodecs
     ]
+if os.name == 'posix':
+    REQUIREMENTS[9] = None  # no pywin32 in Linux or MacOS
+    REQUIREMENTS[10] = None # no originpro in Linux or MacOS
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':
@@ -189,22 +192,23 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         return -1
 
 def get_src(ver=False):
-    url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
-           r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
-           r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/util.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/qt_util.py"]
+    branch = 'update'
+    url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/MDC_cut_utility.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/__init__.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/util.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/loader.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/spectrogram.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/SO_Fitter.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/VolumeSlicer.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/CEC.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/DataViewer.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/MDC_Fitter.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/EDC_Fitter.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/window.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/RawDataViewer.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/qt_util.py"]
     for i, v in enumerate(url):
         if i < 3:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
@@ -300,7 +304,7 @@ def force_update():
     if os.name == 'nt':
         os.system(f'del {path}')
     elif os.name == 'posix':
-        os.system(f'rm {path}')
+        os.system(f'rm -rf {path}')
 
 # set up .MDC_cut folder
 os.chdir(cdir)

@@ -1080,10 +1080,18 @@ class VolumeSlicer(tk.Frame):
             if os.path.exists(os.path.join(tempdir, 'stop_signal')):
                 os.remove(os.path.join(tempdir, 'stop_signal'))
             if os.path.exists('cut_temp_save'):
-                shutil.rmtree('cut_temp_save')
+                if os.name == 'nt':
+                    shutil.rmtree('cut_temp_save')
+                    # os.system('rd /s /q cut_temp_save')
+                else:
+                    os.system('rm -rf cut_temp_save')
             os.mkdir('cut_temp_save')
             if os.path.exists('cube_temp_save'):
-                shutil.rmtree('cube_temp_save')
+                if os.name == 'nt':
+                    shutil.rmtree('cube_temp_save')
+                    # os.system('rd /s /q cube_temp_save')
+                else:
+                    os.system('rm -rf cube_temp_save')
             os.mkdir('cube_temp_save')
             with Pool(self.pool_size) as self.pool:
                 args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume[:, :, i], self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
@@ -1115,10 +1123,18 @@ class VolumeSlicer(tk.Frame):
         try:
             os.chdir(os.path.join(tempdir))
             if os.path.exists('cut_temp_save'):
-                shutil.rmtree('cut_temp_save')
+                if os.name == 'nt':
+                    shutil.rmtree('cut_temp_save')
+                    # os.system('rd /s /q cut_temp_save')
+                else:
+                    os.system('rm -rf cut_temp_save')
             os.mkdir('cut_temp_save')
             if os.path.exists('cube_temp_save'):
-                shutil.rmtree('cube_temp_save')
+                if os.name == 'nt':
+                    shutil.rmtree('cube_temp_save')
+                    # os.system('rd /s /q cube_temp_save')
+                else:
+                    os.system('rm -rf cube_temp_save')
             os.mkdir('cube_temp_save')
             with Pool(self.pool_size) as self.pool:
                 args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume[:, :, i], self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
