@@ -679,19 +679,11 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                                 os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
                             elif os.name == 'posix':
                                 import sys
-                                script = rf'''
-                                tell application "Terminal"
-                                    activate
-                                    do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
-                                end tell
-                                '''
                                 try:
                                     os.system(f'cp "{src}" "{dst}"')
-                                    # subprocess.run(['osascript', '-e', script])
                                     os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
                                 except:
                                     os.system(f'cp "{src}" "{dst}"')
-                                    # subprocess.run(['osascript', '-e', script])
                                     os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
                             os.remove(src)
                             quit()

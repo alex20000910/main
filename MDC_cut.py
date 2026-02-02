@@ -287,19 +287,11 @@ def force_update():
             os.system(f'copy "{src}" "{dst}" > nul')
             os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         elif os.name == 'posix':
-            script = rf'''
-            tell application "Terminal"
-                activate
-                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
-            end tell
-            '''
             try:
                 os.system(f'cp "{src}" "{dst}"')
-                # subprocess.run(['osascript', '-e', script])
                 os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
             except:
                 os.system(f'cp "{src}" "{dst}"')
-                # subprocess.run(['osascript', '-e', script])
                 os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
         os.remove(src)
         quit()
@@ -335,9 +327,17 @@ else:
 # clean temp folders
 if __name__ == '__main__':
     if os.path.exists(os.path.join(cdir, '.MDC_cut', 'cut_temp_save')):
-        shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cut_temp_save'))
+        if os.name == 'nt':
+            shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cut_temp_save'))
+            # os.system(f'rmdir /s /q "{os.path.join(cdir, ".MDC_cut", "cut_temp_save")}"')
+        elif os.name == 'posix':
+            os.system(f'rm -rf "{os.path.join(cdir, ".MDC_cut", "cut_temp_save")}"')
     if os.path.exists(os.path.join(cdir, '.MDC_cut', 'cube_temp_save')):
-        shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cube_temp_save'))
+        if os.name == 'nt':
+            shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cube_temp_save'))
+            os.system(f'rmdir /s /q "{os.path.join(cdir, ".MDC_cut", "cube_temp_save")}"')
+        elif os.name == 'posix':
+            os.system(f'rm -rf "{os.path.join(cdir, ".MDC_cut", "cube_temp_save")}"')
 
 # make sure pip is installed
 try:
