@@ -881,7 +881,8 @@ def sample_data(*e):
         tpath = os.path.join(cdir, 'test_data', rf"simulated_R1_{r1:.1f}_R2_0.h5")
         files.append(tpath)
         if os.path.exists(tpath)==False:
-            get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
+            url=r"https://github.com/alex20000910/main/raw/refs/heads/main/test_data/"+path
+            download(url, tpath)
     tg.done()
     tg = wait(g, app_pars)
     tg.text('Loading sample data...')
@@ -1320,8 +1321,11 @@ def o_load(drop=False, files=''):
         files = fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
+    tg = wait(g, app_pars)
+    tg.text('Loading data...')
     files = tkDnD.load_raw(files)
     main_loader(files)
+    tg.done()
 
 @pool_protect
 def o_ecut():
