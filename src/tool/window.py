@@ -651,6 +651,7 @@ class VersionCheckWindow(tk.Toplevel, ABC):
         self.hwnd = hwnd
         self.app_name = app_name
         self.cdir = cdir
+        self.master = master
         with open(path, mode='r', encoding='utf-8') as f:
             for line in f:
                 if line.startswith('__version__ =') or line.startswith("__version__="):
@@ -711,7 +712,8 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                 os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
                 os.system('clear')
         os.remove(src)
-        sys.exit()
+        self.destroy()
+        self.master.destroy()
         quit()
     
     def size(self, s: int) -> int:
