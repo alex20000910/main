@@ -647,6 +647,10 @@ class VersionCheckWindow(tk.Toplevel, ABC):
         self.scale = scale
         self.get_src(ver=True)
         path = os.path.join(cdir, '.MDC_cut', 'MDC_cut.py')
+        self.path = path
+        self.hwnd = hwnd
+        self.app_name = app_name
+        self.cdir = cdir
         with open(path, mode='r', encoding='utf-8') as f:
             for line in f:
                 if line.startswith('__version__ =') or line.startswith("__version__="):
@@ -661,46 +665,17 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         lb1.pack(side=tk.LEFT)
                         lb2 = tk.Label(fr_label, text=f"A new version {remote_ver} is available.\nUpdate now?", bg='white', font=("Arial", self.size(20), 'bold'))
                         lb2.pack(side=tk.LEFT)
-                        def update_now():
-                            self.destroy()
-                            if os.name == 'nt' and hwnd:
-                                windll.user32.ShowWindow(hwnd, 9)
-                                windll.user32.SetForegroundWindow(hwnd)
-                            elif os.name == 'posix':
-                                subprocess.run(['open', '-a', 'Terminal'])
-                            print('\033[36m\nUpdating to the latest version...\nPlease wait...\033[0m')
-                            self.get_src()
-                            v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
-                            os.remove(v_check_path)
-                            src = path
-                            dst = os.path.join(cdir, f'{app_name}.py')
-                            if os.name == 'nt':
-                                os.system(f'copy "{src}" "{dst}" > nul')
-                                os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                            elif os.name == 'posix':
-                                import sys
-                                try:
-                                    os.system(f'cp "{src}" "{dst}"')
-                                    os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
-                                    os.system('clear')
-                                    os.system('exit')
-                                except:
-                                    os.system(f'cp "{src}" "{dst}"')
-                                    os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
-                                    os.system('clear')
-                                    os.system('exit')
-                            os.remove(src)
-                            quit()
+                        
                         yn_frame = tk.Frame(self, bg='white')
                         yn_frame.pack(pady=5)
-                        btn_update = tk.Button(yn_frame, text="Update", command=update_now, font=("Arial", self.size(16), 'bold'))
+                        btn_update = tk.Button(yn_frame, text="Update", command=self.update_now, font=("Arial", self.size(16), 'bold'))
                         btn_update.pack(side=tk.LEFT, padx=5)
                         def later():
                             self.destroy()
                         btn_later = tk.Button(yn_frame, text="Later", command=later, font=("Arial", self.size(16), 'bold'))
                         btn_later.pack(side=tk.LEFT, padx=5)
                         set_center(master, self, w_extend=15)
-                        self.bind('<Return>', lambda e: update_now())
+                        self.bind('<Return>', lambda e: self.update_now())
                         self.grab_set()
                         self.focus_set()
                     break
@@ -708,7 +683,38 @@ class VersionCheckWindow(tk.Toplevel, ABC):
             os.system(f'del {path}')
         elif os.name == 'posix':
             os.system(f'rm -rf {path}')
-        
+    
+    def update_now(self):
+        self.destroy()
+        if os.name == 'nt' and self.hwnd:
+            windll.user32.ShowWindow(self.hwnd, 9)
+            windll.user32.SetForegroundWindow(self.hwnd)
+        elif os.name == 'posix':
+            subprocess.run(['open', '-a', 'Terminal'])
+        print('\033[36m\nUpdating to the latest version...\nPlease wait...\033[0m')
+        self.get_src()
+        v_check_path = os.path.join(self.cdir, '.MDC_cut', 'version.check')
+        os.remove(v_check_path)
+        src = self.path
+        dst = os.path.join(self.cdir, f'{self.app_name}.py')
+        if os.name == 'nt':
+            os.system(f'copy "{src}" "{dst}" > nul')
+            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{self.app_name}.py""')
+        elif os.name == 'posix':
+            import sys
+            try:
+                os.system(f'cp "{src}" "{dst}"')
+                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
+                os.system('clear')
+                os.system('exit')
+            except:
+                os.system(f'cp "{src}" "{dst}"')
+                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
+                os.system('clear')
+                os.system('exit')
+        os.remove(src)
+        quit()
+    
     def size(self, s: int) -> int:
         return(int(self.scale*s))
 
