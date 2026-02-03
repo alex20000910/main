@@ -153,6 +153,7 @@ def test_data_loader(tk_environment):
     info = tk.Text(frame)
     cdir = os.path.dirname(os.path.dirname(__file__))
     path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'data_cut.npz'))
     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
