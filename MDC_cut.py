@@ -1138,16 +1138,17 @@ def trans_plot(*e):
         gtp.destroy()
     gtp=RestrictedToplevel(g, bg='white')
     gtp.title('Spectrogram')
-    b_raw = tk.Button(gtp, text='Raw', command=raw_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
+    b_raw = tk.Button(gtp, text='Raw', command=raw_plot, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_raw.grid(row=0, column=0)
-    b_smooth = tk.Button(gtp, text='Smooth', command=smooth_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
+    b_smooth = tk.Button(gtp, text='Smooth', command=smooth_plot, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_smooth.grid(row=0, column=1)
-    b_fd = tk.Button(gtp, text='First Derivative', command=fd_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
+    b_fd = tk.Button(gtp, text='First Derivative', command=fd_plot, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_fd.grid(row=0, column=2)
     set_center(g, gtp, 0, 0)
-    gtp.focus_set()
     gtp.bind('<Return>', raw_plot)
     gtp.limit_bind()
+    g.focus_set()
+    gtp.focus_set()
 
 @pool_protect
 def raw_plot(*args):
@@ -1293,9 +1294,9 @@ def tools(*args):
         toolg.destroy()
     toolg = RestrictedToplevel(g)
     toolg.title('Batch Master')
-    b_raw_viewer = tk.Button(toolg, text='Raw Data Viewer', command=raw_data_viewer, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
+    b_raw_viewer = tk.Button(toolg, text='Raw Data Viewer', command=raw_data_viewer, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_raw_viewer.grid(row=0, column=0)
-    b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
+    b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_spec.grid(row=0, column=1)
     try:
         flag = False
@@ -1305,14 +1306,15 @@ def tools(*args):
     except:
         pass
     if lfs.sort != 'no' and flag:
-        b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
+        b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
         b_kplane.grid(row=0, column=2)
-    b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
+    b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_exp_casa.grid(row=0, column=3)
     toolg.bind('<Return>', spec)
     set_center(g, toolg, 0, 0)
-    toolg.focus_set()
     toolg.limit_bind()
+    g.focus_set()
+    toolg.focus_set()
 
 @pool_protect
 def def_cmap():
@@ -1964,13 +1966,13 @@ def o_loadmfit():
     lmgg.title('Load MDC fitted File')
     lmgg.geometry('400x200')  # format:'1400x800'
     b1 = tk.Button(lmgg, command=lm2p, text='vms 1 peak to 2 peaks', font=(
-        "Arial", size(12), "bold"), fg='red', width=30, height='1', bd=10)
+        "Arial", size(12), "bold"), fg='red', width=30, height=2, bd=2)
     b1.pack()
     b2 = tk.Button(lmgg, command=lmre, text='reverse vms axis', font=(
-        "Arial", size(12), "bold"), fg='red', width=30, height='1', bd=10)
+        "Arial", size(12), "bold"), fg='red', width=30, height=2, bd=2)
     b2.pack()
     b3 = tk.Button(lmgg, command=lm, text='load MDC fitted File', font=(
-        "Arial", size(12), "bold"), fg='red', width=30, height='1', bd=10)
+        "Arial", size(12), "bold"), fg='red', width=30, height=2, bd=2)
     b3.pack()
     lmgg.update()
     w=lmgg.winfo_reqwidth()
@@ -2123,10 +2125,6 @@ if __name__ == '__main__':
     g.option_add('*Font', default_font)
     g.option_add('*Foreground', 'black')
     g.option_add('*Background', 'white')
-    g.option_add('*Button.Foreground', 'black')
-    g.option_add('*Button.Background', 'white')
-    g.option_add('*Label.Foreground', 'black')
-    g.option_add('*Label.Background', 'white')
     icon_manager = MenuIconManager(scale=scale, ScaleFactor=ScaleFactor, odpi=odpi, dpi=dpi)
     
     g.geometry(f'1900x1080+0+{sc_y}')
@@ -2485,12 +2483,12 @@ if __name__ == '__main__':
     yscroll.config(command=info.yview)
     fr_mod = tk.Frame(fr,bg='white')
     fr_mod.pack(side=tk.TOP)
-    b_name = tk.Button(fr_mod, text='Modify Name', font=('Arial', size(f10), 'bold'),command=cname)
+    b_name = tk.Button(fr_mod, text='Modify\nName', font=('Arial', size(f12), 'bold'), height=2, command=cname)
     b_name.grid(row=0,column=0)
-    b_excitation = tk.Button(fr_mod, text='Modify Excitation Energy', font=('Arial', size(f10), 'bold'),command=cexcitation)
+    b_excitation = tk.Button(fr_mod, text='Modify\nExcitation Energy', font=('Arial', size(f12), 'bold'), height=2, command=cexcitation)
     b_excitation.grid(row=0,column=1)
-    b_desc = tk.Button(fr_mod, text='Modify Description', font=('Arial', size(f10), 'bold'),command=desc)
-    b_desc.grid(row=0,column=2)  
+    b_desc = tk.Button(fr_mod, text='Modify\nDescription', font=('Arial', size(f12), 'bold'), height=2, command=desc)
+    b_desc.grid(row=0,column=2)
     
     
     # lfit = tk.Frame(step, bg='white')
@@ -2526,11 +2524,11 @@ if __name__ == '__main__':
     cmbf = tk.Frame(cmf, bg='white')
     cmbf.grid(row=0, column=0)
     
-    bchcmp = tk.Button(cmbf, text='Change cmap', font=(
-        "Arial", size(f12), "bold"), height='1', command=Chcmp, border=2)
+    bchcmp = tk.Button(cmbf, text='Change\nColormap', font=(
+        "Arial", size(f12), "bold"), height=2, command=Chcmp, border=2)
     bchcmp.pack(side='left', padx=2, pady=2)
-    bdefcmp = tk.Button(cmbf, text='User Defined cmap', font=(
-        "Arial", size(f12), "bold"), height='1', command=def_cmap, border=2)
+    bdefcmp = tk.Button(cmbf, text='User Defined\nColormap', font=(
+        "Arial", size(f12), "bold"), height=2, command=def_cmap, border=2)
     bdefcmp.pack(side='left', padx=2, pady=2)
 
     cmlf = tk.Frame(cmf, bg='white')
@@ -2793,14 +2791,14 @@ if __name__ == '__main__':
     
     v_fe = tk.StringVar()
     v_fe.set(str(vfe))
-    b_emode = tk.Button(xydata, text='K.E.', fg='blue', font=("Arial", size(label_size), "bold"), width=5, height='1', command=emode, bd=9)
+    b_emode = tk.Button(xydata, text='K.E.', fg='blue', font=("Arial", size(label_size), "bold"), width=5, height='1', command=emode, bd=2)
     b_emode.grid(row=0, column=2)
-    b_copyimg = tk.Button(xydata, fg='red', text='Copy Image to Clipboard', font=('Arial', size(label_size), 'bold'), command=f_copy_to_clipboard, bd=9)
+    b_copyimg = tk.Button(xydata, fg='red', text='Copy Image to Clipboard', font=('Arial', size(label_size), 'bold'), command=f_copy_to_clipboard, bd=2)
     b_copyimg.grid(row=0, column=3)
     
     
     dl=0
-    b_sw = tk.Button(xydata, text='dot', font=('Arial', size(label_size), 'bold'), command=dl_sw, bd=9)
+    b_sw = tk.Button(xydata, text='dot', font=('Arial', size(label_size), 'bold'), command=dl_sw, bd=2)
 
     lcmp = tk.Frame(plots, bg='white')
     lcmp.grid(row=0, column=0)

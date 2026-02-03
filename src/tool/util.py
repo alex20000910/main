@@ -1018,7 +1018,7 @@ class motion:
                     self.out.get_tk_widget().create_rectangle((self.px1, int(self.figy*100)-self.py1), (px2, int(self.figy*100)-py2),
                                                     outline='black', width=2, tag='rec')
                 elif os.name == 'posix':
-                    self.out.get_tk_widget().create_rectangle((self.px1, int(self.figy*100*90.5/72)-self.py1), (px2, int(self.figy*100*90.5/72)-py2),
+                    self.out.get_tk_widget().create_rectangle((self.px1, int(self.figy*100*89.7/72)-self.py1), (px2, int(self.figy*100*89.7/72)-py2),
                                                     outline='black', width=2, tag='rec')
             if self.value is not None and self.ao is not None:
                 if self.value.get() == 'Raw Data':

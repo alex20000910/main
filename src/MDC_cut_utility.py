@@ -95,6 +95,116 @@ class RestrictedToplevel(tk.Toplevel):
             if x != new_x or y != new_y:
                 self.geometry(f"+{new_x}+{new_y}")
 
+class CanvasButton:
+    """
+    自訂 Canvas 按鈕類別,支援顏色變化和點擊事件
+    
+    Parameters:
+        parent: 父容器 (tk.Tk 或 tk.Frame)
+        text (str): 按鈕文字
+        command (callable): 點擊時執行的函數
+        width (int): 寬度,預設 200
+        height (int): 高度,預設 50
+        bg_color (str): 背景色,預設 '#00ff00'
+        hover_color (str): 懸停色,預設 auto lighten
+        text_color (str): 文字色,預設 'black'
+        font (tuple): 字型,預設 ('Arial', 14)
+        outline_color (str): 邊框色,預設 'black'
+        outline_width (int): 邊框寬度,預設 2
+    """
+    
+    def __init__(self, parent, text='Button', command=None, width=200, height=50,
+                 bg_color='#00ff00', hover_color=None, text_color='black',
+                 font=('Arial', 14), outline_color='black', outline_width=2):
+        
+        self.command = command
+        self.bg_color = bg_color
+        self.hover_color = hover_color if hover_color is not None else None
+        
+        # 建立 Canvas
+        self.canvas = tk.Canvas(
+            parent, 
+            width=width, 
+            height=height, 
+            bg='white', 
+            highlightthickness=0
+        )
+        
+        # 計算矩形座標 (邊距 10 pixels)
+        margin = 10
+        self.rect = self.canvas.create_rectangle(
+            margin, margin, 
+            width - margin, height - margin,
+            fill=bg_color,
+            outline=outline_color,
+            width=outline_width
+        )
+        
+        # 建立文字
+        self.text = self.canvas.create_text(
+            width // 2, 
+            height // 2,
+            text=text,
+            font=font,
+            fill=text_color
+        )
+        
+        # 綁定事件
+        self.canvas.bind('<Enter>', self._on_enter)
+        self.canvas.bind('<Leave>', self._on_leave)
+        self.canvas.bind('<Button-1>', self._on_click)
+    
+    def config(self, **kwargs):
+        if 'bg' or 'background' in kwargs:
+            self.bg_color = kwargs.get('bg', kwargs.get('background', self.bg_color))
+            self.canvas.itemconfig(self.rect, fill=self.bg_color)
+    
+    @staticmethod
+    def hex_to_rgb(hex_color):
+        """將十六進位色碼轉換為 RGB"""
+        hex_color = hex_color.lstrip('#')
+        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+    @staticmethod
+    def rgb_to_hex(rgb):
+        """將 RGB 轉換為十六進位色碼"""
+        return '#{:02x}{:02x}{:02x}'.format(int(rgb[0]), int(rgb[1]), int(rgb[2]))
+    
+    @staticmethod
+    def lighten_color(hex_color, factor=0.7):
+        """使顏色變淡 (用於懸停效果)"""
+        r, g, b = CanvasButton.hex_to_rgb(hex_color)
+        r = int(r + (255 - r) * (1 - factor))
+        g = int(g + (255 - g) * (1 - factor))
+        b = int(b + (255 - b) * (1 - factor))
+        return CanvasButton.rgb_to_hex((r, g, b))
+    
+    def _on_enter(self, event):
+        """滑鼠進入時改變顏色"""
+        hover_color = self.hover_color if self.hover_color is not None else self.lighten_color(self.bg_color, 0.4)
+        self.canvas.itemconfig(self.rect, fill=hover_color)
+    
+    def _on_leave(self, event):
+        """滑鼠離開時恢復顏色"""
+        self.canvas.itemconfig(self.rect, fill=self.bg_color)
+    
+    def _on_click(self, event):
+        """點擊時執行指令"""
+        if self.command:
+            self.command()
+    
+    def pack(self, **kwargs):
+        """包裝 Canvas (傳遞給 pack 方法)"""
+        self.canvas.pack(**kwargs)
+    
+    def grid(self, **kwargs):
+        """網格佈局 Canvas (傳遞給 grid 方法)"""
+        self.canvas.grid(**kwargs)
+    
+    def place(self, **kwargs):
+        """位置佈局 Canvas (傳遞給 place 方法)"""
+        self.canvas.place(**kwargs)
+
 def on_configure(g, *e):
     if g.winfo_width() < g.winfo_reqwidth() or g.winfo_height() < g.winfo_reqheight():
         g.geometry(f"{g.winfo_reqwidth()}x{g.winfo_reqheight()}")

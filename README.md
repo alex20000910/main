@@ -1,5 +1,6 @@
 # MDC_cut: An ARPES data analysis tool
 ![Python Version](https://img.shields.io/badge/Python-3.12_|_3.13-3776AB?logo=python&logoColor=%233776AB&style=plastic)
+![Platform](https://img.shields.io/badge/Platform-Windows_|_macOS-purple?logo=macos)
 [![codecov](https://codecov.io/github/alex20000910/main/graph/badge.svg?token=8OSRR75JVV)](https://codecov.io/github/alex20000910/main)
 [![GitHub License](https://img.shields.io/github/license/alex20000910/main?logo=licenses&logoColor=white&style=plastic)](LICENSE)
 [![GitHub Release](https://img.shields.io/github/v/release/alex20000910/main?style=plastic)](https://github.com/alex20000910/main/releases)
@@ -59,6 +60,13 @@ The user manual is currently out of date. For the latest changes and new feature
 - Test the functionality using sample data from [**here**](test_data/):
   - **HDF5 file**: Load via the **Load Raw Data** button (Available with multiple files for **Batch Master**)
   - **Zarr file**: Load via the **Volume Viewer** button (select the `data_cube.zarr` folder)
+> [!NOTE]
+> Installation is identical for both Windows and macOS systems.
+>
+> **Performance Considerations**:
+> - Performance may vary depending on your system's hardware specifications
+> - A minimum of 4GB of free RAM is recommended for optimal operation
+> - macOS systems typically provide superior performance; however, **OriginPro** export is unavailable due to the absence of native *OriginPro* software for macOS
 
 ### What will `MDC_cut.py` do?
 1. Download the required files from this repository and place them into the working PATH of `MDC_cut.py`.

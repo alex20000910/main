@@ -1,4 +1,4 @@
-from MDC_cut_utility import RestrictedToplevel, set_center, clear, on_configure, cal_ver
+from MDC_cut_utility import RestrictedToplevel, CanvasButton, set_center, clear, on_configure, cal_ver
 from .util import IconManager
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -192,15 +192,14 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
         self.vmin = tk.DoubleVar(value=0.0)
         self.vmax = tk.DoubleVar(value=1.0)
         self.colormap_name = tk.StringVar(value="custom_cmap")
-        self.bind('<Configure>', self.on_configure)
+        self.bind('<Configure>', lambda event: self.on_configure(event))
         self._draw_ui()
-        set_center(master, self, 0, 0)
+        set_center(self.master, self, 0, 0)
         self.update()
         
     def on_configure(self, event):
         if self.winfo_width() != self.winfo_reqwidth() or self.winfo_height() != self.winfo_reqheight():
             self.geometry(f"{self.winfo_reqwidth()}x{self.winfo_reqheight()}")
-            set_center(self.master, self, 0, 0)
 
     def size(self, size: int) -> int:
         return(int(self.scale*size))
@@ -227,7 +226,10 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
         for i, (color, scale) in enumerate(zip(self.colors, self.scales)):
             btn_frame = tk.Frame(colorbar)
             btn_frame.pack(side=tk.LEFT, padx=4)
-            btn = tk.Button(btn_frame, bg=color, width=10, font=("Arial", self.size(15)), command=lambda i=i: self.pick_color(i))
+            if os.name == 'nt':
+                btn = tk.Button(btn_frame, background=color, width=10, font=("Arial", self.size(15)), command=lambda i=i: self.pick_color(i))
+            else:
+                btn = CanvasButton(btn_frame, text='', bg_color=color, width=100, height=80, command=lambda i=i: self.pick_color(i))
             btn.pack(side=tk.TOP)
             self.entries.append(btn)
             scale_entry = tk.Entry(btn_frame, font=("Arial", self.size(15)), width=5, justify='center')
@@ -235,6 +237,8 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
             # 讓第0個和最後一個Entry為readonly
             if i == 0 or i == n - 1:
                 scale_entry.config(state='readonly')
+                if os.name == 'posix':
+                    scale_entry.config(fg="#cecece")
             scale_entry.pack(side=tk.TOP, pady=(2, 0))
             self.scale_entries.append(scale_entry)
 
@@ -252,6 +256,7 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
         tk.Button(self, font=("Arial", self.size(15)), text="Show Colormap", command=self.show_colormap_toplevel).grid(row=5, column=0, columnspan=max(3, len(self.colors)), pady=5)
         tk.Button(self, font=("Arial", self.size(15)), text="Register & Save", command=self.register_and_save).grid(row=6, column=0, columnspan=2, pady=5)
         tk.Button(self, font=("Arial", self.size(15)), text="Load Colormap", command=self.load_colormap).grid(row=6, column=2, columnspan=2, pady=5)
+        set_center(self.master, self, 0, 0)
     
     def pick_color(self, idx):
         color = colorchooser.askcolor(title="Pick a color")[1]

@@ -1705,7 +1705,8 @@ class SliceBrowser(MainWindow):
             zdata = np.asarray(raw_data_show, dtype=np.uint8)
             if self.mode == 'standard':
                 zarr.save_group(path, data=zdata, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
-                os.system(f'attrib +h +s "{path}"')
+                if os.name == 'nt':
+                    os.system(f'attrib +h +s "{path}"')
             elif self.mode == 'display':
                 xmin, xmax = self.raw_kx[0], self.raw_kx[-1]
                 ymin, ymax = self.raw_ky[0], self.raw_ky[-1]
