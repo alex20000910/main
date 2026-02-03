@@ -33,7 +33,7 @@ if __name__ == "__main__":
         os.system(f'attrib +h +s ".MDC_cut_DataViewer"')
 
 sys.path.append(os.path.dirname(cdir))
-from tool.util import MenuIconManager
+from MDC_cut_utility import MenuIconManager
 from tool.qt_util import MainWindow, ProgressDialog, cmap_register
 
 def rotate(data: cv2.typing.MatLike, angle: float, size: tuple[int, int]) -> cv2.typing.MatLike:

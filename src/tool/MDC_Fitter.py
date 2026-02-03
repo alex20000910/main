@@ -34,7 +34,6 @@ sys.path.append(os.path.join(cdir, mod_dir))
 
 from MDC_cut_utility import *
 from tool.loader import loadfiles
-from tool.util import MenuIconManager
 from tool.qt_util import MainWindow, ProgressDialog, cmap_register
 
 m = 9.110938356e-31  # electron mass
@@ -272,6 +271,7 @@ class main(MainWindow):
         qicon = QIcon(pixmap)
         self.icon = qicon
         self.hwnd=hwnd
+        self.mouse_x = None
         self.setWindowTitle("MDC Fitter")
         self.setAcceptDrops(True)
         self.resizeEvent = lambda event: self.update_indicator()
@@ -1524,7 +1524,6 @@ class main(MainWindow):
             ti+=1
             if ti==len(d):
                 break
-        print(t)
         try:
             self.mbgv+=t/2
             self.mfit()
@@ -1559,7 +1558,6 @@ class main(MainWindow):
             ti+=1
             if ti==len(d):
                 break
-        print(t)
         try:
             self.mbgv-=t/2
             self.mfit()
@@ -3252,7 +3250,7 @@ class main(MainWindow):
         # mouse_point = vb.mapSceneToView(event.pos())
         # x = mouse_point.x()
         xlim = self.reg.getRegion()
-        if self.mouse_x > xlim[0] and self.mouse_x < xlim[1]:
+        if self.mouse_x is not None and self.mouse_x > xlim[0] and self.mouse_x < xlim[1]:
             self.mmof*=-1
         self.move_flag = False  # 可移除 move_flag 系列動作
         

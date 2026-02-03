@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QProgressBar, QLabel, QVBoxLayout
 from PyQt5.QtCore import Qt
 import time
-from tool.util import IconManager
+from MDC_cut_utility import IconManager
 from PyQt5.QtGui import QPixmap, QIcon
 from base64 import b64decode
 import matplotlib as mpl

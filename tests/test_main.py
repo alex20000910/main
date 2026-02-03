@@ -43,7 +43,6 @@ sys.path.append(os.path.join(cdir, '.MDC_cut', 'tool'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
-from tool.util import app_param
 from tool.SO_Fitter import SO_Fitter
 from tool.CEC import CEC, call_cec, CEC_Object
 from tool.VolumeSlicer import wait
@@ -141,7 +140,6 @@ def set_globals(var, glob):
 def test_data_loader(tk_environment):
     g, frame = tk_environment
     from tool.loader import data_loader, file_loader
-    from tool.util import IconManager
     from base64 import b64decode
     from PIL import Image, ImageTk
     menu1 = tk.OptionMenu(frame, tk.StringVar(value='Option1'), 'Option1', 'Option2')
@@ -153,6 +151,7 @@ def test_data_loader(tk_environment):
     info = tk.Text(frame)
     cdir = os.path.dirname(os.path.dirname(__file__))
     path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'data_cut.npz'))
     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
     path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
@@ -286,10 +285,21 @@ def test_spectrogram(tk_environment):
             s.canvas.get_tk_widget().event_generate('<ButtonRelease-1>', x=860, y=300)
 
 def test_lfs_exp_casa():
-    path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
-    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
-    lfs = loadfiles(path, init=True, mode='eager', name='external', spectrogram=True)
+    opath = []
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1_R2_0#id#d7bebfaa.h5')
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.5_R2_0#id#1ee3c8fd.h5')
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.0_R2_60#id#67245b5a.h5")
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.1_R2_60#id#1e8223d1.h5")
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.5_R2_60#id#56c06b00.h5")
+    opath.append(path)
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
+    lfs = loadfiles(opath, name='internal', cmap='viridis', app_pars=app_pars)
     explfs = lfs_exp_casa(lfs)
     path = os.path.join(os.path.dirname(__file__), 'exp_casa.vms')
     explfs.export_casa(path)
@@ -474,8 +484,6 @@ def test_CEC(tk_environment):
     time.sleep(2)
     if t_cec.gg.winfo_exists():
         t_cec.check()
-    if t_cec.gg.winfo_exists():
-        t_cec.check()
     t_cec.info()
     
 def test_call_cec(tk_environment):
@@ -583,12 +591,10 @@ def test_mfit_data():
         assert i == str(j)
 
 def test_Icon():
-    from tool.util import IconManager
     icon_manager = IconManager()
 
 def test_ToolTip(tk_environment):
     g, frame = tk_environment
-    from tool.util import ToolTip_util, MenuIconManager, Button
     scaled_font_size = 1
     icon_manager = MenuIconManager()
     class ToolTip(ToolTip_util):
@@ -606,14 +612,6 @@ def test_ToolTip(tk_environment):
     tt.show_tooltip(event)
     tt.hide_tooltip(event)
     tt.update_position(event=event)
-
-@pytest.fixture
-def app(qtbot):
-    """創建 Qt 應用程式"""
-    test_app = QtWidgets.QApplication.instance()
-    if test_app is None:
-        test_app = QtWidgets.QApplication([])
-    return test_app
 
 def test_qt_widget(qtbot):
     """測試 Qt widget"""

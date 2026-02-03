@@ -1,5 +1,4 @@
-from MDC_cut_utility import RestrictedToplevel, FileSequence, CEC_Object, clear, set_entry_value, set_center
-from .util import app_param
+from MDC_cut_utility import app_param, RestrictedToplevel, FileSequence, CEC_Object, clear, set_entry_value, set_center
 from .loader import loadfiles, get_cec_params
 from .VolumeSlicer import VolumeSlicer
 import os

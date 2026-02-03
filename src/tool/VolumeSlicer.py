@@ -1,5 +1,4 @@
 from MDC_cut_utility import *
-from .util import app_param
 from .SO_Fitter import SO_Fitter
 import os, inspect
 import sys, shutil
@@ -481,7 +480,10 @@ class VolumeSlicer(tk.Frame):
             self.ev = np.float64(ev)
             self.slim = [0, 493]    # init phi slice range -10~10 degree or -2.5~2.5 mm
             # Create a figure and axis
-            fig_size = 9 if os.name == 'nt' else 5.5
+            fig_size = 9 if os.name == 'nt' else 8
+            if os.name == 'posix':
+                if self.app_pars.scale >1:
+                    fig_size -= 2
             self.fig = plt.Figure(figsize=(fig_size*self.app_pars.scale, fig_size*self.app_pars.scale),constrained_layout=True)
             self.ax = self.fig.add_subplot(111)
             self.ax.set_aspect('equal')
@@ -560,7 +562,7 @@ class VolumeSlicer(tk.Frame):
                 self.b_mode.pack(side=tk.LEFT)
                 label_d = tk.Label(frame_mode, text='Density:', bg='white', font=('Arial', self.size(self.f1_size), "bold")) 
                 label_d.pack(side=tk.LEFT)
-                self.entry_d = tk.Entry(frame_mode, bg='white', font=('Arial', self.size(self.f1_size), "bold"))
+                self.entry_d = tk.Entry(frame_mode, width=5, bg='white', font=('Arial', self.size(self.f1_size), "bold"))
                 self.entry_d.pack(side=tk.LEFT)
                 self.entry_d.insert(0, str(self.density))
                 self.b_d = tk.Button(frame_mode, text='Set Density', command=self.set_density, bg='white', font=('Arial', self.size(self.f1_size), "bold"))
@@ -575,13 +577,13 @@ class VolumeSlicer(tk.Frame):
                 # Create entries and button to set self.slim
                 label_min = tk.Label(frame_entry1, text="Min:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_min.pack(side=tk.LEFT)
-                self.entry_min = tk.Entry(frame_entry1, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
+                self.entry_min = tk.Entry(frame_entry1, width=5, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_min.pack(side=tk.LEFT)
                 self.entry_min.insert(0, str(self.slim[0]))
 
                 label_max = tk.Label(frame_entry1, text="Max:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_max.pack(side=tk.LEFT)
-                self.entry_max = tk.Entry(frame_entry1, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
+                self.entry_max = tk.Entry(frame_entry1, width=5, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_max.pack(side=tk.LEFT)
                 self.entry_max.insert(0, str(self.slim[1]))
 
@@ -593,14 +595,14 @@ class VolumeSlicer(tk.Frame):
                 # Create labels and entries for window range
                 label_xmin = tk.Label(frame_entry2, text="X Min:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_xmin.pack(side=tk.LEFT)
-                self.entry_xmin = tk.Entry(frame_entry2, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
+                self.entry_xmin = tk.Entry(frame_entry2, width=20, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_xmin.pack(side=tk.LEFT)
                 self.entry_xmin.insert(0, str(self.ymin))
                 self.entry_xmin.config(state='disabled')
 
                 label_xmax = tk.Label(frame_entry2, text="X Max:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_xmax.pack(side=tk.LEFT)
-                self.entry_xmax = tk.Entry(frame_entry2, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
+                self.entry_xmax = tk.Entry(frame_entry2, width=20, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_xmax.pack(side=tk.LEFT)
                 self.entry_xmax.insert(0, str(self.ymax))
                 self.entry_xmax.config(state='disabled')
@@ -610,14 +612,14 @@ class VolumeSlicer(tk.Frame):
 
                 label_ymin = tk.Label(frame_entry3, text="Y Min:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_ymin.pack(side=tk.LEFT)
-                self.entry_ymin = tk.Entry(frame_entry3, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
+                self.entry_ymin = tk.Entry(frame_entry3, width=20, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_ymin.pack(side=tk.LEFT)
                 self.entry_ymin.insert(0, str(self.xmin))
                 self.entry_ymin.config(state='disabled')
 
                 label_ymax = tk.Label(frame_entry3, text="Y Max:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_ymax.pack(side=tk.LEFT)
-                self.entry_ymax = tk.Entry(frame_entry3, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
+                self.entry_ymax = tk.Entry(frame_entry3, width=20, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_ymax.pack(side=tk.LEFT)
                 self.entry_ymax.insert(0, str(self.xmax))
                 self.entry_ymax.config(state='disabled')
@@ -687,11 +689,11 @@ class VolumeSlicer(tk.Frame):
                 self.text_e = tk.StringVar()
                 self.text_e.set(str(f'%.3f'%self.ev[self.slice_index]))
                 self.text_e.trace_add('write', self.set_tx)
-                self.text = tk.Entry(self.ea_text_frame, bg='white', textvariable=self.text_e, font=('Arial', self.size(12), "bold"), state='normal', width=7).pack(side=tk.TOP)
+                self.text = tk.Entry(self.ea_text_frame, bg='white', textvariable=self.text_e, font=('Arial', self.size(12), "bold"), state='normal', width=7).pack(side=tk.TOP, padx=1)
                 self.text_a = tk.StringVar()
                 self.text_a.set(str(self.angle))
                 self.text_a.trace_add('write', self.set_angle_tx)
-                self.text_ang = tk.Entry(self.ea_text_frame, bg='white', textvariable=self.text_a, font=('Arial', self.size(12), "bold"), state='normal', width=7).pack(side=tk.TOP)
+                self.text_ang = tk.Entry(self.ea_text_frame, bg='white', textvariable=self.text_a, font=('Arial', self.size(12), "bold"), state='normal', width=7).pack(side=tk.TOP, padx=1)
                 
                 self.canvas1 = FigureCanvasTkAgg(self.fig1, master=self.ea_frame)
                 self.canvas1.draw()
@@ -702,12 +704,12 @@ class VolumeSlicer(tk.Frame):
                 frame_xy.pack(side=tk.TOP)
                 self.cut_xy_x_label = tk.Label(frame_xy, text="kx:", bg='white', font=('Arial', self.size(14), "bold"))
                 self.cut_xy_x_label.pack(side=tk.LEFT)
-                self.cut_xy_x_entry = tk.Entry(frame_xy, bg='white', font=('Arial', self.size(14), "bold"))
+                self.cut_xy_x_entry = tk.Entry(frame_xy, width=5, bg='white', font=('Arial', self.size(14), "bold"))
                 self.cut_xy_x_entry.pack(side=tk.LEFT)
                 self.cut_xy_x_entry.insert(0, '0')
                 self.cut_xy_y_label = tk.Label(frame_xy, text="ky:", bg='white', font=('Arial', self.size(14), "bold"))
                 self.cut_xy_y_label.pack(side=tk.LEFT)
-                self.cut_xy_y_entry = tk.Entry(frame_xy, bg='white', font=('Arial', self.size(14), "bold"))
+                self.cut_xy_y_entry = tk.Entry(frame_xy, width=5, bg='white', font=('Arial', self.size(14), "bold"))
                 self.cut_xy_y_entry.pack(side=tk.LEFT)
                 self.cut_xy_y_entry.insert(0, '0')
                 
@@ -715,12 +717,12 @@ class VolumeSlicer(tk.Frame):
                 frame_dxy.pack(side=tk.TOP)
                 self.cut_xy_dx_label = tk.Label(frame_dxy, text="kx bin:", bg='white', font=('Arial', self.size(14), "bold"))
                 self.cut_xy_dx_label.pack(side=tk.LEFT)
-                self.cut_xy_dx_entry = tk.Entry(frame_dxy, bg='white', font=('Arial', self.size(14), "bold"))
+                self.cut_xy_dx_entry = tk.Entry(frame_dxy, width=5, bg='white', font=('Arial', self.size(14), "bold"))
                 self.cut_xy_dx_entry.pack(side=tk.LEFT)
                 self.cut_xy_dx_entry.insert(0, '0.05')
                 self.cut_xy_dy_label = tk.Label(frame_dxy, text="ky bin:", bg='white', font=('Arial', self.size(14), "bold"))
                 self.cut_xy_dy_label.pack(side=tk.LEFT)
-                self.cut_xy_dy_entry = tk.Entry(frame_dxy, bg='white', font=('Arial', self.size(14), "bold"))
+                self.cut_xy_dy_entry = tk.Entry(frame_dxy, width=5, bg='white', font=('Arial', self.size(14), "bold"))
                 self.cut_xy_dy_entry.pack(side=tk.LEFT)
                 self.cut_xy_dy_entry.insert(0, '0.4')
                 
