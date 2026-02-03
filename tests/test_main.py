@@ -473,8 +473,6 @@ def test_CEC(tk_environment):
     time.sleep(2)
     if t_cec.gg.winfo_exists():
         t_cec.check()
-    if t_cec.gg.winfo_exists():
-        t_cec.check()
     t_cec.info()
     
 def test_call_cec(tk_environment):
@@ -603,14 +601,6 @@ def test_ToolTip(tk_environment):
     tt.show_tooltip(event)
     tt.hide_tooltip(event)
     tt.update_position(event=event)
-
-@pytest.fixture
-def app(qtbot):
-    """創建 Qt 應用程式"""
-    test_app = QtWidgets.QApplication.instance()
-    if test_app is None:
-        test_app = QtWidgets.QApplication([])
-    return test_app
 
 def test_qt_widget(qtbot):
     """測試 Qt widget"""

@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "9.0.0"
+__version__ = "9.0.1"
 __release_date__ = "2026-02-03"
 # import tracemalloc
 # tracemalloc.start()
