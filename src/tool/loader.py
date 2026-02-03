@@ -2346,8 +2346,8 @@ class file_loader(ABC):
 
 class data_loader(ABC):
     def __init__(self, menu1: tk.OptionMenu, menu2: tk.OptionMenu, menu3: tk.OptionMenu, in_fit: tk.Entry, b_fit: tk.Button, l_path: tk.Text, info: tk.Text, cdir: str, lfs: FileSequence, scale: float):
-        self.f13 = 13 if os.name == 'nt' else 11
-        self.f14 = 14 if os.name == 'nt' else 12
+        self.f13 = 13
+        self.f14 = 14        
         self.menu1, self.menu2, self.menu3 = menu1, menu2, menu3
         self.in_fit, self.b_fit = in_fit, b_fit
         self.l_path = l_path

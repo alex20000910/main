@@ -729,6 +729,7 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(50)
     qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=center)
     qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(450, 300))
     qtbot.keyClick(win, QtCore.Qt.Key_Up)
     qtbot.wait(500)
     qtbot.keyClick(win, QtCore.Qt.Key_Down)

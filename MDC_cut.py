@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.5.11"
-__release_date__ = "2026-01-27"
+__version__ = "9.0.0"
+__release_date__ = "2026-02-03"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -192,7 +192,7 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         return -1
 
 def get_src(ver=False):
-    branch = 'update'
+    branch = 'main'
     url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/MDC_cut_utility.py",
@@ -2057,10 +2057,8 @@ if __name__ == '__main__':
         dpi = temp_root.winfo_fpixels('1i')
         temp_root.destroy()
         
-        # macOS 標準 DPI = 72
-        ScaleFactor = int((dpi / 72) * 100)
-        osf = ScaleFactor / 100
-        # t_sc_w, t_sc_h = 1512 * osf, 982 * osf
+        ScaleFactor = int((72.054 / dpi) * 100)
+        osf = ScaleFactor   # ~72
     if bar_pos == 'top':    #taskbar on top
         sc_y = int(40*ScaleFactor/100)
     else:
@@ -2084,19 +2082,19 @@ if __name__ == '__main__':
     # prfactor = 1 if ScaleFactor <= 150 else 1.03
     # prfactor = 1.03 if ScaleFactor <= 100 else 0.9 if ScaleFactor <= 125 else 0.8 if ScaleFactor <= 150 else 0.5
     prfactor = 1
-    ScaleFactor /= prfactor*(ScaleFactor/100*1880/96*odpi/t_sc_w) if 1880/t_sc_w >= (950)/t_sc_h else prfactor*(ScaleFactor/100*(950)/96*odpi/t_sc_h)
     if os.name == 'nt':
+        ScaleFactor /= prfactor*(ScaleFactor/100*1880/96*odpi/t_sc_w) if 1880/t_sc_w >= (950)/t_sc_h else prfactor*(ScaleFactor/100*(950)/96*odpi/t_sc_h)
         g.tk.call('tk', 'scaling', ScaleFactor/100)
     elif os.name == 'posix':
-        pass
-        g.tk.call('tk', 'scaling', ScaleFactor/100*dpi/96)
+        ScaleFactor /= prfactor*(ScaleFactor/100*1512/72.054*odpi/t_sc_w) if 1512/t_sc_w >= (851)/t_sc_h else prfactor*(ScaleFactor/100*(851)/72.054*odpi/t_sc_h)
+        g.tk.call('tk', 'scaling', ScaleFactor/100)
     dpi=g.winfo_fpixels('1i')
     # print('dpi:',dpi)
     if os.name == 'nt':
         windll.shcore.SetProcessDpiAwareness(1)
     scale = odpi / dpi
     base_font_size = 16
-    scaled_font_size = int(base_font_size * scale)
+    scaled_font_size = int(base_font_size * scale)-1
     
     g_mem = psutil.Process(pid).memory_info().rss/1024**3
     app_pars = app_param(hwnd=hwnd, scale=scale, dpi=dpi, bar_pos=bar_pos, g_mem=g_mem)
@@ -2466,7 +2464,7 @@ if __name__ == '__main__':
     fr.grid(row=0, column=0, sticky='n', pady=10)
     fr_info = tk.Frame(fr,bg='white')
     fr_info.pack(side=tk.TOP)
-    w_info = 25 if os.name == 'nt' else 15
+    w_info = 25
     fr_tool = tk.Frame(fr_info,bg='white',width=w_info)
     fr_tool.pack(fill='x')
     l_path = tk.Text(fr_info, wrap='word', font=("Arial", size(f12), "bold"), bg="white", fg="black", state='disabled',height=3,width=w_info)
@@ -2766,9 +2764,10 @@ if __name__ == '__main__':
         figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
         label_size = 16
     elif os.name == 'posix':
-        figy = 6
-        figx = 7.2
-        label_size = 12
+        # print('scale:', scale)
+        figy = 8 if scale<=1 else 6.3
+        figx = 9.5 if scale<=1 else 6.8
+        label_size = 16
     fig = Figure(figsize=(figx*scale, figy*scale), layout='constrained')
     out = FigureCanvasTkAgg(fig, master=figfr)
     out.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
