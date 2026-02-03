@@ -43,7 +43,6 @@ sys.path.append(os.path.join(cdir, '.MDC_cut', 'tool'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
-from tool.util import app_param
 from tool.SO_Fitter import SO_Fitter
 from tool.CEC import CEC, call_cec, CEC_Object
 from tool.VolumeSlicer import wait
@@ -141,7 +140,6 @@ def set_globals(var, glob):
 def test_data_loader(tk_environment):
     g, frame = tk_environment
     from tool.loader import data_loader, file_loader
-    from tool.util import IconManager
     from base64 import b64decode
     from PIL import Image, ImageTk
     menu1 = tk.OptionMenu(frame, tk.StringVar(value='Option1'), 'Option1', 'Option2')
@@ -584,12 +582,10 @@ def test_mfit_data():
         assert i == str(j)
 
 def test_Icon():
-    from tool.util import IconManager
     icon_manager = IconManager()
 
 def test_ToolTip(tk_environment):
     g, frame = tk_environment
-    from tool.util import ToolTip_util, MenuIconManager, Button
     scaled_font_size = 1
     icon_manager = MenuIconManager()
     class ToolTip(ToolTip_util):

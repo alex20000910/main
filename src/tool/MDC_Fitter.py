@@ -34,7 +34,6 @@ sys.path.append(os.path.join(cdir, mod_dir))
 
 from MDC_cut_utility import *
 from tool.loader import loadfiles
-from tool.util import MenuIconManager
 from tool.qt_util import MainWindow, ProgressDialog, cmap_register
 
 m = 9.110938356e-31  # electron mass

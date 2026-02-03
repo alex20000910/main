@@ -1,5 +1,4 @@
 from MDC_cut_utility import *
-from .util import app_param
 from .SO_Fitter import SO_Fitter
 import os, inspect
 import sys, shutil
