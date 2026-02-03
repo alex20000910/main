@@ -299,7 +299,7 @@ def test_lfs_exp_casa():
     path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.5_R2_60#id#56c06b00.h5")
     opath.append(path)
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
-    lfs = loadfiles(opath, init=True, name='internal', cmap='viridis', app_pars=app_pars)
+    lfs = loadfiles(opath, name='internal', cmap='viridis', app_pars=app_pars)
     explfs = lfs_exp_casa(lfs)
     path = os.path.join(os.path.dirname(__file__), 'exp_casa.vms')
     explfs.export_casa(path)
