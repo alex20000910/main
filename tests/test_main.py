@@ -285,10 +285,20 @@ def test_spectrogram(tk_environment):
             s.canvas.get_tk_widget().event_generate('<ButtonRelease-1>', x=860, y=300)
 
 def test_lfs_exp_casa():
-    path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
-    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
-    lfs = loadfiles(path, init=True, name='internal')
+    opath = []
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1_R2_0#id#d7bebfaa.h5')
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.5_R2_0#id#1ee3c8fd.h5')
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.0_R2_60#id#67245b5a.h5")
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.1_R2_60#id#1e8223d1.h5")
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), "simulated_R1_15.5_R2_60#id#56c06b00.h5")
+    opath.append(path)
+    lfs = loadfiles(opath, init=True, name='internal')
     explfs = lfs_exp_casa(lfs)
     path = os.path.join(os.path.dirname(__file__), 'exp_casa.vms')
     explfs.export_casa(path)
