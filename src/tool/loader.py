@@ -720,10 +720,10 @@ class loadfiles(FileSequence):
             if not exist_f or not self.init or not match_f:
                 try:
                     os.makedirs(self.zpath, exist_ok=True)
-                except:
-                    pass
-                tpath = os.path.join(self.zpath, f'lfs_name.check')
-                with open(tpath, 'w') as f:
+                except Exception as e:
+                    print('loader.py __store(): ', e)
+                tpath = os.path.join(self.zpath, 'lfs_name.check')
+                with open(tpath, 'w', encoding='utf-8') as f:
                     for i in range(len(self.name)):
                         data = self.data[i].data
                         if (np.mod(data[data.shape[0]//2]*10, 10) != 0).any():
