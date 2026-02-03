@@ -14,7 +14,8 @@ import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.widgets import Slider
-from ctypes import windll
+if os.name == 'nt':
+    from ctypes import windll
 import h5py
 import tqdm
 import time
@@ -142,10 +143,12 @@ class g_cut_plot(tk.Toplevel):
         self.title('Cut Plot')
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        fig = plt.Figure(figsize=(8*self.app_pars.scale, 8*self.app_pars.scale), constrained_layout=True)
+        fig_size = 8 if os.name == 'nt' else 6
+        fig = plt.Figure(figsize=(fig_size*self.app_pars.scale, fig_size*self.app_pars.scale), constrained_layout=True)
         ax = fig.add_subplot(111)
-        ax.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', fontsize=self.size(16))
-        ax.set_ylabel('Kinetic Energy (eV)', fontsize=self.size(16))
+        label_size = 16 if os.name == 'nt' else 14
+        ax.set_xlabel(r'k ($\frac{2\pi}{\AA}$)', fontsize=self.size(label_size))
+        ax.set_ylabel('Kinetic Energy (eV)', fontsize=self.size(label_size))
 
         if self.cdx <= self.cdy:
             tx = np.linspace(min(self.z), max(self.z), self.cdensity)
@@ -176,9 +179,9 @@ class g_cut_plot(tk.Toplevel):
         fr_save = tk.Frame(self, bg='white')
         fr_save.pack(side=tk.TOP, anchor='center')
         
-        save_button = tk.Button(fr_save, text='Save', command=self.save_cut, bg='white', font=('Arial', self.size(16), "bold"))
+        save_button = tk.Button(fr_save, text='Save', command=self.save_cut, bg='white', font=('Arial', self.size(label_size), "bold"))
         save_button.pack(side=tk.LEFT)
-        save_cube_button = tk.Button(fr_save, text='Save Data Cube', command=self.save_cube, bg='white', font=('Arial', self.size(16), "bold"))
+        save_cube_button = tk.Button(fr_save, text='Save Data Cube', command=self.save_cube, bg='white', font=('Arial', self.size(label_size), "bold"))
         save_cube_button.pack(side=tk.LEFT)
         
         self.bind("<Return>", self.save_cut)
@@ -243,24 +246,29 @@ class g_cut_plot(tk.Toplevel):
         # zdata = np.append(data, attr_array, axis=2)
         # zarr.save(path, zdata)
         if self.app_pars:
-            windll.user32.ShowWindow(self.app_pars.hwnd, 9)
-            windll.user32.SetForegroundWindow(self.app_pars.hwnd)
+            if os.name == 'nt':
+                windll.user32.ShowWindow(self.app_pars.hwnd, 9)
+                windll.user32.SetForegroundWindow(self.app_pars.hwnd)
+            elif os.name == 'posix':
+                subprocess.run(['open', '-a', 'Terminal'])
         max_val = self.zarr_chunk_save(path, data=data, attr_array=attr_array)
-        for name in os.listdir(path):
-            item_path = os.path.join(path, name)
-            if os.path.isfile(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
-            elif os.path.isdir(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
+        if os.name == 'nt':
+            for name in os.listdir(path):
+                item_path = os.path.join(path, name)
+                if os.path.isfile(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
+                elif os.path.isdir(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
         disp_path = os.path.join(path, '__disp__.zarr')
         self.disp_zarr_save(path, disp_path, data, max_val)
-        os.system(f'attrib +h +s "{disp_path}"')
-        for name in os.listdir(disp_path):
-            item_path = os.path.join(disp_path, name)
-            if os.path.isfile(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
-            elif os.path.isdir(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
+        if os.name == 'nt':
+            os.system(f'attrib +h +s "{disp_path}"')
+            for name in os.listdir(disp_path):
+                item_path = os.path.join(disp_path, name)
+                if os.path.isfile(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
+                elif os.path.isdir(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
 
     def save_cube(self, event=None, path=None):
         try:
@@ -473,20 +481,25 @@ class VolumeSlicer(tk.Frame):
             self.ev = np.float64(ev)
             self.slim = [0, 493]    # init phi slice range -10~10 degree or -2.5~2.5 mm
             # Create a figure and axis
-            self.fig = plt.Figure(figsize=(9*self.app_pars.scale, 9*self.app_pars.scale),constrained_layout=True)
+            fig_size = 9 if os.name == 'nt' else 5.5
+            self.fig = plt.Figure(figsize=(fig_size*self.app_pars.scale, fig_size*self.app_pars.scale),constrained_layout=True)
             self.ax = self.fig.add_subplot(111)
             self.ax.set_aspect('equal')
             # self.ax.set_xticks([])
             # self.ax.set_yticks([])
             self.fig.subplots_adjust(bottom=0.25)
             
-            self.fig_region = plt.Figure(figsize=(4*self.app_pars.scale, 4*self.app_pars.scale),constrained_layout=True)
+            reg_size = 4 if os.name == 'nt' else 3
+            self.fig_region = plt.Figure(figsize=(reg_size*self.app_pars.scale, reg_size*self.app_pars.scale),constrained_layout=True)
             self.ax_region = self.fig_region.add_subplot(111)
             self.fig_region.subplots_adjust(bottom=0.25)
             
+            self.f0_size = 20 if os.name == 'nt' else 15
+            self.f1_size = 16 if os.name == 'nt' else 14
+            self.f2_size = 14 if os.name == 'nt' else 12
             if self.type == 'real':
-                self.ax.set_xlabel('x (mm)', fontsize=self.size(16))
-                self.ax.set_ylabel('z (mm)', fontsize=self.size(16))
+                self.ax.set_xlabel('x (mm)', fontsize=self.size(self.f1_size))
+                self.ax.set_ylabel('z (mm)', fontsize=self.size(self.f1_size))
                 if z is not None:
                     self.xmin = np.min(np.min(x)+np.min(z))
                     self.xmax = np.max(np.max(x)+np.max(z))
@@ -504,8 +517,8 @@ class VolumeSlicer(tk.Frame):
                 if self.ymax+self.ymin < 2*self.r1_offset:
                     self.ymax = self.r1_offset-(self.ymin-self.r1_offset)
             elif self.type == 'reciprocal':
-                self.ax.set_xlabel(r'kx ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
-                self.ax.set_ylabel(r'ky ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
+                self.ax.set_xlabel(r'kx ($\frac{2\pi}{\AA}$)', fontsize=self.size(self.f0_size))
+                self.ax.set_ylabel(r'ky ($\frac{2\pi}{\AA}$)', fontsize=self.size(self.f0_size))
                 self.set_xy_lim()
             
             self.fl_show = False
@@ -543,51 +556,51 @@ class VolumeSlicer(tk.Frame):
                 
                 frame_mode = tk.Frame(frame2, bg='white')
                 frame_mode.pack(side=tk.TOP)
-                self.b_mode = tk.Button(frame_mode, text='Transmission Mode', command=self.change_mode, bg='white', font=('Arial', self.size(16), "bold"))
+                self.b_mode = tk.Button(frame_mode, text='Transmission Mode', command=self.change_mode, bg='white', font=('Arial', self.size(self.f1_size), "bold"))
                 self.b_mode.pack(side=tk.LEFT)
-                label_d = tk.Label(frame_mode, text='Density:', bg='white', font=('Arial', self.size(16), "bold")) 
+                label_d = tk.Label(frame_mode, text='Density:', bg='white', font=('Arial', self.size(self.f1_size), "bold")) 
                 label_d.pack(side=tk.LEFT)
-                self.entry_d = tk.Entry(frame_mode, bg='white', font=('Arial', self.size(16), "bold"))
+                self.entry_d = tk.Entry(frame_mode, bg='white', font=('Arial', self.size(self.f1_size), "bold"))
                 self.entry_d.pack(side=tk.LEFT)
                 self.entry_d.insert(0, str(self.density))
-                self.b_d = tk.Button(frame_mode, text='Set Density', command=self.set_density, bg='white', font=('Arial', self.size(16), "bold"))
+                self.b_d = tk.Button(frame_mode, text='Set Density', command=self.set_density, bg='white', font=('Arial', self.size(self.f1_size), "bold"))
                 self.b_d.pack(side=tk.LEFT)
                 
                 
                 frame_entry1 = tk.Frame(frame2, bg='white')
                 frame_entry1.pack(side=tk.TOP)
-                label_info = tk.Label(frame_entry1, text="Set Slit Slice Range (0-493 for initial range)", bg='white', font=('Arial', self.size(14), "bold"))
+                label_info = tk.Label(frame_entry1, text="Set Slit Slice Range (0-493 for initial range)", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_info.pack(side=tk.TOP)
                 
                 # Create entries and button to set self.slim
-                label_min = tk.Label(frame_entry1, text="Min:", bg='white', font=('Arial', self.size(14), "bold"))
+                label_min = tk.Label(frame_entry1, text="Min:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_min.pack(side=tk.LEFT)
-                self.entry_min = tk.Entry(frame_entry1, bg='white', font=('Arial', self.size(14), "bold"))
+                self.entry_min = tk.Entry(frame_entry1, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_min.pack(side=tk.LEFT)
                 self.entry_min.insert(0, str(self.slim[0]))
 
-                label_max = tk.Label(frame_entry1, text="Max:", bg='white', font=('Arial', self.size(14), "bold"))
+                label_max = tk.Label(frame_entry1, text="Max:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_max.pack(side=tk.LEFT)
-                self.entry_max = tk.Entry(frame_entry1, bg='white', font=('Arial', self.size(14), "bold"))
+                self.entry_max = tk.Entry(frame_entry1, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_max.pack(side=tk.LEFT)
                 self.entry_max.insert(0, str(self.slim[1]))
 
-                self.set_slim_button = tk.Button(frame_entry1, text="Set Limit", command=self.set_slim, font=('Arial', self.size(14), "bold"), bg='white')
+                self.set_slim_button = tk.Button(frame_entry1, text="Set Limit", command=self.set_slim, font=('Arial', self.size(self.f2_size), "bold"), bg='white')
                 self.set_slim_button.pack(side=tk.LEFT)
                 
                 frame_entry2 = tk.Frame(frame2, bg='white')
                 frame_entry2.pack(side=tk.TOP)
                 # Create labels and entries for window range
-                label_xmin = tk.Label(frame_entry2, text="X Min:", bg='white', font=('Arial', self.size(14), "bold"))
+                label_xmin = tk.Label(frame_entry2, text="X Min:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_xmin.pack(side=tk.LEFT)
-                self.entry_xmin = tk.Entry(frame_entry2, bg='white', font=('Arial', self.size(14), "bold"))
+                self.entry_xmin = tk.Entry(frame_entry2, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_xmin.pack(side=tk.LEFT)
                 self.entry_xmin.insert(0, str(self.ymin))
                 self.entry_xmin.config(state='disabled')
 
-                label_xmax = tk.Label(frame_entry2, text="X Max:", bg='white', font=('Arial', self.size(14), "bold"))
+                label_xmax = tk.Label(frame_entry2, text="X Max:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_xmax.pack(side=tk.LEFT)
-                self.entry_xmax = tk.Entry(frame_entry2, bg='white', font=('Arial', self.size(14), "bold"))
+                self.entry_xmax = tk.Entry(frame_entry2, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_xmax.pack(side=tk.LEFT)
                 self.entry_xmax.insert(0, str(self.ymax))
                 self.entry_xmax.config(state='disabled')
@@ -595,25 +608,25 @@ class VolumeSlicer(tk.Frame):
                 frame_entry3 = tk.Frame(frame2, bg='white')
                 frame_entry3.pack(side=tk.TOP)
 
-                label_ymin = tk.Label(frame_entry3, text="Y Min:", bg='white', font=('Arial', self.size(14), "bold"))
+                label_ymin = tk.Label(frame_entry3, text="Y Min:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_ymin.pack(side=tk.LEFT)
-                self.entry_ymin = tk.Entry(frame_entry3, bg='white', font=('Arial', self.size(14), "bold"))
+                self.entry_ymin = tk.Entry(frame_entry3, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_ymin.pack(side=tk.LEFT)
                 self.entry_ymin.insert(0, str(self.xmin))
                 self.entry_ymin.config(state='disabled')
 
-                label_ymax = tk.Label(frame_entry3, text="Y Max:", bg='white', font=('Arial', self.size(14), "bold"))
+                label_ymax = tk.Label(frame_entry3, text="Y Max:", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 label_ymax.pack(side=tk.LEFT)
-                self.entry_ymax = tk.Entry(frame_entry3, bg='white', font=('Arial', self.size(14), "bold"))
+                self.entry_ymax = tk.Entry(frame_entry3, bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.entry_ymax.pack(side=tk.LEFT)
                 self.entry_ymax.insert(0, str(self.xmax))
                 self.entry_ymax.config(state='disabled')
 
                 self.win_sym_frame = tk.Frame(frame2, bg='white')
                 self.win_sym_frame.pack(side=tk.TOP)
-                self.set_window_button = tk.Button(self.win_sym_frame, text="Set Window Range", command=self.set_window, font=('Arial', self.size(14), "bold"), bg='white')
+                self.set_window_button = tk.Button(self.win_sym_frame, text="Set Window Range", command=self.set_window, font=('Arial', self.size(self.f2_size), "bold"), bg='white')
                 self.set_window_button.pack(side=tk.LEFT)
-                self.set_sym_button = tk.Button(self.win_sym_frame, text="Symmetrical extend", command=self.symmetry, font=('Arial', self.size(14), "bold"), bg='white')
+                self.set_sym_button = tk.Button(self.win_sym_frame, text="Symmetrical extend", command=self.symmetry, font=('Arial', self.size(self.f2_size), "bold"), bg='white')
                 
                 self.frame_region = tk.Frame(frame2, bg='white')
                 # self.frame_region.pack(side=tk.TOP)
@@ -624,40 +637,41 @@ class VolumeSlicer(tk.Frame):
                 
                 frame_entry4 = tk.Frame(frame2, bg='white')
                 frame_entry4.pack(side=tk.TOP)
-                self.label_phi_offset = tk.Label(frame_entry4, text="Set Z Offset (mm):", bg='white', font=('Arial', self.size(14), "bold"))
+                self.label_phi_offset = tk.Label(frame_entry4, text="Set Z Offset (mm):", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.label_phi_offset.pack(side=tk.LEFT)
-                self.entry_phi_offset = tk.Entry(frame_entry4, bg='white', font=('Arial', self.size(14), "bold"), state='normal')
+                self.entry_phi_offset = tk.Entry(frame_entry4, bg='white', font=('Arial', self.size(self.f2_size), "bold"), state='normal')
                 self.entry_phi_offset.pack(side=tk.LEFT)
                 self.entry_phi_offset.insert(0, str(self.phi_offset))
                 
                 self.frame_entry5 = tk.Frame(frame2, bg='white')
                 self.frame_entry5.pack(side=tk.TOP)
-                self.label_r1_offset = tk.Label(self.frame_entry5, text="Set X Offset (mm):", bg='white', font=('Arial', self.size(14), "bold"))
+                self.label_r1_offset = tk.Label(self.frame_entry5, text="Set X Offset (mm):", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.label_r1_offset.pack(side=tk.LEFT)
-                self.entry_r1_offset = tk.Entry(self.frame_entry5, bg='white', font=('Arial', self.size(14), "bold"), state='normal')
+                self.entry_r1_offset = tk.Entry(self.frame_entry5, bg='white', font=('Arial', self.size(self.f2_size), "bold"), state='normal')
                 self.entry_r1_offset.pack(side=tk.LEFT)
                 self.entry_r1_offset.insert(0, str(self.r1_offset))
                 
                 self.frame_entry6 = tk.Frame(frame2, bg='white')
                 self.frame_entry6.pack(side=tk.TOP)
-                self.label_phi1_offset = tk.Label(self.frame_entry6, text="Set Sample Phi Offset (deg):", bg='white', font=('Arial', self.size(14), "bold"))
+                self.label_phi1_offset = tk.Label(self.frame_entry6, text="Set Sample Phi Offset (deg):", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.label_phi1_offset.pack(side=tk.LEFT)
-                self.entry_phi1_offset = tk.Entry(self.frame_entry6, bg='white', font=('Arial', self.size(14), "bold"), state='normal')
+                self.entry_phi1_offset = tk.Entry(self.frame_entry6, bg='white', font=('Arial', self.size(self.f2_size), "bold"), state='normal')
                 self.entry_phi1_offset.pack(side=tk.LEFT)
                 self.entry_phi1_offset.insert(0, str(self.phi1_offset))
                 
                 self.frame_entry7 = tk.Frame(frame2, bg='white')
                 self.frame_entry7.pack(side=tk.TOP)
-                self.label_r11_offset = tk.Label(self.frame_entry7, text="Set Sample R1 Offset (deg):", bg='white', font=('Arial', self.size(14), "bold"))
+                self.label_r11_offset = tk.Label(self.frame_entry7, text="Set Sample R1 Offset (deg):", bg='white', font=('Arial', self.size(self.f2_size), "bold"))
                 self.label_r11_offset.pack(side=tk.LEFT)
-                self.entry_r11_offset = tk.Entry(self.frame_entry7, bg='white', font=('Arial', self.size(14), "bold"), state='normal')
+                self.entry_r11_offset = tk.Entry(self.frame_entry7, bg='white', font=('Arial', self.size(self.f2_size), "bold"), state='normal')
                 self.entry_r11_offset.pack(side=tk.LEFT)
                 self.entry_r11_offset.insert(0, str(self.r11_offset))
                 
-                self.fit_so_button = tk.Button(frame2, text="Fit Sample Offsets", command=self.fit_so_app, font=('Arial', self.size(14), "bold"), bg='white')
+                self.fit_so_button = tk.Button(frame2, text="Fit Sample Offsets", command=self.fit_so_app, font=('Arial', self.size(self.f2_size), "bold"), bg='white')
                 self.fit_so_button.pack(side=tk.TOP)
-
-                self.fig1 = plt.Figure(figsize=(5*self.app_pars.scale, 0.5*self.app_pars.scale),constrained_layout=True)
+                
+                fig1_w = 5 if os.name == 'nt' else 3
+                self.fig1 = plt.Figure(figsize=(fig1_w*self.app_pars.scale, 0.5*self.app_pars.scale),constrained_layout=True)
                 self.ax_slider = self.fig1.add_axes([0.2, 0.6, 0.8, 0.3])
                 self.slider = Slider(self.ax_slider, 'Energy', self.ev[0], self.ev[-1], valinit=self.ev[self.slice_index], valstep=self.ev[1]-self.ev[0])
                 self.slider.on_changed(self.set_sl)
@@ -1066,10 +1080,18 @@ class VolumeSlicer(tk.Frame):
             if os.path.exists(os.path.join(tempdir, 'stop_signal')):
                 os.remove(os.path.join(tempdir, 'stop_signal'))
             if os.path.exists('cut_temp_save'):
-                shutil.rmtree('cut_temp_save')
+                if os.name == 'nt':
+                    shutil.rmtree('cut_temp_save')
+                    # os.system('rd /s /q cut_temp_save')
+                else:
+                    os.system('rm -rf cut_temp_save')
             os.mkdir('cut_temp_save')
             if os.path.exists('cube_temp_save'):
-                shutil.rmtree('cube_temp_save')
+                if os.name == 'nt':
+                    shutil.rmtree('cube_temp_save')
+                    # os.system('rd /s /q cube_temp_save')
+                else:
+                    os.system('rm -rf cube_temp_save')
             os.mkdir('cube_temp_save')
             with Pool(self.pool_size) as self.pool:
                 args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume[:, :, i], self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
@@ -1101,10 +1123,18 @@ class VolumeSlicer(tk.Frame):
         try:
             os.chdir(os.path.join(tempdir))
             if os.path.exists('cut_temp_save'):
-                shutil.rmtree('cut_temp_save')
+                if os.name == 'nt':
+                    shutil.rmtree('cut_temp_save')
+                    # os.system('rd /s /q cut_temp_save')
+                else:
+                    os.system('rm -rf cut_temp_save')
             os.mkdir('cut_temp_save')
             if os.path.exists('cube_temp_save'):
-                shutil.rmtree('cube_temp_save')
+                if os.name == 'nt':
+                    shutil.rmtree('cube_temp_save')
+                    # os.system('rd /s /q cube_temp_save')
+                else:
+                    os.system('rm -rf cube_temp_save')
             os.mkdir('cube_temp_save')
             with Pool(self.pool_size) as self.pool:
                 args = [(i, angle, phi_offset, r1_offset, phi1_offset, r11_offset, self_x, self_volume[:, :, i], self.cdensity, self.xmax, self.xmin, self.ymax, self.ymin, z, x, self.z, self.y, self.ev, self.e_photon, self.sym) for i in range(len(self.ev))]
@@ -1163,8 +1193,11 @@ class VolumeSlicer(tk.Frame):
     
     def cut_plot(self):
         if self.app_pars:
-            windll.user32.ShowWindow(self.app_pars.hwnd, 9)
-            windll.user32.SetForegroundWindow(self.app_pars.hwnd)
+            if os.name == 'nt':
+                windll.user32.ShowWindow(self.app_pars.hwnd, 9)
+                windll.user32.SetForegroundWindow(self.app_pars.hwnd)
+            elif os.name == 'posix':
+                subprocess.run(['open', '-a', 'Terminal'])
         self.stop_event = threading.Event()
         t1 = threading.Thread(target=self.listen_for_stop_command, daemon=True)
         t1.start()
@@ -1244,9 +1277,13 @@ class VolumeSlicer(tk.Frame):
         self.g.update_idletasks()
         w = self.g.winfo_reqwidth()
         h = self.g.winfo_reqheight()
-        t_sc_w = windll.user32.GetSystemMetrics(0)
-        tx = t_sc_w if self.g.winfo_x()+self.g.winfo_width()/2 > t_sc_w else 0
-        ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+        if os.name == 'nt':
+            t_sc_w = windll.user32.GetSystemMetrics(0)
+            tx = t_sc_w if self.g.winfo_x()+self.g.winfo_width()/2 > t_sc_w else 0
+            ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+        elif os.name == 'posix':
+            tx = self.g.winfo_x()
+            ScaleFactor = 100
         if self.app_pars.bar_pos == 'top':    #taskbar on top
             sc_y = int(40*ScaleFactor/100)
         else:
@@ -1306,8 +1343,8 @@ class VolumeSlicer(tk.Frame):
                     self.ymin = self.r1_offset-(self.ymax-self.r1_offset)
                 if self.ymax+self.ymin < 2*self.r1_offset:
                     self.ymax = self.r1_offset-(self.ymin-self.r1_offset)
-                self.ax.set_xlabel('x (mm)', fontsize=self.size(20))
-                self.ax.set_ylabel('z (mm)', fontsize=self.size(20))
+                self.ax.set_xlabel('x (mm)', fontsize=self.size(self.f0_size))
+                self.ax.set_ylabel('z (mm)', fontsize=self.size(self.f0_size))
                 self.b_mode.config(text='Transmission Mode')
                 self.label_phi_offset.config(text="Set Z Offset (mm):")
                 self.label_r1_offset.config(text="Set X Offset (mm):")
@@ -1361,8 +1398,8 @@ class VolumeSlicer(tk.Frame):
                 self.xmin, self.xmax = -r, r
                 self.ymin, self.ymax = -r, r
                 self.txlim, self.tylim = [-r, r], [-r, r]
-                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
-                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
+                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(self.f0_size))
+                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(self.f0_size))
                 self.b_mode.config(text='Reciprocal Mode')
                 self.label_phi_offset.config(text="Set Manipulator Phi Offset (deg):")
                 self.label_r1_offset.config(text="Set Manipulator R1 Offset (deg):")
@@ -1411,8 +1448,8 @@ class VolumeSlicer(tk.Frame):
                 set_entry_value(self.entry_xmax, str(self.ymax))
                 set_entry_value(self.entry_ymin, str(self.xmin))
                 set_entry_value(self.entry_ymax, str(self.xmax))
-                self.ax.set_xlabel('x (mm)', fontsize=self.size(20))
-                self.ax.set_ylabel('z (mm)', fontsize=self.size(20))
+                self.ax.set_xlabel('x (mm)', fontsize=self.size(self.f0_size))
+                self.ax.set_ylabel('z (mm)', fontsize=self.size(self.f0_size))
                 self.entry_xmin.config(state='disabled')
                 self.entry_xmax.config(state='disabled')
                 self.entry_ymin.config(state='disabled')
@@ -1424,8 +1461,8 @@ class VolumeSlicer(tk.Frame):
                 set_entry_value(self.entry_xmax, str(self.ymax))
                 set_entry_value(self.entry_ymin, str(self.xmin))
                 set_entry_value(self.entry_ymax, str(self.xmax))
-                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
-                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
+                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(self.f0_size))
+                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(self.f0_size))
             copy_to_clipboard(self.fig)
             gc.collect()
         except ValueError:
@@ -1469,13 +1506,13 @@ class VolumeSlicer(tk.Frame):
                 self.cut_l.set_data([], [])
                 self.ax.set_xlim([self.tylim[0], self.tylim[1]])
                 self.ax.set_ylim([self.txlim[0], self.txlim[1]])
-                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
-                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(20))
+                self.ax.set_xlabel(r'$k_x$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(self.f0_size))
+                self.ax.set_ylabel(r'$k_y$ ($\frac{2\pi}{\AA}$)', fontsize=self.size(self.f0_size))
             elif self.type == 'real':
                 self.ax.set_xlim([self.ymin, self.ymax])
                 self.ax.set_ylim([self.xmin, self.xmax])
-                self.ax.set_xlabel('x (mm)', fontsize=self.size(20))
-                self.ax.set_ylabel('z (mm)', fontsize=self.size(20))
+                self.ax.set_xlabel('x (mm)', fontsize=self.size(self.f0_size))
+                self.ax.set_ylabel('z (mm)', fontsize=self.size(self.f0_size))
             copy_to_clipboard(self.fig)
             self.canvas.draw()
             self.wait.done()
@@ -1746,8 +1783,8 @@ class VolumeSlicer(tk.Frame):
             tylim = txlim
             self.ax_region.set_xlim(txlim)
             self.ax_region.set_ylim(tylim)
-            self.ax_region.set_xlabel(r'$R1$ (deg)', fontsize=self.size(20))
-            self.ax_region.set_ylabel(r'$Phi$ (deg)', fontsize=self.size(20))
+            self.ax_region.set_xlabel(r'$R1$ (deg)', fontsize=self.size(self.f0_size))
+            self.ax_region.set_ylabel(r'$Phi$ (deg)', fontsize=self.size(self.f0_size))
             self.canvas_region.draw()
         return
 

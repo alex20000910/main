@@ -713,7 +713,11 @@ class loadfiles(FileSequence):
                 exist_f = True
                 match_f = self.__check_name
                 if not self.init:
-                    shutil.rmtree(self.zpath)
+                    if os.name == 'nt':
+                        shutil.rmtree(self.zpath)
+                        # os.system(f'rmdir /s /q "{self.zpath}"')
+                    else:
+                        os.system(f'rm -rf "{self.zpath}"')
             if not exist_f or not self.init or not match_f:
                 try:
                     os.makedirs(self.zpath, exist_ok=True)
@@ -2270,7 +2274,7 @@ class file_loader(ABC):
                 if b_tools is not None and l_name is not None:
                     b_tools.grid_forget()
                     l_name.grid_forget()
-                b_tools = tk.Button(fr_tool, text='Batch Master', command=self.tools, width=12, height=1, font=('Arial', self.size(12), "bold"), bg='white')
+                b_tools = tk.Button(fr_tool, text='Batch\nMaster', command=self.tools, height=2, font=('Arial', self.size(14), "bold"), bg='white')
                 b_tools.grid(row=0, column=0)
                 self.nlist = self.lfs.name
                 self.namevar = tk.StringVar(value=self.nlist[ind])
@@ -2342,6 +2346,8 @@ class file_loader(ABC):
 
 class data_loader(ABC):
     def __init__(self, menu1: tk.OptionMenu, menu2: tk.OptionMenu, menu3: tk.OptionMenu, in_fit: tk.Entry, b_fit: tk.Button, l_path: tk.Text, info: tk.Text, cdir: str, lfs: FileSequence, scale: float):
+        self.f13 = 13
+        self.f14 = 14        
         self.menu1, self.menu2, self.menu3 = menu1, menu2, menu3
         self.in_fit, self.b_fit = in_fit, b_fit
         self.l_path = l_path
@@ -2381,10 +2387,10 @@ class data_loader(ABC):
         else:
             self.info.config(height=len(st.split('\n'))+1, state='normal')
         if self.lfs.max_lst_len>=40:
-            self.info.config(width=44, font=('Arial', self.size(13), 'bold'))
+            self.info.config(width=44, font=('Arial', self.size(self.f13), 'bold'))
             self.l_path.config(width=44, state='normal')
         else:
-            self.info.config(width=self.lfs.max_lst_len+2, font=('Arial', self.size(14), 'bold'))
+            self.info.config(width=self.lfs.max_lst_len+2, font=('Arial', self.size(self.f14), 'bold'))
             self.l_path.config(width=self.lfs.max_lst_len, state='normal')
         self.l_path.delete(1.0, tk.END)
         self.l_path.insert(tk.END, dpath)

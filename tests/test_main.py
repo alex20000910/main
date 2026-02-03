@@ -701,6 +701,18 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.fmfall()
     qtbot.wait(2)
     
+    win.fmreject()
+    qtbot.wait(100)
+    win.fmreject()
+    qtbot.wait(100)
+    win.fmaccept()
+    qtbot.wait(100)
+    
+    qtbot.mouseClick(win.b_pos, Qt.LeftButton)
+    qtbot.wait(100)
+    qtbot.mouseClick(win.b_pos, Qt.LeftButton)
+    qtbot.wait(100)
+        
     qtbot.mouseMove(plot_widget, pos=QPoint(450, 300))
     qtbot.wait(50)
     qtbot.mousePress(plot_widget, Qt.LeftButton, pos=center)
@@ -717,6 +729,7 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(50)
     qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=center)
     qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(450, 300))
     qtbot.keyClick(win, QtCore.Qt.Key_Up)
     qtbot.wait(500)
     qtbot.keyClick(win, QtCore.Qt.Key_Down)
@@ -750,6 +763,18 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.waitExposed(win.g_exp)
     win.savemfit()
     qtbot.wait(100)
+    
+    
+    win.slider.setValue(200)
+    qtbot.wait(100)
+    win.fmrmv(test=True)
+    qtbot.wait(100)
+    win.slider.setValue(520)
+    qtbot.wait(100)
+    win.fmrmv(test=True)
+    qtbot.wait(2)
+    
+    win.help_window()
     
     win.show_shortcuts()
     win.close()

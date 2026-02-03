@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "8.5.11"
-__release_date__ = "2026-01-27"
+__version__ = "9.0.0"
+__release_date__ = "2026-02-03"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -13,7 +13,10 @@ import queue
 import threading
 import warnings
 import sys, shutil
-from ctypes import windll
+if os.name == 'nt':
+    from ctypes import windll
+else:
+    import tempfile
 import copy
 import gc
 from tkinter import messagebox, colorchooser
@@ -64,6 +67,9 @@ else:
     "tkinterdnd2==0.4.3",
     "google-crc32c==1.8.0"  # for numcodecs
     ]
+if os.name == 'posix':
+    REQUIREMENTS[9] = None  # no pywin32 in Linux or MacOS
+    REQUIREMENTS[10] = None # no originpro in Linux or MacOS
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':
@@ -186,22 +192,23 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         return -1
 
 def get_src(ver=False):
-    url = [r"https://github.com/alex20000910/main/blob/main/MDC_cut.py",
-           r"https://github.com/alex20000910/main/blob/main/src/viridis_2D.otp",
-           r"https://github.com/alex20000910/main/blob/main/src/MDC_cut_utility.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/__init__.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/util.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/loader.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/spectrogram.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/SO_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/VolumeSlicer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/CEC.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/DataViewer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/MDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/EDC_Fitter.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/window.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/RawDataViewer.py",
-           r"https://github.com/alex20000910/main/blob/main/src/tool/qt_util.py"]
+    branch = 'main'
+    url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/MDC_cut_utility.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/__init__.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/util.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/loader.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/spectrogram.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/SO_Fitter.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/VolumeSlicer.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/CEC.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/DataViewer.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/MDC_Fitter.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/EDC_Fitter.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/window.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/RawDataViewer.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/qt_util.py"]
     for i, v in enumerate(url):
         if i < 3:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
@@ -282,20 +289,24 @@ def force_update():
         elif os.name == 'posix':
             try:
                 os.system(f'cp "{src}" "{dst}"')
-                os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
             except:
                 os.system(f'cp "{src}" "{dst}"')
-                os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
         os.remove(src)
         quit()
-    os.system(f'del {path}')
+    if os.name == 'nt':
+        os.system(f'del {path}')
+    elif os.name == 'posix':
+        os.system(f'rm -rf {path}')
 
 # set up .MDC_cut folder
 os.chdir(cdir)
 if not os.path.exists('.MDC_cut'):
     os.makedirs('.MDC_cut')
     force_update()
-os.system('attrib +h +s .MDC_cut')
+if os.name == 'nt':
+    os.system('attrib +h +s .MDC_cut')
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 sys.path.append(os.path.join(cdir, 'src'))
 
@@ -316,9 +327,17 @@ else:
 # clean temp folders
 if __name__ == '__main__':
     if os.path.exists(os.path.join(cdir, '.MDC_cut', 'cut_temp_save')):
-        shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cut_temp_save'))
+        if os.name == 'nt':
+            shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cut_temp_save'))
+            # os.system(f'rmdir /s /q "{os.path.join(cdir, ".MDC_cut", "cut_temp_save")}"')
+        elif os.name == 'posix':
+            os.system(f'rm -rf "{os.path.join(cdir, ".MDC_cut", "cut_temp_save")}"')
     if os.path.exists(os.path.join(cdir, '.MDC_cut', 'cube_temp_save')):
-        shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cube_temp_save'))
+        if os.name == 'nt':
+            shutil.rmtree(os.path.join(cdir, '.MDC_cut', 'cube_temp_save'))
+            os.system(f'rmdir /s /q "{os.path.join(cdir, ".MDC_cut", "cube_temp_save")}"')
+        elif os.name == 'posix':
+            os.system(f'rm -rf "{os.path.join(cdir, ".MDC_cut", "cube_temp_save")}"')
 
 # make sure pip is installed
 try:
@@ -329,6 +348,7 @@ try:
             with open('pip_check.txt', 'w', encoding = 'utf-8') as f:
                 f.write('pip found')
                 f.close()
+            os.system('cls' if os.name == 'nt' else 'clear')
         except subprocess.CalledProcessError:
             try:
                 if os.name == 'nt':
@@ -418,9 +438,11 @@ try:
         # from lmfit import Parameters, Minimizer
         from lmfit.printfuncs import alphanumeric_sort, gformat, report_fit
     import tqdm
-    import win32clipboard
+    if os.name == 'nt':
+        import win32clipboard
     if __name__ == '__main__':
-        import originpro as op
+        if os.name == 'nt':
+            import originpro as op
     from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
     import psutil
     if VERSION >= 3130:
@@ -835,6 +857,10 @@ def g_close(*e):
     try:
         g.destroy()
         plt.close('all')
+        if os.name == 'posix':
+            subprocess.run(['open', '-a', 'Terminal'])
+            os.system(rf'''osascript -e 'tell application "Terminal" to quit' ''')
+            # os.system('killall Terminal')
         quit()
     except:
         pass
@@ -862,7 +888,8 @@ def sample_data(*e):
         tpath = os.path.join(cdir, 'test_data', rf"simulated_R1_{r1:.1f}_R2_0.h5")
         files.append(tpath)
         if os.path.exists(tpath)==False:
-            get_file_from_github(r"https://github.com/alex20000910/main/blob/main/test_data/"+path, tpath)
+            url=r"https://github.com/alex20000910/main/raw/refs/heads/main/test_data/"+path
+            download(url, tpath)
     tg.done()
     tg = wait(g, app_pars)
     tg.text('Loading sample data...')
@@ -997,7 +1024,10 @@ def view_3d(*e):
 @pool_protect
 def DataViewer_PyQt5():
     def j():
-        os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
+        if os.name == 'nt':
+            os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
+        elif os.name == 'posix':
+            os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}" &''')
     threading.Thread(target=j,daemon=True).start()
 
 @pool_protect
@@ -1006,8 +1036,12 @@ def show_version():
     ax = fig.subplots()
     tim = np.asarray(Image.open(tdata), dtype=np.uint8)
     ax.imshow(tim, aspect='equal', alpha=0.4)
+    if os.name == 'nt':
+        ver_size = 40
+    elif os.name == 'posix':
+        ver_size = 30
     fontdict = {
-    'fontsize': size(40),
+    'fontsize': size(ver_size),
     'fontweight': 'bold',
     'fontname': 'Arial'
     }
@@ -1058,10 +1092,33 @@ def copy_to_clipboard(ff: Figure) -> None:
     image = Image.open(buf)
     output = io.BytesIO()
     
-    image.convert("RGB").save(output, "BMP")
-    data = output.getvalue()[14:]
-    output.close()
-    send_to_clipboard(win32clipboard.CF_DIB, data)
+    if os.name == 'nt':
+        image.convert("RGB").save(output, "BMP")
+        data = output.getvalue()[14:]
+        output.close()
+        send_to_clipboard(win32clipboard.CF_DIB, data)
+    elif os.name == 'posix':
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+            tmp.write(buf.getvalue())
+            temp_path = tmp.name
+
+        try:
+            # 使用 AppleScript 將圖片複製到剪貼簿
+            applescript = f'''
+            set imagePath to POSIX file "{temp_path}"
+            set the clipboard to (read imagePath as «class PNGf»)
+            '''
+            
+            process = subprocess.Popen(['osascript', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output, error = process.communicate(input=applescript.encode('utf-8'))
+            
+            if error:
+                print(f"Error copying to clipboard: {error.decode()}")
+            else:
+                print("Copied to clipboard successfully.")
+        finally:
+            # 清理臨時檔案
+            os.unlink(temp_path)
     
 @pool_protect
 def send_to_clipboard(clip_type, data):
@@ -1077,18 +1134,21 @@ def trans_plot(*e):
         messagebox.showwarning("Warning","No data loaded!")
         return
     global gtp
-    gtp=RestrictedToplevel(g)
+    if 'gtp' in globals():
+        gtp.destroy()
+    gtp=RestrictedToplevel(g, bg='white')
     gtp.title('Spectrogram')
-    b_raw = tk.Button(gtp, text='Raw', command=raw_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_raw = tk.Button(gtp, text='Raw', command=raw_plot, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_raw.grid(row=0, column=0)
-    b_smooth = tk.Button(gtp, text='Smooth', command=smooth_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_smooth = tk.Button(gtp, text='Smooth', command=smooth_plot, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_smooth.grid(row=0, column=1)
-    b_fd = tk.Button(gtp, text='First Derivative', command=fd_plot, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_fd = tk.Button(gtp, text='First Derivative', command=fd_plot, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_fd.grid(row=0, column=2)
     set_center(g, gtp, 0, 0)
-    gtp.focus_set()
     gtp.bind('<Return>', raw_plot)
     gtp.limit_bind()
+    g.focus_set()
+    gtp.focus_set()
 
 @pool_protect
 def raw_plot(*args):
@@ -1164,11 +1224,11 @@ def change_file(*args):
     global data, rdd, npzf
     name = namevar.get()
     if len(name) > 30:
-        l_name.config(font=('Arial', size(10), "bold"), width=lfs.max_name_len)
+        l_name.config(font=('Arial', size(f10), "bold"), width=lfs.max_name_len)
     elif len(name) > 20:
-        l_name.config(font=('Arial', size(12), "bold"), width=len(namevar.get()))
+        l_name.config(font=('Arial', size(f12), "bold"), width=len(namevar.get()))
     else:
-        l_name.config(font=('Arial', size(14), "bold"), width=len(namevar.get()))
+        l_name.config(font=('Arial', size(f14), "bold"), width=len(namevar.get()))
     for i, j, k, l in zip(lfs.name, lfs.data, lfs.path, lfs.f_npz):
         if name == i:
             data = lfs.get(j)
@@ -1193,11 +1253,20 @@ def change_file(*args):
 @pool_protect
 def qt_app(path: list[str]):
     def job():
-        subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+        if os.name == 'nt':
+            subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+        elif os.name == 'posix':
+            tpath = []
+            for i in path:
+                tpath.append(str(i))
+            spath = str(tpath).removeprefix('[').removesuffix(']').replace(', ', ' ')
+            os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}" -f {spath} &''')
     threading.Thread(target=job, daemon=True).start()
     if os.name == 'nt' and hwnd:
         windll.user32.ShowWindow(hwnd, 9)
         windll.user32.SetForegroundWindow(hwnd)
+    elif os.name == 'posix':
+        subprocess.run(['open', '-a', 'Terminal'])
     print('\033[36m\nTransfering Data...\nPlease wait...\033[0m')
 
 @pool_protect
@@ -1225,9 +1294,9 @@ def tools(*args):
         toolg.destroy()
     toolg = RestrictedToplevel(g)
     toolg.title('Batch Master')
-    b_raw_viewer = tk.Button(toolg, text='Raw Data Viewer', command=raw_data_viewer, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_raw_viewer = tk.Button(toolg, text='Raw Data Viewer', command=raw_data_viewer, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_raw_viewer.grid(row=0, column=0)
-    b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_spec = tk.Button(toolg, text='Spectrogram', command=spec, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_spec.grid(row=0, column=1)
     try:
         flag = False
@@ -1237,14 +1306,15 @@ def tools(*args):
     except:
         pass
     if lfs.sort != 'no' and flag:
-        b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+        b_kplane = tk.Button(toolg, text='k-Plane', command=kplane, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
         b_kplane.grid(row=0, column=2)
-    b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=1, font=('Arial', size(14), "bold"), bg='white', bd=5)
+    b_exp_casa = tk.Button(toolg, text='Export to Casa', command=exp_casa, width=15, height=2, font=('Arial', size(14), "bold"), bg='white', fg='black', bd=5)
     b_exp_casa.grid(row=0, column=3)
     toolg.bind('<Return>', spec)
     set_center(g, toolg, 0, 0)
-    toolg.focus_set()
     toolg.limit_bind()
+    g.focus_set()
+    toolg.focus_set()
 
 @pool_protect
 def def_cmap():
@@ -1260,8 +1330,11 @@ def o_load(drop=False, files=''):
         files = fd.askopenfilenames(title="Select Raw Data", filetypes=(
         ("HDF5 files", "*.h5"), ("NPZ files", "*.npz"), ("JSON files", "*.json"), ("TXT files", "*.txt")))
     st.put('Loading...')
+    tg = wait(g, app_pars)
+    tg.text('Loading data...')
     files = tkDnD.load_raw(files)
     main_loader(files)
+    tg.done()
 
 @pool_protect
 def o_ecut():
@@ -1357,15 +1430,22 @@ def cmfit(*e):
         return
     def job():
         src = '.MDC_cut'
-        subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
+        if os.name == 'nt':
+            subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
+        elif os.name == 'posix':
+            os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}" -f "{data.attrs['Path']}" &''')
     threading.Thread(target=job, daemon=True).start()
     if os.name == 'nt' and hwnd:
         windll.user32.ShowWindow(hwnd, 9)
         windll.user32.SetForegroundWindow(hwnd)
+    elif os.name == 'posix':
+        subprocess.run(['open', '-a', 'Terminal'])
     print('\033[36m\nTransfering Data...\nPlease wait...\033[0m')
 
 @pool_protect
 def cefit(*e):
+    messagebox.showwarning("Warning", "Temporarily Disabled")
+    return
     if data is None:
         st.put('No data loaded!')
         messagebox.showwarning("Warning","No data loaded!")
@@ -1886,13 +1966,13 @@ def o_loadmfit():
     lmgg.title('Load MDC fitted File')
     lmgg.geometry('400x200')  # format:'1400x800'
     b1 = tk.Button(lmgg, command=lm2p, text='vms 1 peak to 2 peaks', font=(
-        "Arial", size(12), "bold"), fg='red', width=30, height='1', bd=10)
+        "Arial", size(12), "bold"), fg='red', width=30, height=2, bd=2)
     b1.pack()
     b2 = tk.Button(lmgg, command=lmre, text='reverse vms axis', font=(
-        "Arial", size(12), "bold"), fg='red', width=30, height='1', bd=10)
+        "Arial", size(12), "bold"), fg='red', width=30, height=2, bd=2)
     b2.pack()
     b3 = tk.Button(lmgg, command=lm, text='load MDC fitted File', font=(
-        "Arial", size(12), "bold"), fg='red', width=30, height='1', bd=10)
+        "Arial", size(12), "bold"), fg='red', width=30, height=2, bd=2)
     b3.pack()
     lmgg.update()
     w=lmgg.winfo_reqwidth()
@@ -1943,10 +2023,17 @@ if __name__ == '__main__':
         if os.name == 'nt':
             os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         elif os.name == 'posix':
+            script = rf'''
+            tell application "Terminal"
+                activate
+                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
+            end tell
+            '''
+            os.system('clear')
             try:
-                os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                subprocess.run(['osascript', '-e', script])
             except:
-                os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+                subprocess.run(['osascript', '-e', script])
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')
@@ -1956,11 +2043,22 @@ if __name__ == '__main__':
     with open(path, 'w') as f:
         f.write(f'{hwnd}')  #for DataViewer Qt GUI
         f.close()
-    ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
-    osf = windll.shcore.GetScaleFactorForDevice(0)
-    # print('ScaleFactor:',ScaleFactor)
-    t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
-    t_sc_h-=int(40*ScaleFactor/100)
+    if os.name == 'nt':
+        ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+        osf = windll.shcore.GetScaleFactorForDevice(0)
+        # print('ScaleFactor:',ScaleFactor)
+        t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
+        t_sc_h-=int(40*ScaleFactor/100)
+    elif os.name == 'posix':
+        temp_root = tk.Tk()
+        temp_root.withdraw()
+        t_sc_w = temp_root.winfo_screenwidth()
+        t_sc_h = temp_root.winfo_screenheight()
+        dpi = temp_root.winfo_fpixels('1i')
+        temp_root.destroy()
+        
+        ScaleFactor = int((72.054 / dpi) * 100)
+        osf = ScaleFactor   # ~72
     if bar_pos == 'top':    #taskbar on top
         sc_y = int(40*ScaleFactor/100)
     else:
@@ -1984,14 +2082,19 @@ if __name__ == '__main__':
     # prfactor = 1 if ScaleFactor <= 150 else 1.03
     # prfactor = 1.03 if ScaleFactor <= 100 else 0.9 if ScaleFactor <= 125 else 0.8 if ScaleFactor <= 150 else 0.5
     prfactor = 1
-    ScaleFactor /= prfactor*(ScaleFactor/100*1880/96*odpi/t_sc_w) if 1880/t_sc_w >= (950)/t_sc_h else prfactor*(ScaleFactor/100*(950)/96*odpi/t_sc_h)
-    g.tk.call('tk', 'scaling', ScaleFactor/100)
+    if os.name == 'nt':
+        ScaleFactor /= prfactor*(ScaleFactor/100*1880/96*odpi/t_sc_w) if 1880/t_sc_w >= (950)/t_sc_h else prfactor*(ScaleFactor/100*(950)/96*odpi/t_sc_h)
+        g.tk.call('tk', 'scaling', ScaleFactor/100)
+    elif os.name == 'posix':
+        ScaleFactor /= prfactor*(ScaleFactor/100*1512/72.054*odpi/t_sc_w) if 1512/t_sc_w >= (851)/t_sc_h else prfactor*(ScaleFactor/100*(851)/72.054*odpi/t_sc_h)
+        g.tk.call('tk', 'scaling', ScaleFactor/100)
     dpi=g.winfo_fpixels('1i')
     # print('dpi:',dpi)
-    windll.shcore.SetProcessDpiAwareness(1)
+    if os.name == 'nt':
+        windll.shcore.SetProcessDpiAwareness(1)
     scale = odpi / dpi
     base_font_size = 16
-    scaled_font_size = int(base_font_size * scale)
+    scaled_font_size = int(base_font_size * scale)-1
     
     g_mem = psutil.Process(pid).memory_info().rss/1024**3
     app_pars = app_param(hwnd=hwnd, scale=scale, dpi=dpi, bar_pos=bar_pos, g_mem=g_mem)
@@ -2018,6 +2121,8 @@ if __name__ == '__main__':
     # 設定預設字體
     default_font = ('Arial', scaled_font_size)
     g.option_add('*Font', default_font)
+    g.option_add('*Foreground', 'black')
+    g.option_add('*Background', 'white')
     icon_manager = MenuIconManager(scale=scale, ScaleFactor=ScaleFactor, odpi=odpi, dpi=dpi)
     
     g.geometry(f'1900x1080+0+{sc_y}')
@@ -2048,7 +2153,7 @@ if __name__ == '__main__':
     filemenu.add_command(label="Load Bare Band File", image=icon_manager.get_mini_icon('bare_band'), command=bareband, compound='left', accelerator="F3")
     filemenu.add_separator()
     filemenu.add_cascade(label="Export Data", menu=filemenu2)
-    filemenu.add_command(label="Exit", command=g.quit)
+    filemenu.add_command(label="Exit", command=g_close, accelerator="Ctrl+Q")
     
     # filemenu.entryconfig("Load Raw Data", state='disabled')
     
@@ -2229,7 +2334,8 @@ if __name__ == '__main__':
     value3 = tk.StringVar()
     value3.set('prevac_cmap')
     value3.trace_add('write', chcmp)
-
+    
+    os.system('cls' if os.name == 'nt' else 'clear')
     try:
         with np.load(os.path.join('.MDC_cut', 'rd.npz'), 'rb') as ff:
             path = str(ff['path'])
@@ -2347,6 +2453,10 @@ if __name__ == '__main__':
     icon = IconManager()
     g.iconphoto(True, tk.PhotoImage(data=b64decode(icon.icon)))
 
+    f14 = 14 if os.name == 'nt' else 11
+    f12 = 12 if os.name == 'nt' else 10
+    f10 = 10 if os.name == 'nt' else 8
+    
     fr_main = tk.Frame(g, bg="white")
     fr_main.pack(side=tk.TOP, fill='both', expand=True)
     
@@ -2354,28 +2464,29 @@ if __name__ == '__main__':
     fr.grid(row=0, column=0, sticky='n', pady=10)
     fr_info = tk.Frame(fr,bg='white')
     fr_info.pack(side=tk.TOP)
-    fr_tool = tk.Frame(fr_info,bg='white',width=25)
+    w_info = 25
+    fr_tool = tk.Frame(fr_info,bg='white',width=w_info)
     fr_tool.pack(fill='x')
-    l_path = tk.Text(fr_info, wrap='word', font=("Arial", size(12), "bold"), bg="white", fg="black", state='disabled',height=3,width=25)
+    l_path = tk.Text(fr_info, wrap='word', font=("Arial", size(f12), "bold"), bg="white", fg="black", state='disabled',height=3,width=w_info)
     l_path.pack(fill='x')
     # info = tk.Label(fr_main,text='                                   \n\n\n\n\n\n\n\n\n\n\n\n\n', font=("Arial", size(14), "bold"), bg="white", fg="black",padx = 30,pady=30)
     xscroll = tk.Scrollbar(fr_info, orient='horizontal')
     xscroll.pack(side='bottom', fill='x')
     yscroll = tk.Scrollbar(fr_info, orient='vertical')
     yscroll.pack(side='right', fill='y')
-    info = tk.Text(fr_info, wrap='none', font=("Arial", size(14), "bold"), bg="white", fg="black", state='disabled',
-                height=10, width=25, xscrollcommand=xscroll.set, yscrollcommand=yscroll.set)
+    info = tk.Text(fr_info, wrap='none', font=("Arial", size(f14), "bold"), bg="white", fg="black", state='disabled',
+                height=10, width=w_info, xscrollcommand=xscroll.set, yscrollcommand=yscroll.set)
     info.pack(anchor='w')
     xscroll.config(command=info.xview)
     yscroll.config(command=info.yview)
     fr_mod = tk.Frame(fr,bg='white')
     fr_mod.pack(side=tk.TOP)
-    b_name = tk.Button(fr_mod, text='Modify Name', font=('Arial', size(10), 'bold'),command=cname)
+    b_name = tk.Button(fr_mod, text='Modify\nName', font=('Arial', size(f12), 'bold'), height=2, command=cname)
     b_name.grid(row=0,column=0)
-    b_excitation = tk.Button(fr_mod, text='Modify Excitation Energy', font=('Arial', size(10), 'bold'),command=cexcitation)
+    b_excitation = tk.Button(fr_mod, text='Modify\nExcitation Energy', font=('Arial', size(f12), 'bold'), height=2, command=cexcitation)
     b_excitation.grid(row=0,column=1)
-    b_desc = tk.Button(fr_mod, text='Modify Description', font=('Arial', size(10), 'bold'),command=desc)
-    b_desc.grid(row=0,column=2)  
+    b_desc = tk.Button(fr_mod, text='Modify\nDescription', font=('Arial', size(f12), 'bold'), height=2, command=desc)
+    b_desc.grid(row=0,column=2)
     
     
     # lfit = tk.Frame(step, bg='white')
@@ -2411,11 +2522,11 @@ if __name__ == '__main__':
     cmbf = tk.Frame(cmf, bg='white')
     cmbf.grid(row=0, column=0)
     
-    bchcmp = tk.Button(cmbf, text='Change cmap', font=(
-        "Arial", size(12), "bold"), height='1', command=Chcmp, border=2)
+    bchcmp = tk.Button(cmbf, text='Change\nColormap', font=(
+        "Arial", size(f12), "bold"), height=2, command=Chcmp, border=2)
     bchcmp.pack(side='left', padx=2, pady=2)
-    bdefcmp = tk.Button(cmbf, text='User Defined cmap', font=(
-        "Arial", size(12), "bold"), height='1', command=def_cmap, border=2)
+    bdefcmp = tk.Button(cmbf, text='User Defined\nColormap', font=(
+        "Arial", size(f12), "bold"), height=2, command=def_cmap, border=2)
     bdefcmp.pack(side='left', padx=2, pady=2)
 
     cmlf = tk.Frame(cmf, bg='white')
@@ -2431,9 +2542,9 @@ if __name__ == '__main__':
     cm.grid(row=1, column=1)
 
     c1 = tk.Label(cmlf, text='Commonly Used:', font=(
-        "Arial", size(12)), bg="white", height='1')
+        "Arial", size(f12)), bg="white", height='1')
     c1.grid(row=0, column=0)
-    c2 = tk.Label(cmlf, text='All:', font=("Arial", size(12)), bg="white", height='1')
+    c2 = tk.Label(cmlf, text='All:', font=("Arial", size(f12)), bg="white", height='1')
     c2.grid(row=1, column=0)
     
     frraw = tk.Frame(fr, bg='white')
@@ -2487,13 +2598,13 @@ if __name__ == '__main__':
 
 
     m1 = tk.Label(frraw, text='Raw', font=(
-        "Arial", size(12), "bold"), bg="white", fg='red')
+        "Arial", size(f14), "bold"), bg="white", fg='red')
     m1.grid(row=0, column=0)
     m2 = tk.Label(frraw, text='Fit', font=(
-        "Arial", size(12), "bold"), bg="white", fg='blue')
+        "Arial", size(f14), "bold"), bg="white", fg='blue')
     m2.grid(row=1, column=0)
     m3 = tk.Label(frraw, text='Transform', font=(
-        "Arial", size(12), "bold"), bg="white", fg="blue")
+        "Arial", size(f14), "bold"), bg="white", fg="blue")
     m3.grid(row=2, column=0)
 
     
@@ -2502,7 +2613,7 @@ if __name__ == '__main__':
 
     st = queue.Queue(maxsize=0)
     state = tk.Label(fr_state, text=f"Version: {__version__}", font=(
-        "Arial", size(14), "bold"), bg="white", fg="black", wraplength=250, justify='center')
+        "Arial", size(f14), "bold"), bg="white", fg="black", wraplength=250, justify='center')
     state.grid(row=0, column=0, pady=20)
 
     # Icon = [icon.icon1, icon.icon2, icon.icon3, icon.icon4, icon.icon5, icon.icon6, icon.icon7, icon.icon8, icon.icon9, icon.icon10, icon.icon11, icon.icon12, icon.icon13, icon.icon14, icon.icon15, icon.icon16, icon.icon17, icon.icon18, icon.icon19, icon.icon20]
@@ -2536,9 +2647,10 @@ if __name__ == '__main__':
     lcmin = tk.Label(clim, text='Minimum', font=(
         "Arial", size(12)), bg='white', fg='white')
     lcmin.grid(row=1, column=0)
-    cmax = tk.Frame(clim, bg='white', width=15, bd=5)
+    w_15 = 15 if os.name == 'nt' else 12
+    cmax = tk.Frame(clim, bg='white', width=w_15, bd=5)
     cmax.grid(row=0, column=1)
-    cmin = tk.Frame(clim, bg='white', width=15, bd=5)
+    cmin = tk.Frame(clim, bg='white', width=w_15, bd=5)
     cmin.grid(row=1, column=1)
 
 
@@ -2569,7 +2681,7 @@ if __name__ == '__main__':
     #     "Arial", size(12), "bold"), bg="white", fg='blue')
     # l2.grid(row=1, column=0)
     l3 = tk.Label(step, text='k offset (deg)', font=(
-        "Arial", size(12), "bold"), bg="white", fg="black")
+        "Arial", size(f12), "bold"), bg="white", fg="black")
     l3.grid(row=2, column=0)
     # l4 = tk.Label(step, text='Step 3', font=(
     #     "Arial", size(12), "bold"), bg="white", fg='blue')
@@ -2600,12 +2712,12 @@ if __name__ == '__main__':
     #     "Arial", size(12), "bold"), width=8, height='1', command=angcut, bd=5, fg='black')
     # edccut.grid(row=0, column=1)
     l_lowlim = tk.Label(cut, text='Lower Limit', font=(
-        "Arial", size(10), "bold"), bg="white", fg="black", height=1)
+        "Arial", size(f10), "bold"), bg="white", fg="black", height=1)
     l_lowlim.grid(row=0, column=2)
     lowlim = tk.StringVar()
     lowlim.set('0')
     lowlim.trace_add('write', flowlim)
-    in_lowlim = tk.Entry(cut, font=("Arial", size(10), "bold"),
+    in_lowlim = tk.Entry(cut, font=("Arial", size(f10), "bold"),
                         width=7, textvariable=lowlim, bd=5)
     in_lowlim.grid(row=0, column=3)
 
@@ -2616,8 +2728,8 @@ if __name__ == '__main__':
     except:
         k_offset.set('0')
     k_offset.trace_add('write', reload)
-    koffset = tk.Entry(step, font=("Arial", size(12), "bold"),
-                    width=12, textvariable=k_offset, bd=9)
+    koffset = tk.Entry(step, font=("Arial", size(f12), "bold"),
+                    width=f12, textvariable=k_offset, bd=2)
     koffset.grid(row=2, column=1)
     
     bb_offset = tk.StringVar()
@@ -2626,8 +2738,8 @@ if __name__ == '__main__':
     except:
         bb_offset.set('0')
     bb_offset.trace_add('write', fbb_offset)
-    bboffset = tk.Entry(step, font=("Arial", size(12), "bold"),
-                        width=12, textvariable=bb_offset, bd=9)
+    bboffset = tk.Entry(step, font=("Arial", size(f12), "bold"),
+                        width=f12, textvariable=bb_offset, bd=2)
     bboffset.grid(row=3, column=1)
     bbk_offset = tk.StringVar()
     try:
@@ -2635,20 +2747,27 @@ if __name__ == '__main__':
     except:
         bbk_offset.set('1')
     bbk_offset.trace_add('write', fbbk_offset)
-    bbkoffset = tk.Entry(step, font=("Arial", size(12), "bold"),
-                        width=12, textvariable=bbk_offset, bd=9)
+    bbkoffset = tk.Entry(step, font=("Arial", size(f12), "bold"),
+                        width=f12, textvariable=bbk_offset, bd=2)
     bbkoffset.grid(row=4, column=1)
     l6 = tk.Label(step, text='Bare band E offset (meV)', font=(
-        "Arial", size(12), "bold"), bg="white", fg="black", height=1)
+        "Arial", size(f12), "bold"), bg="white", fg="black", height=1)
     l6.grid(row=3, column=0)
     l7 = tk.Label(step, text='Bare band k ratio', font=(
-        "Arial", size(12), "bold"), bg="white", fg="black", height=1)
+        "Arial", size(f12), "bold"), bg="white", fg="black", height=1)
     l7.grid(row=4, column=0)
 
     figfr = tk.Frame(fr_main, bg='white')
     figfr.grid(row=0, column=1, sticky='nsew')
-    figy = 8.5 if osf<=100 else 8.25 if osf<=150 else 8
-    figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
+    if os.name == 'nt':
+        figy = 8.5 if osf<=100 else 8.25 if osf<=150 else 8
+        figx = 11.5 if osf<=100 else 11.25 if osf<=150 else 11
+        label_size = 16
+    elif os.name == 'posix':
+        # print('scale:', scale)
+        figy = 8 if scale<=1 else 6.3
+        figx = 9.5 if scale<=1 else 6.8
+        label_size = 16
     fig = Figure(figsize=(figx*scale, figy*scale), layout='constrained')
     out = FigureCanvasTkAgg(fig, master=figfr)
     out.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -2663,31 +2782,32 @@ if __name__ == '__main__':
     xydata.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
     xdata = tk.Label(xydata, text='xdata:', font=(
-        "Arial", size(16), "bold"), width='15', height='1', bd=9, bg='white')
+        "Arial", size(label_size), "bold"), width='15', height='1', bd=9, bg='white')
     xdata.grid(row=0, column=0)
     ydata = tk.Label(xydata, text='ydata:', font=(
-        "Arial", size(16), "bold"), width='15', height='1', bd=9, bg='white')
+        "Arial", size(label_size), "bold"), width='15', height='1', bd=9, bg='white')
     ydata.grid(row=0, column=1)
     
     v_fe = tk.StringVar()
     v_fe.set(str(vfe))
-    b_emode = tk.Button(xydata, text='K.E.', fg='blue', font=("Arial", size(16), "bold"), width=5, height='1', command=emode, bd=9)
+    b_emode = tk.Button(xydata, text='K.E.', fg='blue', font=("Arial", size(label_size), "bold"), width=5, height='1', command=emode, bd=2)
     b_emode.grid(row=0, column=2)
-    b_copyimg = tk.Button(xydata, fg='red', text='Copy Image to Clipboard', font=('Arial', size(16), 'bold'), command=f_copy_to_clipboard, bd=9)
+    b_copyimg = tk.Button(xydata, fg='red', text='Copy Image to Clipboard', font=('Arial', size(label_size), 'bold'), command=f_copy_to_clipboard, bd=2)
     b_copyimg.grid(row=0, column=3)
     
     
     dl=0
-    b_sw = tk.Button(xydata, text='dot', font=('Arial', size(16), 'bold'), command=dl_sw, bd=9)
+    b_sw = tk.Button(xydata, text='dot', font=('Arial', size(label_size), 'bold'), command=dl_sw, bd=2)
 
     lcmp = tk.Frame(plots, bg='white')
     lcmp.grid(row=0, column=0)
 
-    lcmpd = Figure(figsize=(0.75*scale, 1*scale), layout='constrained')
+    w, h = (0.75, 1) if os.name == 'nt' else (0.2, 0.7)
+    lcmpd = Figure(figsize=(w*scale, h*scale), layout='constrained')
     cmpg = FigureCanvasTkAgg(lcmpd, master=lcmp)
     cmpg.get_tk_widget().grid(row=0, column=1)
     lsetcmap = tk.Label(lcmp, text='Colormap:', font=(
-        "Arial", size(12), "bold"), bg="white", height='1', bd=9)
+        "Arial", size(f12), "bold"), bg="white", height='1', bd=1)
     lsetcmap.grid(row=0, column=0)
     chcmp()
 
@@ -2714,7 +2834,7 @@ if __name__ == '__main__':
         b_desc.config(state='disable')
     if data is not None:
         pr_load(data)
-        b_tools = tk.Button(fr_tool, text='Batch Master', command=tools, width=12, height=1, font=('Arial', size(12), "bold"), bg='white')
+        b_tools = tk.Button(fr_tool, text='Batch\nMaster', command=tools, height=2, font=('Arial', size(14), "bold"), bg='white')
         nlist = lfs.name
         namevar = tk.StringVar(value=nlist[0])
         l_name = tk.OptionMenu(fr_tool, namevar, *nlist, command=change_file)

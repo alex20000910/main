@@ -8,8 +8,6 @@ from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor, QFontM
 import pyqtgraph as pg
 
 import os, inspect, time, sys, argparse
-from base64 import b64decode
-from ctypes import windll
 
 import numpy as np
 import matplotlib.pyplot as plt

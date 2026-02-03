@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from ctypes import windll
+import os, subprocess
+if os.name == 'nt':
+    from ctypes import windll
 import gc
 
 class SO_Fitter(tk.Toplevel):
@@ -43,6 +45,9 @@ class SO_Fitter(tk.Toplevel):
         self.layout()
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.update()
+        if os.name == 'posix':
+            w, h = self.winfo_reqwidth(), self.winfo_reqheight()
+            self.geometry(f"{w}x{h}")
         
     def on_closing(self):
         self.destroy()
@@ -279,8 +284,11 @@ class SO_Fitter(tk.Toplevel):
         print('\033[33mPhi sample offset: ', '%.3f'%phi1,'\nR1 sample offset: ', '%.3f'%r11, '\n\033[0m')
         
         if self.app_pars:
-            windll.user32.ShowWindow(self.app_pars.hwnd, 9)
-            windll.user32.SetForegroundWindow(self.app_pars.hwnd)
+            if os.name == 'nt':
+                windll.user32.ShowWindow(self.app_pars.hwnd, 9)
+                windll.user32.SetForegroundWindow(self.app_pars.hwnd)
+            elif os.name == 'posix':
+                subprocess.run(['open', '-a', 'Terminal'])
     
     def clf(self):
         self.ax0.cla()
@@ -394,8 +402,9 @@ class SO_Fitter(tk.Toplevel):
         btn_fit = tk.Button(fr_fit, text='Fit Sample Offset', command=self._fit, font=('Arial', self.size(16), 'bold'))
         btn_fit.grid(row=0, column=1)
     
-
-        fig0 = plt.Figure(figsize=(7*self.app_pars.scale, 7*self.app_pars.scale), layout='constrained')
+        
+        fig_size = 7 if os.name == 'nt' else 4
+        fig0 = plt.Figure(figsize=(fig_size*self.app_pars.scale, fig_size*self.app_pars.scale), layout='constrained')
         self.figout0 = FigureCanvasTkAgg(fig0, master=frame_middle)
         toolbar0 = NavigationToolbar2Tk(self.figout0, frame_middle)
         toolbar0.update()
@@ -405,7 +414,7 @@ class SO_Fitter(tk.Toplevel):
         self.ax0.set_xlabel(r'$k_x$ (2$\pi$/Å)')
         self.ax0.set_ylabel(r'$k_y$ (2$\pi$/Å)')
         self.ax0.set_aspect('equal')
-        fig1 = plt.Figure(figsize=(7*self.app_pars.scale, 7*self.app_pars.scale), layout='constrained')
+        fig1 = plt.Figure(figsize=(fig_size*self.app_pars.scale, fig_size*self.app_pars.scale), layout='constrained')
         self.figout1 = FigureCanvasTkAgg(fig1, master=frame_right)
         toolbar1 = NavigationToolbar2Tk(self.figout1, frame_right)
         toolbar1.update()

@@ -4,7 +4,6 @@ import os, io
 import tkinter as tk
 from tkinter import filedialog as fd
 import sys
-from ctypes import windll
 import gc
 import matplotlib
 matplotlib.use('TkAgg')
@@ -13,7 +12,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from PIL import Image
-import win32clipboard
+if os.name == 'nt':
+    from ctypes import windll
+    import win32clipboard
 from scipy import special
 from scipy.optimize import curve_fit
 
@@ -238,8 +239,9 @@ class spectrogram:
         self.root.update()
         w = self.root.winfo_reqwidth()
         h = self.root.winfo_reqheight()
-        w = int(12*self.dpi*self.scale+w)
-        h = int(6*self.dpi*self.scale+h)
+        tw, th = (12, 6) if os.name == 'nt' else (8, 4)
+        w = int(tw*self.dpi*self.scale+w)
+        h = int(th*self.dpi*self.scale+h)
         self.root.geometry(f'{w}x{h}')
         self.root.update()
     
@@ -418,21 +420,23 @@ class spectrogram:
                 pass
 
         EF = None
-
+        
+        tw, th = (12, 6) if os.name == 'nt' else (8, 4)
+        
         if fit_type == "Raw Data":
-            fig = plt.Figure(figsize=(12*self.scale, 6*self.scale))
+            fig = plt.Figure(figsize=(tw*self.scale, th*self.scale))
             ax = fig.add_subplot(111)
             plot_base_spectrum(ax, e, ss, 'Raw Data', 'Kinetic Energy (eV)', 'Intensity (counts)')
             add_canvas(fig)
         
         elif fit_type == "Smooth Data":
-            fig = plt.Figure(figsize=(12*self.scale, 6*self.scale))
+            fig = plt.Figure(figsize=(tw*self.scale, th*self.scale))
             ax = fig.add_subplot(111)
             plot_base_spectrum(ax, e, smoothed_ss, 'Smooth Data', 'Kinetic Energy (eV)', 'Intensity (counts)')
             add_canvas(fig)
 
         elif fit_type == "Fermi-Dirac Fitting":
-            fig1 = plt.Figure(figsize=(12*self.scale, 6*self.scale))
+            fig1 = plt.Figure(figsize=(tw*self.scale, th*self.scale))
             self.a1 = fig1.add_subplot(111)
             plot_base_spectrum(self.a1, e, ss, 'Raw Data with Fermi-Dirac Fitting', 'Kinetic Energy (eV)', 'Intensity (counts)')
 
@@ -464,7 +468,7 @@ class spectrogram:
             add_canvas(fig1)
         
         elif fit_type == "ERFC Fit":
-            fig2 = plt.Figure(figsize=(12*self.scale, 6*self.scale))
+            fig2 = plt.Figure(figsize=(tw*self.scale, th*self.scale))
             self.a2 = fig2.add_subplot(111)
             plot_base_spectrum(self.a2, e, ss, 'Raw Data with ERFC Fit', 'Kinetic Energy (eV)', 'Intensity (counts)')
             
@@ -497,7 +501,7 @@ class spectrogram:
             add_canvas(fig2)
 
         elif fit_type == "Linear Fits":
-            fig3 = plt.Figure(figsize=(12*self.scale, 6*self.scale))
+            fig3 = plt.Figure(figsize=(tw*self.scale, th*self.scale))
             a3 = fig3.add_subplot(111)
             plot_base_spectrum(a3, e, ss, 'Raw Data with Linear Fits', 'Kinetic Energy (eV)', 'Intensity (counts)')
 
@@ -534,25 +538,25 @@ class spectrogram:
             add_canvas(fig3)
 
         elif fit_type == "First Derivative":
-            fig4 = plt.Figure(figsize=(12*self.scale, 6*self.scale))
+            fig4 = plt.Figure(figsize=(tw*self.scale, th*self.scale))
             a4 = fig4.add_subplot(111)
             plot_base_spectrum(a4, e, np.gradient(ss), 'First Derivative', 'Kinetic Energy (eV)', 'dIntensity / dE')
             add_canvas(fig4)
 
         elif fit_type == "Second Derivative":
-            fig5 = plt.Figure(figsize=(12*self.scale, 6*self.scale))
+            fig5 = plt.Figure(figsize=(tw*self.scale, th*self.scale))
             a5 = fig5.add_subplot(111)
             plot_base_spectrum(a5, e, np.gradient(np.gradient(ss)), 'Second Derivative', 'Kinetic Energy (eV)', 'd²Intensity / dE²')
             add_canvas(fig5)
             
         elif fit_type == "Smooth Data with First Derivative":
-            fig6 = plt.Figure(figsize=(12*self.scale, 6*self.scale))
+            fig6 = plt.Figure(figsize=(tw*self.scale, th*self.scale))
             a6 = fig6.add_subplot(111)
             plot_base_spectrum(a6, e, np.gradient(smoothed_ss), 'Smoothed Data with First Derivative', 'Kinetic Energy (eV)', 'd(Smoothed Intensity) / dE')
             add_canvas(fig6)
             
         elif fit_type == "Segmented Tangents":
-            fig7 = plt.Figure(figsize=(12*self.scale, 6*self.scale))
+            fig7 = plt.Figure(figsize=(tw*self.scale, th*self.scale))
             a7 = fig7.add_subplot(111)
             plot_base_spectrum(a7, e, smoothed_ss, 'Smooth Data with Segmented Tangents', 'Kinetic Energy (eV)', 'Intensity (counts)')
 
@@ -666,10 +670,35 @@ class spectrogram:
         image.paste(Image2, (0, image1.height))
         output = io.BytesIO()
         
-        image.convert("RGB").save(output, "BMP")
-        data = output.getvalue()[14:]
-        output.close()
-        send_to_clipboard(win32clipboard.CF_DIB, data)
+        if os.name == 'nt':
+            image.convert("RGB").save(output, "BMP")
+            data = output.getvalue()[14:]
+            output.close()
+            send_to_clipboard(win32clipboard.CF_DIB, data)
+        elif os.name == 'posix':
+            image.convert("RGB").save(output, "PNG")
+            output.seek(0)
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                tmp.write(output.getvalue())
+                temp_path = tmp.name
+
+            try:
+                # 使用 AppleScript 將圖片複製到剪貼簿
+                applescript = f'''
+                set imagePath to POSIX file "{temp_path}"
+                set the clipboard to (read imagePath as «class PNGf»)
+                '''
+                
+                process = subprocess.Popen(['osascript', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                output, error = process.communicate(input=applescript.encode('utf-8'))
+                
+                if error:
+                    print(f"Error copying to clipboard: {error.decode()}")
+                else:
+                    print("Copied to clipboard successfully.")
+            finally:
+                # 清理臨時檔案
+                os.unlink(temp_path)
         
         # image.save(output, format='PNG')
         # data = output.getvalue()[14:]
@@ -782,9 +811,10 @@ class spectrogram:
         # global tpf,tpo,rpf,rpo,l_cx,l_cy,l_dy
         self.cmap = cmap
         if g is None:
-            ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
-            t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
-            t_sc_h-=int(40*ScaleFactor/100)
+            if os.name == 'nt':
+                ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+                t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
+                t_sc_h-=int(40*ScaleFactor/100)
             bar_pos = get_bar_pos()
             if bar_pos == 'top':    #taskbar on top
                 sc_y = int(40*ScaleFactor/100)
@@ -795,11 +825,19 @@ class spectrogram:
             odpi=self.tpg.winfo_fpixels('1i')
             # prfactor = 1.03 if ScaleFactor <= 100 else 1.2 if ScaleFactor <= 125 else 0.9 if ScaleFactor <= 150 else 0.55
             prfactor = 1
+            if os.name == 'posix':
+                ScaleFactor = 100
+                t_sc_w = self.tpg.winfo_screenwidth()
+                t_sc_h = self.tpg.winfo_screenheight() - int(40*ScaleFactor/100)
             ScaleFactor /= prfactor*(ScaleFactor/100*1890/96*odpi/t_sc_w) if 1890/t_sc_w >= (954)/t_sc_h else prfactor*(ScaleFactor/100*(954)/96*odpi/t_sc_h)
-            self.tpg.tk.call('tk', 'scaling', ScaleFactor/100)
+            if os.name == 'nt':
+                self.tpg.tk.call('tk', 'scaling', ScaleFactor/100)
+            elif os.name == 'posix':
+                self.tpg.tk.call('tk', 'scaling', ScaleFactor/100*odpi/96)
             # global scale, dpi
             self.dpi = self.tpg.winfo_fpixels('1i')
-            windll.shcore.SetProcessDpiAwareness(1)
+            if os.name == 'nt':
+                windll.shcore.SetProcessDpiAwareness(1)
             self.scale = odpi / self.dpi * ScaleFactor / 100
             self.tpg.config(bg='white')
             base_font_size = 14
@@ -816,9 +854,14 @@ class spectrogram:
             self.tpg.option_add('*Font', default_font)
         else:
             self.g = g
-            ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
-            t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
-            t_sc_h-=int(40*ScaleFactor/100)
+            if os.name == 'nt':
+                ScaleFactor = windll.shcore.GetScaleFactorForDevice(0)
+                t_sc_w, t_sc_h = windll.user32.GetSystemMetrics(0), windll.user32.GetSystemMetrics(1)   # Screen width and height
+                t_sc_h-=int(40*ScaleFactor/100)
+            elif os.name == 'posix':
+                ScaleFactor = 100
+                t_sc_w = g.winfo_screenwidth()
+                t_sc_h = g.winfo_screenheight() - int(40*ScaleFactor/100)
             if self.app_pars.bar_pos == 'top':    #taskbar on top
                 sc_y = int(40*ScaleFactor/100)
             else:
@@ -826,27 +869,34 @@ class spectrogram:
             self.scale, self.dpi = self.app_pars.scale, self.app_pars.dpi
             self.tpg = tk.Toplevel(g, bg='white')
             tx = int(t_sc_w*ScaleFactor/100) if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
-            self.tpg.geometry(f"1900x1000+{tx}+{sc_y}")
+            if os.name == 'nt':
+                self.tpg.geometry(f"1900x1000+{tx}+{sc_y}")
+            elif os.name == 'posix':
+                self.tpg.geometry(f"1500x950+{tx}+{sc_y}")
         self.tpg.title('Spectrogram: '+self.name)
         
         fr_fig=tk.Frame(self.tpg,bg='white',bd=0)
         fr_fig.grid(row=0,column=0,sticky='nsew')
         
-        self.rpf = plt.Figure(figsize=(15*self.scale, 4.75*self.scale), layout='constrained')
+        if os.name == 'nt':
+            w, h = 15, 4.75
+        elif os.name == 'posix':
+            w, h = 9, 2.85
+        self.rpf = plt.Figure(figsize=(w*self.scale, h*self.scale), layout='constrained')
         self.rpo = FigureCanvasTkAgg(self.rpf, master=fr_fig)
         self.rpo.get_tk_widget().grid(row=0, column=0)
         self.rpo.mpl_connect('motion_notify_event', self.__rp_move)
         self.rpo.mpl_connect('button_press_event', self.__rp_press)
         self.rpo.mpl_connect('button_release_event', self.__rp_release)
         
-        self.tpf = plt.Figure(figsize=(15*self.scale, 4.75*self.scale), layout='constrained')
+        self.tpf = plt.Figure(figsize=(w*self.scale, h*self.scale), layout='constrained')
         self.tpo = FigureCanvasTkAgg(self.tpf, master=fr_fig)
         self.tpo.get_tk_widget().grid(row=1, column=0)
         self.tpo.mpl_connect('motion_notify_event', self.__tp_move)
         self.tpo.mpl_connect('button_press_event', self.__tp_press)
         self.tpo.mpl_connect('button_release_event', self.__tp_release)
         
-        self.rgf = plt.Figure(figsize=(0.25*self.scale, 4.75*self.scale), layout='constrained')
+        self.rgf = plt.Figure(figsize=(0.25*self.scale, h*self.scale), layout='constrained')
         self.rgo = FigureCanvasTkAgg(self.rgf, master=fr_fig)
         self.rgo.get_tk_widget().grid(row=0, column=1)
         self.rgo.mpl_connect('motion_notify_event', self.__rg_move)
@@ -917,7 +967,10 @@ class spectrogram:
             self.tpg.update()
             screen_width = self.tpg.winfo_reqwidth()
             screen_height = self.tpg.winfo_reqheight()
-            t_sc_w = windll.user32.GetSystemMetrics(0)
+            if os.name == 'nt':
+                t_sc_w = windll.user32.GetSystemMetrics(0)
+            elif os.name == 'posix':
+                t_sc_w = g.winfo_screenwidth()
             tx = int(t_sc_w*ScaleFactor/100) if g.winfo_x()+g.winfo_width()/2 > t_sc_w else 0
             self.tpg.geometry(f"{screen_width}x{screen_height}+{tx}+{sc_y}")
             self.tpg.protocol("WM_DELETE_WINDOW", self.closing)
@@ -1580,14 +1633,18 @@ d
         tx, ty, tz = None, None, None
         self.r1=self.tr_a1.axhline(self.rr1, c='r')
         self.r2=self.tr_a1.axhline(self.rr2, c='r')
+        
+        label_size = 16 if os.name == 'nt' else 13
+        tick_size = 14 if os.name == 'nt' else 12
+        
         if self.lensmode=='Transmission':
-            self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=self.size(16))
+            self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=self.size(label_size))
         else:
-            if self.npzf:self.tr_a1.set_ylabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(16))
-            else:self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=self.size(16))
+            if self.npzf:self.tr_a1.set_ylabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(label_size))
+            else:self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=self.size(label_size))
                 
         self.tr_a1.set_xticks([])
-        self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=self.size(14))
+        self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=self.size(tick_size))
         self.tr_a1.set_xlim([x1, x2])
         self.tr_a1.set_ylim(self.oy1)
         
@@ -1601,13 +1658,16 @@ d
         tx, ty, tz = None, None, None
         self.r1=self.tr_a1.axhline(self.rr1, c='r')
         self.r2=self.tr_a1.axhline(self.rr2, c='r')
+        
+        label_size = 16 if os.name == 'nt' else 13
+        tick_size = 14 if os.name == 'nt' else 12
         if self.lensmode=='Transmission':
-            self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=self.size(16))
+            self.tr_a1.set_ylabel('Position (mm)', font='Arial', fontsize=self.size(label_size))
         else:
-            if self.npzf:self.tr_a1.set_ylabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(16))
-            else:self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=self.size(16))
+            if self.npzf:self.tr_a1.set_ylabel(r'k ($\frac{2\pi}{\AA}$)', font='Arial', fontsize=self.size(label_size))
+            else:self.tr_a1.set_ylabel('Angle (deg)', font='Arial', fontsize=self.size(label_size))
         self.tr_a1.set_xticks([])
-        self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=self.size(14))
+        self.tr_a1.set_yticklabels(labels=self.tr_a1.get_yticklabels(), font='Arial', fontsize=self.size(tick_size))
         # self.tr_a1.set_xlim(self.tr_a1.get_xlim())
         # self.x1, = self.tr_a1.plot([],[],'g-')
         # self.xx1, = self.tr_a1.plot([],[],'g-')
@@ -1637,10 +1697,14 @@ d
                 self.tr_a2.scatter(x,y, c='k', marker='o', s=self.scale*self.scale*30)
         self.tr_a2.ticklabel_format(style='plain', axis='y', scilimits=(0,0))
         self.tr_a2.set_xlim(self.tr_a1.get_xlim())
-        self.tr_a2.set_xlabel('Kinetic Energy (eV)', font='Arial', fontsize=self.size(16))
-        self.tr_a2.set_ylabel(self.s_yl, font='Arial', fontsize=self.size(16))
-        self.tr_a2.set_xticklabels(labels=self.tr_a2.get_xticklabels(), font='Arial', fontsize=self.size(14))
-        self.tr_a2.set_yticklabels(labels=self.tr_a2.get_yticklabels(), font='Arial', fontsize=self.size(14))
+        
+        label_size = 16 if os.name == 'nt' else 13
+        tick_size = 14 if os.name == 'nt' else 12
+        
+        self.tr_a2.set_xlabel('Kinetic Energy (eV)', font='Arial', fontsize=self.size(label_size))
+        self.tr_a2.set_ylabel(self.s_yl, font='Arial', fontsize=self.size(label_size))
+        self.tr_a2.set_xticklabels(labels=self.tr_a2.get_xticklabels(), font='Arial', fontsize=self.size(tick_size))
+        self.tr_a2.set_yticklabels(labels=self.tr_a2.get_yticklabels(), font='Arial', fontsize=self.size(tick_size))
         self.oy2=self.tr_a2.get_ylim()
 
     def __tp_rga_plot(self):

@@ -1,17 +1,18 @@
-from MDC_cut_utility import RestrictedToplevel, set_center, clear, on_configure, cal_ver
+from MDC_cut_utility import RestrictedToplevel, CanvasButton, set_center, clear, on_configure, cal_ver
 from .util import IconManager
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py, json
-import os, io
+import os, io, subprocess
 import tkinter as tk
 from tkinter import filedialog as fd
 from threading import Thread
 from abc import ABC, abstractmethod
 from tkinter import colorchooser, messagebox
-from ctypes import windll
+if os.name == 'nt':
+    from ctypes import windll
 from typing import override
 from base64 import b64decode
 from PIL import Image, ImageTk
@@ -61,19 +62,19 @@ class AboutWindow:
         fr_title.pack()
         l_icon = tk.Label(fr_title, bg='white', image=self.icon)
         l_icon.pack(side=tk.LEFT, padx=2, pady=10)
-        l1 = tk.Label(fr_title, text='MDC_cut', font=('Arial', self.size(30), "bold"), bg='white')
+        l1 = tk.Label(fr_title, text='MDC_cut', font=('Arial', self.size(30), "bold"), bg='white', fg='black')
         l1.pack(side=tk.LEFT, pady=10)
         
-        l2 = tk.Label(fr, text='Version: '+self.version, font=('Arial', self.size(16)), bg='white')
+        l2 = tk.Label(fr, text='Version: '+self.version, font=('Arial', self.size(16)), bg='white', fg='black')
         l2.pack(pady=5)
-        l3 = tk.Label(fr, text='Release Date: '+self.release_date, font=('Arial', self.size(16)), bg='white')
+        l3 = tk.Label(fr, text='Release Date: '+self.release_date, font=('Arial', self.size(16)), bg='white', fg='black')
         l3.pack(pady=5)
-        l4 = tk.Label(fr, text='Developed by Chih-Keng Hung', font=('Arial', self.size(16)), bg='white')
+        l4 = tk.Label(fr, text='Developed by Chih-Keng Hung', font=('Arial', self.size(16)), bg='white', fg='black')
         l4.pack(pady=5)
         
         fr1 = tk.Frame(fr, bg='white')
         fr1.pack(pady=5)
-        l_e = tk.Label(fr, text='Email: ', font=('Arial', self.size(16)), bg='white')
+        l_e = tk.Label(fr, text='Email: ', font=('Arial', self.size(16)), bg='white', fg='black')
         l_e.pack(side=tk.LEFT, in_=fr1)
         str_email = 'alex1010512@gmail.com'
         t_email = tk.Text(fr1, width=20, height=1, font=('Arial', self.size(16)), bg='white', bd=0, wrap='none')
@@ -86,7 +87,7 @@ class AboutWindow:
         
         fr2 = tk.Frame(fr, bg='white')
         fr2.pack(pady=5)
-        l_github = tk.Label(fr, text='GitHub: ', font=('Arial', self.size(16)), bg='white')
+        l_github = tk.Label(fr, text='GitHub: ', font=('Arial', self.size(16)), bg='white', fg='black')
         l_github.pack(side=tk.LEFT, in_=fr2)
         str_github = 'https://github.com/alex20000910/main'
         t_github = tk.Text(fr2, width=31, height=1, font=('Arial', self.size(16)), bg='white', bd=0, wrap='none')
@@ -97,7 +98,7 @@ class AboutWindow:
         t_github.bind('<FocusIn>', self.select_all)
         t_github.bind('<FocusOut>', self.select_none)
         
-        text = tk.Text(fr, width=60, height=10, wrap='word', font=('Arial', self.size(14)), bg='white')
+        text = tk.Text(fr, width=60, height=10, wrap='word', font=('Arial', self.size(14)), bg='white', fg='black')
         text.pack(padx=10, pady=5)
         license_text = """MIT License
 
@@ -191,15 +192,14 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
         self.vmin = tk.DoubleVar(value=0.0)
         self.vmax = tk.DoubleVar(value=1.0)
         self.colormap_name = tk.StringVar(value="custom_cmap")
-        self.bind('<Configure>', self.on_configure)
+        self.bind('<Configure>', lambda event: self.on_configure(event))
         self._draw_ui()
-        set_center(master, self, 0, 0)
+        set_center(self.master, self, 0, 0)
         self.update()
         
     def on_configure(self, event):
         if self.winfo_width() != self.winfo_reqwidth() or self.winfo_height() != self.winfo_reqheight():
             self.geometry(f"{self.winfo_reqwidth()}x{self.winfo_reqheight()}")
-            set_center(self.master, self, 0, 0)
 
     def size(self, size: int) -> int:
         return(int(self.scale*size))
@@ -226,7 +226,10 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
         for i, (color, scale) in enumerate(zip(self.colors, self.scales)):
             btn_frame = tk.Frame(colorbar)
             btn_frame.pack(side=tk.LEFT, padx=4)
-            btn = tk.Button(btn_frame, bg=color, width=10, font=("Arial", self.size(15)), command=lambda i=i: self.pick_color(i))
+            if os.name == 'nt':
+                btn = tk.Button(btn_frame, background=color, width=10, font=("Arial", self.size(15)), command=lambda i=i: self.pick_color(i))
+            else:
+                btn = CanvasButton(btn_frame, text='', bg_color=color, width=100, height=80, command=lambda i=i: self.pick_color(i))
             btn.pack(side=tk.TOP)
             self.entries.append(btn)
             scale_entry = tk.Entry(btn_frame, font=("Arial", self.size(15)), width=5, justify='center')
@@ -234,6 +237,8 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
             # 讓第0個和最後一個Entry為readonly
             if i == 0 or i == n - 1:
                 scale_entry.config(state='readonly')
+                if os.name == 'posix':
+                    scale_entry.config(fg="#cecece")
             scale_entry.pack(side=tk.TOP, pady=(2, 0))
             self.scale_entries.append(scale_entry)
 
@@ -251,6 +256,7 @@ class ColormapEditorWindow(tk.Toplevel, ABC):
         tk.Button(self, font=("Arial", self.size(15)), text="Show Colormap", command=self.show_colormap_toplevel).grid(row=5, column=0, columnspan=max(3, len(self.colors)), pady=5)
         tk.Button(self, font=("Arial", self.size(15)), text="Register & Save", command=self.register_and_save).grid(row=6, column=0, columnspan=2, pady=5)
         tk.Button(self, font=("Arial", self.size(15)), text="Load Colormap", command=self.load_colormap).grid(row=6, column=2, columnspan=2, pady=5)
+        set_center(self.master, self, 0, 0)
     
     def pick_color(self, idx):
         color = colorchooser.askcolor(title="Pick a color")[1]
@@ -646,6 +652,10 @@ class VersionCheckWindow(tk.Toplevel, ABC):
         self.scale = scale
         self.get_src(ver=True)
         path = os.path.join(cdir, '.MDC_cut', 'MDC_cut.py')
+        self.path = path
+        self.hwnd = hwnd
+        self.app_name = app_name
+        self.cdir = cdir
         with open(path, mode='r', encoding='utf-8') as f:
             for line in f:
                 if line.startswith('__version__ =') or line.startswith("__version__="):
@@ -660,44 +670,54 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         lb1.pack(side=tk.LEFT)
                         lb2 = tk.Label(fr_label, text=f"A new version {remote_ver} is available.\nUpdate now?", bg='white', font=("Arial", self.size(20), 'bold'))
                         lb2.pack(side=tk.LEFT)
-                        def update_now():
-                            self.destroy()
-                            if os.name == 'nt' and hwnd:
-                                windll.user32.ShowWindow(hwnd, 9)
-                                windll.user32.SetForegroundWindow(hwnd)
-                            print('\033[36m\nUpdating to the latest version...\nPlease wait...\033[0m')
-                            self.get_src()
-                            v_check_path = os.path.join(cdir, '.MDC_cut', 'version.check')
-                            os.remove(v_check_path)
-                            src = path
-                            dst = os.path.join(cdir, f'{app_name}.py')
-                            if os.name == 'nt':
-                                os.system(f'copy "{src}" "{dst}" > nul')
-                                os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                            elif os.name == 'posix':
-                                try:
-                                    os.system(f'cp "{src}" "{dst}"')
-                                    os.system(rf'start "" cmd /C "chcp 65001 > nul && python3 -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                                except:
-                                    os.system(f'cp "{src}" "{dst}"')
-                                    os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-                            os.remove(src)
-                            quit()
+                        
                         yn_frame = tk.Frame(self, bg='white')
                         yn_frame.pack(pady=5)
-                        btn_update = tk.Button(yn_frame, text="Update", command=update_now, font=("Arial", self.size(16), 'bold'))
+                        btn_update = tk.Button(yn_frame, text="Update", command=self.update_now, font=("Arial", self.size(16), 'bold'))
                         btn_update.pack(side=tk.LEFT, padx=5)
                         def later():
                             self.destroy()
                         btn_later = tk.Button(yn_frame, text="Later", command=later, font=("Arial", self.size(16), 'bold'))
                         btn_later.pack(side=tk.LEFT, padx=5)
                         set_center(master, self, w_extend=15)
-                        self.bind('<Return>', lambda e: update_now())
+                        self.bind('<Return>', lambda e: self.update_now())
                         self.grab_set()
                         self.focus_set()
                     break
-        os.system(f'del {path}')
-        
+        if os.name == 'nt':
+            os.system(f'del {path}')
+        elif os.name == 'posix':
+            os.system(f'rm -rf {path}')
+    
+    def update_now(self):
+        self.destroy()
+        if os.name == 'nt' and self.hwnd:
+            windll.user32.ShowWindow(self.hwnd, 9)
+            windll.user32.SetForegroundWindow(self.hwnd)
+        elif os.name == 'posix':
+            subprocess.run(['open', '-a', 'Terminal'])
+        print('\033[36m\nUpdating to the latest version...\nPlease wait...\033[0m')
+        self.get_src()
+        v_check_path = os.path.join(self.cdir, '.MDC_cut', 'version.check')
+        os.remove(v_check_path)
+        src = self.path
+        dst = os.path.join(self.cdir, f'{self.app_name}.py')
+        if os.name == 'nt':
+            os.system(f'copy "{src}" "{dst}" > nul')
+            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{self.app_name}.py""')
+        elif os.name == 'posix':
+            import sys
+            try:
+                os.system(f'cp "{src}" "{dst}"')
+                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
+                os.system('clear')
+            except:
+                os.system(f'cp "{src}" "{dst}"')
+                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
+                os.system('clear')
+        os.remove(src)
+        quit()
+    
     def size(self, s: int) -> int:
         return(int(self.scale*s))
 
@@ -785,8 +805,11 @@ class CalculatorWindow(tk.Toplevel):
         if '' == self.cale.get():
             self.cale.set('0')
             self.caleen.select_range(0, 1)
-        ans = np.arcsin(np.float64(self.calk.get())/np.sqrt(2*m*np.float64(self.cale.get())
+        try:
+            ans = np.arcsin(np.float64(self.calk.get())/np.sqrt(2*m*np.float64(self.cale.get())
                         * 1.602176634*10**-19)/10**-10*(h/2/np.pi))*180/np.pi
+        except:
+            ans = np.nan
         self.caldeg.config(text='Deg = '+'%.5f' % ans)
 
     def cal(self, *e):

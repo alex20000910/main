@@ -9,9 +9,10 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor
 import pyqtgraph as pg
 from base64 import b64decode
-import cv2, os, inspect
+import cv2, os, inspect, subprocess
 import h5py, time, zarr
-from ctypes import windll
+if os.name == 'nt':
+    from ctypes import windll
 import shutil, psutil, argparse
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.pyplot as plt
@@ -22,9 +23,14 @@ cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if __name__ == "__main__":
     os.chdir(cdir)
     if os.path.exists('.MDC_cut_DataViewer'):
-        shutil.rmtree('.MDC_cut_DataViewer')
+        if os.name == 'nt':
+            shutil.rmtree('.MDC_cut_DataViewer')
+            # os.system('rd /s /q ".MDC_cut_DataViewer"')
+        else:
+            os.system('rm -rf .MDC_cut_DataViewer')
     os.mkdir('.MDC_cut_DataViewer')
-    os.system(f'attrib +h +s ".MDC_cut_DataViewer"')
+    if os.name == 'nt':
+        os.system(f'attrib +h +s ".MDC_cut_DataViewer"')
 
 sys.path.append(os.path.dirname(cdir))
 from tool.util import MenuIconManager
@@ -39,7 +45,8 @@ def rotate(data: cv2.typing.MatLike, angle: float, size: tuple[int, int]) -> cv2
     return data
 
 def find_window():
-    # Windows系統中 可能的終端機視窗名稱
+    if sys.platform != "win32":
+        return 0
     hwnd = windll.user32.FindWindowW(None, "命令提示字元")
     if not hwnd:
         hwnd = windll.user32.FindWindowW(None, "Command Prompt")
@@ -90,7 +97,11 @@ def load_zarr(path: str):
             ang = zarr.open(ang_path, mode='r')
             if ang[0] != ang[-1]:
                 os.chdir(path)
-                shutil.rmtree('__disp__.zarr')
+                if os.name == 'nt':
+                    shutil.rmtree('__disp__.zarr')
+                    # os.system('rd /s /q "__disp__.zarr"')
+                else:
+                    os.system('rm -rf __disp__.zarr')
         # zpath = os.path.join(path, '__disp__.zarr')
         # if not os.path.exists(zpath):
         #     # data = zarr.open(path, mode='r+', dtype=np.float32)[:,:,:data.shape[2]-1]  # Remove the last attribute dimension
@@ -133,6 +144,8 @@ class SliceBrowser(MainWindow):
         if hwnd:
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
+        elif os.name == 'posix':
+            subprocess.run(['open', '-a', 'Terminal'])
         t=time.perf_counter()
         self.mode, self.shape, xmin, xmax, ymin, ymax, E = load_zarr(path)
                 
@@ -778,13 +791,14 @@ class SliceBrowser(MainWindow):
                         input_path = self.path
                         output_path = path
                         disp_zarr_save(input_path, output_path, self.shape, self.max_value)
-                        os.system(f'attrib +h +s "{path}"')
-                        for name in os.listdir(path):
-                            item_path = os.path.join(path, name)
-                            if os.path.isfile(item_path):
-                                os.system(f'attrib +h +s "{item_path}"')
-                            elif os.path.isdir(item_path):
-                                os.system(f'attrib +h +s "{item_path}"')
+                        if os.name == 'nt':
+                            os.system(f'attrib +h +s "{path}"')
+                            for name in os.listdir(path):
+                                item_path = os.path.join(path, name)
+                                if os.path.isfile(item_path):
+                                    os.system(f'attrib +h +s "{item_path}"')
+                                elif os.path.isdir(item_path):
+                                    os.system(f'attrib +h +s "{item_path}"')
                         self.raw_data_show = zarr.open_group(path, mode='r+')['data']
                         self.prload = False
                 except Exception as e:
@@ -1162,6 +1176,8 @@ class SliceBrowser(MainWindow):
         if self.hwnd:
             windll.user32.ShowWindow(self.hwnd, 9)
             windll.user32.SetForegroundWindow(self.hwnd)
+        elif os.name == 'posix':
+            subprocess.run(['open', '-a', 'Terminal'])
         self.__md(axis="E_kx")
         v = self.ky[self.slider_ky.value()]
         self.name = f"{self.dirname}_ky_{v:.3f}"
@@ -1175,6 +1191,8 @@ class SliceBrowser(MainWindow):
         if self.hwnd:
             windll.user32.ShowWindow(self.hwnd, 9)
             windll.user32.SetForegroundWindow(self.hwnd)
+        elif os.name == 'posix':
+            subprocess.run(['open', '-a', 'Terminal'])
         self.__md(axis="E_ky")
         v = self.kx[self.slider_kx.value()]
         self.name = f"{self.dirname}_kx_{v:.3f}"
@@ -1272,6 +1290,8 @@ class SliceBrowser(MainWindow):
         if self.hwnd:
             windll.user32.ShowWindow(self.hwnd, 9)
             windll.user32.SetForegroundWindow(self.hwnd)
+        elif os.name == 'posix':
+            subprocess.run(['open', '-a', 'Terminal'])
         self.dirname = os.path.basename(self.path).removesuffix(".zarr")
         self.__path_angle()
         self.dir = os.path.join(self.path, f"Ang_{self.path_angle:.1f}_bin_{max(1, self.bin_e)}_{max(1, self.bin_kx)}_{max(1, self.bin_ky)}", axis)
@@ -1347,12 +1367,13 @@ class SliceBrowser(MainWindow):
             attr_array = None
         
         pr_bar.increaseProgress('Setting file attributes')
-        for name in os.listdir(path):
-            item_path = os.path.join(path, name)
-            if os.path.isfile(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
-            elif os.path.isdir(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
+        if os.name == 'nt':
+            for name in os.listdir(path):
+                item_path = os.path.join(path, name)
+                if os.path.isfile(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
+                elif os.path.isdir(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
         
         
         disp_path = os.path.join(path, '__disp__.zarr')
@@ -1362,13 +1383,14 @@ class SliceBrowser(MainWindow):
             zdata = np.asarray(self.raw_data_show, dtype=np.uint8)
             zarr.save_group(disp_path, data=zdata, ang=np.array([0, 0],dtype=np.float32))
             zdata = None
-            os.system(f'attrib +h +s "{disp_path}"')
-            for name in os.listdir(disp_path):
-                item_path = os.path.join(disp_path, name)
-                if os.path.isfile(item_path):
-                    os.system(f'attrib +h +s "{item_path}"')
-                elif os.path.isdir(item_path):
-                    os.system(f'attrib +h +s "{item_path}"')
+            if os.name == 'nt':
+                os.system(f'attrib +h +s "{disp_path}"')
+                for name in os.listdir(disp_path):
+                    item_path = os.path.join(disp_path, name)
+                    if os.path.isfile(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
+                    elif os.path.isdir(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
         else:
             rot_data = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'rot_data'), mode='r')
             save_data = zarr.open(os.path.join(disp_path, '__disp__.zarr', 'data'), mode='w', shape=self.shape, dtype=np.uint8)
@@ -1455,12 +1477,13 @@ class SliceBrowser(MainWindow):
             save_ang[1] = 0
             
         pr_bar.increaseProgress('Setting file attributes')
-        for name in os.listdir(path):
-            item_path = os.path.join(path, name)
-            if os.path.isfile(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
-            elif os.path.isdir(item_path):
-                os.system(f'attrib +h +s "{item_path}"')
+        if os.name == 'nt':
+            for name in os.listdir(path):
+                item_path = os.path.join(path, name)
+                if os.path.isfile(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
+                elif os.path.isdir(item_path):
+                    os.system(f'attrib +h +s "{item_path}"')
         pr_bar.increaseProgress('Done')
         pr_bar.close()
         QApplication.restoreOverrideCursor()
@@ -1576,19 +1599,25 @@ class SliceBrowser(MainWindow):
                     # pr_bar.increaseProgress()
                 os.chdir(self.path)
                 if os.path.exists('__disp__.zarr'):
-                    shutil.rmtree('__disp__.zarr')
+                    if os.name == 'nt':
+                        shutil.rmtree('__disp__.zarr')
+                        # os.system('rd /s /q "__disp__.zarr"')
+                    else:
+                        os.system('rm -rf __disp__.zarr')
                 
                 zarr.save_group(path, data=raw_data_show, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
                 raw_data_show = None
-                os.system(f'attrib +h +s "{path}"')
+                if os.name == 'nt':
+                    os.system(f'attrib +h +s "{path}"')
                 
                 os.chdir(self.path)
-                for name in os.listdir(path):
-                    item_path = os.path.join(path, name)
-                    if os.path.isfile(item_path):
-                        os.system(f'attrib +h +s "{item_path}"')
-                    elif os.path.isdir(item_path):
-                        os.system(f'attrib +h +s "{item_path}"')
+                if os.name == 'nt':
+                    for name in os.listdir(path):
+                        item_path = os.path.join(path, name)
+                        if os.path.isfile(item_path):
+                            os.system(f'attrib +h +s "{item_path}"')
+                        elif os.path.isdir(item_path):
+                            os.system(f'attrib +h +s "{item_path}"')
         ###new
         else:
             for i in range(self.shape[0]):
@@ -1599,17 +1628,22 @@ class SliceBrowser(MainWindow):
                 pr_bar.increaseProgress()
             os.chdir(self.path)
             if os.path.exists('__disp__.zarr'):
-                shutil.rmtree('__disp__.zarr')
+                if os.name == 'nt':
+                    shutil.rmtree('__disp__.zarr')
+                    # os.system('rd /s /q "__disp__.zarr"')
+                else:
+                    os.system('rm -rf __disp__.zarr')                
             zdata = np.asarray(self.raw_data/self.max_value*255, dtype=np.uint8)
             zarr.save_group(path, data=zdata, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
             zdata = None
-            os.system(f'attrib +h +s "{path}"')
-            for name in os.listdir(path):
-                item_path = os.path.join(path, name)
-                if os.path.isfile(item_path):
-                    os.system(f'attrib +h +s "{item_path}"')
-                elif os.path.isdir(item_path):
-                    os.system(f'attrib +h +s "{item_path}"')
+            if os.name == 'nt':
+                os.system(f'attrib +h +s "{path}"')
+                for name in os.listdir(path):
+                    item_path = os.path.join(path, name)
+                    if os.path.isfile(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
+                    elif os.path.isdir(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
         pr_bar.increaseProgress('Updating Cube')
         self.raw_data_show = zarr.open_group(path, mode='r+')['data']
         self.prload = False
@@ -1651,7 +1685,11 @@ class SliceBrowser(MainWindow):
             os.chdir(self.path)
             if self.mode == 'standard':
                 if os.path.exists('__disp__.zarr'):
-                    shutil.rmtree('__disp__.zarr')
+                    if os.name == 'nt':
+                        shutil.rmtree('__disp__.zarr')
+                        # os.system('rd /s /q "__disp__.zarr"')
+                    else:
+                        os.system('rm -rf __disp__.zarr')
             elif self.mode == 'display':
                 os.chdir(os.path.dirname(self.path))
                 for filename in os.listdir(path):
@@ -1659,11 +1697,16 @@ class SliceBrowser(MainWindow):
                     if os.path.isfile(file_path) or os.path.islink(file_path):
                         os.unlink(file_path)  # 刪除檔案或符號連結
                     elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)  # 刪除子資料夾
+                        if os.name == 'nt':
+                            shutil.rmtree(file_path)
+                            # os.system(f'rd /s /q "{file_path}"')
+                        else:
+                            os.system(f'rm -rf "{file_path}"')
             zdata = np.asarray(raw_data_show, dtype=np.uint8)
             if self.mode == 'standard':
                 zarr.save_group(path, data=zdata, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
-                os.system(f'attrib +h +s "{path}"')
+                if os.name == 'nt':
+                    os.system(f'attrib +h +s "{path}"')
             elif self.mode == 'display':
                 xmin, xmax = self.raw_kx[0], self.raw_kx[-1]
                 ymin, ymax = self.raw_ky[0], self.raw_ky[-1]
@@ -1677,12 +1720,13 @@ class SliceBrowser(MainWindow):
                 attr_array[3, 1] = ymax
                 zarr.save_group(path, data=zdata, attr_array=attr_array, ang=np.array([self.path_angle, self.path_angle], dtype=np.float32))
             os.chdir(self.path)
-            for name in os.listdir(path):
-                item_path = os.path.join(path, name)
-                if os.path.isfile(item_path):
-                    os.system(f'attrib +h +s "{item_path}"')
-                elif os.path.isdir(item_path):
-                    os.system(f'attrib +h +s "{item_path}"')
+            if os.name == 'nt':
+                for name in os.listdir(path):
+                    item_path = os.path.join(path, name)
+                    if os.path.isfile(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
+                    elif os.path.isdir(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
         ###origin
         pr_bar.increaseProgress('Updating Cube')
         self.raw_data_show = zarr.open_group(path, mode='r+')['data']
