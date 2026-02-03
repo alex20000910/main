@@ -482,7 +482,6 @@ class VolumeSlicer(tk.Frame):
             # Create a figure and axis
             fig_size = 9 if os.name == 'nt' else 8
             if os.name == 'posix':
-                print('self.app_pars.scale', self.app_pars.scale)
                 if self.app_pars.scale >1:
                     fig_size -= 2
             self.fig = plt.Figure(figsize=(fig_size*self.app_pars.scale, fig_size*self.app_pars.scale),constrained_layout=True)
