@@ -388,22 +388,26 @@ def restart():
 
 def install(s: str = ''):
     print('Some Modules Not Found')
-    a = input('pip install all the missing modules ???\nProceed (Y/n)? ')
-    if a.lower() == 'y':
-        if s == '':
-            try:
-                for i in REQUIREMENTS:
-                    subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", i])
-            except subprocess.CalledProcessError:
-                for i in REQUIREMENTS:
-                    subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", i])
+    try:
+        a = input('pip install all the missing modules ???\nProceed (Y/n)? ')
+        if a.lower() == 'y':
+            if s == '':
+                try:
+                    for i in REQUIREMENTS:
+                        subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", i])
+                except subprocess.CalledProcessError:
+                    for i in REQUIREMENTS:
+                        subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", i])
+            else:
+                try:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", s])
+                except subprocess.CalledProcessError:
+                    subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", s])
         else:
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", s])
-            except subprocess.CalledProcessError:
-                subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", s])
-    else:
-        quit()
+            quit()
+    except EOFError:
+        input('EOFError detected. Press Enter to restart the program or Ctrl+C to exit if the issue persists.')
+        restart()
 
 def pool_protect(func):
     def wrapper(*args, **kwargs):
