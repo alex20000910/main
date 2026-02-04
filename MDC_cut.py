@@ -72,8 +72,8 @@ else:
     "tkhtmlview==0.3.1"
     ]
 if os.name == 'posix':
-    REQUIREMENTS[9] = None  # no pywin32 in Linux or MacOS
-    REQUIREMENTS[10] = None # no originpro in Linux or MacOS
+    REQUIREMENTS.remove(REQUIREMENTS[9])  # no pywin32 in Linux or MacOS
+    REQUIREMENTS.remove(REQUIREMENTS[9]) # no originpro in Linux or MacOS
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':
