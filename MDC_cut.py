@@ -358,16 +358,16 @@ try:
             try:
                 if os.name == 'nt':
                     print('pip not found\nOS: Windows\nInstalling pip...')
-                    os.system('python -m ensurepip')    #install pip
-                    os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')  #restart the script to ensure pip works without potential errors
+                    os.system(f'{sys.executable} -m ensurepip')    #install pip
+                    os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')  #restart the script to ensure pip works without potential errors
                 elif os.name == 'posix':
                     print('pip not found\nOS: Linux or MacOS\nInstalling pip...')
                     try:    #python3 if installed
-                        os.system('python3 -m ensurepip')   #install pip
-                        os.system('python3 -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')   #restart the script to ensure pip works without potential errors
+                        os.system(f'{sys.executable} -m ensurepip')   #install pip
+                        os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')   #restart the script to ensure pip works without potential errors
                     except: #python2.7(default in MacOS)
-                        os.system('python -m ensurepip')
-                        os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+                        os.system(f'{sys.executable} -m ensurepip')
+                        os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
                 with open('pip_check.txt', 'w', encoding = 'utf-8') as f:
                     f.write('pip found')
                     f.close()
@@ -379,12 +379,12 @@ except:
 
 def restart():
     if os.name == 'nt':
-        os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+        os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
     elif os.name == 'posix':
         try:
-            os.system('python3 -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+            os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
         except:
-            os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+            os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
 
 def install(s: str = ''):
     print('Some Modules Not Found')
