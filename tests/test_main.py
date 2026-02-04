@@ -742,6 +742,10 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     
     win.mflind()
     qtbot.wait(100)
+    win.mflind()
+    qtbot.wait(100)
+    win.mfrind()
+    qtbot.wait(100)
     win.mfrind()
     qtbot.wait(100)
     
@@ -757,7 +761,9 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     
     win.fmend()
     qtbot.waitExposed(win.g_exp)
-    win.fmend()
+    win.fmend(1)
+    qtbot.waitExposed(win.g_exp)
+    win.fmend(2)
     qtbot.waitExposed(win.g_exp)
     win.savemfit()
     qtbot.wait(100)
