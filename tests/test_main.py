@@ -778,9 +778,25 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.fmrmv(test=True)
     qtbot.wait(2)
     
+    win.toggle_grid(checked=True)
+    qtbot.wait(100)
+    win.toggle_grid(checked=False)
+    qtbot.wait(100)
+    win.toggle_histogram()
+    qtbot.wait(100)
+    win.reset_histogram()
+    qtbot.wait(100)
+    win.auto_level_histogram()
+    qtbot.wait(100)
+    
     win.help_window()
     
     win.show_shortcuts()
+    win.close()
+    
+    os.system(f"del {os.path.join(os.path.dirname(__file__), 'mfit.npz')}")  # 删除保存的拟合结果文件
+    win = main(file=file)
+    qtbot.waitExposed(win)
     win.close()
 
 def test_DataViewer(qtbot, monkeypatch):
