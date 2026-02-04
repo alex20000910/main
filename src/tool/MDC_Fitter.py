@@ -294,6 +294,10 @@ class main(MainWindow):
         act_load.setShortcut("Ctrl+O")
         act_load.triggered.connect(self.load_file)
         file_menu.addAction(act_load)
+        act_save =QAction("Export", self)
+        act_save.setShortcut("Ctrl+S")
+        act_save.triggered.connect(self.fmend)
+        file_menu.addAction(act_save)
         act_quit = QAction("Quit", self)
         act_quit.setShortcut("Ctrl+Q")
         act_quit.triggered.connect(self.close)
@@ -459,10 +463,11 @@ class main(MainWindow):
             "Ctrl+Q": "Quit",
             "Ctrl+Z": "Undo",
             "Ctrl+Y": "Redo",
-            "Left Arrow": "Move to previous index",
-            "Right Arrow": "Move to next index",
-            "Up Arrow": "Increase baseline value and fit",
-            "Down Arrow": "Decrease baseline value and fit",
+            "Ctrl+S": "Save Fitting Parameters as NPZ",
+            "←": "Move to previous index with different fitting status",
+            "→": "Move to next index with different fitting status",
+            "↑": "Increase baseline value and fit",
+            "↓": "Decrease baseline value and fit",
             "Enter/Return": "Fit component and update plot"
         }
         font = QFont("Arial", 24)
@@ -1474,8 +1479,6 @@ class main(MainWindow):
             if i == ti and ti != 0:
                 self.slider.setValue(ti-1)
 
-
-
     def mfrind(self):
         # global mfiti
         ti = self.index
@@ -1730,7 +1733,7 @@ class main(MainWindow):
                 if i in self.smfi and self.fpr == 1:
                     a1 = self.smaa1[i, :]
                     a2 = self.smaa2[i, :]
-                    if self.smresult == []: # 讀取vms時的狀況
+                    if len(self.smresult) == 0: # 讀取vms時的狀況
                         # smrx1, smrx2, smrh1, smrh2, smrw1, smrw2 = '', '', '', '', '', ''
                         pass
                     else:
@@ -2493,13 +2496,16 @@ class main(MainWindow):
                     else:
                         vv.append(f"{gformat(maa1[i, ii])}")
                 for l, n, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], [f"x: ", f"h: ", f"w: ", f"", f"", f""], vv):
-                    l.setText(n+v)
-                    l.setAlignment(Qt.AlignCenter)
+                    text = (n+v).strip()
+                    l.setText(text)
+                    l.setAlignment(Qt.AlignLeft)
+                    l.setCursorPosition(0)
                 try:
                     vv = smresult[i]
                     for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], vv):
-                        l.setText(v)
+                        l.setText(v.strip())
                         l.setAlignment(Qt.AlignLeft)
+                        l.setCursorPosition(0)
                 except:
                     pass
                 try:
@@ -2583,14 +2589,17 @@ class main(MainWindow):
                         vv.append(f"{gformat(maa2[i, ii+1])}")
 
                 for l, n, v in zip([lm1, lm3, lm5, lm2, lm4, lm6], [f"x1: ", f"h1: ", f"w1: ", f"x2: ", f"h2: ", f"w2: "], vv):
-                    l.setText(n+v)
-                    l.setAlignment(Qt.AlignCenter)
+                    text = (n+v).strip()
+                    l.setText(text)
+                    l.setAlignment(Qt.AlignLeft)
+                    l.setCursorPosition(0)
                 try:
                     vv = smresult[i]
                     for l, v in zip([lm1, lm2, lm3, lm4, lm5, lm6], vv):
                         if 'nofit' not in v:
-                            l.setText(v)
+                            l.setText(v.strip())
                             l.setAlignment(Qt.AlignLeft)
+                            l.setCursorPosition(0)
                 except:
                     pass
                 try:
