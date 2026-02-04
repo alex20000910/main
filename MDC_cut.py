@@ -290,7 +290,7 @@ def force_update():
         os.chdir(cdir)
         if os.name == 'nt':
             os.system(f'copy "{src}" "{dst}" > nul')
-            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+            os.system(rf'start "" cmd /C "chcp 65001 > nul && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         elif os.name == 'posix':
             try:
                 os.system(f'cp "{src}" "{dst}"')
@@ -379,12 +379,20 @@ except:
 
 def restart():
     if os.name == 'nt':
-        os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+        os.chdir(cdir)
+        os.system(rf'start "" cmd /C "chcp 65001 > nul && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
     elif os.name == 'posix':
+        script = rf'''
+        tell application "Terminal"
+            activate
+            do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
+        end tell
+        '''
+        os.system('clear')
         try:
-            os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+            subprocess.run(['osascript', '-e', script])
         except:
-            os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+            subprocess.run(['osascript', '-e', script])
 
 def install(s: str = ''):
     print('Some Modules Not Found')
@@ -1033,7 +1041,7 @@ def view_3d(*e):
 def DataViewer_PyQt5():
     def j():
         if os.name == 'nt':
-            os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
+            os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
         elif os.name == 'posix':
             os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}" &''')
     threading.Thread(target=j,daemon=True).start()
@@ -1262,7 +1270,7 @@ def change_file(*args):
 def qt_app(path: list[str]):
     def job():
         if os.name == 'nt':
-            subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+            subprocess.call([f'{sys.executable}', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
         elif os.name == 'posix':
             tpath = []
             for i in path:
@@ -1439,7 +1447,7 @@ def cmfit(*e):
     def job():
         src = '.MDC_cut'
         if os.name == 'nt':
-            subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
+            subprocess.call([f'{sys.executable}', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
         elif os.name == 'posix':
             os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}" -f "{data.attrs['Path']}" &''')
     threading.Thread(target=job, daemon=True).start()
@@ -2028,20 +2036,7 @@ if __name__ == '__main__':
         with open('open_check_MDC_cut.txt', 'w', encoding = 'utf-8') as f:
             f.write('1')
             f.close()
-        if os.name == 'nt':
-            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-        elif os.name == 'posix':
-            script = rf'''
-            tell application "Terminal"
-                activate
-                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
-            end tell
-            '''
-            os.system('clear')
-            try:
-                subprocess.run(['osascript', '-e', script])
-            except:
-                subprocess.run(['osascript', '-e', script])
+        restart()
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')
