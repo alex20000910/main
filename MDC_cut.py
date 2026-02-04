@@ -415,6 +415,8 @@ def install(s: str = ''):
             quit()
     except EOFError:
         restart()
+        os.system('cls' if os.name == 'nt' else 'clear')
+        quit()
 
 def pool_protect(func):
     def wrapper(*args, **kwargs):

@@ -576,6 +576,7 @@ def test_mfit_data():
     ml.loadmfit_(os.path.join(cdir, 'tests', 'rev_PE10A20f -170 VIV_pass.vms'))
     ml.loadmfit_re(os.path.join(cdir, 'tests', 'PE10A20f -170 VIV.vms'))
     ml.loadmfit_2p(os.path.join(cdir, 'tests', 'rev_PE10A20f -170 VIV.vms'))
+    ml.loadmfit_(os.path.join(cdir, 'tests', 'simulated_R1_14.0_R2_0_mfit_1peak.npz'))
     ml.loadmfit_(os.path.join(cdir, 'tests', 'simulated_R1_14.0_R2_0_mfit.npz'))
     mdata = mfit_data(cdir=cdir)
     ko, fev, rpos, ophi, fwhm, mpos, kmin, kmax, skmin, skmax, smaa1, smaa2, smfp, smfi, smresult, smcst, fpr, mdet = mdata.get()

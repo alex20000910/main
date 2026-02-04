@@ -377,6 +377,7 @@ class main(MainWindow):
         self.mundo_stack = []
         self.mredo_stack = []
         self.mbase = [0 for i in range(len(self.eV))]
+        self.saved = False
     
     def help_window(self):
         HelpWindow(self)
@@ -1592,6 +1593,7 @@ class main(MainWindow):
             np.savez(path, path=dpath, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
                     skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst, mdet=mdet)
             self.close_flag = 0
+            self.saved = True
         else:
             self.g_exp.show()
             self.g_exp.raise_()
@@ -3407,7 +3409,7 @@ class main(MainWindow):
                         flag = False
                         break
         else:
-            if len(self.mfi) != 0:
+            if self.saved == False:
                 flag = False
         if flag:
             pass
