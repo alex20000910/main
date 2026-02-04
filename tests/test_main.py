@@ -45,7 +45,6 @@ from tool.loader import loadfiles, tkDnD_loader, load_h5
 from tool.spectrogram import spectrogram, lfs_exp_casa
 from tool.SO_Fitter import SO_Fitter
 from tool.CEC import CEC, call_cec, CEC_Object
-from tool.VolumeSlicer import wait
 
 def test_loadfiles():
     path = []

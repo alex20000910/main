@@ -388,34 +388,6 @@ class g_cut_plot(tk.Toplevel):
             f.create_dataset('Spectrum', data=np.array(data))
         return
 
-
-class wait(tk.Toplevel):
-    def __init__(self, master, app_pars: app_param):
-        self.g = master
-        self.app_pars = app_pars
-        super().__init__(master, background='white')
-        set_center(self.g, self)
-        self.title('Info')
-        self.label_wait = tk.Label(self, bg='white', text='Please wait...', font=('Arial', self.size(16), "bold"))
-        self.label_wait.pack(side=tk.TOP, pady=20)
-        self.label_info = tk.Label(self, bg='white', text='', font=('Arial', self.size(14)))
-        self.label_info.pack(side=tk.TOP, pady=20)
-        self.grab_set()
-        self.focus_set()
-    
-    def size(self, s: int) -> int:
-        return int(s * self.app_pars.scale)
-    
-    def text(self, text):
-        self.label_info.config(text=text)
-        set_center(self.g, self)
-        self.update()
-    
-    def done(self):
-        self.grab_release()
-        self.destroy()
-        return
-
 class VolumeSlicer(tk.Frame):
     def __init__(self, parent=None, path=None, volume=np.empty((5,5,5), dtype=np.float32), cmap='gray', x=None, y=None, z=None, ev=None, e_photon=21.2, density=600, g=None, app_pars: app_param=None):
         '''

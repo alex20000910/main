@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.0.2"
-__release_date__ = "2026-02-04"
+__version__ = "9.1"
+__release_date__ = "2026-02-05"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -45,7 +45,9 @@ if VERSION < 3130:
     "zarr==3.1.1",
     "PyQt5==5.15.11",
     "pyqtgraph==0.13.7",
-    "tkinterdnd2==0.4.3"
+    "tkinterdnd2==0.4.3",
+    "markdown==3.10.1",
+    "tkhtmlview==0.3.1"
     ]
 else:
     REQUIREMENTS = ["numpy==2.2.6",
@@ -65,7 +67,9 @@ else:
     "PyQt5==5.15.11",
     "pyqtgraph==0.13.7",
     "tkinterdnd2==0.4.3",
-    "google-crc32c==1.8.0"  # for numcodecs
+    "google-crc32c==1.8.0",  # for numcodecs
+    "markdown==3.10.1",
+    "tkhtmlview==0.3.1"
     ]
 if os.name == 'posix':
     REQUIREMENTS[9] = None  # no pywin32 in Linux or MacOS
@@ -192,8 +196,9 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         return -1
 
 def get_src(ver=False):
-    branch = 'main'
+    branch = 'update'
     url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/release_note.md",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/MDC_cut_utility.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/__init__.py",
@@ -210,12 +215,12 @@ def get_src(ver=False):
            rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/RawDataViewer.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/qt_util.py"]
     for i, v in enumerate(url):
-        if i < 3:
+        if i < 4:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
         else:
             out_path = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
         status = get_file_from_github(v, out_path)
-        if ver:
+        if ver and i == 1:
             break
     return status
 
@@ -453,6 +458,8 @@ try:
         import PyQt5
         import pyqtgraph
         from tkinterdnd2 import DND_FILES, TkinterDnD
+        import markdown
+        from tkhtmlview import HTMLLabel
 except ModuleNotFoundError:
     install()
     restart()
@@ -466,17 +473,16 @@ try:
         from tool.util import MDC_param, EDC_param, origin_util, motion, plots_util, exp_util
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
-        from tool.VolumeSlicer import wait
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
 except ImportError as e:
     print(e)
     print('Some source files missing. Downloading...')
-    status = get_src()
-    if status == 0:
-        restart()
-        quit()
-    else:
-        input('\n\033[31mPlease check your network connection!\033[0m\n')
+    # status = get_src()
+    # if status == 0:
+    #     restart()
+    #     quit()
+    # else:
+    #     input('\n\033[31mPlease check your network connection!\033[0m\n')
 
 if __name__ == '__main__':
     pid = os.getpid()
