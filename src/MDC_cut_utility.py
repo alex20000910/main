@@ -773,10 +773,11 @@ def copy_to_clipboard(ff) -> None:
             os.unlink(temp_path)
     
 def send_to_clipboard(clip_type, data):
-    win32clipboard.OpenClipboard()
-    win32clipboard.EmptyClipboard()
-    win32clipboard.SetClipboardData(clip_type, data)
-    win32clipboard.CloseClipboard()
+    if os.name == 'nt':  # only execute on Windows OS
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(clip_type, data)
+        win32clipboard.CloseClipboard()
 
 def get_bar_pos():
     if os.name == 'nt':  # only execute on Windows OS

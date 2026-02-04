@@ -46,6 +46,7 @@ if VERSION < 3130:
     "PyQt5==5.15.11",
     "pyqtgraph==0.13.7",
     "tkinterdnd2==0.4.3",
+    "google-crc32c==1.8.0",  # for numcodecs
     "markdown==3.10.1",
     "tkhtmlview==0.3.1"
     ]
@@ -196,7 +197,7 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         return -1
 
 def get_src(ver=False):
-    branch = 'update'
+    branch = 'main'
     url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/release_note.md",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
@@ -1140,10 +1141,11 @@ def copy_to_clipboard(ff: Figure) -> None:
     
 @pool_protect
 def send_to_clipboard(clip_type, data):
-    win32clipboard.OpenClipboard()
-    win32clipboard.EmptyClipboard()
-    win32clipboard.SetClipboardData(clip_type, data)
-    win32clipboard.CloseClipboard()
+    if os.name == 'nt':
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(clip_type, data)
+        win32clipboard.CloseClipboard()
 
 @pool_protect
 def trans_plot(*e):

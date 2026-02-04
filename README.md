@@ -220,12 +220,15 @@ The following are the tested Python versions and their corresponding package ver
 |![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-3376AB?logo=pypi&labelColor=676767)|![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-3376AB?logo=pypi&labelColor=676767)|
 |![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-3376AB?logo=pypi&labelColor=676767)|![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-3376AB?logo=pypi&labelColor=676767)|
 |![tkinterdnd 0.4.3](https://img.shields.io/badge/tkinterdnd-0.4.3-3376AB?logo=pypi&labelColor=676767)|![tkinterdnd 0.4.3](https://img.shields.io/badge/tkinterdnd-0.4.3-3376AB?logo=pypi&labelColor=676767)|
+|![google-crc32c 1.8.0](https://img.shields.io/badge/google--crc32c-1.8.0-3376AB?logo=pypi&labelColor=676767)|![google-crc32c 1.8.0](https://img.shields.io/badge/google--crc32c-1.8.0-3376AB?logo=pypi&labelColor=676767)|
+|![markdown 3.10.1](https://img.shields.io/badge/markdown-3.10.1-202020?logo=markdown&labelColor=676767)|![markdown 3.10.1](https://img.shields.io/badge/markdown-3.10.1-202020?logo=markdown&labelColor=676767)|
+|![tkhtmlview 0.3.1](https://img.shields.io/badge/tkhtmlview-0.3.1-3376AB?logo=pypi&labelColor=676767)|![tkhtmlview 0.3.1](https://img.shields.io/badge/tkhtmlview-0.3.1-3376AB?logo=pypi&labelColor=676767)|
 
 </div>
 
 The only difference between Python 3.12.x and 3.13.x environments is the numpy and opencv-python versions due to pip version compatibility.
 You can find the full list of required packages in the beginning section of `MDC_cut.py`.(**REQUIREMENTS**)
-The highest tested Python version is **3.13.9**.
+The highest tested Python version is **3.12.8** and **3.13.9**.
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
