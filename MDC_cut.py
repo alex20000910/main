@@ -477,12 +477,12 @@ try:
 except ImportError as e:
     print(e)
     print('Some source files missing. Downloading...')
-    # status = get_src()
-    # if status == 0:
-    #     restart()
-    #     quit()
-    # else:
-    #     input('\n\033[31mPlease check your network connection!\033[0m\n')
+    status = get_src()
+    if status == 0:
+        restart()
+        quit()
+    else:
+        input('\n\033[31mPlease check your network connection!\033[0m\n')
 
 if __name__ == '__main__':
     pid = os.getpid()
