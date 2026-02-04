@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.0.1"
-__release_date__ = "2026-02-03"
+__version__ = "9.0.2"
+__release_date__ = "2026-02-04"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -2864,6 +2864,7 @@ if __name__ == '__main__':
     g.bind('<MouseWheel>', scroll)
     g.bind('<MouseWheel>', scroll)
     g.bind('<Control-o>', load)
+    g.bind('<Control-q>', g_close)
     g.bind("<F1>", loadmfit)
     g.bind("<F2>", loadefit)
     g.bind("<F3>", bareband)
