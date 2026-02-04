@@ -406,7 +406,6 @@ def install(s: str = ''):
         else:
             quit()
     except EOFError:
-        input('EOFError detected. Press Enter to restart the program or Ctrl+C to exit if the issue persists.')
         restart()
 
 def pool_protect(func):
