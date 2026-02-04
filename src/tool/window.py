@@ -16,7 +16,6 @@ from typing import override
 from base64 import b64decode
 from PIL import Image, ImageTk
 import markdown
-import tkhtmlview
 from tkhtmlview import HTMLLabel
 
 class AboutWindow:
