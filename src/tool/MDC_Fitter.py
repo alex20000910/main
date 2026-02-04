@@ -3405,7 +3405,7 @@ class main(MainWindow):
             mask = smresult!=['', '', '', '', '', '']
             if np.argwhere(mask == True).size != 0:
                 for i, j in zip(smresult[mask], self.smresult_original[mask]):
-                    if not np.array_equal(i, j):
+                    if not np.array_equal(i, j) and self.saved == False:
                         flag = False
                         break
         else:
