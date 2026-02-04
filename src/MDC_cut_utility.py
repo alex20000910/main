@@ -1,4 +1,4 @@
-import os, io, subprocess
+import os, sys, io, subprocess, argparse
 import tkinter as tk
 import threading
 from abc import ABC, abstractmethod
@@ -540,6 +540,109 @@ class CanvasButton:
         """位置佈局 Canvas (傳遞給 place 方法)"""
         self.canvas.place(**kwargs)
 
+class wait(tk.Toplevel):
+    def __init__(self, master, app_pars: app_param=None, scale=None):
+        self.g = master
+        self.app_pars = app_pars
+        self.scale = scale
+        super().__init__(master, background='white')
+        set_center(self.g, self)
+        self.title('Info')
+        self.label_wait = tk.Label(self, bg='white', text='Please wait...', font=('Arial', self.size(16), "bold"))
+        self.label_wait.pack(side=tk.TOP, pady=20)
+        self.label_info = tk.Label(self, bg='white', text='', font=('Arial', self.size(14)))
+        self.label_info.pack(side=tk.TOP, pady=20)
+        self.grab_set()
+        self.focus_set()
+    
+    def size(self, s: int) -> int:
+        if self.app_pars is not None:
+            return int(s * self.app_pars.scale)
+        elif self.scale is not None:
+            return int(s * self.scale)
+        else:
+            return s
+    
+    def text(self, text):
+        self.label_info.config(text=text)
+        set_center(self.g, self)
+        self.update()
+    
+    def done(self):
+        self.grab_release()
+        self.destroy()
+        return
+
+def to_raw_url(url: str) -> str:
+    # 將 github blob 連結轉成 raw 連結
+    if "github.com" in url and "/blob/" in url:
+        return url.replace("https://github.com/", "https://raw.githubusercontent.com/").replace("/blob/", "/")
+    return url
+
+def download(url: str, out_path: str, token: str = None) -> None:
+    try:
+        import requests
+    except Exception:
+        requests = None
+
+    headers = {}
+    if token:
+        headers["Authorization"] = f"token {token}"
+
+    url = to_raw_url(url)
+
+    if requests:
+        with requests.get(url, headers=headers, stream=True) as r:
+            r.raise_for_status()
+            total = r.headers.get("Content-Length")
+            if total and total.isdigit():
+                total = int(total)
+            with open(out_path, "wb") as f:
+                downloaded = 0
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                # optionally you could print progress here
+    else:
+        # fallback to standard library
+        import urllib.request
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req) as resp, open(out_path, "wb") as out:
+            out.write(resp.read())
+            
+def get_file_from_github(url: str, out_path: str, token: str = None):
+    # p = argparse.ArgumentParser(description="Download a file from a GitHub URL")
+    # p.add_argument("url", help="GitHub file URL (github.com/.../blob/... or raw.githubusercontent.com/... )")
+    # p.add_argument("-o", "--output", help="Output filename or path. If omitted, uses the filename from the URL.")
+    # p.add_argument("--token", help="GitHub token for private repos (optional)", default=None)
+    # args = p.parse_args()
+
+    # url = args.url.strip()
+    args = argparse.Namespace(output=out_path, token=None)
+    raw = to_raw_url(url)
+    if not args.output:
+        # try to extract filename
+        parts = raw.rstrip("/").split("/")
+        if len(parts) >= 1:
+            filename = parts[-1]
+        else:
+            print("Please use -o to specify the output filename.", file=sys.stderr)
+        out_path = filename
+    else:
+        out_path = args.output
+
+    # ensure output dir exists
+    out_dir = os.path.dirname(out_path)
+    if out_dir and not os.path.exists(out_dir):
+        os.makedirs(out_dir, exist_ok=True)
+
+    try:
+        download(url, out_path, args.token)
+    except Exception as e:
+        print("Failed to download source file:", e, file=sys.stderr)
+        print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
+
 def im_smooth(data, kernel_size=17):
     return GaussianBlur(data, (kernel_size, kernel_size), 0)
 
@@ -670,10 +773,11 @@ def copy_to_clipboard(ff) -> None:
             os.unlink(temp_path)
     
 def send_to_clipboard(clip_type, data):
-    win32clipboard.OpenClipboard()
-    win32clipboard.EmptyClipboard()
-    win32clipboard.SetClipboardData(clip_type, data)
-    win32clipboard.CloseClipboard()
+    if os.name == 'nt':  # only execute on Windows OS
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(clip_type, data)
+        win32clipboard.CloseClipboard()
 
 def get_bar_pos():
     if os.name == 'nt':  # only execute on Windows OS

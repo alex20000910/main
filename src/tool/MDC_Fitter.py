@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QPainter, QFont, QColor, QIcon, QCursor, QFontMetrics, QMovie
 import pyqtgraph as pg
 
-import os, inspect, time, sys, argparse
+import os, inspect, sys, argparse
 from base64 import b64decode
 import copy, tqdm
 
@@ -98,76 +98,6 @@ def putfitpar(inpars, modelpars=None, show_correl=True, min_correl=0.1,
             else:
                 add(f"    {nout} {par.value: .7g} (fixed)")
     return buff
-
-def to_raw_url(url: str) -> str:
-    # 將 github blob 連結轉成 raw 連結
-    if "github.com" in url and "/blob/" in url:
-        return url.replace("https://github.com/", "https://raw.githubusercontent.com/").replace("/blob/", "/")
-    return url
-
-def download(url: str, out_path: str, token: str = None) -> None:
-    try:
-        import requests
-    except Exception:
-        requests = None
-
-    headers = {}
-    if token:
-        headers["Authorization"] = f"token {token}"
-
-    url = to_raw_url(url)
-
-    if requests:
-        with requests.get(url, headers=headers, stream=True) as r:
-            r.raise_for_status()
-            total = r.headers.get("Content-Length")
-            if total and total.isdigit():
-                total = int(total)
-            with open(out_path, "wb") as f:
-                downloaded = 0
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                # optionally you could print progress here
-    else:
-        # fallback to standard library
-        import urllib.request
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req) as resp, open(out_path, "wb") as out:
-            out.write(resp.read())
-            
-def get_file_from_github(url: str, out_path: str, token: str = None):
-    # p = argparse.ArgumentParser(description="Download a file from a GitHub URL")
-    # p.add_argument("url", help="GitHub file URL (github.com/.../blob/... or raw.githubusercontent.com/... )")
-    # p.add_argument("-o", "--output", help="Output filename or path. If omitted, uses the filename from the URL.")
-    # p.add_argument("--token", help="GitHub token for private repos (optional)", default=None)
-    # args = p.parse_args()
-
-    # url = args.url.strip()
-    args = argparse.Namespace(output=out_path, token=None)
-    raw = to_raw_url(url)
-    if not args.output:
-        # try to extract filename
-        parts = raw.rstrip("/").split("/")
-        if len(parts) >= 1:
-            filename = parts[-1]
-        else:
-            print("Please use -o to specify the output filename.", file=sys.stderr)
-        out_path = filename
-    else:
-        out_path = args.output
-
-    # ensure output dir exists
-    out_dir = os.path.dirname(out_path)
-    if out_dir and not os.path.exists(out_dir):
-        os.makedirs(out_dir, exist_ok=True)
-
-    try:
-        download(url, out_path, args.token)
-    except Exception as e:
-        print("Failed to download source file:", e, file=sys.stderr)
-        print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
 
 class HelpWindow(QDialog):
     def __init__(self, parent=None):
@@ -447,6 +377,7 @@ class main(MainWindow):
         self.mundo_stack = []
         self.mredo_stack = []
         self.mbase = [0 for i in range(len(self.eV))]
+        self.saved = False
     
     def help_window(self):
         HelpWindow(self)
@@ -1662,6 +1593,7 @@ class main(MainWindow):
             np.savez(path, path=dpath, fev=fev, fwhm=fwhm, pos=pos, skmin=skmin,
                     skmax=skmax, smaa1=smaa1, smaa2=smaa2, smfp=smfp, smfi=smfi, smresult=smresult, smcst=smcst, mdet=mdet)
             self.close_flag = 0
+            self.saved = True
         else:
             self.g_exp.show()
             self.g_exp.raise_()
@@ -3477,7 +3409,7 @@ class main(MainWindow):
                         flag = False
                         break
         else:
-            if len(self.mfi) != 0:
+            if self.saved == False:
                 flag = False
         if flag:
             pass

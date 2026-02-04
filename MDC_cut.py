@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.0.2"
-__release_date__ = "2026-02-04"
+__version__ = "9.1"
+__release_date__ = "2026-02-05"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -45,7 +45,10 @@ if VERSION < 3130:
     "zarr==3.1.1",
     "PyQt5==5.15.11",
     "pyqtgraph==0.13.7",
-    "tkinterdnd2==0.4.3"
+    "tkinterdnd2==0.4.3",
+    "google-crc32c==1.8.0",  # for numcodecs
+    "markdown==3.10.1",
+    "tkhtmlview==0.3.1"
     ]
 else:
     REQUIREMENTS = ["numpy==2.2.6",
@@ -65,11 +68,13 @@ else:
     "PyQt5==5.15.11",
     "pyqtgraph==0.13.7",
     "tkinterdnd2==0.4.3",
-    "google-crc32c==1.8.0"  # for numcodecs
+    "google-crc32c==1.8.0",  # for numcodecs
+    "markdown==3.10.1",
+    "tkhtmlview==0.3.1"
     ]
 if os.name == 'posix':
-    REQUIREMENTS[9] = None  # no pywin32 in Linux or MacOS
-    REQUIREMENTS[10] = None # no originpro in Linux or MacOS
+    REQUIREMENTS.remove(REQUIREMENTS[9])  # no pywin32 in Linux or MacOS
+    REQUIREMENTS.remove(REQUIREMENTS[9]) # no originpro in Linux or MacOS
 
 cdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 if os.name == 'nt':
@@ -194,6 +199,7 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
 def get_src(ver=False):
     branch = 'main'
     url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/release_note.md",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/MDC_cut_utility.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/__init__.py",
@@ -210,12 +216,12 @@ def get_src(ver=False):
            rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/RawDataViewer.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/qt_util.py"]
     for i, v in enumerate(url):
-        if i < 3:
+        if i < 4:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
         else:
             out_path = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
         status = get_file_from_github(v, out_path)
-        if ver:
+        if ver and i == 1:
             break
     return status
 
@@ -285,7 +291,7 @@ def force_update():
         os.chdir(cdir)
         if os.name == 'nt':
             os.system(f'copy "{src}" "{dst}" > nul')
-            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
+            os.system(rf'start "" cmd /C "chcp 65001 > nul && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
         elif os.name == 'posix':
             try:
                 os.system(f'cp "{src}" "{dst}"')
@@ -353,16 +359,16 @@ try:
             try:
                 if os.name == 'nt':
                     print('pip not found\nOS: Windows\nInstalling pip...')
-                    os.system('python -m ensurepip')    #install pip
-                    os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')  #restart the script to ensure pip works without potential errors
+                    os.system(f'{sys.executable} -m ensurepip')    #install pip
+                    os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')  #restart the script to ensure pip works without potential errors
                 elif os.name == 'posix':
                     print('pip not found\nOS: Linux or MacOS\nInstalling pip...')
                     try:    #python3 if installed
-                        os.system('python3 -m ensurepip')   #install pip
-                        os.system('python3 -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')   #restart the script to ensure pip works without potential errors
+                        os.system(f'{sys.executable} -m ensurepip')   #install pip
+                        os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')   #restart the script to ensure pip works without potential errors
                     except: #python2.7(default in MacOS)
-                        os.system('python -m ensurepip')
-                        os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+                        os.system(f'{sys.executable} -m ensurepip')
+                        os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
                 with open('pip_check.txt', 'w', encoding = 'utf-8') as f:
                     f.write('pip found')
                     f.close()
@@ -374,30 +380,43 @@ except:
 
 def restart():
     if os.name == 'nt':
-        os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+        os.chdir(cdir)
+        os.system(rf'start "" cmd /C "chcp 65001 > nul && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
     elif os.name == 'posix':
+        script = rf'''
+        tell application "Terminal"
+            activate
+            do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
+        end tell
+        '''
+        os.system('clear')
         try:
-            os.system('python3 -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+            subprocess.run(['osascript', '-e', script])
         except:
-            os.system('python -W ignore::SyntaxWarning -W ignore::UserWarning "'+os.path.abspath(inspect.getfile(inspect.currentframe()))+'"')
+            subprocess.run(['osascript', '-e', script])
 
 def install(s: str = ''):
     print('Some Modules Not Found')
-    a = input('pip install all the missing modules ???\nProceed (Y/n)? ')
-    if a.lower() == 'y':
-        if s == '':
-            try:
-                for i in REQUIREMENTS:
-                    subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", i])
-            except subprocess.CalledProcessError:
-                for i in REQUIREMENTS:
-                    subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", i])
+    try:
+        a = input('pip install all the missing modules ???\nProceed (Y/n)? ')
+        if a.lower() == 'y':
+            if s == '':
+                try:
+                    for i in REQUIREMENTS:
+                        subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", i])
+                except subprocess.CalledProcessError:
+                    for i in REQUIREMENTS:
+                        subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", i])
+            else:
+                try:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", s])
+                except subprocess.CalledProcessError:
+                    subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", s])
         else:
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", s])
-            except subprocess.CalledProcessError:
-                subprocess.check_call([sys.executable, "-m", "pip3", "install", "--user", s])
-    else:
+            quit()
+    except EOFError:
+        restart()
+        os.system('cls' if os.name == 'nt' else 'clear')
         quit()
 
 def pool_protect(func):
@@ -453,6 +472,8 @@ try:
         import PyQt5
         import pyqtgraph
         from tkinterdnd2 import DND_FILES, TkinterDnD
+        import markdown
+        from tkhtmlview import HTMLLabel
 except ModuleNotFoundError:
     install()
     restart()
@@ -466,7 +487,6 @@ try:
         from tool.util import MDC_param, EDC_param, origin_util, motion, plots_util, exp_util
         from tool.SO_Fitter import SO_Fitter
         from tool.CEC import CEC, call_cec
-        from tool.VolumeSlicer import wait
         from tool.window import AboutWindow, EmodeWindow, ColormapEditorWindow, c_attr_window, c_name_window, c_excitation_window, c_description_window, VersionCheckWindow, CalculatorWindow, Plot1Window, Plot1Window_MDC_curves, Plot1Window_Second_Derivative, Plot3Window
 except ImportError as e:
     print(e)
@@ -1024,7 +1044,7 @@ def view_3d(*e):
 def DataViewer_PyQt5():
     def j():
         if os.name == 'nt':
-            os.system(f'python -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
+            os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}"')
         elif os.name == 'posix':
             os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, '.MDC_cut', 'tool', 'DataViewer.py')}" &''')
     threading.Thread(target=j,daemon=True).start()
@@ -1121,10 +1141,11 @@ def copy_to_clipboard(ff: Figure) -> None:
     
 @pool_protect
 def send_to_clipboard(clip_type, data):
-    win32clipboard.OpenClipboard()
-    win32clipboard.EmptyClipboard()
-    win32clipboard.SetClipboardData(clip_type, data)
-    win32clipboard.CloseClipboard()
+    if os.name == 'nt':
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(clip_type, data)
+        win32clipboard.CloseClipboard()
 
 @pool_protect
 def trans_plot(*e):
@@ -1253,7 +1274,7 @@ def change_file(*args):
 def qt_app(path: list[str]):
     def job():
         if os.name == 'nt':
-            subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
+            subprocess.call([f'{sys.executable}', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
         elif os.name == 'posix':
             tpath = []
             for i in path:
@@ -1430,7 +1451,7 @@ def cmfit(*e):
     def job():
         src = '.MDC_cut'
         if os.name == 'nt':
-            subprocess.call(['python', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
+            subprocess.call([f'{sys.executable}', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}', '-f', data.attrs['Path']])
         elif os.name == 'posix':
             os.system(f'''{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{os.path.join(cdir, src, "tool", "MDC_Fitter.py")}" -f "{data.attrs['Path']}" &''')
     threading.Thread(target=job, daemon=True).start()
@@ -2019,20 +2040,7 @@ if __name__ == '__main__':
         with open('open_check_MDC_cut.txt', 'w', encoding = 'utf-8') as f:
             f.write('1')
             f.close()
-        if os.name == 'nt':
-            os.system(rf'start "" cmd /C "chcp 65001 > nul && python -W ignore::SyntaxWarning -W ignore::UserWarning "{app_name}.py""')
-        elif os.name == 'posix':
-            script = rf'''
-            tell application "Terminal"
-                activate
-                do script "cd {cdir} && {sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning {app_name}.py"
-            end tell
-            '''
-            os.system('clear')
-            try:
-                subprocess.run(['osascript', '-e', script])
-            except:
-                subprocess.run(['osascript', '-e', script])
+        restart()
         quit()
     else:
         os.remove('open_check_MDC_cut.txt')

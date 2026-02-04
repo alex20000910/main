@@ -1538,32 +1538,20 @@ class plots_util(ABC):
                         cb.set_ticklabels(cb.get_ticks(), font='Arial')
                         
                     elif value.get() == 'MDC Normalized':
-                        pbar = tqdm.tqdm(
-                            total=len(ev)-1, desc='MDC Normalized', colour='red')
-                        for n in range(len(ev)-1):
-                            ecut = data.sel(eV=ev[n], method='nearest')
-                            if npzf:
-                                x = phi
-                            else:
-                                x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
-                                (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
-                            y = ecut.to_numpy().reshape(len(ecut))
-                            # mz[len(phi)*n:len(phi)*(n+1)]=np.array(y,dtype=float)
-                            # mx[len(phi)*n:len(phi)*(n+1)]=x
-                            # ty=np.arange(len(x), dtype=float)
-                            # my[len(phi)*n:len(phi)*(n+1)]=np.full_like(ty, ev[n])
-                            # a.scatter(x,np.full_like(ty, ev[n]),c=np.array(y,dtype=int),marker='o',s=self.scale*self.scale*0.9,cmap=value3.get());
-                            if emf=='KE':
-                                px, py = np.meshgrid(x, ev[n:(n+2)])
-                            else:
-                                px, py = np.meshgrid(x, vfe-ev[n:(n+2)])
-                            ao.pcolormesh(px, py, np.full_like(
-                                np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
-                            pbar.update(1)
-                            # print(str(round((n+1)/(len(ev)-1)*100))+'%'+' ('+str(len(ev)-1)+')')
-                            st.put(str(round((n+1)/(len(ev)-1)*100)) +
-                                '%'+' ('+str(len(ev)-1)+')')
-                        pbar.close()
+                        if emf=='KE':
+                            px, py = np.meshgrid(phi, ev)
+                            tev = py.copy()
+                        else:
+                            px, py = np.meshgrid(phi, vfe-ev)
+                            tev = vfe-py.copy()
+                        if npzf:
+                            px = phi
+                        else:
+                            px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                        pz = data.to_numpy().copy().astype(float)
+                        pz /= np.max(pz, axis=1)[:, np.newaxis]
+                        pz = np.nan_to_num(pz)
+                        ao.pcolormesh(px, py, pz, cmap=value3.get())
                     elif value.get() == 'MDC Curves':
                         pbar = tqdm.tqdm(
                             total=len(ev)//d, desc='MDC', colour='red')
@@ -2571,31 +2559,21 @@ class exp_util(exp_motion):
                         snap_values=n[1]
                     ))
                 elif value.get() == 'MDC Normalized':
-                    for n in range(len(ev)-1):
-                        ecut = data.sel(eV=ev[n], method='nearest')
-                        if npzf:
-                            x = phi
-                        else:
-                            x = (2*m*ev[n]*1.602176634*10**-19)**0.5*np.sin(
-                            (np.float64(k_offset.get())+phi)/180*np.pi)*10**-10/(h/2/np.pi)
-                        y = ecut.to_numpy().reshape(len(ecut))
-                        # mz[len(phi)*n:len(phi)*(n+1)]=np.array(y,dtype=float)
-                        # mx[len(phi)*n:len(phi)*(n+1)]=x
-                        # ty=np.arange(len(x), dtype=float)
-                        # my[len(phi)*n:len(phi)*(n+1)]=np.full_like(ty, ev[n])
-                        # a.scatter(x,np.full_like(ty, ev[n]),c=np.array(y,dtype=int),marker='o',s=scale*scale*0.9,cmap=value3.get());
-                        if emf=='KE':
-                            px, py = np.meshgrid(x, ev[n:n+2])
-                        else:
-                            px, py = np.meshgrid(x, vfe-ev[n:n+2])
-                        a.pcolormesh(px, py, np.full_like(
-                            np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
-                        if emf=='KE':
-                            yl = a.get_ylim()
-                        else:
-                            yl = sorted(a.get_ylim(), reverse=True)
-                        a0.pcolormesh(px, py, np.full_like(
-                            np.zeros([2, len(phi)], dtype=float), y), cmap=value3.get())
+                    if emf=='KE':
+                        px, py = np.meshgrid(phi, ev)
+                        tev = py.copy()
+                    else:
+                        px, py = np.meshgrid(phi, vfe-ev)
+                        tev = vfe-py.copy()
+                    if npzf:
+                        px = phi
+                    else:
+                        px = (2*m*tev*1.602176634*10**-19)**0.5*np.sin((np.float64(k_offset.get())+px)/180*np.pi)*10**-10/(h/2/np.pi)
+                    pz = data.to_numpy().copy().astype(float)
+                    pz = np.nan_to_num(pz)
+                    pz /= np.max(pz, axis=1)[:, np.newaxis]
+                    a.pcolormesh(px, py, pz, cmap=value3.get())
+                    a0.pcolormesh(px, py, pz, cmap=value3.get())
                     # cursor = Cursor(a, useblit=True, color='red', linewidth=scale*1)
                     annot = a.annotate(
                         "", xy=(0,0), xytext=(20,20), textcoords="offset points",

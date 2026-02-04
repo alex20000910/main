@@ -1,4 +1,4 @@
-from MDC_cut_utility import RestrictedToplevel, CanvasButton, IconManager, set_center, clear, on_configure, cal_ver
+from MDC_cut_utility import RestrictedToplevel, CanvasButton, IconManager, wait, set_center, clear, on_configure, cal_ver
 import matplotlib
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
@@ -15,6 +15,8 @@ if os.name == 'nt':
 from typing import override
 from base64 import b64decode
 from PIL import Image, ImageTk
+import markdown
+from tkhtmlview import HTMLLabel
 
 class AboutWindow:
     def __init__(self, master: tk.Misc | None = None, scale: float = 1.0, version: str = "x.x.x", release_date: str = "YYYY-MM-DD"):
@@ -646,12 +648,16 @@ class VersionCheckWindow(tk.Toplevel, ABC):
         f = self.check_github_connection()
         if not f:
             return
+        tg = wait(master=master, scale=scale)
+        tg.text('Checking for updates...')
         icon = IconManager().icon_upgrade
         self.icon = ImageTk.PhotoImage(Image.open(io.BytesIO(b64decode(icon))).resize([150, 150]))
         self.scale = scale
         self.get_src(ver=True)
         path = os.path.join(cdir, '.MDC_cut', 'MDC_cut.py')
+        mdpath = os.path.join(cdir, '.MDC_cut', 'release_note.md')
         self.path = path
+        self.mdpath = mdpath
         self.hwnd = hwnd
         self.app_name = app_name
         self.cdir = cdir
@@ -660,6 +666,9 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                 if line.startswith('__version__ =') or line.startswith("__version__="):
                     remote_ver = line.split('=')[1].strip().strip('"').strip("'")
                     if cal_ver(remote_ver) > cal_ver(__version__):
+                        with open(mdpath, 'r', encoding='utf-8') as f:
+                            markdown_content = f.read()
+                        tg.done()
                         super().__init__(master, bg='white')
                         self.title("Version Check")
                         self.resizable(False, False)
@@ -669,6 +678,10 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         lb1.pack(side=tk.LEFT)
                         lb2 = tk.Label(fr_label, text=f"A new version {remote_ver} is available.\nUpdate now?", bg='white', font=("Arial", self.size(20), 'bold'))
                         lb2.pack(side=tk.LEFT)
+                        
+                        html_content = markdown.markdown(markdown_content)
+                        html_label = HTMLLabel(self, tabs=2, width=100, height=30, background="white", html=html_content, borderwidth=10, relief="groove")
+                        html_label.pack()
                         
                         yn_frame = tk.Frame(self, bg='white')
                         yn_frame.pack(pady=5)
@@ -683,10 +696,13 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         self.grab_set()
                         self.focus_set()
                     break
+        tg.done()
         if os.name == 'nt':
             os.system(f'del {path}')
+            os.system(f'del {mdpath}')
         elif os.name == 'posix':
             os.system(f'rm -rf {path}')
+            os.system(f'rm -rf {mdpath}')
     
     def update_now(self):
         self.destroy()
@@ -715,6 +731,7 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                 os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
                 os.system('clear')
         os.remove(src)
+        os.remove(self.mdpath)
         quit()
     
     def size(self, s: int) -> int:
