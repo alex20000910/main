@@ -696,6 +696,7 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         self.grab_set()
                         self.focus_set()
                     break
+        tg.done()
         if os.name == 'nt':
             os.system(f'del {path}')
             os.system(f'del {mdpath}')
