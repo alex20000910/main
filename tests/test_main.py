@@ -794,8 +794,7 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.show_shortcuts()
     win.close()
     
-    os.system(f"del {os.path.join(os.path.dirname(__file__), 'mfit.npz')}")  # 删除保存的拟合结果文件
-    win = main(file=file)
+    win = main(file=file, src='MDC_cut')
     qtbot.waitExposed(win)
     win.close()
 

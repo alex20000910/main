@@ -187,10 +187,10 @@ class mfit_data():
         return self.ko, self.fev, self.rpos, self.ophi, self.fwhm, self.pos, self.kmin, self.kmax, self.skmin, self.skmax, self.smaa1, self.smaa2, self.smfp, self.smfi, self.smresult, self.smcst, self.fpr, self.mdet
 
 class main(MainWindow):
-    def __init__(self, file, hwnd=None):
+    def __init__(self, file, hwnd=None, src='.MDC_cut'):
         super().__init__()
         self.lfs = loadfiles(file, name='external')
-        self.mdata = mfit_data()    # pos 改為 mpos
+        self.mdata = mfit_data(src=src)    # pos 改為 mpos
         self.ko, self.fev, self.rpos, self.ophi, self.fwhm, self.mpos, self.kmin, self.kmax, self.skmin, self.skmax, self.smaa1, self.smaa2, self.smfp, self.smfi, self.smresult, self.smcst, self.fpr, self.mdet = self.mdata.get()
         self.smresult_original = copy.deepcopy(self.smresult)
                 
