@@ -6,7 +6,7 @@ from matplotlib.lines import Line2D
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.text import Annotation
-from matplotlib.widgets import SpanSelector
+from matplotlib.widgets import SpanSelector, RectangleSelector
 from typing import Literal
 from tkinter import messagebox
 import queue

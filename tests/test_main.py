@@ -56,26 +56,19 @@ def test_loadfiles():
     assert isinstance(lfs.get(0), xr.DataArray)
     assert isinstance(lfs.get(1), xr.DataArray)
 
-class tkDnD(tkDnD_loader):
-    """
-    A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
-    
-    Attributes:
-        root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
-    """
-    def __init__(self, root: tk.Misc):
-        super().__init__(root)
-    
-    @override
-    def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
-        pass
+def test_cal_ver():
+    ver = '9.0.2'
+    assert cal_ver(ver) > cal_ver('9.0')
+    assert cal_ver(ver) == 90002
 
-def test_tkDnD():
-    path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
-    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
-    files = tkDnD.load_raw(path)
-    assert isinstance(files, list)
+def test_laplacian_filter_and_poly_smooth():
+    data = np.random.rand(100, 100)
+    filtered_data = laplacian_filter(data)
+    x = np.linspace(0, 10, 100)
+    y = data[50]
+    sliced_data = poly_smooth(x, y, order=3)
+    assert filtered_data.shape == data.shape
+    assert sliced_data.shape == y.shape
 
 @pytest.fixture(scope="module")
 def tk_root():
@@ -132,9 +125,39 @@ def tk_environment(tk_root):
     except:
         pass
 
-def set_globals(var, glob):
-    if var is not None:
-        globals()[glob] = var
+class tkDnD(tkDnD_loader):
+    """
+    A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
+    
+    Attributes:
+        root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
+    """
+    def __init__(self, tk_environment):
+        g, frame = tk_environment
+        super().__init__(root=g)
+    
+    @override
+    def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
+        pass
+
+def test_tkDnD():
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    path.append(os.path.join(os.path.dirname(__file__), 'data_cut.npz'))
+    files = tkDnD.load_raw(path)
+    assert isinstance(files, list)
+
+def test_CanvasButton(tk_environment):
+    g, frame = tk_environment
+    btn = CanvasButton(frame, text='Test Button')
+    btn.pack()
+    btn.grid()
+    btn.place(x=10, y=10)
+    assert isinstance(btn.canvas, tk.Canvas)
+    btn.canvas.event_generate('<Button-1>')
+    btn.canvas.event_generate('<Enter>')
+    btn.canvas.event_generate('<Leave>')
 
 def test_data_loader(tk_environment):
     g, frame = tk_environment
