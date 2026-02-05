@@ -700,8 +700,10 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     center = plot_widget.rect().center()
 
     drag_bl1(qtbot, plot_widget)
-    win.slider.setValue(520)
+    win.slider.setValue(400)
     win.fmcgl2()
+    qtbot.wait(100)
+    win.slider.setValue(520)
     qtbot.wait(100)
     drag_bl2(qtbot, plot_widget)
     qtbot.wait(100)
@@ -793,6 +795,10 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(100)
     win.toggle_histogram()
     qtbot.wait(100)
+    win.toggle_histogram()
+    qtbot.wait(100)
+    win.toggle_histogram()
+    qtbot.wait(100)
     win.reset_histogram()
     qtbot.wait(100)
     win.auto_level_histogram()
@@ -804,6 +810,11 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.close()
     
     win = main(file=file, src='MDC_cut')
+    qtbot.waitExposed(win)
+    win.close()
+    
+    file = os.path.join(os.path.dirname(__file__), 'data_cut.npz')
+    win = main(file=file)
     qtbot.waitExposed(win)
     win.close()
 
