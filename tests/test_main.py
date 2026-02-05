@@ -772,10 +772,10 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.fmarea()
     win.fmfwhm()
     win.fmimse()
-    win.close_residual()
-    win.close_area()
-    win.close_fwhm()
-    win.close_imse()
+    win.g_residual.close()
+    win.g_area.close()
+    win.g_fwhm.close()
+    win.g_imse.close()
     
     
     win.fmend()
