@@ -749,6 +749,8 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(100)
     drag_bl2(qtbot, plot_widget)
     qtbot.wait(100)
+    win.slider.setValue(399)
+    qtbot.wait(100)
     win.mwf1.setText('1')
     win.mwf2.setText('1')
     win.mxf1.setText('-1')
@@ -757,6 +759,11 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.fmfall()
     qtbot.wait(10000)
     
+    
+    qtbot.keyClick(win, QtCore.Qt.Key_Enter)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Enter)
+    qtbot.wait(500)
     win.fmreject()
     qtbot.wait(100)
     win.fmreject()
