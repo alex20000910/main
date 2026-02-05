@@ -421,7 +421,7 @@ class spectrogram:
 
         EF = None
         
-        tw, th = (12, 6) if os.name == 'nt' else (8, 4)
+        tw, th = (12, 6) if os.name == 'nt' else (10, 5.5)
         
         if fit_type == "Raw Data":
             fig = plt.Figure(figsize=(tw*self.scale, th*self.scale))
@@ -828,12 +828,13 @@ class spectrogram:
             if os.name == 'posix':
                 ScaleFactor = 100
                 t_sc_w = self.tpg.winfo_screenwidth()
-                t_sc_h = self.tpg.winfo_screenheight() - int(40*ScaleFactor/100)
-            ScaleFactor /= prfactor*(ScaleFactor/100*1890/96*odpi/t_sc_w) if 1890/t_sc_w >= (954)/t_sc_h else prfactor*(ScaleFactor/100*(954)/96*odpi/t_sc_h)
+                t_sc_h = self.tpg.winfo_screenheight()
             if os.name == 'nt':
+                ScaleFactor /= prfactor*(ScaleFactor/100*1890/96*odpi/t_sc_w) if 1890/t_sc_w >= (954)/t_sc_h else prfactor*(ScaleFactor/100*(954)/96*odpi/t_sc_h)
                 self.tpg.tk.call('tk', 'scaling', ScaleFactor/100)
             elif os.name == 'posix':
-                self.tpg.tk.call('tk', 'scaling', ScaleFactor/100*odpi/96)
+                ScaleFactor /= prfactor*(ScaleFactor/100*1512/72.054*odpi/t_sc_w) if 1512/t_sc_w >= (851)/t_sc_h else prfactor*(ScaleFactor/100*(851)/72.054*odpi/t_sc_h)
+                self.tpg.tk.call('tk', 'scaling', ScaleFactor/100)
             # global scale, dpi
             self.dpi = self.tpg.winfo_fpixels('1i')
             if os.name == 'nt':
@@ -861,7 +862,7 @@ class spectrogram:
             elif os.name == 'posix':
                 ScaleFactor = 100
                 t_sc_w = g.winfo_screenwidth()
-                t_sc_h = g.winfo_screenheight() - int(40*ScaleFactor/100)
+                t_sc_h = g.winfo_screenheight()
             if self.app_pars.bar_pos == 'top':    #taskbar on top
                 sc_y = int(40*ScaleFactor/100)
             else:
@@ -881,7 +882,7 @@ class spectrogram:
         if os.name == 'nt':
             w, h = 15, 4.75
         elif os.name == 'posix':
-            w, h = 9, 2.85
+            w, h = 12, 4.25
         self.rpf = plt.Figure(figsize=(w*self.scale, h*self.scale), layout='constrained')
         self.rpo = FigureCanvasTkAgg(self.rpf, master=fr_fig)
         self.rpo.get_tk_widget().grid(row=0, column=0)

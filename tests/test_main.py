@@ -749,8 +749,20 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(500)
     qtbot.keyClick(win, QtCore.Qt.Key_Y, Qt.ControlModifier)
     qtbot.wait(500)
+    win.mfcomp1()
+    qtbot.wait(100)
+    win.mfcomp1()
+    qtbot.wait(100)
+    win.mfcomp2()
+    qtbot.wait(100)
+    win.mfcomp2()
+    qtbot.wait(100)
     
     
+    win.slider.setValue(win.index-1)
+    qtbot.wait(100)
+    win.slider.setValue(win.index-1)
+    qtbot.wait(100)
     win.mflind()
     qtbot.wait(100)
     win.mflind()
@@ -758,6 +770,10 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.mfrind()
     qtbot.wait(100)
     win.mfrind()
+    qtbot.wait(100)
+    win.slider.setValue(win.index+1)
+    qtbot.wait(100)
+    win.slider.setValue(win.index+1)
     qtbot.wait(100)
     
     win.fmpreview()
@@ -778,6 +794,8 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.g_imse.close()
     
     
+    win.fmend()
+    qtbot.waitExposed(win.g_exp)
     win.fmend()
     qtbot.waitExposed(win.g_exp)
     win.fmend(1)
