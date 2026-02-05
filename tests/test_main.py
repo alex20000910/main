@@ -56,26 +56,19 @@ def test_loadfiles():
     assert isinstance(lfs.get(0), xr.DataArray)
     assert isinstance(lfs.get(1), xr.DataArray)
 
-class tkDnD(tkDnD_loader):
-    """
-    A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
-    
-    Attributes:
-        root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
-    """
-    def __init__(self, root: tk.Misc):
-        super().__init__(root)
-    
-    @override
-    def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
-        pass
+def test_cal_ver():
+    ver = '9.0.2'
+    assert cal_ver(ver) > cal_ver('9.0')
+    assert cal_ver(ver) == 90002
 
-def test_tkDnD():
-    path = []
-    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
-    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
-    files = tkDnD.load_raw(path)
-    assert isinstance(files, list)
+def test_laplacian_filter_and_poly_smooth():
+    data = np.random.rand(100, 100)
+    filtered_data = laplacian_filter(data)
+    x = np.linspace(0, 10, 100)
+    y = data[50]
+    sliced_data = poly_smooth(x, y, order=3)
+    assert filtered_data.shape == data.shape
+    assert sliced_data.shape == y.shape
 
 @pytest.fixture(scope="module")
 def tk_root():
@@ -132,9 +125,51 @@ def tk_environment(tk_root):
     except:
         pass
 
-def set_globals(var, glob):
-    if var is not None:
-        globals()[glob] = var
+class tkDnD(tkDnD_loader):
+    """
+    A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
+    
+    Attributes:
+        root (TkinterDnD.Tk): The main Tkinter window created by tkinterdnd2.
+    """
+    def __init__(self, tk_environment):
+        g, frame = tk_environment
+        super().__init__(root=g)
+    
+    @override
+    def load(self, drop: bool=True, files: tuple[str] | Literal[''] =''):
+        pass
+
+def test_tkDnD():
+    path = []
+    path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
+    path.append(os.path.join(os.path.dirname(__file__), 'UPSPE20_2_test_1559#id#3cf2122d.json'))
+    path.append(os.path.join(os.path.dirname(__file__), 'data_cut.npz'))
+    files = tkDnD.load_raw(path)
+    assert isinstance(files, list)
+
+def test_CanvasButton(tk_environment):
+    g, frame = tk_environment
+    btn = CanvasButton(frame, text='Test Button')
+    btn.config(bg='#ababab')
+    btn.place(x=10, y=10)
+    btn.pack()
+    btn.grid()
+    assert isinstance(btn.canvas, tk.Canvas)
+    btn.canvas.event_generate('<Button-1>', x=10, y=10)
+    btn.canvas.event_generate('<ButtonRelease-1>', x=10, y=10)
+    g.update()
+    class MockEvent:
+        def __init__(self, x=10, y=10):
+            self.x = x
+            self.y = y
+    
+    if hasattr(btn, '_on_enter'):
+        btn._on_enter(MockEvent())
+        g.update()
+    if hasattr(btn, '_on_leave'):
+        btn._on_leave(MockEvent())
+        g.update()
 
 def test_data_loader(tk_environment):
     g, frame = tk_environment
@@ -695,6 +730,10 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(5000)
     
     win.slider.setValue(200)
+    win.fmrmv(test=True)
+    qtbot.wait(100)
+    win.fmrmv(test=True)
+    qtbot.wait(100)
     win.fmcgl2()
     plot_widget = win.plot.viewport()
     center = plot_widget.rect().center()
@@ -705,23 +744,47 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(100)
     win.slider.setValue(520)
     qtbot.wait(100)
+    win.fmrmv(test=True)
+    qtbot.wait(100)
+    win.fmrmv(test=True)
+    qtbot.wait(100)
     drag_bl2(qtbot, plot_widget)
+    qtbot.wait(100)
+    win.slider.setValue(399)
+    qtbot.wait(100)
+    win.mwf1.setText('1')
+    win.mwf2.setText('1')
+    win.mxf1.setText('-1')
+    win.fmposcst()
     qtbot.wait(100)
     win.fmfall()
     qtbot.wait(10000)
     
+    
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
+    qtbot.wait(500)
     win.fmreject()
     qtbot.wait(100)
     win.fmreject()
     qtbot.wait(100)
     win.fmaccept()
     qtbot.wait(100)
+    win.slider.setValue(544)
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
+    qtbot.wait(500)
     
     qtbot.mouseClick(win.b_pos, Qt.LeftButton)
     qtbot.wait(100)
     qtbot.mouseClick(win.b_pos, Qt.LeftButton)
     qtbot.wait(100)
-        
+    
+    
+    win.slider.setValue(520)
+    qtbot.wait(100)
     qtbot.mouseMove(plot_widget, pos=QPoint(450, 300))
     qtbot.wait(50)
     qtbot.mousePress(plot_widget, Qt.LeftButton, pos=center)
@@ -749,8 +812,28 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(500)
     qtbot.keyClick(win, QtCore.Qt.Key_Y, Qt.ControlModifier)
     qtbot.wait(500)
+    win.mfcomp1()
+    qtbot.wait(100)
+    win.mfcomp1()
+    qtbot.wait(100)
+    win.mfcomp2()
+    qtbot.wait(100)
+    win.mfcomp2()
+    qtbot.wait(100)
+    win.mfcomp1()
+    qtbot.wait(100)
+    win.mfcomp2()
+    qtbot.wait(100)
+    win.mfcomp1()
+    qtbot.wait(100)
+    win.mfcomp1()
+    qtbot.wait(100)
     
     
+    win.slider.setValue(win.index-1)
+    qtbot.wait(100)
+    win.slider.setValue(win.index-1)
+    qtbot.wait(100)
     win.mflind()
     qtbot.wait(100)
     win.mflind()
@@ -758,6 +841,10 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.mfrind()
     qtbot.wait(100)
     win.mfrind()
+    qtbot.wait(100)
+    win.slider.setValue(win.index+1)
+    qtbot.wait(100)
+    win.slider.setValue(win.index+1)
     qtbot.wait(100)
     
     win.fmpreview()
@@ -768,8 +855,18 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.fmarea()
     win.fmfwhm()
     win.fmimse()
+    win.fmresidual()
+    win.fmarea()
+    win.fmfwhm()
+    win.fmimse()
+    win.g_residual.close()
+    win.g_area.close()
+    win.g_fwhm.close()
+    win.g_imse.close()
     
     
+    win.fmend()
+    qtbot.waitExposed(win.g_exp)
     win.fmend()
     qtbot.waitExposed(win.g_exp)
     win.fmend(1)

@@ -12,7 +12,6 @@ else:
     import tempfile
 import cv2
 import psutil
-from matplotlib.widgets import RectangleSelector
 from PIL import Image, ImageTk
 from base64 import b64decode
 from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
