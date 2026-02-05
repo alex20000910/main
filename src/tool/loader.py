@@ -1888,7 +1888,6 @@ class mloader:
         self.st.put('Done')
         # self.lmgg.destroy()
 
-# pragma: no cover
 class eloader:
     def __init__(self, st, data, ev, phi, rdd, cdir, lowlim=0):
         self.st = st
@@ -2142,8 +2141,7 @@ class tkDnD_loader(ABC):
             self.root = root
             root.drop_target_register(DND_FILES)
             root.dnd_bind('<<Drop>>', self.on_drop)
-    
-    # pragma: no cover
+
     def on_drop(self, event):
         raw_str = event.data.split()
         if len(raw_str) > 1:
