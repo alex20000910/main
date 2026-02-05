@@ -752,6 +752,8 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(100)
     win.slider.setValue(399)
     qtbot.wait(100)
+    win.maf1.setText('1')
+    win.maf2.setText('1')
     win.mwf1.setText('1')
     win.mwf2.setText('1')
     win.mxf1.setText('-1')
