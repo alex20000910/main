@@ -157,6 +157,7 @@ def test_CanvasButton(tk_environment):
     btn.grid()
     assert isinstance(btn.canvas, tk.Canvas)
     btn.canvas.event_generate('<Button-1>', x=10, y=10)
+    btn.canvas.event_generate('<ButtonRelease-1>', x=10, y=10)
     g.update()
     class MockEvent:
         def __init__(self, x=10, y=10):
@@ -760,9 +761,9 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(10000)
     
     
-    qtbot.keyClick(win, QtCore.Qt.Key_Enter)
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
     qtbot.wait(500)
-    qtbot.keyClick(win, QtCore.Qt.Key_Enter)
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
     qtbot.wait(500)
     win.fmreject()
     qtbot.wait(100)
@@ -770,12 +771,20 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.wait(100)
     win.fmaccept()
     qtbot.wait(100)
+    win.slider.setValue(544)
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
+    qtbot.wait(500)
+    qtbot.keyClick(win, QtCore.Qt.Key_Down)
+    qtbot.wait(500)
     
     qtbot.mouseClick(win.b_pos, Qt.LeftButton)
     qtbot.wait(100)
     qtbot.mouseClick(win.b_pos, Qt.LeftButton)
     qtbot.wait(100)
-        
+    
+    
+    win.slider.setValue(520)
+    qtbot.wait(100)
     qtbot.mouseMove(plot_widget, pos=QPoint(450, 300))
     qtbot.wait(50)
     qtbot.mousePress(plot_widget, Qt.LeftButton, pos=center)
