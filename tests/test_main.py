@@ -151,13 +151,24 @@ def test_tkDnD():
 def test_CanvasButton(tk_environment):
     g, frame = tk_environment
     btn = CanvasButton(frame, text='Test Button')
+    btn.config(bg='#ababab')
+    btn.place(x=10, y=10)
     btn.pack()
     btn.grid()
-    btn.place(x=10, y=10)
     assert isinstance(btn.canvas, tk.Canvas)
-    btn.canvas.event_generate('<Button-1>')
-    btn.canvas.event_generate('<Enter>')
-    btn.canvas.event_generate('<Leave>')
+    btn.canvas.event_generate('<Button-1>', x=10, y=10)
+    g.update()
+    class MockEvent:
+        def __init__(self, x=10, y=10):
+            self.x = x
+            self.y = y
+    
+    if hasattr(btn, '_on_enter'):
+        btn._on_enter(MockEvent())
+        g.update()
+    if hasattr(btn, '_on_leave'):
+        btn._on_leave(MockEvent())
+        g.update()
 
 def test_data_loader(tk_environment):
     g, frame = tk_environment
@@ -792,6 +803,14 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.mfcomp2()
     qtbot.wait(100)
     win.mfcomp2()
+    qtbot.wait(100)
+    win.mfcomp1()
+    qtbot.wait(100)
+    win.mfcomp2()
+    qtbot.wait(100)
+    win.mfcomp1()
+    qtbot.wait(100)
+    win.mfcomp1()
     qtbot.wait(100)
     
     

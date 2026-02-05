@@ -1,5 +1,16 @@
 # Change Log
 
+## Version 9.1.1 - 2026-02-05
+
+### Changed
+- **Unit Tests Update**: Enhanced test coverage and refined test execution rules for improved code validation and reliability.
+- **Test Configuration Optimization**: Fine-tuned pytest coverage exclusion rules in setup.cfg to better align with project requirements.
+
+### Fixed
+- **Spectrogram Window Size Adjustment on macOS**: Optimized window rendering and sizing behavior for improved display consistency on macOS systems.
+
+# Change Log
+
 ## Version 9.1 - 2026-02-05
 
 ### Added
