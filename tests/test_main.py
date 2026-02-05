@@ -685,19 +685,30 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     qtbot.keyClick(win, QtCore.Qt.Key_Left)
     qtbot.wait(100)
     
+    win.slider.setValue(537)
+    win.fmreject()
+    qtbot.wait(100)
+    win.slider.setValue(544)
+    win.fmreject()
+    qtbot.wait(100)
+    win.fmfall()
+    qtbot.wait(5000)
+    
     win.slider.setValue(200)
     win.fmcgl2()
     plot_widget = win.plot.viewport()
     center = plot_widget.rect().center()
 
     drag_bl1(qtbot, plot_widget)
-    win.slider.setValue(520)
+    win.slider.setValue(400)
     win.fmcgl2()
+    qtbot.wait(100)
+    win.slider.setValue(520)
     qtbot.wait(100)
     drag_bl2(qtbot, plot_widget)
     qtbot.wait(100)
     win.fmfall()
-    qtbot.wait(2)
+    qtbot.wait(10000)
     
     win.fmreject()
     qtbot.wait(100)
@@ -742,6 +753,10 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     
     win.mflind()
     qtbot.wait(100)
+    win.mflind()
+    qtbot.wait(100)
+    win.mfrind()
+    qtbot.wait(100)
     win.mfrind()
     qtbot.wait(100)
     
@@ -757,7 +772,9 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     
     win.fmend()
     qtbot.waitExposed(win.g_exp)
-    win.fmend()
+    win.fmend(1)
+    qtbot.waitExposed(win.g_exp)
+    win.fmend(2)
     qtbot.waitExposed(win.g_exp)
     win.savemfit()
     qtbot.wait(100)
@@ -772,9 +789,33 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     win.fmrmv(test=True)
     qtbot.wait(2)
     
+    win.toggle_grid(checked=True)
+    qtbot.wait(100)
+    win.toggle_grid(checked=False)
+    qtbot.wait(100)
+    win.toggle_histogram()
+    qtbot.wait(100)
+    win.toggle_histogram()
+    qtbot.wait(100)
+    win.toggle_histogram()
+    qtbot.wait(100)
+    win.reset_histogram()
+    qtbot.wait(100)
+    win.auto_level_histogram()
+    qtbot.wait(100)
+    
     win.help_window()
     
     win.show_shortcuts()
+    win.close()
+    
+    win = main(file=file, src='MDC_cut')
+    qtbot.waitExposed(win)
+    win.close()
+    
+    file = os.path.join(os.path.dirname(__file__), 'data_cut.npz')
+    win = main(file=file)
+    qtbot.waitExposed(win)
     win.close()
 
 def test_DataViewer(qtbot, monkeypatch):
