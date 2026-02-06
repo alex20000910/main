@@ -385,7 +385,7 @@ def init_tempdir():
         shutil.rmtree('cube_temp_save')
     os.mkdir('cube_temp_save')
 
-def test_VolumeSlicer(tk_environment):
+def test_VolumeSlicer_1(tk_environment):
     g, frame = tk_environment
     from tool.VolumeSlicer import VolumeSlicer, g_cut_plot, cut_job_x, cut_job_y
     import cpuinfo
@@ -454,10 +454,31 @@ def test_VolumeSlicer(tk_environment):
     vs.symmetry_(6)
     vs.r1_offset = 15.25 # for test boost the speed
     set_entry_value(vs.entry_r1_offset, str(vs.r1_offset))
-    set_entry_value(vs.cut_xy_x_entry, '0.35')
-    set_entry_value(vs.cut_xy_y_entry, '0.35')
-    set_entry_value(vs.cut_xy_dx_entry, '0.2')
-    set_entry_value(vs.cut_xy_dy_entry, '0.2')
+    set_entry_value(vs.cut_xy_x_entry, '1')
+    set_entry_value(vs.cut_xy_y_entry, '0')
+    set_entry_value(vs.cut_xy_dx_entry, '2')
+    set_entry_value(vs.cut_xy_dy_entry, '2')
+    vs.cut_xy()
+    time.sleep(1)
+    set_entry_value(vs.cut_xy_x_entry, '0')
+    set_entry_value(vs.cut_xy_y_entry, '1')
+    set_entry_value(vs.cut_xy_dx_entry, '2')
+    set_entry_value(vs.cut_xy_dy_entry, '2')
+    vs.cut_xy()
+    time.sleep(1)
+    set_entry_value(vs.cut_xy_x_entry, '-1')
+    set_entry_value(vs.cut_xy_y_entry, '0')
+    set_entry_value(vs.cut_xy_dx_entry, '2')
+    set_entry_value(vs.cut_xy_dy_entry, '2')
+    vs.cut_xy()
+    time.sleep(1)
+    set_entry_value(vs.cut_xy_x_entry, '0')
+    set_entry_value(vs.cut_xy_y_entry, '-1')
+    set_entry_value(vs.cut_xy_dx_entry, '2')
+    set_entry_value(vs.cut_xy_dy_entry, '2')
+    vs.cut_xy()
+    time.sleep(1)
+    
     vs.stop_event = threading.Event()
     vs.set_xy_lim()
     vs.cdensity = int((vs.xmax-vs.xmin)//2e-3)
@@ -508,6 +529,37 @@ def test_VolumeSlicer(tk_environment):
     gcp.save_cube(path=os.path.join(os.path.dirname(__file__), 'test_cube.zarr'))
     gcp.on_closing()
     vs.change_mode()
+
+def test_VolumeSlicer_2(tk_environment):
+    g, frame = tk_environment
+    from tool.VolumeSlicer import VolumeSlicer
+    odpi=g.winfo_fpixels('1i')
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'odpi')
+    with open(path, 'w') as f:
+        f.write(f'{odpi}')  #for RestrictedToplevel
+        f.close()
+    odata = []
+    opath = []
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    odata.append(load_h5(path))
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.1_R2_0#id#d7bebfaa.h5')
+    odata.append(load_h5(path))
+    opath.append(path)
+    path = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.5_R2_0#id#1ee3c8fd.h5')
+    odata.append(load_h5(path))
+    opath.append(path)
+    odataframe = np.stack([i.transpose() for i in odata], axis=0, dtype=np.float32)
+    r1 = np.array([15.0, 15.1, 15.5])
+    r2 = np.array([0.0, 0.0, 0.0])
+    
+    ev, phi = odata[0].indexes.values()
+    app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
+    e_photon = float(odata[0].attrs['ExcitationEnergy'].removesuffix(' eV'))
+    vs = VolumeSlicer(parent=frame, path=opath, volume=odataframe, x=phi, y=r1, z=r2, ev=ev, e_photon=e_photon, g=g, app_pars=app_pars)
+    vs.set_slim()
+    vs.change_mode()
+    vs.set_slim()
 
 def test_CEC(tk_environment):
     g, frame = tk_environment
