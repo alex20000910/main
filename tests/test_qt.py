@@ -71,32 +71,23 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     qtbot.keyClick(win, QtCore.Qt.Key_Left)
     qtbot.wait(100)
     
-    
-    win.maf1.setText('a')
-    win.maf2.setText('a')
-    win.mwf1.setText('a')
-    win.mwf2.setText('a')
-    win.mxf1.setText('a')
-    win.mxf2.setText('a')
-    win.maf1.setText('')
-    win.maf2.setText('')
-    win.mwf1.setText('')
-    win.mwf2.setText('')
-    win.mxf1.setText('')
-    win.mxf2.setText('')
-    win.maf1.setText('1')
-    win.maf2.setText('1')
-    win.mwf1.setText('1')
-    win.mwf2.setText('1')
-    win.mxf1.setText('-1')
     win.slider.setValue(537)
     win.fmreject()
     qtbot.wait(100)
     win.slider.setValue(544)
     win.fmreject()
     qtbot.wait(100)
+    win.maf1.setText('1')
+    win.maf2.setText('1')
+    win.mwf1.setText('1')
+    win.mwf2.setText('1')
+    win.mxf1.setText('-1')
+    assert float(win.maf1.text()) != 0.0
+    assert float(win.maf2.text()) != 0.0
     win.fmfall()
     qtbot.wait(5000)
+    win.slider.setValue(537)
+    qtbot.wait(100)
     
     win.slider.setValue(200)
     win.fmrmv(test=True)
@@ -122,6 +113,11 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     win.slider.setValue(399)
     qtbot.wait(100)
     win.fmposcst()
+    win.maf1.setText('1')
+    win.maf2.setText('1')
+    win.mwf1.setText('1')
+    win.mwf2.setText('1')
+    win.mxf1.setText('-1')
     qtbot.wait(100)
     win.fmfall()
     qtbot.wait(10000)
@@ -152,6 +148,11 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     win.slider.setValue(520)
     win.fmcgl2()
     win.fmcgl2()
+    win.maf1.setText('1')
+    win.maf2.setText('1')
+    win.mwf1.setText('1')
+    win.mwf2.setText('1')
+    win.mxf1.setText('-1')
     qtbot.wait(100)
     qtbot.mouseMove(plot_widget, pos=QPoint(450, 300))
     qtbot.wait(50)
@@ -181,10 +182,15 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     qtbot.keyClick(win, QtCore.Qt.Key_Y, Qt.ControlModifier)
     qtbot.wait(500)
     
+    assert win.b_comp1.isEnabled() == True
+    assert win.b_comp2.isEnabled() == True
     win.mfcomp1()
     qtbot.mouseMove(plot_widget, pos=QPoint(408, 205))
     qtbot.wait(50)
     win.mouse_clicked_event(event=None)
+    qtbot.wait(50)
+    win.mmof = -1
+    assert win.mmof == -1
     
     qtbot.mouseMove(plot_widget, pos=QPoint(350, 170))
     qtbot.wait(50)
@@ -196,6 +202,9 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     qtbot.mouseMove(plot_widget, pos=QPoint(408, 210))
     qtbot.wait(50)
     win.mouse_clicked_event(event=None)
+    qtbot.wait(50)
+    win.mmof = 1
+    assert win.mmof == 1
     win.mfcomp1()
     qtbot.wait(100)
     
@@ -203,6 +212,9 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     qtbot.mouseMove(plot_widget, pos=QPoint(506, 205))
     qtbot.wait(50)
     win.mouse_clicked_event(event=None)
+    qtbot.wait(50)
+    win.mmof = -1
+    assert win.mmof == -1
     
     qtbot.mouseMove(plot_widget, pos=QPoint(550, 170))
     qtbot.wait(50)
@@ -214,6 +226,9 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     qtbot.mouseMove(plot_widget, pos=QPoint(506, 210))
     qtbot.wait(50)
     win.mouse_clicked_event(event=None)
+    qtbot.wait(50)
+    win.mmof = 1
+    assert win.mmof == 1
     win.mfcomp2()
     qtbot.wait(100)
     win.ffitcp()
@@ -224,6 +239,7 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     qtbot.mouseMove(plot_widget, pos=QPoint(408, 205))
     qtbot.wait(50)
     win.mouse_clicked_event(event=None)
+    qtbot.wait(50)
     
     qtbot.mouseMove(plot_widget, pos=QPoint(350, 170))
     qtbot.wait(50)
@@ -232,12 +248,14 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     qtbot.mouseMove(plot_widget, pos=QPoint(408, 300))
     qtbot.wait(50)
     win.mfbgd()
+    qtbot.wait(50)
     
     win.mfcomp2()
     qtbot.wait(100)
     qtbot.mouseMove(plot_widget, pos=QPoint(506, 205))
     qtbot.wait(50)
     win.mouse_clicked_event(event=None)
+    qtbot.wait(50)
     
     qtbot.mouseMove(plot_widget, pos=QPoint(550, 170))
     qtbot.wait(50)
@@ -246,6 +264,7 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     qtbot.mouseMove(plot_widget, pos=QPoint(540, 300))
     qtbot.wait(50)
     win.mfbgu()
+    qtbot.wait(50)
     
     win.mfcomp1()
     qtbot.wait(100)
@@ -354,6 +373,23 @@ def test_MDC_Fitter_2(qtbot, monkeypatch):
     win = main(file=file)
     qtbot.waitExposed(win)
     
+    win.maf1.setText('a')
+    win.maf2.setText('a')
+    win.mwf1.setText('a')
+    win.mwf2.setText('a')
+    win.mxf1.setText('a')
+    win.mxf2.setText('a')
+    win.maf1.setText('')
+    win.maf2.setText('')
+    win.mwf1.setText('')
+    win.mwf2.setText('')
+    win.mxf1.setText('')
+    win.mxf2.setText('')
+    win.maf1.setText('1')
+    win.maf2.setText('1')
+    win.mwf1.setText('1')
+    win.mwf2.setText('1')
+    win.mxf1.setText('-1')
     win.slider.setValue(552)
     qtbot.wait(100)
     win.mfitplot()
