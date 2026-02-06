@@ -251,48 +251,37 @@ class spectrogram:
             self.fx2 = False
             self.fx3 = False
             self.fox = event.xdata
-            if self.selected_fit.get() == "ERFC Fit":
-                self.omin = self.eminc_val.get()
-                self.omax = self.emaxc_val.get()
-                if abs(self.eminc_val.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
-                    self.fx1 = True
-                    self.eminc_val.set(event.xdata)
-                elif abs(self.emaxc_val.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
-                    self.fx2 = True
-                    self.emaxc_val.set(event.xdata)
-                elif self.eminc_val.get() < event.xdata < self.emaxc_val.get():
-                    self.fx3 = True
-            elif self.selected_fit.get() == "Fermi-Dirac Fitting":
-                self.omin = self.emin_val.get()
-                self.omax = self.emax_val.get()
-                if abs(self.emin_val.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
-                    self.fx1 = True
-                    self.emin_val.set(event.xdata)
-                elif abs(self.emax_val.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
-                    self.fx2 = True
-                    self.emax_val.set(event.xdata)
-                elif self.emin_val.get() < event.xdata < self.emax_val.get():
-                    self.fx3 = True
+            title = ["ERFC Fit", "Fermi-Dirac Fitting"]
+            min_val = [self.eminc_val, self.emin_val]
+            max_val = [self.emaxc_val, self.emax_val]
+            for i, j, k in zip(title, min_val, max_val):
+                if self.selected_fit.get() == i:
+                    self.omin = j.get()
+                    self.omax = k.get()
+                    if abs(j.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
+                        self.fx1 = True
+                        j.set(event.xdata)
+                    elif abs(k.get()-event.xdata) < abs(self.tr_a1.get_xlim()[1]-self.tr_a1.get_xlim()[0])*1/100:
+                        self.fx2 = True
+                        k.set(event.xdata)
+                    elif j.get() < event.xdata < k.get():
+                        self.fx3 = True
             self.update_fit()
                 
     def fit_move(self, event):
         if self.fx1 or self.fx2 or self.fx3:
-            if self.selected_fit.get() == "ERFC Fit":
-                if self.fx1:
-                    self.eminc_val.set(event.xdata)
-                elif self.fx2:
-                    self.emaxc_val.set(event.xdata)
-                elif self.fx3:
-                    self.eminc_val.set(self.omin+(event.xdata-self.fox))
-                    self.emaxc_val.set(self.omax+(event.xdata-self.fox))
-            elif self.selected_fit.get() == "Fermi-Dirac Fitting":
-                if self.fx1:
-                    self.emin_val.set(event.xdata)
-                elif self.fx2:
-                    self.emax_val.set(event.xdata)
-                elif self.fx3:
-                    self.emin_val.set(self.omin+(event.xdata-self.fox))
-                    self.emax_val.set(self.omax+(event.xdata-self.fox))
+            title = ["ERFC Fit", "Fermi-Dirac Fitting"]
+            min_val = [self.eminc_val, self.emin_val]
+            max_val = [self.emaxc_val, self.emax_val]
+            for i, j, k in zip(title, min_val, max_val):
+                if self.selected_fit.get() == i:
+                    if self.fx1:
+                        j.set(event.xdata)
+                    elif self.fx2:
+                        k.set(event.xdata)
+                    elif self.fx3:
+                        j.set(self.omin+(event.xdata-self.fox))
+                        k.set(self.omax+(event.xdata-self.fox))
             self.update_fit()
         
             
@@ -1201,7 +1190,7 @@ d
     #     f.close()
     
     def __rg_entry(self, *args):
-        self.grg=RestrictedToplevel(self.tpg, bg='white')
+        self.grg=tk.Toplevel(self.tpg, bg='white')
         self.grg.title('Data Range')
         
         fr=tk.Frame(self.grg,bg='white')

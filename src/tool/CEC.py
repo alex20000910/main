@@ -589,7 +589,7 @@ def find_path(path: list[str]) -> bool:
         f = False
     return f
 
-def call_cec(g: tk.Misc, lfs: FileSequence, test=False) -> FileSequence:
+def call_cec(g: tk.Misc, lfs: FileSequence) -> FileSequence:
     app_pars = lfs.app_pars
     path_to_file, name, lf_path, tlfpath, cmap = lfs.cec_pars.path_to_file, lfs.cec_pars.name, lfs.cec_pars.lf_path, lfs.cec_pars.tlfpath, lfs.cec_pars.cmap
     lfs.cec = None
@@ -614,8 +614,7 @@ def call_cec(g: tk.Misc, lfs: FileSequence, test=False) -> FileSequence:
         print(lf_path)
         print('\033[31mPlace all the raw data files listed above in the same folder as the HDF5/NPZ file\nif you want to view the slicing geometry or just ignore this message if you do not need the slicing geometry.\033[0m')
         message = f"Path not found:\n{lf_path}\nPlace all the raw data files listed above in the same folder as the HDF5/NPZ file if you want to view the slicing geometry\nor just ignore this message if you do not need the slicing geometry."
-        if test is False:
-            messagebox.showwarning("Warning", message)
+        messagebox.showwarning("Warning", message)
     except Exception as ecp:
         if app_pars:
             if os.name == 'nt':
@@ -625,8 +624,7 @@ def call_cec(g: tk.Misc, lfs: FileSequence, test=False) -> FileSequence:
                 subprocess.run(['open', '-a', 'Terminal'])
         print(f"An error occurred: {ecp}")
         message = f"An error occurred:\n{ecp}"
-        if test is False:
-            messagebox.showerror("Error", message)
+        messagebox.showerror("Error", message)
         lfs.cec.tlg.destroy()
         clear(lfs.cec)
         lfs.cec = None

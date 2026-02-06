@@ -99,7 +99,7 @@ class AboutWindow:
         t_github.bind('<FocusIn>', self.select_all)
         t_github.bind('<FocusOut>', self.select_none)
         
-        text = tk.Text(fr, width=60, height=10, wrap='word', font=('Arial', self.size(14)), bg='white', fg='black')
+        text = tk.Text(fr, width=60, height=10, wrap='word', bd=5, font=('Arial', self.size(14)), bg='white', fg='black')
         text.pack(padx=10, pady=5)
         license_text = """MIT License
 
@@ -680,7 +680,7 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         lb2.pack(side=tk.LEFT)
                         
                         html_content = markdown.markdown(markdown_content)
-                        html_label = HTMLLabel(self, tabs=2, width=100, height=30, background="white", html=html_content, borderwidth=10, relief="groove")
+                        html_label = HTMLLabel(self, tabs=2, width=100, height=30, background="white", html=html_content, borderwidth=10, relief="flat")
                         html_label.pack()
                         
                         yn_frame = tk.Frame(self, bg='white')
