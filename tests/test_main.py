@@ -123,6 +123,22 @@ def tk_environment(tk_root):
     except:
         pass
 
+@pytest.fixture(autouse=True, scope="session")
+def mock_tkinter_dialogs():
+    """全域 mock 所有 tkinter 對話框"""
+    with patch('tkinter.messagebox.showwarning') as mock_warn, \
+         patch('tkinter.messagebox.showerror') as mock_err, \
+         patch('tkinter.messagebox.showinfo') as mock_info, \
+         patch('tkinter.messagebox.askyesno', return_value=True) as mock_yes, \
+         patch('tkinter.messagebox.askokcancel', return_value=True) as mock_ok:
+        yield {
+            'showwarning': mock_warn,
+            'showerror': mock_err,
+            'showinfo': mock_info,
+            'askyesno': mock_yes,
+            'askokcancel': mock_ok
+        }
+
 class tkDnD(tkDnD_loader):
     """
     A simple wrapper class to add drag-and-drop functionality to a Tkinter window using tkinterdnd2.
@@ -251,8 +267,7 @@ def test_data_loader(tk_environment):
     main_loader('')
     main_loader(lfs.path)
 
-@patch('tkinter.messagebox.showwarning')
-def test_spectrogram(mock_warning, tk_environment):
+def test_spectrogram(tk_environment):
     g, frame = tk_environment
     path = []
     path.append(os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'))
@@ -369,8 +384,7 @@ def init_tempdir():
         shutil.rmtree('cube_temp_save')
     os.mkdir('cube_temp_save')
 
-@patch('tkinter.messagebox.showwarning')
-def test_VolumeSlicer(mock_warning, tk_environment):
+def test_VolumeSlicer(tk_environment):
     g, frame = tk_environment
     from tool.VolumeSlicer import VolumeSlicer, g_cut_plot, cut_job_x, cut_job_y
     import cpuinfo
@@ -538,9 +552,7 @@ def test_CEC(tk_environment):
         t_cec.check()
     t_cec.info()
 
-@patch('tkinter.messagebox.showwarning')
-@patch('tkinter.messagebox.showerror')
-def test_call_cec(mock_warning, mock_error, tk_environment):
+def test_call_cec(tk_environment):
     g, frame = tk_environment
     app_pars = app_param(hwnd=None, scale=1, dpi=96, bar_pos='bottom', g_mem=0.25)
     lfs = loadfiles(os.path.join(os.path.dirname(__file__), 'test_cut.h5'), init=True, mode='eager', name='internal', cmap='viridis', app_pars=app_pars)
