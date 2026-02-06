@@ -230,6 +230,12 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     win.mmof = 1
     assert win.mmof == 1
     win.mfcomp2()
+    win.flmcomp = 1
+    win.flmcomp2 = 1
+    qtbot.wait(100)
+    win.ffitcp()
+    win.flmcomp = 1
+    win.flmcomp1 = 1
     qtbot.wait(100)
     win.ffitcp()
     

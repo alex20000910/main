@@ -70,7 +70,7 @@ def disp_zarr_save(input_path, output_path, shape, max_val):
     end = shape[0]
     size = det_chunk(shape[1], dtype=np.uint8)
     path = os.path.join(output_path, 'data')
-    if size/end <1.2:   # threshold: more than 1.2 times memory available
+    if size/end < 1.2:   # threshold: more than 1.2 times memory available
         # partial load data into memory (light weight RAM usage)
         step = int(min(size, end//1.5))   #fix step
         savez = zarr.open(path, mode='w', shape=shape, dtype=np.uint8)
@@ -497,7 +497,7 @@ class SliceBrowser(MainWindow):
         shape = self.shape
         end = shape[0]
         size = det_chunk(shape[1], dtype=self.dtype)
-        if size/end <1.2:   # threshold: more than 1.2 times memory available
+        if size/end < 1.2:   # threshold: more than 1.2 times memory available
             step = int(min(size, end//1.5))   #fix step
             max_value = 1.0
             for i in range(0, end, step):
@@ -514,7 +514,7 @@ class SliceBrowser(MainWindow):
             size = det_chunk(self.shape[1], dtype=np.float32)
             end = self.shape[0]
             if not save:
-                if size/end <1.2:
+                if size/end < 1.2:
                     self.raw_data = None
                 else:
                     self.raw_data = zarr.open(self.path, mode='r')[:, :, :-1] #origin
@@ -949,14 +949,7 @@ class SliceBrowser(MainWindow):
         new_shape.insert(axis + 1, bin_size)
         size = det_chunk(self.shape[(axis+1)%3], self.shape[(axis+2)%3], dtype=data.dtype)
         end = length
-        if size/end > 1.2:
-            odata = data.reshape(new_shape)
-            if save:
-                output = odata.mean(axis=axis + 1)
-            else:
-                output = odata.mean(axis=axis + 1)[:].astype(np.uint8)
-            odata = None
-        else:
+        if size/end < 1.2:
             old_shape = list(data.shape)
             old_shape[axis] = self.shape[axis]//bin_size
             if save:
@@ -985,6 +978,14 @@ class SliceBrowser(MainWindow):
                 print('Progress: %.2f%%'%(min(i + step, end)/end*100))
             data = None
             output = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'bin'), mode='r')
+        else:
+            odata = data.reshape(new_shape)
+            if save:
+                output = odata.mean(axis=axis + 1)
+            else:
+                output = odata.mean(axis=axis + 1)[:].astype(np.uint8)
+            odata = None
+            
         return output
 
     def update_E_slice(self, idx, init=False):
@@ -1379,19 +1380,7 @@ class SliceBrowser(MainWindow):
         disp_path = os.path.join(path, '__disp__.zarr')
         size = det_chunk(self.shape[1], dtype=np.uint8)
         end = self.shape[0]
-        if size/end >= 1.2:
-            zdata = np.asarray(self.raw_data_show, dtype=np.uint8)
-            zarr.save_group(disp_path, data=zdata, ang=np.array([0, 0],dtype=np.float32))
-            zdata = None
-            if os.name == 'nt':
-                os.system(f'attrib +h +s "{disp_path}"')
-                for name in os.listdir(disp_path):
-                    item_path = os.path.join(disp_path, name)
-                    if os.path.isfile(item_path):
-                        os.system(f'attrib +h +s "{item_path}"')
-                    elif os.path.isdir(item_path):
-                        os.system(f'attrib +h +s "{item_path}"')
-        else:
+        if size/end < 1.2:
             rot_data = zarr.open(os.path.join(cdir, '.MDC_cut_DataViewer', 'rot_data'), mode='r')
             save_data = zarr.open(os.path.join(disp_path, '__disp__.zarr', 'data'), mode='w', shape=self.shape, dtype=np.uint8)
             save_ang = zarr.open(os.path.join(disp_path, '__disp__.zarr', 'ang'), mode='w', shape=(2,), dtype=np.float32)
@@ -1407,6 +1396,18 @@ class SliceBrowser(MainWindow):
                 odata = None
                 print('Progress: %.2f%%'%(min(i + step, end)/end*100))
             save_ang[1] = 0
+        else:
+            zdata = np.asarray(self.raw_data_show, dtype=np.uint8)
+            zarr.save_group(disp_path, data=zdata, ang=np.array([0, 0],dtype=np.float32))
+            zdata = None
+            if os.name == 'nt':
+                os.system(f'attrib +h +s "{disp_path}"')
+                for name in os.listdir(disp_path):
+                    item_path = os.path.join(disp_path, name)
+                    if os.path.isfile(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
+                    elif os.path.isdir(item_path):
+                        os.system(f'attrib +h +s "{item_path}"')
             
         pr_bar.increaseProgress('Done')
         pr_bar.close()
@@ -1453,10 +1454,7 @@ class SliceBrowser(MainWindow):
         pr_bar.resize(self.w//3, self.h//4)
         pr_bar.show()
         pr_bar.increaseProgress('Saving data')
-        if size/end >= 1.2:
-            zarr.save_group(path, data=data, attr_array=attr_array, ang=np.array([0, 0], dtype=np.float32))
-            data, attr_array = None, None
-        else:
+        if size/end < 1.2:
             save_data = zarr.open(os.path.join(path, 'data'), mode='w', shape=self.shape, dtype=np.uint8)
             save_attr = zarr.open(os.path.join(path, 'attr_array'), mode='w', shape=(self.shape[0], 2), dtype=np.float32)
             save_attr[:] = attr_array
@@ -1475,6 +1473,9 @@ class SliceBrowser(MainWindow):
                 print('Progress: %.2f%%'%(min(i + step, end)/end*100))
             data = None
             save_ang[1] = 0
+        else:
+            zarr.save_group(path, data=data, attr_array=attr_array, ang=np.array([0, 0], dtype=np.float32))
+            data, attr_array = None, None
             
         pr_bar.increaseProgress('Setting file attributes')
         if os.name == 'nt':
@@ -1574,7 +1575,7 @@ class SliceBrowser(MainWindow):
             print('Saving display data...')
             size = det_chunk(self.shape[1], dtype=np.float32)
             end = self.shape[0]
-            if size/end <1.2:   # threshold: more than 1.2 times memory available
+            if size/end < 1.2:   # threshold: more than 1.2 times memory available
                 raw_data_show = zarr.open(os.path.join(path, 'data'), mode='r+')
                 angle = zarr.open(os.path.join(path, 'ang'), mode='r+')
                 angle[0] = self.path_angle
@@ -1656,7 +1657,7 @@ class SliceBrowser(MainWindow):
         ###new
         size = det_chunk(self.shape[1], dtype=np.uint8)
         end = self.shape[0]
-        if size/end <1.2:   # threshold: more than 1.2 times memory available
+        if size/end < 1.2:   # threshold: more than 1.2 times memory available
             raw_data_show = zarr.open(os.path.join(path, 'data'), mode='r+')
             angle = zarr.open(os.path.join(path, 'ang'), mode='r+')
             angle[0] = self.path_angle
