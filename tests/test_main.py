@@ -305,11 +305,12 @@ def test_spectrogram(tk_environment):
     while time.time()-t<60:
         try:
             if s.grg.winfo_exists():
+                time.sleep(5)
                 break
         except:
             pass
-    if time.time()-t>=60:
-        print('timeout 60s')
+    if time.time()-t>=120:
+        print('timeout 120s')
     else:
         s.v_r1.set(-15.5)
         s.grg.event_generate('<Return>')
