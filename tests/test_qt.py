@@ -52,7 +52,7 @@ def drag_bl2(qtbot, plot_widget):
     qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(650, 300))
     qtbot.wait(50)
 
-def test_MDC_Fitter(qtbot, monkeypatch):
+def test_MDC_Fitter_1(qtbot, monkeypatch):
     from tool.MDC_Fitter import main
     # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
     monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
@@ -60,7 +60,7 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
     monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
     monkeypatch.setattr(QtWidgets.QFileDialog, 'getOpenFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'), ''))
-    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0_mfit.npz'), ''))
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0_test_mfit.npz'), ''))
     
     file = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
     win = main(file=file)
@@ -339,10 +339,77 @@ def test_MDC_Fitter(qtbot, monkeypatch):
     
     win.show_shortcuts()
     win.close()
+
+def test_MDC_Fitter_2(qtbot, monkeypatch):
+    from tool.MDC_Fitter import main
+    # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
+    monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getOpenFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'), ''))
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0_test_mfit.npz'), ''))
+    file = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
+    
+    win = main(file=file)
+    qtbot.waitExposed(win)
+    
+    win.slider.setValue(552)
+    qtbot.wait(100)
+    win.mfitplot()
+    win.slider.setValue(0)
+    qtbot.wait(100)
+    win.fmrmv(test=True)
+    qtbot.wait(100)
+    win.slider.setValue(658)
+    qtbot.wait(100)
+    win.fmrmv(test=True)
+    qtbot.wait(100)
+    win.slider.setValue(545)
+    qtbot.wait(100)
+    
+    plot_widget = win.plot.viewport()
+    # 468-607
+    qtbot.mouseMove(plot_widget, pos=QPoint(468, 300))
+    qtbot.wait(50)
+    qtbot.mousePress(plot_widget, Qt.LeftButton, pos=QPoint(468, 300))
+    qtbot.wait(50)
+    qtbot.mouseMove(plot_widget, pos=QPoint(607, 300))
+    qtbot.wait(50)
+    qtbot.mouseRelease(plot_widget, Qt.LeftButton, pos=QPoint(607, 300))
+    qtbot.wait(50)
+    
+    win.slider.setValue(544)
+    qtbot.wait(100)
+    win.slider.setValue(545)
+    qtbot.wait(100)
+    
+    win.close()
+    
+def test_MDC_Fitter_3(qtbot, monkeypatch):
+    from tool.MDC_Fitter import main
+    # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
+    monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getOpenFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'), ''))
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0_test_mfit.npz'), ''))
+    file = os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5')
     
     win = main(file=file, src='MDC_cut')
     qtbot.waitExposed(win)
     win.close()
+
+def test_MDC_Fitter_4(qtbot, monkeypatch):
+    from tool.MDC_Fitter import main
+    # 模擬 QMessageBox.information 自動回傳 QMessageBox.Ok
+    monkeypatch.setattr(QMessageBox, 'information', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'critical', lambda *args, **kwargs: QMessageBox.Ok)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *args, **kwargs: QMessageBox.Yes)
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getOpenFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0#id#0d758f03.h5'), ''))
+    monkeypatch.setattr(QtWidgets.QFileDialog, 'getSaveFileName', lambda *args, **kwargs: (os.path.join(os.path.dirname(__file__), 'simulated_R1_15.0_R2_0_test_mfit.npz'), ''))
     
     file = os.path.join(os.path.dirname(__file__), 'data_cut.npz')
     win = main(file=file)
@@ -498,3 +565,4 @@ def test_RawDataViewer(qtbot, monkeypatch):
 
     win.load_file(path)
     qtbot.wait(100)
+    win.close()
