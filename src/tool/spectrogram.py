@@ -1190,7 +1190,7 @@ d
     #     f.close()
     
     def __rg_entry(self, *args):
-        self.grg=RestrictedToplevel(self.tpg, bg='white')
+        self.grg=tk.Toplevel(self.tpg, bg='white')
         self.grg.title('Data Range')
         
         fr=tk.Frame(self.grg,bg='white')
