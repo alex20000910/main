@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QProgressBar, QLabel, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QProgressBar, QLabel, QVBoxLayout, QSystemTrayIcon, QMenu
 from PyQt5.QtCore import Qt
 import time
 from MDC_cut_utility import IconManager
@@ -151,3 +151,17 @@ def cmap_register(cmap: Colormap):
         mpl.colormaps.register(cmap)
     except Exception as e:
         print(f"Colormap {cmap.name} registration failed: {e}")
+
+class SystemTrayIcon(QSystemTrayIcon):
+    def __init__(self, icon, parent=None):
+        super().__init__(icon, parent)
+        menu = QMenu(parent)
+        showAction = menu.addAction("Show")
+        showAction.triggered.connect(self.focus)
+        exitAction = menu.addAction("Exit")
+        exitAction.triggered.connect(parent.close)
+        self.setContextMenu(menu)
+    
+    def focus(self):
+        self.parent().raise_()
+        self.parent().activateWindow()
