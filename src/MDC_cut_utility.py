@@ -99,8 +99,8 @@ class MenuIconManager:
         if self.qt:
             return icon, icon, icon
         else:
-            icon = Image.open(io.BytesIO(b64decode(icon))).resize(self.size)
-            return ImageTk.PhotoImage(icon), ImageTk.PhotoImage(icon.resize(self.mini_size)), ImageTk.PhotoImage(icon.resize(self.giant_size))
+            icon = Image.open(io.BytesIO(b64decode(icon)))
+            return ImageTk.PhotoImage(icon.resize(self.size)), ImageTk.PhotoImage(icon.resize(self.mini_size)), ImageTk.PhotoImage(icon.resize(self.giant_size))
     
     def create_icons(self):
         """創建各種圖示"""
