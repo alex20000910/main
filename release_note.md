@@ -1,5 +1,21 @@
 # Change Log
 
+## Version 9.1.2 - 2026-02-07
+
+### Added
+- **MDC Fitter Keyboard Shortcuts**: Added keyboard shortcut definitions for quick index switching in MDC Fitter.
+- **System Tray Icon for Qt Applications**: Introduced a system tray icon feature for better application accessibility.
+
+### Changed
+- **Unit Tests Update**: Enhanced test coverage and refined test execution rules for improved code validation.
+- **UI Window Refinements**: Minor adjustments to AboutWindow and VersionUpdateWindow for better user experience.
+- **Code Refactoring**: Refactored portions of the codebase for improved maintainability.
+
+### Fixed
+- **macOS Application Icon Display Issue**: Resolved the issue with application icon not displaying correctly on macOS.
+
+# Change Log
+
 ## Version 9.1.1 - 2026-02-05
 
 ### Changed

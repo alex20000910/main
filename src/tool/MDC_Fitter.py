@@ -34,7 +34,7 @@ sys.path.append(os.path.join(cdir, mod_dir))
 
 from MDC_cut_utility import *
 from tool.loader import loadfiles
-from tool.qt_util import MainWindow, ProgressDialog, cmap_register
+from tool.qt_util import MainWindow, ProgressDialog, SystemTrayIcon, cmap_register
 
 m = 9.110938356e-31  # electron mass
 e = 1.602176634e-19  # elementary charge
@@ -211,6 +211,8 @@ class main(MainWindow):
         # self.resize(geo.width(), geo.height())
         # self.resize(1200, 1000)
         # self.setFixedSize(1200, 1000)
+        self.tray_icon = SystemTrayIcon(QIcon(pixmap), self)
+        self.tray_icon.show()
         self.setWindowIcon(qicon)
         self.init_data()
         # Central widget
@@ -390,24 +392,29 @@ class main(MainWindow):
         action_layout = QVBoxLayout()
         label_dict = {
             "Shortcut": "Action",
-            "Ctrl+O": "Load File",
-            "Ctrl+Q": "Quit",
-            "Ctrl+Z": "Undo",
-            "Ctrl+Y": "Redo",
-            "Ctrl+S": "Save Fitting Parameters as NPZ",
-            "←": "Move to previous index with different fitting status",
-            "→": "Move to next index with different fitting status",
+            "Ctrl + O": "Load File",
+            "Ctrl + Q": "Quit",
+            "Ctrl + Z": "Undo",
+            "Ctrl + Y": "Redo",
+            "Ctrl + S": "Save Fitting Parameters as NPZ",
+            "Ctrl + ←": "Move to previous index with different fitting status",
+            "Ctrl + →": "Move to next index with different fitting status",
+            "←": "Move to previous index",
+            "→": "Move to next index",
             "↑": "Increase baseline value and fit",
             "↓": "Decrease baseline value and fit",
-            "Enter/Return": "Fit component and update plot"
+            "Enter/Return/Space": "Fit component and update plot"
         }
         font = QFont("Arial", 24)
         tl = 0
         for key, action in label_dict.items():
-            key_label = QLabel(f"<b>{key}</b>")
             if tl ==0:
+                key_label = QLabel(f"<b>{key}</b>")
+                key_label.setStyleSheet("font-size: 30px;")
                 action_label = QLabel(f"<b>{action}</b>")
+                action_label.setStyleSheet("font-size: 30px;")
             else:
+                key_label = QLabel(f"<b>{key}</b>")
                 action_label = QLabel(action)
             key_label.setAlignment(Qt.AlignCenter)
             action_label.setAlignment(Qt.AlignCenter)
@@ -452,15 +459,19 @@ class main(MainWindow):
             self.mundo()
         elif event.key() == Qt.Key_Y and (event.modifiers() & Qt.ControlModifier):
             self.mredo()
-        elif event.key() == Qt.Key_Left:
+        elif event.key() == Qt.Key_Left and (event.modifiers() & Qt.ControlModifier):
             self.mflind()
-        elif event.key() == Qt.Key_Right:
+        elif event.key() == Qt.Key_Right and (event.modifiers() & Qt.ControlModifier):
             self.mfrind()
+        elif event.key() == Qt.Key_Left:
+            self.mfli()
+        elif event.key() == Qt.Key_Right:
+            self.mfri()
         elif event.key() == Qt.Key_Up:
             self.mfbgu()
         elif event.key() == Qt.Key_Down:
             self.mfbgd()
-        elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return:
+        elif event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return or event.key() == Qt.Key_Space:
             self.mfit()
             self.mfitplot()
         
@@ -1430,7 +1441,14 @@ class main(MainWindow):
                     break
             if i == len(self.eV)-ti-1 and ti != len(self.eV)-1:
                 self.slider.setValue(ti+1)
-
+    
+    def mfri(self):
+        if self.index < len(self.eV)-1:
+            self.slider.setValue(self.index+1)
+            
+    def mfli(self):
+        if self.index > 0:
+            self.slider.setValue(self.index-1)
     
     def mfbgu(self):
         # global mbgv
@@ -3452,5 +3470,7 @@ if __name__ == "__main__":
         file = QFileDialog.getOpenFileName(None, "Open Data File", cdir, "HDF5 Files (*.h5 *.hdf5);;NPZ Files (*.npz);;JSON Files (*.json);;TXT Files (*.txt)")[0]
     if file:
         win = main(file, hwnd)
+        if os.name == 'posix':
+            app.setWindowIcon(win.icon)
         win.show()
         sys.exit(app.exec_())

@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
 sys.path.append(os.path.dirname(cdir))
 from MDC_cut_utility import MenuIconManager
-from tool.qt_util import MainWindow, ProgressDialog, cmap_register
+from tool.qt_util import MainWindow, ProgressDialog, SystemTrayIcon, cmap_register
 
 def rotate(data: cv2.typing.MatLike, angle: float, size: tuple[int, int]) -> cv2.typing.MatLike:
     """
@@ -185,6 +185,8 @@ class SliceBrowser(MainWindow):
         # self.resize(1200, 1000)
         # self.setFixedSize(1200, 1000)
         
+        self.tray_icon = SystemTrayIcon(QIcon(pixmap), self)
+        self.tray_icon.show()
         self.setWindowIcon(qicon)
         
         
@@ -1801,5 +1803,7 @@ if __name__ == "__main__":
         sys.exit(0)
     hwnd = get_hwnd()
     win = SliceBrowser(folder, hwnd)
+    if os.name == 'posix':
+        app.setWindowIcon(win.icon)
     win.show()
     sys.exit(app.exec())

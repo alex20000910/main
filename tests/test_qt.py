@@ -113,6 +113,7 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     win.slider.setValue(399)
     qtbot.wait(100)
     win.fmposcst()
+    win.flmposcst = 1
     win.maf1.setText('1')
     win.maf2.setText('1')
     win.mwf1.setText('1')
@@ -347,6 +348,10 @@ def test_MDC_Fitter_1(qtbot, monkeypatch):
     win.toggle_grid(checked=True)
     qtbot.wait(100)
     win.toggle_grid(checked=False)
+    qtbot.wait(100)
+    win.set_cmap('custom_cmap1')
+    qtbot.wait(100)
+    win.set_cmap('custom_cmap2')
     qtbot.wait(100)
     win.toggle_histogram()
     qtbot.wait(100)

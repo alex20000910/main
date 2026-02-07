@@ -28,7 +28,7 @@ for i in range(5):
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles
-from tool.qt_util import MainWindow, cmap_register
+from tool.qt_util import MainWindow, SystemTrayIcon, cmap_register
 
 def get_hwnd():
     try:
@@ -117,6 +117,9 @@ class main(MainWindow):
         self.lfs = lfs
         self.hwnd=hwnd
         self.test = test
+        self.tray_icon = SystemTrayIcon(self.icon, self)
+        self.tray_icon.show()
+        self.setWindowIcon(self.icon)
         self.setWindowTitle("Raw Data Viewer")
         self.setAcceptDrops(True)
         # self.showFullScreen()
@@ -804,5 +807,7 @@ if __name__ == "__main__":
         lfs = loadfiles(file, name='external')
     if file:
         win = main(lfs, hwnd)
+        if os.name == 'posix':
+            app.setWindowIcon(win.icon)
         win.show()
         sys.exit(app.exec())
