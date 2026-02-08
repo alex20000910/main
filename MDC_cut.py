@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.1.2"
-__release_date__ = "2026-02-07"
+__version__ = "9.1.3"
+__release_date__ = "2026-02-08"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -197,7 +197,7 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         return -1
 
 def get_src(ver=False):
-    branch = 'update'
+    branch = 'main'
     url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/release_note.md",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
@@ -1464,8 +1464,8 @@ def cmfit(*e):
 
 @pool_protect
 def cefit(*e):
-    messagebox.showwarning("Warning", "Temporarily Disabled")
-    return
+    # messagebox.showwarning("Warning", "Temporarily Disabled")
+    # return
     if data is None:
         st.put('No data loaded!')
         messagebox.showwarning("Warning","No data loaded!")
