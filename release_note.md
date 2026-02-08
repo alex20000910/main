@@ -1,5 +1,14 @@
 # Change Log
 
+## Version 9.1.3 - 2026-02-08
+
+### Changed
+- **EDC Fitter Reopening**: Restored the EDC Fitter feature with partial functionality compared to MDC Fitter.
+- **Menu Button Visual Enhancement**: Optimized the visual effects of menu button icons for improved user interface consistency.
+- **MenuIcon Extraction Refinement**: Fine-tuned the MenuIcon extraction methodology for improved reliability and performance.
+
+# Change Log
+
 ## Version 9.1.2 - 2026-02-07
 
 ### Added
@@ -30,15 +39,15 @@
 ## Version 9.1 - 2026-02-05
 
 ### Added
-- **Release Notes Preview**: Added a release note preview in the version update interface
-- **Markdown Support**: Introduced `markdown` and `tkhtmlview` modules for formatted release note rendering
+- **Release Notes Preview**: Added a release note preview in the version update interface.
+- **Markdown Support**: Introduced `markdown` and `tkhtmlview` modules for formatted release note rendering.
 
 ### Changed
-- **Documentation Update**: Updated README with the latest information
-- **Dependency Management**: Added `google-crc32c` for Python 3.12+ to silence `numcodecs` deprecation warnings
-- **Normalized Diagram Rendering**: Reworked the normalized diagram implementation to significantly improve display performance
-- **Shared Library Refactor**: Refactored common utility libraries for better maintainability
+- **Documentation Update**: Updated README with the latest information.
+- **Dependency Management**: Added `google-crc32c` for Python 3.12+ to silence `numcodecs` deprecation warnings.
+- **Normalized Diagram Rendering**: Reworked the normalized diagram implementation to significantly improve display performance.
+- **Shared Library Refactor**: Refactored common utility libraries for better maintainability.
 
 ### Fixed
-- **Module Import Handling**: Fixed the module import error handling workflow
-- **MDC Fitter Save Prompt**: Fixed the save prompt logic in MDC Fitter to correctly detect unsaved changes
+- **Module Import Handling**: Fixed the module import error handling workflow.
+- **MDC Fitter Save Prompt**: Fixed the save prompt logic in MDC Fitter to correctly detect unsaved changes.

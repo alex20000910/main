@@ -129,7 +129,7 @@ class SliceBrowser(MainWindow):
     def __init__(self, path=None, hwnd=None):
         super().__init__()
         icon_manager = MenuIconManager(qt=True)
-        icon = icon_manager.get_icon('view_3d')
+        icon = icon_manager.gen_icon('view_3d_a')[0]
         pixmap = QPixmap()
         pixmap.loadFromData(b64decode(icon))
         qicon = QIcon(pixmap)

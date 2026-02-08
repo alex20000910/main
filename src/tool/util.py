@@ -13,7 +13,7 @@ import queue
 import gc, tqdm
 from scipy.signal import hilbert
 
-# Deprecated classes
+# Deprecated class
 class MDC_param:
     def __init__(self, ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, skmin, skmax, smfp, smfi, smaa1, smaa2, smresult, smcst, mdet):
         self.ScaleFactor = ScaleFactor

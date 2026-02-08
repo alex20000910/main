@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.1.2"
-__release_date__ = "2026-02-07"
+__version__ = "9.1.3"
+__release_date__ = "2026-02-08"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -1464,8 +1464,8 @@ def cmfit(*e):
 
 @pool_protect
 def cefit(*e):
-    messagebox.showwarning("Warning", "Temporarily Disabled")
-    return
+    # messagebox.showwarning("Warning", "Temporarily Disabled")
+    # return
     if data is None:
         st.put('No data loaded!')
         messagebox.showwarning("Warning","No data loaded!")

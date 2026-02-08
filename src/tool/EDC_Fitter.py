@@ -14,18 +14,6 @@ import tqdm
 import queue
 import warnings
 
-class EDC_Fitter(ABC):
-    @abstractmethod
-    def __init__(self):
-        pass
-    @abstractmethod
-    def mfit(self):
-        pass
-
-# class fite:
-#     def __init__(self, a):
-#         print("Fitting started", a)
-
 def init_pars(app_pars=None):
     if app_pars is not None:
         global ScaleFactor, sc_y, g, scale, npzf, vfe, emf, st, dpath, name, k_offset, value3, ev, phi, data, base, fpr, semin, semax, sefp, sefi, seaa1, seaa2, seresult, secst, edet, m, h, seresult_original
@@ -979,6 +967,9 @@ def ejob():     # EDC Fitting GUI
     elif ScaleFactor <= 300:
         tlength = int(0.97*6*edpi)  # 300
         twidth = int(0.97*0.2*edpi)
+    if os.name == 'posix':
+        tlength = int(96/72*6*edpi)
+        twidth = int(96/72*0.2*edpi)
     tlength = int(tlength*scale)
     twidth = int(twidth*scale)
     chi = tk.Scale(frind, label='Index', from_=0, to=len(phi)-1, orient='horizontal',
@@ -1017,8 +1008,11 @@ def ejob():     # EDC Fitting GUI
     frpara.grid(row=1, column=1)
     try:
         if fpr == 1:
-            efp = list(sefp)
-            efi = list(sefi)
+            if len(sefp) > 0:
+                efp = list(sefp)
+                efi = list(sefi)
+            else:
+                efp = [1 for i in range(len(phi))]
         else:
             efp = [1 for i in range(len(phi))]
     except:
@@ -1115,11 +1109,11 @@ class oelim():
         if npzf:
             avg = np.mean(ev)
             l = max(ev) - min(ev)
-            self.min = np.float64([avg - l/40 for i in phi])
-            self.max = np.float64([avg + l/40 for i in phi])
+            self.min = np.asarray([avg - l/40 for i in phi], dtype=float)
+            self.max = np.asarray([avg + l/40 for i in phi], dtype=float)
         else:
-            self.min = [np.min(ev) for i in phi]
-            self.max = [np.max(ev) for i in phi]
+            self.min = np.asarray([np.min(ev) for i in phi], dtype=float)
+            self.max = np.asarray([np.max(ev) for i in phi], dtype=float)
 
 egg=None
 def fite(edc_pars):
@@ -1137,7 +1131,10 @@ def fite(edc_pars):
         fpr = 0
     if fpr == 1:
         try:
-            emin, emax = semin, semax
+            if len(semin) > 0:
+                emin, emax = semin, semax
+            else:
+                emin, emax = elim.min.copy(), elim.max.copy()
         except NameError:
             emin, emax = elim.min.copy(), elim.max.copy()
         if len(scei) >= 2:
