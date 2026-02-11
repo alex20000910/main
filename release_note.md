@@ -1,5 +1,12 @@
 # Change Log
 
+## Version 9.1.4 - 2026-02-11
+
+### Fixed
+- **Icon Manager**: Resolved image file issues in IconManager.
+
+# Change Log
+
 ## Version 9.1.3 - 2026-02-08
 
 ### Changed

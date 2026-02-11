@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.1.3"
-__release_date__ = "2026-02-08"
+__version__ = "9.1.4"
+__release_date__ = "2026-02-11"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -214,10 +214,23 @@ def get_src(ver=False):
            rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/EDC_Fitter.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/window.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/RawDataViewer.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/qt_util.py"]
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/qt_util.py",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/spectrogram.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/calculator.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_fitter.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_cutter.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_cutter.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/exp_graph.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/exp_origin.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_a.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/so_fit.png"]
     for i, v in enumerate(url):
         if i < 4:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
+        elif i > 16:
+            out_path = os.path.join(cdir, '.MDC_cut', 'img', os.path.basename(v))
         else:
             out_path = os.path.join(cdir, '.MDC_cut', 'tool', os.path.basename(v))
         status = get_file_from_github(v, out_path)
@@ -2130,7 +2143,11 @@ if __name__ == '__main__':
     g.option_add('*Font', default_font)
     g.option_add('*Foreground', 'black')
     g.option_add('*Background', 'white')
-    icon_manager = MenuIconManager(scale=scale, ScaleFactor=ScaleFactor, odpi=odpi, dpi=dpi)
+    try:
+        icon_manager = MenuIconManager(scale=scale, ScaleFactor=ScaleFactor, odpi=odpi, dpi=dpi)
+    except FileNotFoundError:
+        get_src()
+        icon_manager = MenuIconManager(scale=scale, ScaleFactor=ScaleFactor, odpi=odpi, dpi=dpi)
     
     g.geometry(f'1900x1080+0+{sc_y}')
     g.title('MDC cut')
