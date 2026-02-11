@@ -1,5 +1,12 @@
 # Change Log
 
+## Version 9.1.6 - 2026-02-11
+
+### Fixed
+- **Icon Manager**: Try to solve image file download issues in instanciating MenuIconManager. If the download fails, the application will restart to attempt to resolve the issue.
+
+# Change Log
+
 ## Version 9.1.5 - 2026-02-11
 
 ### Fixed
