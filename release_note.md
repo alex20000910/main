@@ -1,5 +1,12 @@
 # Change Log
 
+## Version 9.1.5 - 2026-02-11
+
+### Fixed
+- **Icon Manager**: Try to resolve image file issues in instanciating MenuIconManager.
+
+# Change Log
+
 ## Version 9.1.4 - 2026-02-11
 
 ### Fixed
