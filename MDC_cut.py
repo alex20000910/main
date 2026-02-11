@@ -197,7 +197,7 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         return -1
 
 def get_src(ver=False):
-    branch = 'update'
+    branch = 'main'
     url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/release_note.md",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
