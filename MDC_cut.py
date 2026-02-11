@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "9.1.4"
+__version__ = "9.1.5"
 __release_date__ = "2026-02-11"
 # import tracemalloc
 # tracemalloc.start()
@@ -2146,9 +2146,10 @@ if __name__ == '__main__':
     try:
         icon_manager = MenuIconManager(scale=scale, ScaleFactor=ScaleFactor, odpi=odpi, dpi=dpi)
     except FileNotFoundError:
-        get_src()
-        icon_manager = MenuIconManager(scale=scale, ScaleFactor=ScaleFactor, odpi=odpi, dpi=dpi)
-    
+        status = get_src()
+        if status == 0:
+            restart()
+            quit()
     g.geometry(f'1900x1080+0+{sc_y}')
     g.title('MDC cut')
     g.config(bg='white')
