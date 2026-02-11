@@ -117,6 +117,12 @@ class main(MainWindow):
         self.lfs = lfs
         self.hwnd=hwnd
         self.test = test
+        icon_manager = MenuIconManager(qt=True)
+        icon = icon_manager.gen_icon('raw_data_viewer')[0]
+        pixmap = QPixmap()
+        pixmap.loadFromData(b64decode(icon))
+        qicon = QIcon(pixmap)
+        self.icon = qicon
         self.tray_icon = SystemTrayIcon(self.icon, self)
         self.tray_icon.show()
         self.setWindowIcon(self.icon)

@@ -1,5 +1,12 @@
 # Change Log
 
+## Version 9.1.7 - 2026-02-12
+
+### Changed
+- **Icon Manager**: Change the MenuIcons theme to dark mode, and clean up the icon management code for better maintainability and performance.
+
+# Change Log
+
 ## Version 9.1.6 - 2026-02-11
 
 ### Fixed

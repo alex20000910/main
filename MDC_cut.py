@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.1.6"
-__release_date__ = "2026-02-11"
+__version__ = "9.1.7"
+__release_date__ = "2026-02-12"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -225,7 +225,12 @@ def get_src(ver=False):
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/exp_origin.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_a.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/so_fit.png"]
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/so_fit.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitted_file.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_fitted_file.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/bare_band.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer.png"]
     for i, v in enumerate(url):
         if i < 4:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
