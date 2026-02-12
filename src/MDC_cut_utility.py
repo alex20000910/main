@@ -112,7 +112,6 @@ class MenuIconManager:
         self.icons['exp_graph'], self.mini_icons['exp_graph'], self.giant_icons['exp_graph'] = self.create_exp_graph_icon()
         self.icons['exp_origin'], self.mini_icons['exp_origin'], self.giant_icons['exp_origin'] = self.create_exp_origin_icon()
         
-        self.icons['raw_data_viewer'], self.mini_icons['raw_data_viewer'], self.giant_icons['raw_data_viewer'] = self.create_raw_data_viewer_icon()
         self.icons['spectrogram'], self.mini_icons['spectrogram'], self.giant_icons['spectrogram'] = self.create_spectrogram_icon()
         self.icons['mdc_fitter'], self.mini_icons['mdc_fitter'], self.giant_icons['mdc_fitter'] = self.create_mdc_fitter_icon()
         self.icons['edc_fitter'], self.mini_icons['edc_fitter'], self.giant_icons['edc_fitter'] = self.create_edc_fitter_icon()
@@ -121,6 +120,7 @@ class MenuIconManager:
         self.icons['calculator'], self.mini_icons['calculator'], self.giant_icons['calculator'] = self.create_calc_icon()
         self.icons['view_3d'], self.mini_icons['view_3d'], self.giant_icons['view_3d'] = self.create_view_3d_icon()
         self.icons['so_fit'], self.mini_icons['so_fit'], self.giant_icons['so_fit'] = self.create_so_fit_icon()
+        self.icons['raw_data_viewer'], self.mini_icons['raw_data_viewer'], self.giant_icons['raw_data_viewer'] = self.create_raw_data_viewer_icon()
     
     def create_raw_data_viewer_icon(self):
         icon = "raw_data_viewer"
@@ -213,6 +213,7 @@ class ToolTip_util:
                     'Export to Origin': 'exp_origin',
                     'Volume Viewer': 'view_3d',
                     'Sample Offset Fitter': 'so_fit',
+                    'Raw Data Viewer': 'raw_data_viewer',
         }
         
         self.widget.bind("<Enter>", self.show_tooltip)

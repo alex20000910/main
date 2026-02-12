@@ -1,5 +1,18 @@
 # Change Log
 
+## Version 9.2 - 2026-02-12
+
+### Added
+- **Place Raw Data Viewer in Menu**: Added the "Raw Data Viewer" option to the Tools menu for easy access.
+
+### Changed
+- **Raw Data Viewer Icon Update**: Updated the icon for the "Raw Data Viewer" menu item to a more appropriate and visually consistent design.
+
+### Fixed
+- **Raw Data Viewer Loading Issue**: Resolved an issue where the "Raw Data Viewer" would fail to load properly under certain conditions.
+
+# Change Log
+
 ## Version 9.1.7 - 2026-02-12
 
 ### Changed
