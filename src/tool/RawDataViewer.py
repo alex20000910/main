@@ -118,7 +118,7 @@ class main(MainWindow):
         self.hwnd=hwnd
         self.test = test
         icon_manager = MenuIconManager(qt=True)
-        icon = icon_manager.gen_icon('raw_data_viewer')[0]
+        icon = icon_manager.gen_icon('raw_data_viewer_a')[0]
         pixmap = QPixmap()
         pixmap.loadFromData(b64decode(icon))
         qicon = QIcon(pixmap)
@@ -331,7 +331,7 @@ class main(MainWindow):
         self.w, self.h = self.width(), self.height()
     
     def load_file(self, file=None):
-        if file is None:
+        if file is None or file is False:
             file = QFileDialog.getOpenFileNames(self, "Open Data File", "", "HDF5 Files (*.h5 *.hdf5);;NPZ Files (*.npz);;JSON Files (*.json);;TXT Files (*.txt)")[0]
         if file:
             self.lfs = loadfiles(file, name='external')

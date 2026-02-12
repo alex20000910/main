@@ -1,5 +1,5 @@
 # MDC cut GUI
-__version__ = "9.1.7"
+__version__ = "9.2"
 __release_date__ = "2026-02-12"
 # import tracemalloc
 # tracemalloc.start()
@@ -230,7 +230,8 @@ def get_src(ver=False):
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitted_file.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_fitted_file.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/bare_band.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer.png"]
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_a.png"]
     for i, v in enumerate(url):
         if i < 4:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
@@ -873,7 +874,7 @@ def suggest():
     global b_suggest
     if value.get() == 'Raw Data':
         b_suggest.config(text='Raw Data Viewer', bg='#aa0000', fg='white', font=('Arial', size(18), "bold"))
-        ToolTip(b_suggest, "Use Qt Window to view raw data with high performance")
+        ToolTip(b_suggest, "Use Qt Window to view raw data with high performance", "Ctrl+R")
         b_suggest.config(command=lambda: qt_app(lfs.path))
         b_suggest.grid(row=1, column=0, pady=20)
         def job():
@@ -2231,6 +2232,7 @@ if __name__ == '__main__':
     toolmenu.add_command(label="E-k Angle Converter", command=calculator, image=icon_manager.get_mini_icon('calculator'), compound='left', accelerator="F9")
     toolmenu.add_command(label="Volume Viewer", command=view_3d, image=icon_manager.get_mini_icon('view_3d'), compound='left', accelerator="F12")
     toolmenu.add_command(label="Sample Offset Fitter", command=fit_so_app, image=icon_manager.get_mini_icon('so_fit'), compound='left', accelerator="Ctrl+P")
+    toolmenu.add_command(label="Raw Data Viewer", command=lambda: qt_app(lfs.path), image=icon_manager.get_mini_icon('raw_data_viewer'), compound='left', accelerator="Ctrl+R")
     
     helpmenu = tk.Menu(menubar, tearoff=0, bg="white")
     menubar.add_cascade(label="Help", menu=helpmenu)
@@ -2274,6 +2276,8 @@ if __name__ == '__main__':
     b_view_3d.pack(side=tk.LEFT)
     b_so_fit = Button(fr_toolbar, text="Sample Offset Fitter", image=icon_manager.get_icon('so_fit'), command=fit_so_app)
     b_so_fit.pack(side=tk.LEFT)
+    b_raw_data_viewer = Button(fr_toolbar, text="Raw Data Viewer", image=icon_manager.get_icon('raw_data_viewer'), command=lambda: qt_app(lfs.path))
+    b_raw_data_viewer.pack(side=tk.LEFT)
     
     # 建立tooltip
     ToolTip(b_load, "Select and load your raw data files - supports H5, JSON, NPZ, and TXT formats. You can choose multiple files at once.", "Ctrl+O")
@@ -2290,6 +2294,7 @@ if __name__ == '__main__':
     ToolTip(b_exp_origin, "Select the required data and import it into OriginPro to enable advanced data processing.", "F11")
     ToolTip(b_view_3d, "Open a 3D data viewer to visualize the data cube in three dimensions. Rotation and HDF5 file export are supported.", "F12")
     ToolTip(b_so_fit, "Add data points to correct for sample angle offset. The measured points on the Energy-Angle diagram show asymmetry instead of the expected symmetry at specific kinetic energies, indicating slight sample/sample holder misalignment that can be corrected through fitting.", "Ctrl+P")
+    ToolTip(b_raw_data_viewer, "Use Qt Window to view raw data with high performance", "Ctrl+R")
     
     # Define your custom colors (as RGB tuples)
     # (value,(color))
@@ -2909,6 +2914,7 @@ if __name__ == '__main__':
     g.bind("<F11>", gui_exp_origin)
     g.bind("<F12>", view_3d)
     g.bind('<Control-p>', fit_so_app)
+    g.bind('<Control-r>', lambda event: qt_app(lfs.path))
     main_motion = MainMotion()
     main_notify_cid = out.mpl_connect('motion_notify_event', main_motion.move)
     main_press_cid = out.mpl_connect('button_press_event', main_motion.press)
