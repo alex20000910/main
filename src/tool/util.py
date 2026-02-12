@@ -473,6 +473,9 @@ def save(format='{self.suffix}'):
         self.cmdlist, self.no = cmdlist, no
             
     def exp_origin(self, *e):
+        if os.name == 'posix':
+            messagebox.showinfo("Info", "OriginPro project export is only supported on Windows OS.")
+            return
         app_name, cdir, npzf, bpath, dpath, emf = self.app_name, self.cdir, self.npzf, self.bpath, self.dpath, self.emf
         pos, fwhm, rpos = self.pos, self.fwhm, self.rpos
         be, k, vfe = self.be, self.k, self.vfe
