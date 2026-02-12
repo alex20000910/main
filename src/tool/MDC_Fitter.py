@@ -336,7 +336,7 @@ class main(MainWindow):
         self.klim = klim
         shape=self.data.shape
         det=self.data.data[shape[0]//2, shape[1]//2]
-        if self.mdet == -1:
+        if self.mdet == -1 and self.fpr == 1:
             QMessageBox.warning(
                 self, 
                 "Legacy File Warning", 

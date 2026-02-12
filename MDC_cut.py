@@ -1529,6 +1529,9 @@ def clmfit():
     fwhm = []
     fev = []
     ophi = []
+    if os.path.exists(os.path.join(cdir, '.MDC_cut', 'mfit.npz')):
+        os.remove(os.path.join(cdir, '.MDC_cut', 'mfit.npz'))
+    st.put('MDC fitted data cleared')
 
 @pool_protect
 def clefit():
@@ -1538,6 +1541,9 @@ def clefit():
     ffphi = []
     efwhm = []
     fk = []
+    if os.path.exists(os.path.join(cdir, '.MDC_cut', 'efit.npz')):
+        os.remove(os.path.join(cdir, '.MDC_cut', 'efit.npz'))
+    st.put('EDC fitted data cleared')
 
 @pool_protect
 def cminrange(*e):
@@ -2182,6 +2188,11 @@ if __name__ == '__main__':
     filemenu.add_command(label="Load Raw Data", image=icon_manager.get_mini_icon('raw_data'), command=load, accelerator="Ctrl+O", compound='left')
     filemenu.add_cascade(label="Load fitted File", menu=filemenu1)
     filemenu.add_command(label="Load Bare Band File", image=icon_manager.get_mini_icon('bare_band'), command=bareband, compound='left', accelerator="F3")
+    
+    filemenu.add_separator()
+    filemenu.add_command(label="Clear MDC Fitted Data", command=clmfit)
+    filemenu.add_command(label="Clear EDC Fitted Data", command=clefit)
+    
     filemenu.add_separator()
     filemenu.add_cascade(label="Export Data", menu=filemenu2)
     filemenu.add_command(label="Exit", command=g_close, accelerator="Ctrl+Q")
@@ -2210,9 +2221,6 @@ if __name__ == '__main__':
     plotmenu.add_cascade(label="Raw", menu=pltmenu1)
     plotmenu.add_cascade(label="Fit", menu=pltmenu2)
     plotmenu.add_cascade(label="Transform", menu=pltmenu3)
-    plotmenu.add_separator()
-    plotmenu.add_command(label="Clear MDC Fitted Data", command=clmfit)
-    plotmenu.add_command(label="Clear EDC Fitted Data", command=clefit)
     
     # Tools Menu
     toolmenu = tk.Menu(menubar, tearoff=0, bg="white")
