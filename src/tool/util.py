@@ -1887,10 +1887,18 @@ class plots_util(ABC):
             value.set('---Plot1---')
             value1.set('---Plot2---')
             fig.clear()
-            ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
-                            10**-10*(h/2/np.pi))*180/np.pi
-            pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
-                np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+            try:
+                ophi = np.arcsin(rpos/(2*m*fev*1.602176634*10**-19)**0.5 /
+                                10**-10*(h/2/np.pi))*180/np.pi
+                pos = (2*m*fev*1.602176634*10**-19)**0.5 * \
+                    np.sin((np.float64(k_offset.get())+ophi)/180*np.pi)*10**-10/(h/2/np.pi)
+            except:
+                messagebox.showwarning("Warning","Please load fitted Data")
+                self.warn_str = "Please load fitted Data"
+                self.pars_warn()
+                print('Please load fitted file')
+                st.put('Please load fitted file')
+                return
             try:
                 x = (vfe-fev)*1000
                 y = pos

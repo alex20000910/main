@@ -759,6 +759,8 @@ if __name__ == '__main__':
                 for i in [self.epos, self.efwhm]:
                     i.deselect()
                     i.config(state='disabled')
+            if len(self.fev) <= 0 and len(self.fk) <= 0:
+                self.chf()
                 
         @override
         def chf(self):
