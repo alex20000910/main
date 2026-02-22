@@ -231,7 +231,10 @@ def get_src(ver=False):
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_fitted_file.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/bare_band.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_a.png"]
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_a.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_none.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_light.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_dark.png"]
     for i, v in enumerate(url):
         if i < 4:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))

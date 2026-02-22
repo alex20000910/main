@@ -211,7 +211,49 @@ class main(MainWindow):
         # self.resize(geo.width(), geo.height())
         # self.resize(1200, 1000)
         # self.setFixedSize(1200, 1000)
-        self.tray_icon = SystemTrayIcon(QIcon(pixmap), self)
+        
+        if os.name == 'posix': # macOS
+            try:
+                result = subprocess.run(
+                    ['osascript', '-e', 
+                    'tell application "Finder" to get POSIX path of (desktop picture as alias)'],
+                    capture_output=True,
+                    text=True
+                )
+                if result.stdout.strip():
+                    out = result.stdout.strip()
+                else:
+                    out = None
+            except: # 純色背景無桌布圖檔
+                out = None
+            try:
+                img = Image.open(out)
+                w, h = img.width, img.height//20
+                cut = img.crop((0, 0, w, h))
+                cut.thumbnail((w//15, h//15))
+                img_gray = cut.convert('L')
+                brightness = np.mean(np.array(img_gray))
+                if brightness > 128:
+                    icon_name = 'mdc_fitter_light'
+                else:
+                    icon_name = 'mdc_fitter_dark'
+            except Exception as e:
+                icon_name = 'mdc_fitter_none'
+        else: # Windows
+            try:
+                import winreg
+                registry_path = r'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+                registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, registry_path)
+                value, _ = winreg.QueryValueEx(registry_key, 'AppsUseLightTheme')
+                winreg.CloseKey(registry_key)
+                icon_name = 'mdc_fitter_light' if value == 1 else 'mdc_fitter_dark'
+            except:
+                icon_name = 'mdc_fitter_none'
+            
+        icon = icon_manager.gen_icon(icon_name)[0]
+        tray_icon_pixmap = QPixmap()
+        tray_icon_pixmap.loadFromData(b64decode(icon))
+        self.tray_icon = SystemTrayIcon(QIcon(tray_icon_pixmap), self)
         self.tray_icon.show()
         self.setWindowIcon(qicon)
         self.init_data()
