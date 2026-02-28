@@ -229,8 +229,8 @@ class main(MainWindow):
             try:
                 img = Image.open(out)
                 w, h = img.width, img.height//20
-                cut = img.crop((0, 0, w, h))
-                cut.thumbnail((w//15, h//15))
+                cut = img.crop((w//2, 0, w, h))
+                cut.thumbnail((w//30, h//15))
                 img_gray = cut.convert('L')
                 brightness = np.mean(np.array(img_gray))
                 if brightness > 128:
