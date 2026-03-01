@@ -141,7 +141,7 @@ class SliceBrowser(MainWindow):
         print(f"Loading Zarr Data Cube from {path}")
         print('Please wait...')
         self.hwnd=hwnd
-        if hwnd:
+        if hwnd and os.name == 'nt':
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         elif os.name == 'posix':
@@ -1177,7 +1177,7 @@ class SliceBrowser(MainWindow):
                 self.save_as_zarr_disp(h5=True)
     
     def gen_E_kx(self, event=None):
-        if self.hwnd:
+        if self.hwnd and os.name == 'nt':
             windll.user32.ShowWindow(self.hwnd, 9)
             windll.user32.SetForegroundWindow(self.hwnd)
         elif os.name == 'posix':
@@ -1192,7 +1192,7 @@ class SliceBrowser(MainWindow):
         self.statusbar.showMessage(f"Exported to {self.file}")
 
     def gen_E_ky(self, event=None):
-        if self.hwnd:
+        if self.hwnd and os.name == 'nt':
             windll.user32.ShowWindow(self.hwnd, 9)
             windll.user32.SetForegroundWindow(self.hwnd)
         elif os.name == 'posix':
@@ -1291,7 +1291,7 @@ class SliceBrowser(MainWindow):
             self.path_angle -= 360
     
     def __md(self, axis="E_kx"):
-        if self.hwnd:
+        if self.hwnd and os.name == 'nt':
             windll.user32.ShowWindow(self.hwnd, 9)
             windll.user32.SetForegroundWindow(self.hwnd)
         elif os.name == 'posix':
