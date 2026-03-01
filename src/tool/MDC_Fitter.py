@@ -34,7 +34,7 @@ sys.path.append(os.path.join(cdir, mod_dir))
 
 from MDC_cut_utility import *
 from tool.loader import loadfiles
-from tool.qt_util import MainWindow, ProgressDialog, SystemTrayIcon, cmap_register
+from tool.qt_util import MainWindow, ProgressDialog, SystemTrayIcon, cmap_register, getTrayIcon
 
 m = 9.110938356e-31  # electron mass
 e = 1.602176634e-19  # elementary charge
@@ -211,7 +211,9 @@ class main(MainWindow):
         # self.resize(geo.width(), geo.height())
         # self.resize(1200, 1000)
         # self.setFixedSize(1200, 1000)
-        self.tray_icon = SystemTrayIcon(QIcon(pixmap), self)
+        
+        tray_icon = getTrayIcon('mdc_fitter_none', 'mdc_fitter_light', 'mdc_fitter_dark')
+        self.tray_icon = SystemTrayIcon(tray_icon, self)
         self.tray_icon.show()
         self.setWindowIcon(qicon)
         self.init_data()
@@ -336,7 +338,7 @@ class main(MainWindow):
         self.klim = klim
         shape=self.data.shape
         det=self.data.data[shape[0]//2, shape[1]//2]
-        if self.mdet == -1:
+        if self.mdet == -1 and self.fpr == 1:
             QMessageBox.warning(
                 self, 
                 "Legacy File Warning", 

@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.2"
-__release_date__ = "2026-02-12"
+__version__ = "9.2.1"
+__release_date__ = "2026-03-01"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -225,13 +225,22 @@ def get_src(ver=False):
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/exp_origin.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_a.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_none.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_light.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_dark.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/so_fit.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitted_file.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_fitted_file.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/bare_band.png",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_a.png"]
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_a.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_none.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_light.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_dark.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_none.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_light.png",
+           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_dark.png"]
     for i, v in enumerate(url):
         if i < 4:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
@@ -759,6 +768,8 @@ if __name__ == '__main__':
                 for i in [self.epos, self.efwhm]:
                     i.deselect()
                     i.config(state='disabled')
+            if len(self.fev) <= 0 and len(self.fk) <= 0:
+                self.chf()
                 
         @override
         def chf(self):
@@ -875,7 +886,7 @@ def suggest():
     if value.get() == 'Raw Data':
         b_suggest.config(text='Raw Data Viewer', bg='#aa0000', fg='white', font=('Arial', size(18), "bold"))
         ToolTip(b_suggest, "Use Qt Window to view raw data with high performance", "Ctrl+R")
-        b_suggest.config(command=lambda: qt_app(lfs.path))
+        b_suggest.config(command=lambda: qt_app(lfs))
         b_suggest.grid(row=1, column=0, pady=20)
         def job():
             import time
@@ -1290,7 +1301,12 @@ def change_file(*args):
         o_plot1()
 
 @pool_protect
-def qt_app(path: list[str]):
+def qt_app(lfs: FileSequence|None):
+    if lfs is None:
+        st.put('No data loaded!')
+        messagebox.showwarning("Warning","No data loaded!")
+        return
+    path = lfs.path
     def job():
         if os.name == 'nt':
             subprocess.call([f'{sys.executable}', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
@@ -1311,7 +1327,7 @@ def qt_app(path: list[str]):
 @pool_protect
 def tools(*args):
     def raw_data_viewer(*args):
-        qt_app(lfs.path)
+        qt_app(lfs)
         toolg.destroy()
         
     def spec(*args):
@@ -1529,6 +1545,9 @@ def clmfit():
     fwhm = []
     fev = []
     ophi = []
+    if os.path.exists(os.path.join(cdir, '.MDC_cut', 'mfit.npz')):
+        os.remove(os.path.join(cdir, '.MDC_cut', 'mfit.npz'))
+    st.put('MDC fitted data cleared')
 
 @pool_protect
 def clefit():
@@ -1538,6 +1557,9 @@ def clefit():
     ffphi = []
     efwhm = []
     fk = []
+    if os.path.exists(os.path.join(cdir, '.MDC_cut', 'efit.npz')):
+        os.remove(os.path.join(cdir, '.MDC_cut', 'efit.npz'))
+    st.put('EDC fitted data cleared')
 
 @pool_protect
 def cminrange(*e):
@@ -2182,6 +2204,11 @@ if __name__ == '__main__':
     filemenu.add_command(label="Load Raw Data", image=icon_manager.get_mini_icon('raw_data'), command=load, accelerator="Ctrl+O", compound='left')
     filemenu.add_cascade(label="Load fitted File", menu=filemenu1)
     filemenu.add_command(label="Load Bare Band File", image=icon_manager.get_mini_icon('bare_band'), command=bareband, compound='left', accelerator="F3")
+    
+    filemenu.add_separator()
+    filemenu.add_command(label="Clear MDC Fitted Data", command=clmfit)
+    filemenu.add_command(label="Clear EDC Fitted Data", command=clefit)
+    
     filemenu.add_separator()
     filemenu.add_cascade(label="Export Data", menu=filemenu2)
     filemenu.add_command(label="Exit", command=g_close, accelerator="Ctrl+Q")
@@ -2210,9 +2237,6 @@ if __name__ == '__main__':
     plotmenu.add_cascade(label="Raw", menu=pltmenu1)
     plotmenu.add_cascade(label="Fit", menu=pltmenu2)
     plotmenu.add_cascade(label="Transform", menu=pltmenu3)
-    plotmenu.add_separator()
-    plotmenu.add_command(label="Clear MDC Fitted Data", command=clmfit)
-    plotmenu.add_command(label="Clear EDC Fitted Data", command=clefit)
     
     # Tools Menu
     toolmenu = tk.Menu(menubar, tearoff=0, bg="white")
@@ -2232,7 +2256,7 @@ if __name__ == '__main__':
     toolmenu.add_command(label="E-k Angle Converter", command=calculator, image=icon_manager.get_mini_icon('calculator'), compound='left', accelerator="F9")
     toolmenu.add_command(label="Volume Viewer", command=view_3d, image=icon_manager.get_mini_icon('view_3d'), compound='left', accelerator="F12")
     toolmenu.add_command(label="Sample Offset Fitter", command=fit_so_app, image=icon_manager.get_mini_icon('so_fit'), compound='left', accelerator="Ctrl+P")
-    toolmenu.add_command(label="Raw Data Viewer", command=lambda: qt_app(lfs.path), image=icon_manager.get_mini_icon('raw_data_viewer'), compound='left', accelerator="Ctrl+R")
+    toolmenu.add_command(label="Raw Data Viewer", command=lambda: qt_app(lfs), image=icon_manager.get_mini_icon('raw_data_viewer'), compound='left', accelerator="Ctrl+R")
     
     helpmenu = tk.Menu(menubar, tearoff=0, bg="white")
     menubar.add_cascade(label="Help", menu=helpmenu)
@@ -2276,7 +2300,7 @@ if __name__ == '__main__':
     b_view_3d.pack(side=tk.LEFT)
     b_so_fit = Button(fr_toolbar, text="Sample Offset Fitter", image=icon_manager.get_icon('so_fit'), command=fit_so_app)
     b_so_fit.pack(side=tk.LEFT)
-    b_raw_data_viewer = Button(fr_toolbar, text="Raw Data Viewer", image=icon_manager.get_icon('raw_data_viewer'), command=lambda: qt_app(lfs.path))
+    b_raw_data_viewer = Button(fr_toolbar, text="Raw Data Viewer", image=icon_manager.get_icon('raw_data_viewer'), command=lambda: qt_app(lfs))
     b_raw_data_viewer.pack(side=tk.LEFT)
     
     # 建立tooltip
@@ -2914,7 +2938,7 @@ if __name__ == '__main__':
     g.bind("<F11>", gui_exp_origin)
     g.bind("<F12>", view_3d)
     g.bind('<Control-p>', fit_so_app)
-    g.bind('<Control-r>', lambda event: qt_app(lfs.path))
+    g.bind('<Control-r>', lambda event: qt_app(lfs))
     main_motion = MainMotion()
     main_notify_cid = out.mpl_connect('motion_notify_event', main_motion.move)
     main_press_cid = out.mpl_connect('button_press_event', main_motion.press)

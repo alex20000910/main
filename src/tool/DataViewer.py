@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
 sys.path.append(os.path.dirname(cdir))
 from MDC_cut_utility import MenuIconManager
-from tool.qt_util import MainWindow, ProgressDialog, SystemTrayIcon, cmap_register
+from tool.qt_util import MainWindow, ProgressDialog, SystemTrayIcon, cmap_register, getTrayIcon
 
 def rotate(data: cv2.typing.MatLike, angle: float, size: tuple[int, int]) -> cv2.typing.MatLike:
     """
@@ -141,7 +141,7 @@ class SliceBrowser(MainWindow):
         print(f"Loading Zarr Data Cube from {path}")
         print('Please wait...')
         self.hwnd=hwnd
-        if hwnd:
+        if hwnd and os.name == 'nt':
             windll.user32.ShowWindow(hwnd, 9)
             windll.user32.SetForegroundWindow(hwnd)
         elif os.name == 'posix':
@@ -185,7 +185,8 @@ class SliceBrowser(MainWindow):
         # self.resize(1200, 1000)
         # self.setFixedSize(1200, 1000)
         
-        self.tray_icon = SystemTrayIcon(QIcon(pixmap), self)
+        tray_icon = getTrayIcon('view_3d_none', 'view_3d_light', 'view_3d_dark')
+        self.tray_icon = SystemTrayIcon(tray_icon, self)
         self.tray_icon.show()
         self.setWindowIcon(qicon)
         
@@ -1176,7 +1177,7 @@ class SliceBrowser(MainWindow):
                 self.save_as_zarr_disp(h5=True)
     
     def gen_E_kx(self, event=None):
-        if self.hwnd:
+        if self.hwnd and os.name == 'nt':
             windll.user32.ShowWindow(self.hwnd, 9)
             windll.user32.SetForegroundWindow(self.hwnd)
         elif os.name == 'posix':
@@ -1191,7 +1192,7 @@ class SliceBrowser(MainWindow):
         self.statusbar.showMessage(f"Exported to {self.file}")
 
     def gen_E_ky(self, event=None):
-        if self.hwnd:
+        if self.hwnd and os.name == 'nt':
             windll.user32.ShowWindow(self.hwnd, 9)
             windll.user32.SetForegroundWindow(self.hwnd)
         elif os.name == 'posix':
@@ -1290,7 +1291,7 @@ class SliceBrowser(MainWindow):
             self.path_angle -= 360
     
     def __md(self, axis="E_kx"):
-        if self.hwnd:
+        if self.hwnd and os.name == 'nt':
             windll.user32.ShowWindow(self.hwnd, 9)
             windll.user32.SetForegroundWindow(self.hwnd)
         elif os.name == 'posix':

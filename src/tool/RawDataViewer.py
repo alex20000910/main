@@ -28,7 +28,7 @@ for i in range(5):
 sys.path.append(os.path.join(cdir, '.MDC_cut'))
 from MDC_cut_utility import *
 from tool.loader import loadfiles
-from tool.qt_util import MainWindow, SystemTrayIcon, cmap_register
+from tool.qt_util import MainWindow, SystemTrayIcon, cmap_register, getTrayIcon
 
 def get_hwnd():
     try:
@@ -123,7 +123,8 @@ class main(MainWindow):
         pixmap.loadFromData(b64decode(icon))
         qicon = QIcon(pixmap)
         self.icon = qicon
-        self.tray_icon = SystemTrayIcon(self.icon, self)
+        tray_icon = getTrayIcon('raw_data_viewer_none', 'raw_data_viewer_light', 'raw_data_viewer_dark')
+        self.tray_icon = SystemTrayIcon(tray_icon, self)
         self.tray_icon.show()
         self.setWindowIcon(self.icon)
         self.setWindowTitle("Raw Data Viewer")
