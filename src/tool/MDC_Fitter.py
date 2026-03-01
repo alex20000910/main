@@ -34,7 +34,7 @@ sys.path.append(os.path.join(cdir, mod_dir))
 
 from MDC_cut_utility import *
 from tool.loader import loadfiles
-from tool.qt_util import MainWindow, ProgressDialog, SystemTrayIcon, cmap_register
+from tool.qt_util import MainWindow, ProgressDialog, SystemTrayIcon, cmap_register, getTrayIcon
 
 m = 9.110938356e-31  # electron mass
 e = 1.602176634e-19  # elementary charge
@@ -212,48 +212,8 @@ class main(MainWindow):
         # self.resize(1200, 1000)
         # self.setFixedSize(1200, 1000)
         
-        if os.name == 'posix': # macOS
-            try:
-                result = subprocess.run(
-                    ['osascript', '-e', 
-                    'tell application "Finder" to get POSIX path of (desktop picture as alias)'],
-                    capture_output=True,
-                    text=True
-                )
-                if result.stdout.strip():
-                    out = result.stdout.strip()
-                else:
-                    out = None
-            except: # 純色背景無桌布圖檔
-                out = None
-            try:
-                img = Image.open(out)
-                w, h = img.width, img.height//20
-                cut = img.crop((w//2, 0, w, h))
-                cut.thumbnail((w//30, h//15))
-                img_gray = cut.convert('L')
-                brightness = np.mean(np.array(img_gray))
-                if brightness > 128:
-                    icon_name = 'mdc_fitter_light'
-                else:
-                    icon_name = 'mdc_fitter_dark'
-            except Exception as e:
-                icon_name = 'mdc_fitter_none'
-        else: # Windows
-            try:
-                import winreg
-                registry_path = r'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
-                registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, registry_path)
-                value, _ = winreg.QueryValueEx(registry_key, 'AppsUseLightTheme')
-                winreg.CloseKey(registry_key)
-                icon_name = 'mdc_fitter_light' if value == 1 else 'mdc_fitter_dark'
-            except:
-                icon_name = 'mdc_fitter_none'
-            
-        icon = icon_manager.gen_icon(icon_name)[0]
-        tray_icon_pixmap = QPixmap()
-        tray_icon_pixmap.loadFromData(b64decode(icon))
-        self.tray_icon = SystemTrayIcon(QIcon(tray_icon_pixmap), self)
+        tray_icon = getTrayIcon('mdc_fitter_none', 'mdc_fitter_light', 'mdc_fitter_dark')
+        self.tray_icon = SystemTrayIcon(tray_icon, self)
         self.tray_icon.show()
         self.setWindowIcon(qicon)
         self.init_data()
