@@ -1,5 +1,19 @@
 # Change Log
 
+## Version 9.2.1 - 2026-03-01
+
+### Added
+- **Warning Messages**: Added several warning messages to handle potential issues.
+
+### Changed
+- **Icons Update**: Updated several icons in the application to enhance visual consistency and user experience.
+- **Tray Icon Enhancement**: Improved the tray icon display under different themes for better visibility.
+
+### Fixed
+- **Minor issues**: Addressed minor bugs related to MDC Fitter initialization and adjusted the clear MDC/EDC Fitted Data functionality for better user experience.
+
+# Change Log
+
 ## Version 9.2 - 2026-02-12
 
 ### Added
