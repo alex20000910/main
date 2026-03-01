@@ -197,7 +197,7 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         return -1
 
 def get_src(ver=False):
-    branch = 'update'
+    branch = 'main'
     url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
            rf"https://github.com/alex20000910/main/blob/{branch}/release_note.md",
            rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
@@ -886,7 +886,7 @@ def suggest():
     if value.get() == 'Raw Data':
         b_suggest.config(text='Raw Data Viewer', bg='#aa0000', fg='white', font=('Arial', size(18), "bold"))
         ToolTip(b_suggest, "Use Qt Window to view raw data with high performance", "Ctrl+R")
-        b_suggest.config(command=lambda: qt_app(lfs.path))
+        b_suggest.config(command=lambda: qt_app(lfs))
         b_suggest.grid(row=1, column=0, pady=20)
         def job():
             import time
@@ -1301,7 +1301,12 @@ def change_file(*args):
         o_plot1()
 
 @pool_protect
-def qt_app(path: list[str]):
+def qt_app(lfs: FileSequence|None):
+    if lfs is None:
+        st.put('No data loaded!')
+        messagebox.showwarning("Warning","No data loaded!")
+        return
+    path = lfs.path
     def job():
         if os.name == 'nt':
             subprocess.call([f'{sys.executable}', '-W', 'ignore::SyntaxWarning', '-W', 'ignore::UserWarning', f'{os.path.join(cdir, '.MDC_cut', 'tool', 'RawDataViewer.py')}', '-f'] + list(path))
@@ -1322,7 +1327,7 @@ def qt_app(path: list[str]):
 @pool_protect
 def tools(*args):
     def raw_data_viewer(*args):
-        qt_app(lfs.path)
+        qt_app(lfs)
         toolg.destroy()
         
     def spec(*args):
@@ -2251,7 +2256,7 @@ if __name__ == '__main__':
     toolmenu.add_command(label="E-k Angle Converter", command=calculator, image=icon_manager.get_mini_icon('calculator'), compound='left', accelerator="F9")
     toolmenu.add_command(label="Volume Viewer", command=view_3d, image=icon_manager.get_mini_icon('view_3d'), compound='left', accelerator="F12")
     toolmenu.add_command(label="Sample Offset Fitter", command=fit_so_app, image=icon_manager.get_mini_icon('so_fit'), compound='left', accelerator="Ctrl+P")
-    toolmenu.add_command(label="Raw Data Viewer", command=lambda: qt_app(lfs.path), image=icon_manager.get_mini_icon('raw_data_viewer'), compound='left', accelerator="Ctrl+R")
+    toolmenu.add_command(label="Raw Data Viewer", command=lambda: qt_app(lfs), image=icon_manager.get_mini_icon('raw_data_viewer'), compound='left', accelerator="Ctrl+R")
     
     helpmenu = tk.Menu(menubar, tearoff=0, bg="white")
     menubar.add_cascade(label="Help", menu=helpmenu)
@@ -2295,7 +2300,7 @@ if __name__ == '__main__':
     b_view_3d.pack(side=tk.LEFT)
     b_so_fit = Button(fr_toolbar, text="Sample Offset Fitter", image=icon_manager.get_icon('so_fit'), command=fit_so_app)
     b_so_fit.pack(side=tk.LEFT)
-    b_raw_data_viewer = Button(fr_toolbar, text="Raw Data Viewer", image=icon_manager.get_icon('raw_data_viewer'), command=lambda: qt_app(lfs.path))
+    b_raw_data_viewer = Button(fr_toolbar, text="Raw Data Viewer", image=icon_manager.get_icon('raw_data_viewer'), command=lambda: qt_app(lfs))
     b_raw_data_viewer.pack(side=tk.LEFT)
     
     # 建立tooltip
@@ -2933,7 +2938,7 @@ if __name__ == '__main__':
     g.bind("<F11>", gui_exp_origin)
     g.bind("<F12>", view_3d)
     g.bind('<Control-p>', fit_so_app)
-    g.bind('<Control-r>', lambda event: qt_app(lfs.path))
+    g.bind('<Control-r>', lambda event: qt_app(lfs))
     main_motion = MainMotion()
     main_notify_cid = out.mpl_connect('motion_notify_event', main_motion.move)
     main_press_cid = out.mpl_connect('button_press_event', main_motion.press)
