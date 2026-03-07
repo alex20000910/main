@@ -187,6 +187,7 @@ class SliceBrowser(MainWindow):
         
         tray_icon = getTrayIcon('view_3d_none', 'view_3d_light', 'view_3d_dark')
         self.tray_icon = SystemTrayIcon(tray_icon, self)
+        self.tray_icon.setToolTip("Volume Viewer")
         self.tray_icon.show()
         self.setWindowIcon(qicon)
         

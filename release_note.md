@@ -1,5 +1,12 @@
 # Change Log
 
+## Version 9.2.2 - 2026-03-07
+
+### Added
+- **Tray Icon Tooltips**: Added tooltips to the system tray icons for better user guidance.
+
+# Change Log
+
 ## Version 9.2.1 - 2026-03-01
 
 ### Added

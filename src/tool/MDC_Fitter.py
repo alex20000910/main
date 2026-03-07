@@ -214,6 +214,7 @@ class main(MainWindow):
         
         tray_icon = getTrayIcon('mdc_fitter_none', 'mdc_fitter_light', 'mdc_fitter_dark')
         self.tray_icon = SystemTrayIcon(tray_icon, self)
+        self.tray_icon.setToolTip("MDC Fitter")
         self.tray_icon.show()
         self.setWindowIcon(qicon)
         self.init_data()

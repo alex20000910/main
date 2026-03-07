@@ -125,6 +125,7 @@ class main(MainWindow):
         self.icon = qicon
         tray_icon = getTrayIcon('raw_data_viewer_none', 'raw_data_viewer_light', 'raw_data_viewer_dark')
         self.tray_icon = SystemTrayIcon(tray_icon, self)
+        self.tray_icon.setToolTip("Raw Data Viewer")
         self.tray_icon.show()
         self.setWindowIcon(self.icon)
         self.setWindowTitle("Raw Data Viewer")
