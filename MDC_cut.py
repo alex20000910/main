@@ -2320,75 +2320,13 @@ if __name__ == '__main__':
     ToolTip(b_so_fit, "Add data points to correct for sample angle offset. The measured points on the Energy-Angle diagram show asymmetry instead of the expected symmetry at specific kinetic energies, indicating slight sample/sample holder misalignment that can be corrected through fitting.", "Ctrl+P")
     ToolTip(b_raw_data_viewer, "Use Qt Window to view raw data with high performance", "Ctrl+R")
     
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors1 = [(0, (1, 1, 1)),
-                    (0.5, (0, 0, 1)),
-                    (0.85, (0, 1, 1)),
-                    (1, (1, 1, 0.26))]
-
-    # Create a custom colormap
-    custom_cmap1 = LinearSegmentedColormap.from_list(
-        'custom_cmap1', custom_colors1, N=256)
-    mpl.colormaps.register(custom_cmap1)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors2 = [(0, (0, 0.08, 0.16)),
-                    (0.2, (0.2, 0.7, 1)),
-                    (0.4, (0.28, 0.2, 0.4)),
-                    (0.62, (0.9, 0.1, 0.1)),
-                    (0.72, (0.7, 0.34, 0.1)),
-                    (0.8, (1, 0.5, 0.1)),
-                    (1, (1, 1, 0))]
-
-    # Create a custom colormap
-    custom_cmap2 = LinearSegmentedColormap.from_list(
-        'custom_cmap2', custom_colors2, N=256)
-    mpl.colormaps.register(custom_cmap2)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors3 = [(0, (0.88, 0.84, 0.96)),
-                    (0.5, (0.32, 0, 0.64)),
-                    (0.75, (0, 0, 1)),
-                    (0.85, (0, 0.65, 1)),
-                    (0.9, (0.2, 1, 0.2)),
-                    (0.96, (0.72, 1, 0)),
-                    (1, (1, 1, 0))]
-
-    # Create a custom colormap
-    custom_cmap3 = LinearSegmentedColormap.from_list(
-        'custom_cmap3', custom_colors3, N=256)
-    mpl.colormaps.register(custom_cmap3)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors4 = [(0, (1, 1, 1)),
-                    (0.4, (0.3, 0, 0.3)),
-                    (0.5, (0.3, 0, 0.6)),
-                    (0.6, (0, 1, 1)),
-                    (0.7, (0, 1, 0)),
-                    (0.8, (1, 1, 0)),
-                    (1, (1, 0, 0))]
-
-    # Create a custom colormap
-    custom_cmap4 = LinearSegmentedColormap.from_list(
-        'custom_cmap4', custom_colors4, N=256)
-    mpl.colormaps.register(custom_cmap4)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    prevac_colors = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
-                    (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
-                    (0.4, (0, 0.4*0.82, 0)),
-                    (0.6, (0.5*0.82, 1*0.82, 0)),
-                    (0.8,(1*0.82, 1*0.82, 0)),
-                    (1, (1*0.82, 0, 0))]
-    # Create a custom colormap
-    prevac_cmap = LinearSegmentedColormap.from_list(
-        'prevac_cmap', prevac_colors, N=256)
-    mpl.colormaps.register(prevac_cmap)
+    # Define your custom colormaps in CustomCmap class
+    custom_cmap = CustomCmap()
+    custom_cmap1 = custom_cmap.get_cmap('custom_cmap1')
+    custom_cmap2 = custom_cmap.get_cmap('custom_cmap2')
+    custom_cmap3 = custom_cmap.get_cmap('custom_cmap3')
+    custom_cmap4 = custom_cmap.get_cmap('custom_cmap4')
+    prevac_cmap = custom_cmap.get_cmap('prevac_cmap')
     
     value3 = tk.StringVar()
     value3.set('prevac_cmap')
