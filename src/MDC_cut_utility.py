@@ -308,8 +308,8 @@ class ToolTip_util:
             scale = 1.0
             screen_width = self.widget.winfo_screenwidth()
             screen_height = self.widget.winfo_screenheight()
-            scw = screen_width // 2
-            sch = screen_height // 2
+            scw = screen_width
+            sch = screen_height
         tooltip_width = self.tooltip.winfo_width()
         tooltip_height = self.tooltip.winfo_height()
         
