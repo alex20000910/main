@@ -198,49 +198,52 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
 
 def get_src(ver=False):
     branch = 'main'
-    url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/release_note.md",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/MDC_cut_utility.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/__init__.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/util.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/loader.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/spectrogram.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/SO_Fitter.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/VolumeSlicer.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/CEC.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/DataViewer.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/MDC_Fitter.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/EDC_Fitter.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/window.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/RawDataViewer.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/qt_util.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/spectrogram.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/calculator.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_fitter.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_cutter.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_cutter.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/exp_graph.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/exp_origin.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_a.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_none.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_light.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_dark.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/so_fit.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitted_file.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_fitted_file.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/bare_band.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_a.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_none.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_light.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_dark.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_none.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_light.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_dark.png"]
+    base_url = rf"https://github.com/alex20000910/main/blob"
+    tool = rf"src/tool"
+    img = rf"src/img"
+    url = [rf"{base_url}/{branch}/MDC_cut.py",
+           rf"{base_url}/{branch}/release_note.md",
+           rf"{base_url}/{branch}/src/viridis_2D.otp",
+           rf"{base_url}/{branch}/src/MDC_cut_utility.py",
+           rf"{base_url}/{branch}/{tool}/__init__.py",
+           rf"{base_url}/{branch}/{tool}/util.py",
+           rf"{base_url}/{branch}/{tool}/loader.py",
+           rf"{base_url}/{branch}/{tool}/spectrogram.py",
+           rf"{base_url}/{branch}/{tool}/SO_Fitter.py",
+           rf"{base_url}/{branch}/{tool}/VolumeSlicer.py",
+           rf"{base_url}/{branch}/{tool}/CEC.py",
+           rf"{base_url}/{branch}/{tool}/DataViewer.py",
+           rf"{base_url}/{branch}/{tool}/MDC_Fitter.py",
+           rf"{base_url}/{branch}/{tool}/EDC_Fitter.py",
+           rf"{base_url}/{branch}/{tool}/window.py",
+           rf"{base_url}/{branch}/{tool}/RawDataViewer.py",
+           rf"{base_url}/{branch}/{tool}/qt_util.py",
+           rf"{base_url}/{branch}/{img}/spectrogram.png",
+           rf"{base_url}/{branch}/{img}/calculator.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitter.png",
+           rf"{base_url}/{branch}/{img}/edc_fitter.png",
+           rf"{base_url}/{branch}/{img}/mdc_cutter.png",
+           rf"{base_url}/{branch}/{img}/edc_cutter.png",
+           rf"{base_url}/{branch}/{img}/exp_graph.png",
+           rf"{base_url}/{branch}/{img}/exp_origin.png",
+           rf"{base_url}/{branch}/{img}/view_3d.png",
+           rf"{base_url}/{branch}/{img}/view_3d_a.png",
+           rf"{base_url}/{branch}/{img}/view_3d_none.png",
+           rf"{base_url}/{branch}/{img}/view_3d_light.png",
+           rf"{base_url}/{branch}/{img}/view_3d_dark.png",
+           rf"{base_url}/{branch}/{img}/so_fit.png",
+           rf"{base_url}/{branch}/{img}/raw_data.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitted_file.png",
+           rf"{base_url}/{branch}/{img}/edc_fitted_file.png",
+           rf"{base_url}/{branch}/{img}/bare_band.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer_a.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer_none.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer_light.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer_dark.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitter_none.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitter_light.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitter_dark.png"]
     for i, v in enumerate(url):
         if i < 4:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
@@ -251,6 +254,8 @@ def get_src(ver=False):
         status = get_file_from_github(v, out_path)
         if ver and i == 1:
             break
+        if not ver:
+            print(f"\033[36mDownloading source file: {os.path.basename(v)}\033[0m\n")
     return status
 
 def cal_ver(ver: str) -> int:
