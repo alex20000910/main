@@ -1811,7 +1811,6 @@ def o_plot2():
 def o_plot3():
     PlotsUtil().o_plot3()
 
-props = dict(facecolor='green', alpha=0.3)
 warn_str = ''
 @pool_protect
 def exp(*e):
