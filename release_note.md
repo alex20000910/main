@@ -1,12 +1,13 @@
 # Change Log
 
-## Version 9.2.2 - 2026-03-15
+## Version 9.2.2 - 2026-04-05
 
 ### Added
 - **Tray Icon Tooltips**: Added tooltips to the system tray icons for better user guidance.
 
 ### Changed
 - **Custom Colormap Management**: Refactored the custom colormap management in `CustomCmap` class for improved maintainability and performance.
+- **Sample Data Handling**: Updated the sample data download logic to ensure reliability.
 
 # Change Log
 

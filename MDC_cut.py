@@ -940,8 +940,10 @@ def sample_data(*e):
         path = rf"simulated_R1_{r1:.1f}_R2_0.h5"
         tpath = os.path.join(cdir, 'test_data', rf"simulated_R1_{r1:.1f}_R2_0.h5")
         files.append(tpath)
+        url=r"https://github.com/alex20000910/main/raw/refs/heads/main/test_data/"+path
         if os.path.exists(tpath)==False:
-            url=r"https://github.com/alex20000910/main/raw/refs/heads/main/test_data/"+path
+            download(url, tpath)
+        elif os.path.getsize(tpath)/1024/1024<2:    # if file size less than 2MB, redownload
             download(url, tpath)
     tg.done()
     tg = wait(g, app_pars)
