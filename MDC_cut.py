@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.2.1"
-__release_date__ = "2026-03-01"
+__version__ = "9.2.2"
+__release_date__ = "2026-04-05"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -198,49 +198,51 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
 
 def get_src(ver=False):
     branch = 'main'
-    url = [rf"https://github.com/alex20000910/main/blob/{branch}/MDC_cut.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/release_note.md",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/viridis_2D.otp",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/MDC_cut_utility.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/__init__.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/util.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/loader.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/spectrogram.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/SO_Fitter.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/VolumeSlicer.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/CEC.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/DataViewer.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/MDC_Fitter.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/EDC_Fitter.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/window.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/RawDataViewer.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/tool/qt_util.py",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/spectrogram.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/calculator.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_fitter.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_cutter.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_cutter.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/exp_graph.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/exp_origin.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_a.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_none.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_light.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/view_3d_dark.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/so_fit.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitted_file.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/edc_fitted_file.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/bare_band.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_a.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_none.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_light.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/raw_data_viewer_dark.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_none.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_light.png",
-           rf"https://github.com/alex20000910/main/blob/{branch}/src/img/mdc_fitter_dark.png"]
+    base_url = rf"https://github.com/alex20000910/main/blob"
+    tool, img = rf"src/tool", rf"src/img"
+    url = [rf"{base_url}/{branch}/MDC_cut.py",
+           rf"{base_url}/{branch}/release_note.md",
+           rf"{base_url}/{branch}/src/viridis_2D.otp",
+           rf"{base_url}/{branch}/src/MDC_cut_utility.py",
+           rf"{base_url}/{branch}/{tool}/__init__.py",
+           rf"{base_url}/{branch}/{tool}/util.py",
+           rf"{base_url}/{branch}/{tool}/loader.py",
+           rf"{base_url}/{branch}/{tool}/spectrogram.py",
+           rf"{base_url}/{branch}/{tool}/SO_Fitter.py",
+           rf"{base_url}/{branch}/{tool}/VolumeSlicer.py",
+           rf"{base_url}/{branch}/{tool}/CEC.py",
+           rf"{base_url}/{branch}/{tool}/DataViewer.py",
+           rf"{base_url}/{branch}/{tool}/MDC_Fitter.py",
+           rf"{base_url}/{branch}/{tool}/EDC_Fitter.py",
+           rf"{base_url}/{branch}/{tool}/window.py",
+           rf"{base_url}/{branch}/{tool}/RawDataViewer.py",
+           rf"{base_url}/{branch}/{tool}/qt_util.py",
+           rf"{base_url}/{branch}/{img}/spectrogram.png",
+           rf"{base_url}/{branch}/{img}/calculator.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitter.png",
+           rf"{base_url}/{branch}/{img}/edc_fitter.png",
+           rf"{base_url}/{branch}/{img}/mdc_cutter.png",
+           rf"{base_url}/{branch}/{img}/edc_cutter.png",
+           rf"{base_url}/{branch}/{img}/exp_graph.png",
+           rf"{base_url}/{branch}/{img}/exp_origin.png",
+           rf"{base_url}/{branch}/{img}/view_3d.png",
+           rf"{base_url}/{branch}/{img}/view_3d_a.png",
+           rf"{base_url}/{branch}/{img}/view_3d_none.png",
+           rf"{base_url}/{branch}/{img}/view_3d_light.png",
+           rf"{base_url}/{branch}/{img}/view_3d_dark.png",
+           rf"{base_url}/{branch}/{img}/so_fit.png",
+           rf"{base_url}/{branch}/{img}/raw_data.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitted_file.png",
+           rf"{base_url}/{branch}/{img}/edc_fitted_file.png",
+           rf"{base_url}/{branch}/{img}/bare_band.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer_a.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer_none.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer_light.png",
+           rf"{base_url}/{branch}/{img}/raw_data_viewer_dark.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitter_none.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitter_light.png",
+           rf"{base_url}/{branch}/{img}/mdc_fitter_dark.png"]
     for i, v in enumerate(url):
         if i < 4:
             out_path = os.path.join(cdir, '.MDC_cut', os.path.basename(v))
@@ -251,6 +253,8 @@ def get_src(ver=False):
         status = get_file_from_github(v, out_path)
         if ver and i == 1:
             break
+        if not ver:
+            print(f"\033[36mDownloading source file: {os.path.basename(v)}\033[0m\n")
     return status
 
 def cal_ver(ver: str) -> int:
@@ -936,8 +940,10 @@ def sample_data(*e):
         path = rf"simulated_R1_{r1:.1f}_R2_0.h5"
         tpath = os.path.join(cdir, 'test_data', rf"simulated_R1_{r1:.1f}_R2_0.h5")
         files.append(tpath)
+        url=r"https://github.com/alex20000910/main/raw/refs/heads/main/test_data/"+path
         if os.path.exists(tpath)==False:
-            url=r"https://github.com/alex20000910/main/raw/refs/heads/main/test_data/"+path
+            download(url, tpath)
+        elif os.path.getsize(tpath)/1024/1024<2:    # if file size less than 2MB, redownload
             download(url, tpath)
     tg.done()
     tg = wait(g, app_pars)
@@ -1811,7 +1817,6 @@ def o_plot2():
 def o_plot3():
     PlotsUtil().o_plot3()
 
-props = dict(facecolor='green', alpha=0.3)
 warn_str = ''
 @pool_protect
 def exp(*e):
@@ -2320,75 +2325,13 @@ if __name__ == '__main__':
     ToolTip(b_so_fit, "Add data points to correct for sample angle offset. The measured points on the Energy-Angle diagram show asymmetry instead of the expected symmetry at specific kinetic energies, indicating slight sample/sample holder misalignment that can be corrected through fitting.", "Ctrl+P")
     ToolTip(b_raw_data_viewer, "Use Qt Window to view raw data with high performance", "Ctrl+R")
     
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors1 = [(0, (1, 1, 1)),
-                    (0.5, (0, 0, 1)),
-                    (0.85, (0, 1, 1)),
-                    (1, (1, 1, 0.26))]
-
-    # Create a custom colormap
-    custom_cmap1 = LinearSegmentedColormap.from_list(
-        'custom_cmap1', custom_colors1, N=256)
-    mpl.colormaps.register(custom_cmap1)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors2 = [(0, (0, 0.08, 0.16)),
-                    (0.2, (0.2, 0.7, 1)),
-                    (0.4, (0.28, 0.2, 0.4)),
-                    (0.62, (0.9, 0.1, 0.1)),
-                    (0.72, (0.7, 0.34, 0.1)),
-                    (0.8, (1, 0.5, 0.1)),
-                    (1, (1, 1, 0))]
-
-    # Create a custom colormap
-    custom_cmap2 = LinearSegmentedColormap.from_list(
-        'custom_cmap2', custom_colors2, N=256)
-    mpl.colormaps.register(custom_cmap2)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors3 = [(0, (0.88, 0.84, 0.96)),
-                    (0.5, (0.32, 0, 0.64)),
-                    (0.75, (0, 0, 1)),
-                    (0.85, (0, 0.65, 1)),
-                    (0.9, (0.2, 1, 0.2)),
-                    (0.96, (0.72, 1, 0)),
-                    (1, (1, 1, 0))]
-
-    # Create a custom colormap
-    custom_cmap3 = LinearSegmentedColormap.from_list(
-        'custom_cmap3', custom_colors3, N=256)
-    mpl.colormaps.register(custom_cmap3)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    custom_colors4 = [(0, (1, 1, 1)),
-                    (0.4, (0.3, 0, 0.3)),
-                    (0.5, (0.3, 0, 0.6)),
-                    (0.6, (0, 1, 1)),
-                    (0.7, (0, 1, 0)),
-                    (0.8, (1, 1, 0)),
-                    (1, (1, 0, 0))]
-
-    # Create a custom colormap
-    custom_cmap4 = LinearSegmentedColormap.from_list(
-        'custom_cmap4', custom_colors4, N=256)
-    mpl.colormaps.register(custom_cmap4)
-
-    # Define your custom colors (as RGB tuples)
-    # (value,(color))
-    prevac_colors = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
-                    (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
-                    (0.4, (0, 0.4*0.82, 0)),
-                    (0.6, (0.5*0.82, 1*0.82, 0)),
-                    (0.8,(1*0.82, 1*0.82, 0)),
-                    (1, (1*0.82, 0, 0))]
-    # Create a custom colormap
-    prevac_cmap = LinearSegmentedColormap.from_list(
-        'prevac_cmap', prevac_colors, N=256)
-    mpl.colormaps.register(prevac_cmap)
+    # Define your custom colormaps in CustomCmap class
+    custom_cmap = CustomCmap()
+    custom_cmap1 = custom_cmap.get_cmap('custom_cmap1')
+    custom_cmap2 = custom_cmap.get_cmap('custom_cmap2')
+    custom_cmap3 = custom_cmap.get_cmap('custom_cmap3')
+    custom_cmap4 = custom_cmap.get_cmap('custom_cmap4')
+    prevac_cmap = custom_cmap.get_cmap('prevac_cmap')
     
     value3 = tk.StringVar()
     value3.set('prevac_cmap')

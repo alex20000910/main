@@ -15,6 +15,8 @@ import psutil
 from PIL import Image, ImageTk
 from base64 import b64decode, b64encode
 from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
+import matplotlib as mpl
+from matplotlib.colors import LinearSegmentedColormap
 
 class CEC_Object(ABC):
     @abstractmethod
@@ -56,6 +58,55 @@ class app_param:
         self.dpi = dpi
         self.bar_pos = bar_pos
         self.g_mem = g_mem
+
+class CustomCmap:
+    def __init__(self):
+        # Define your custom colors (as RGB tuples)
+        # (value,(color))
+        custom_colors1 = [(0, (1, 1, 1)),
+                        (0.5, (0, 0, 1)),
+                        (0.85, (0, 1, 1)),
+                        (1, (1, 1, 0.26))]
+        custom_colors2 = [(0, (0, 0.08, 0.16)),
+                    (0.2, (0.2, 0.7, 1)),
+                    (0.4, (0.28, 0.2, 0.4)),
+                    (0.62, (0.9, 0.1, 0.1)),
+                    (0.72, (0.7, 0.34, 0.1)),
+                    (0.8, (1, 0.5, 0.1)),
+                    (1, (1, 1, 0))]
+        custom_colors3 = [(0, (0.88, 0.84, 0.96)),
+                        (0.5, (0.32, 0, 0.64)),
+                        (0.75, (0, 0, 1)),
+                        (0.85, (0, 0.65, 1)),
+                        (0.9, (0.2, 1, 0.2)),
+                        (0.96, (0.72, 1, 0)),
+                        (1, (1, 1, 0))]
+        custom_colors4 = [(0, (1, 1, 1)),
+                        (0.4, (0.3, 0, 0.3)),
+                        (0.5, (0.3, 0, 0.6)),
+                        (0.6, (0, 1, 1)),
+                        (0.7, (0, 1, 0)),
+                        (0.8, (1, 1, 0)),
+                        (1, (1, 0, 0))]
+        prevac_colors = [(0, (0.2*0.82, 0.2*0.82, 0.2*0.82)),
+                        (0.2, (0.4*0.82, 0.6*0.82, 0.9*0.82)),
+                        (0.4, (0, 0.4*0.82, 0)),
+                        (0.6, (0.5*0.82, 1*0.82, 0)),
+                        (0.8,(1*0.82, 1*0.82, 0)),
+                        (1, (1*0.82, 0, 0))]
+        self.name = ['custom_cmap1', 'custom_cmap2', 'custom_cmap3', 'custom_cmap4', 'prevac_cmap']
+        self.colors = [custom_colors1, custom_colors2, custom_colors3, custom_colors4, prevac_colors]
+        self.cmap = {}
+        for n, c in zip(self.name, self.colors):
+            self.cmap[n] = self.register(n, c)
+    
+    def get_cmap(self, name:str)->LinearSegmentedColormap:
+        return self.cmap.get(name)
+    
+    def register(self, name:str, colors: list[tuple[float, tuple[float, float, float]]]=[(0, (1, 1, 1)), (1, (0.1, 0.1, 0.1))], N=256)->LinearSegmentedColormap:
+        custom_cmap = LinearSegmentedColormap.from_list(name, colors, N)
+        mpl.colormaps.register(custom_cmap)
+        return custom_cmap
 
 class Button(tk.Button):
     """white background button"""
@@ -257,8 +308,8 @@ class ToolTip_util:
             scale = 1.0
             screen_width = self.widget.winfo_screenwidth()
             screen_height = self.widget.winfo_screenheight()
-            scw = screen_width // 2
-            sch = screen_height // 2
+            scw = screen_width
+            sch = screen_height
         tooltip_width = self.tooltip.winfo_width()
         tooltip_height = self.tooltip.winfo_height()
         
