@@ -1,5 +1,13 @@
 # Change Log
 
+## Version 9.2.3 - 2026-04-11
+
+### Changed
+- **Memory Limit Handling in Volume Slicer**: Updated the memory limit warning message in `VolumeSlicer` to provide clearer guidance on performance limitations based on memory constraints.
+- **Core Usage Calculation**: Refined the core usage calculation logic in `VolumeSlicer` to ensure more accurate performance recommendations based on available memory when running on different operating systems. Also, this update increases the safety usage of CPU cores from 75% to 80% of the total physical cores.
+
+# Change Log
+
 ## Version 9.2.2 - 2026-04-05
 
 ### Added
