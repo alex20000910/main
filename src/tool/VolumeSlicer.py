@@ -1157,10 +1157,10 @@ class VolumeSlicer(tk.Frame):
         num = current_mem/mem
         if num < use_core:
             use_core = int(num)
-            print('\033[33mPlease note that the number of cores is set according to the memory limit for stability reasons.\033[0m')
+            print('\033[31mLimited performance: Please note that the number of cores is set according to the memory limit for stability reasons.\033[0m')
         if use_core < 1:
             use_core = 1
-            print('\033[33mLack of memory.\033[0m')
+            print('\033[31mWarning: Lack of memory.\033[0m')
         self.pool_size = use_core
         print('\033[33mUsing \033[36m%d \033[33mcores\033[0m'%self.pool_size)
     
