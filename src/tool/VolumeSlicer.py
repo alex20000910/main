@@ -1148,10 +1148,13 @@ class VolumeSlicer(tk.Frame):
         Memory is used to calculate a safe amount of cores by concering the least used memory size per worker.
         The actual memory size that the pool would use may be a little bit larger (1x ~ 1.4x).
         '''
-        use_core = max(1, int(psutil.cpu_count(logical=False)/4*3))
+        use_core = max(1, int(psutil.cpu_count(logical=False)/5*4))
         mem_max = self.ovolume[:, self.slim[0]:self.slim[1]+1, :].nbytes/1024**3    # GB
         # print(mem_max, 'mem_max GB')
-        mem = self.app_pars.g_mem+mem_max
+        if os.name == 'nt':
+            mem = self.app_pars.g_mem+mem_max
+        elif os.name == 'posix':
+            mem = mem_max
         # print(mem, 'mem GB')
         current_mem = psutil.virtual_memory().available/1024**3
         num = current_mem/mem
