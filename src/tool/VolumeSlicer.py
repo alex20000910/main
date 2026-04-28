@@ -1152,7 +1152,8 @@ class VolumeSlicer(tk.Frame):
         mem_max = self.ovolume[:, self.slim[0]:self.slim[1]+1, :].nbytes/1024**3    # GB
         # print(mem_max, 'mem_max GB')
         if os.name == 'nt':
-            mem = self.app_pars.g_mem+mem_max
+            # mem = self.app_pars.g_mem+mem_max
+            mem = mem_max * 1.2 # 1.2x for safety buffer
         elif os.name == 'posix':
             mem = mem_max
         # print(mem, 'mem GB')
