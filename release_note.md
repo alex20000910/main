@@ -1,5 +1,10 @@
 # Change Log
 
+## Version 9.2.4 - 2026-04-28
+
+### Changed
+- **Memory Estimation in Volume Slicer**: Little update to the memory estimation calculation in `VolumeSlicer` to provide more accurate performance recommendations based on available memory.
+
 ## Version 9.2.3 - 2026-04-11
 
 ### Changed
