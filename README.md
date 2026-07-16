@@ -234,6 +234,23 @@ The highest tested Python version is **3.12.8** and **3.13.11**.
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 Note that those third-party libraries used in this project may have their own licenses.
 
+## Citation
+Feel free to cite our work if you find this software useful in your research.
+```bibtex
+@article{HUNG2026101070,
+title = {MDC_cut: A Python-based GUI software for comprehensive ARPES data analysis},
+journal = {Array},
+volume = {31},
+pages = {101070},
+year = {2026},
+issn = {2590-0056},
+doi = {https://doi.org/10.1016/j.array.2026.101070},
+url = {https://www.sciencedirect.com/science/article/pii/S2590005626003930},
+author = {Chih-Keng Hung and Yi-Ying Lu},
+keywords = {ARPES, Python, PREVAC, GUI, Data analysis, MDC fitting}
+}
+```
+
 ## Snapshots
 <div align="center">
 
