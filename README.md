@@ -45,6 +45,7 @@ The user manual is currently out of date. For the latest changes and new feature
   - [**E-Angle to E-k Conversion**](#e-angle-to-e-k-conversion)
 - [**Requirements**](#requirements)
 - [**License**](#license)
+- [**Citation**](#citation)
 - [**Snapshots**](#snapshots)
 
 ## Installation
