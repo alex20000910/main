@@ -228,7 +228,7 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
 def print_pr(tot=10, cur=0):
     n=' '*(tot-cur-1)
     p='█'*(cur+1)
-    print(f"\r Checking Source Files: |{p}{n}|[{cur+1}/{tot}]", end='\r', flush=True)
+    print(f"\r Checking Source Files: |{p}{n}|[{cur+1}/{tot}]\r", end='\r', flush=True)
 
 def get_src(ver=False):
     branch = 'update'
