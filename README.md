@@ -229,7 +229,7 @@ The following are the tested Python versions and their corresponding package ver
 
 The only difference between Python 3.12.x and 3.13.x environments is the numpy and opencv-python versions due to pip version compatibility.
 You can find the full list of required packages in the beginning section of `MDC_cut.py`.(**REQUIREMENTS**)
-The highest tested Python version is **3.12.13**, **3.13.15**, and**3.14.7**.
+The highest tested Python version is **3.12.13**, **3.13.15**, and **3.14.7**.
 Notice that the **3.14.x** series is still in development and may have some compatibility issues with certain packages.
 The suggested Python version is **3.12.x** or **3.13.x** for better stability and compatibility.
 
