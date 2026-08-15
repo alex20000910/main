@@ -18,13 +18,23 @@ from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
 import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
 
-ver_str = sys.version.split()[0]
-VERSION = ''
-for i in ver_str.split('.'):
-    if len(i) == 1:
-        i = '0' + i
-    VERSION += i
-VERSION = int(VERSION)
+def cal_ver(ver: str) -> int:
+    '''
+    Version string to integer for comparison
+    e.g. '8.3.1' -> 80301\n
+    # Parameters
+    - ver: str\n
+    'major.minor.patch' or 'major.minor', 0-99 for each part
+    # Returns
+    output: int
+    '''
+    ver = [int(i) for i in ver.split('.')]
+    if len(ver) != 3:
+        ver.append(0)
+    ver = ver[0]*10000 + ver[1]*100 + ver[2]
+    return ver
+
+VERSION = cal_ver(sys.version.split()[0])
 RIGHT_CLICK = 2 if VERSION>=31407 and os.name == 'posix' else 3
 
 class CEC_Object(ABC):
@@ -1127,10 +1137,3 @@ def poly_smooth(x, y, order=6,xx=None):
     else:
         y = np.polyval(coeffs, xx)
     return y
-
-def cal_ver(ver):
-    ver = [int(i) for i in ver.split('.')]
-    if len(ver) != 3:
-        ver.append(0)
-    ver = ver[0]*10000 + ver[1]*100 + ver[2]
-    return ver

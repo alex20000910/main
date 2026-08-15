@@ -25,14 +25,15 @@ import subprocess
 import argparse
 import importlib
 from typing import override, Literal
-    
-ver_str = sys.version.split()[0]
-VERSION = ''
-for i in ver_str.split('.'):
-    if len(i) == 1:
-        i = '0' + i
-    VERSION += i
-VERSION = int(VERSION)
+
+def cal_ver(ver: str) -> int:
+    ver = [int(i) for i in ver.split('.')]
+    if len(ver) != 3:
+        ver.append(0)
+    ver = ver[0]*10000 + ver[1]*100 + ver[2]
+    return ver
+
+VERSION = cal_ver(sys.version.split()[0])
 
 if VERSION < 31300:  # Python 3.12.X
     REQUIREMENTS = ["numpy==1.26.4",
@@ -224,6 +225,11 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
         print("\033[35mPlease ensure the Network is connected. \033[0m", file=sys.stderr)
         return -1
 
+def print_pr(tot=10, cur=0):
+    n=' '*(tot-cur-1)
+    p='█'*(cur+1)
+    print(f" Checking Source Files: |{p}{n}|[{cur+1}/{tot}]", end='\r')
+
 def get_src(ver=False):
     branch = 'main'
     base_url = rf"https://github.com/alex20000910/main/blob"
@@ -282,25 +288,8 @@ def get_src(ver=False):
         if ver and i == 1:
             break
         if not ver:
-            print(f"\033[36mDownloading source file: {os.path.basename(v)}\033[0m\n")
+            print_pr(tot=len(url), cur=i)
     return status
-
-def cal_ver(ver: str) -> int:
-    '''
-    Version string to integer for comparison
-    e.g. '8.3.1' -> 80301\n
-    # Parameters
-    - ver: str\n
-    'major.minor.patch' or 'major.minor', 0-99 for each part
-    # Returns
-    output: int
-    '''
-    ver = [int(i) for i in ver.split('.')]
-    if len(ver) != 3:
-        ver.append(0)
-    ver = ver[0]*10000 + ver[1]*100 + ver[2]
-    return ver
-
 
 def check_github_connection() -> bool:
     try:
