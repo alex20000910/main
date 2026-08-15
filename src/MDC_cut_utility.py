@@ -18,6 +18,10 @@ from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
 import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
 
+VERSION = sys.version.split()[0]
+VERSION = int(''.join(VERSION.split('.')))
+RIGHT_CLICK = 3 if VERSION<3147 else 2
+
 class CEC_Object(ABC):
     @abstractmethod
     def info(self):

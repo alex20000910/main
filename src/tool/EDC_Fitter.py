@@ -731,7 +731,7 @@ def epress(event):
         elif efitout.get_tk_widget().find_withtag('rec') == ():
             tx1, ty1 = x1, y1
         emof = -1
-    elif event.button == 3:
+    elif event.button == RIGHT_CLICK:
         try:
             efitout.get_tk_widget().delete('rec')
             edxdata.config(text='dx:')

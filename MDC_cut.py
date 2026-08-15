@@ -28,7 +28,7 @@ from typing import override, Literal
     
 VERSION = sys.version.split()[0]
 VERSION = int(''.join(VERSION.split('.')))
-if VERSION < 3130:
+if VERSION < 3130:  # Python 3.12.X
     REQUIREMENTS = ["numpy==1.26.4",
     "opencv-python==4.10.0.84",
     "matplotlib==3.10.5",
@@ -50,7 +50,7 @@ if VERSION < 3130:
     "markdown==3.10.1",
     "tkhtmlview==0.3.1"
     ]
-else:
+elif VERSION < 3140:    # Python 3.13.X
     REQUIREMENTS = ["numpy==2.2.6",
     "opencv-python==4.12.0.88",
     "matplotlib==3.10.5",
@@ -68,6 +68,28 @@ else:
     "PyQt5==5.15.11",
     "pyqtgraph==0.13.7",
     "tkinterdnd2==0.4.3",
+    "google-crc32c==1.8.0",  # for numcodecs
+    "markdown==3.10.1",
+    "tkhtmlview==0.3.1"
+    ]
+else:   # Python 3.14.X
+    REQUIREMENTS = ["numpy==2.5.2",
+    "opencv-python==5.0.0.93",
+    "matplotlib==3.10.5",
+    "xarray==2025.7.1",
+    "h5py==3.16.0",
+    "Pillow==11.3.0",
+    "scipy==1.16.1",
+    "lmfit==1.3.4",
+    "tqdm==4.67.1",
+    "pywin32==311",
+    "originpro==1.1.13",
+    "py-cpuinfo==9.0.0",
+    "psutil==7.0.0",
+    "zarr==3.1.1",
+    "PyQt5==5.15.11",
+    "pyqtgraph==0.13.7",
+    "tkinterdnd2==0.6.2",
     "google-crc32c==1.8.0",  # for numcodecs
     "markdown==3.10.1",
     "tkhtmlview==0.3.1"
@@ -1901,7 +1923,7 @@ def plot(event):
     else:        
         plot1()
         plot2()
-        plot3()        
+        plot3()
     
 im_kernel = 17
 d,l,p = 8,20,3
@@ -2108,6 +2130,8 @@ if __name__ == '__main__':
         t_sc_w = temp_root.winfo_screenwidth()
         t_sc_h = temp_root.winfo_screenheight()
         dpi = temp_root.winfo_fpixels('1i')
+        if VERSION > 3146:
+            dpi = dpi*0.7
         temp_root.destroy()
         
         ScaleFactor = int((72.054 / dpi) * 100)
@@ -2127,6 +2151,8 @@ if __name__ == '__main__':
     tkDnD(g)    #bind whole window to Drag-and-drop function
     # g = ttk.Window(themename='darkly')
     odpi=g.winfo_fpixels('1i')
+    if VERSION > 3146:
+        odpi = odpi*0.7
     path = os.path.join(cdir, '.MDC_cut', 'odpi')
     with open(path, 'w') as f:
         f.write(f'{odpi}')  #for RestrictedToplevel
