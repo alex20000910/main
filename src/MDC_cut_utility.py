@@ -20,7 +20,7 @@ from matplotlib.colors import LinearSegmentedColormap
 
 VERSION = sys.version.split()[0]
 VERSION = int(''.join(VERSION.split('.')))
-RIGHT_CLICK = 3 if VERSION<3147 else 2
+RIGHT_CLICK = 2 if VERSION>=3147 and os.name == 'posix' else 3
 
 class CEC_Object(ABC):
     @abstractmethod

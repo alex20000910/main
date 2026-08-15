@@ -48,7 +48,7 @@ if VERSION < 3130:  # Python 3.12.X
     "tkinterdnd2==0.4.3",
     "google-crc32c==1.8.0",  # for numcodecs
     "markdown==3.10.1",
-    "tkhtmlview==0.3.1"
+    "tkhtmlview==0.3.2"
     ]
 elif VERSION < 3140:    # Python 3.13.X
     REQUIREMENTS = ["numpy==2.2.6",
@@ -70,7 +70,7 @@ elif VERSION < 3140:    # Python 3.13.X
     "tkinterdnd2==0.4.3",
     "google-crc32c==1.8.0",  # for numcodecs
     "markdown==3.10.1",
-    "tkhtmlview==0.3.1"
+    "tkhtmlview==0.3.2"
     ]
 else:   # Python 3.14.X
     REQUIREMENTS = ["numpy==2.5.2",
@@ -92,7 +92,7 @@ else:   # Python 3.14.X
     "tkinterdnd2==0.6.2",
     "google-crc32c==1.8.0",  # for numcodecs
     "markdown==3.10.1",
-    "tkhtmlview==0.3.1"
+    "tkhtmlview==0.3.2"
     ]
 if os.name == 'posix':
     REQUIREMENTS.remove(REQUIREMENTS[9])  # no pywin32 in Linux or MacOS
@@ -2130,7 +2130,7 @@ if __name__ == '__main__':
         t_sc_w = temp_root.winfo_screenwidth()
         t_sc_h = temp_root.winfo_screenheight()
         dpi = temp_root.winfo_fpixels('1i')
-        if VERSION > 3146:
+        if VERSION >= 3147:
             dpi = dpi*0.7
         temp_root.destroy()
         
@@ -2151,7 +2151,7 @@ if __name__ == '__main__':
     tkDnD(g)    #bind whole window to Drag-and-drop function
     # g = ttk.Window(themename='darkly')
     odpi=g.winfo_fpixels('1i')
-    if VERSION > 3146:
+    if VERSION >= 3147 and os.name == 'posix':
         odpi = odpi*0.7
     path = os.path.join(cdir, '.MDC_cut', 'odpi')
     with open(path, 'w') as f:
