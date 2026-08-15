@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.2.4"
-__release_date__ = "2026-04-28"
+__version__ = "9.2.5"
+__release_date__ = "2026-08-15"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -26,9 +26,15 @@ import argparse
 import importlib
 from typing import override, Literal
     
-VERSION = sys.version.split()[0]
-VERSION = int(''.join(VERSION.split('.')))
-if VERSION < 3130:
+ver_str = sys.version.split()[0]
+VERSION = ''
+for i in ver_str.split('.'):
+    if len(i) == 1:
+        i = '0' + i
+    VERSION += i
+VERSION = int(VERSION)
+
+if VERSION < 31300:  # Python 3.12.X
     REQUIREMENTS = ["numpy==1.26.4",
     "opencv-python==4.10.0.84",
     "matplotlib==3.10.5",
@@ -48,9 +54,9 @@ if VERSION < 3130:
     "tkinterdnd2==0.4.3",
     "google-crc32c==1.8.0",  # for numcodecs
     "markdown==3.10.1",
-    "tkhtmlview==0.3.1"
+    "tkhtmlview==0.3.2"
     ]
-else:
+elif VERSION < 31400:    # Python 3.13.X
     REQUIREMENTS = ["numpy==2.2.6",
     "opencv-python==4.12.0.88",
     "matplotlib==3.10.5",
@@ -70,7 +76,29 @@ else:
     "tkinterdnd2==0.4.3",
     "google-crc32c==1.8.0",  # for numcodecs
     "markdown==3.10.1",
-    "tkhtmlview==0.3.1"
+    "tkhtmlview==0.3.2"
+    ]
+else:   # Python 3.14.X
+    REQUIREMENTS = ["numpy==2.5.2",
+    "opencv-python==5.0.0.93",
+    "matplotlib==3.10.5",
+    "xarray==2025.7.1",
+    "h5py==3.16.0",
+    "Pillow==11.3.0",
+    "scipy==1.16.1",
+    "lmfit==1.3.4",
+    "tqdm==4.67.1",
+    "pywin32==311",
+    "originpro==1.1.13",
+    "py-cpuinfo==9.0.0",
+    "psutil==7.0.0",
+    "zarr==3.1.1",
+    "PyQt5==5.15.11",
+    "pyqtgraph==0.13.7",
+    "tkinterdnd2==0.6.2",
+    "google-crc32c==1.8.0",  # for numcodecs
+    "markdown==3.10.1",
+    "tkhtmlview==0.3.2"
     ]
 if os.name == 'posix':
     REQUIREMENTS.remove(REQUIREMENTS[9])  # no pywin32 in Linux or MacOS
@@ -496,7 +524,7 @@ try:
             import originpro as op
     from cv2 import Laplacian, GaussianBlur, CV_64F, CV_32F
     import psutil
-    if VERSION >= 3130:
+    if VERSION >= 31300:
         import google_crc32c    # for numcodecs
     if __name__ == '__main__':
         import cpuinfo
@@ -1901,7 +1929,7 @@ def plot(event):
     else:        
         plot1()
         plot2()
-        plot3()        
+        plot3()
     
 im_kernel = 17
 d,l,p = 8,20,3
@@ -2108,6 +2136,8 @@ if __name__ == '__main__':
         t_sc_w = temp_root.winfo_screenwidth()
         t_sc_h = temp_root.winfo_screenheight()
         dpi = temp_root.winfo_fpixels('1i')
+        if VERSION >= 31407:
+            dpi = dpi*0.72
         temp_root.destroy()
         
         ScaleFactor = int((72.054 / dpi) * 100)
@@ -2127,6 +2157,8 @@ if __name__ == '__main__':
     tkDnD(g)    #bind whole window to Drag-and-drop function
     # g = ttk.Window(themename='darkly')
     odpi=g.winfo_fpixels('1i')
+    if VERSION >= 31407 and os.name == 'posix':
+        odpi = odpi*0.72
     path = os.path.join(cdir, '.MDC_cut', 'odpi')
     with open(path, 'w') as f:
         f.write(f'{odpi}')  #for RestrictedToplevel

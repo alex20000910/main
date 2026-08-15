@@ -1234,7 +1234,6 @@ d
         self.grg.geometry(f"{int(w*1.4)}x{h}")  # Adjust height to fit the buttons
         set_center(self.tpg, self.grg, 0, 0)
         self.grg.update()
-        self.grg.limit_bind()
 
     def __save_rg(self, *args):
         try:
@@ -1341,7 +1340,7 @@ d
                     self.s3.remove()
                 except: pass
                 self.fr3 = True
-        elif event.button == 3 and event.inaxes:
+        elif event.button == RIGHT_CLICK and event.inaxes:
             self.__rg_entry()
         self.rgo.draw()
         self.rpo.draw()
@@ -1455,7 +1454,7 @@ d
             self.tr_a2.set_ylim(self.oy2)
             self.ox=event.xdata
 
-        elif event.button == 3:
+        elif event.button == RIGHT_CLICK:
             self.rpf.canvas.get_tk_widget().config(cursor="watch")
             self.tp_cf = True
             self.__tp_a1_plot()
@@ -1571,7 +1570,7 @@ d
             self.tr_a2.set_ylim(self.oy2)
             self.ox=event.xdata
 
-        elif event.button == 3:
+        elif event.button == RIGHT_CLICK:
             self.tpf.canvas.get_tk_widget().config(cursor="watch")
             self.tp_cf = True
             self.__tp_a1_plot()

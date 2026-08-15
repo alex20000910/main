@@ -724,7 +724,7 @@ class motion:
             if self.value1.get() == '---Plot2---' and self.value2.get() != 'Real & Imaginary' and 'KK Transform' not in self.value2.get() and 'MDC Curves' not in self.value.get():
                 self.px1, self.py1 = event.x, event.y
                 self.mof = -1
-        elif event.button == 3 and self.value1.get() == '---Plot2---' and self.value2.get() != 'Real & Imaginary' and 'KK Transform' not in self.value2.get() and 'MDC Curves' not in self.value.get():
+        elif event.button == RIGHT_CLICK and self.value1.get() == '---Plot2---' and self.value2.get() != 'Real & Imaginary' and 'KK Transform' not in self.value2.get() and 'MDC Curves' not in self.value.get():
             if self.value2.get() == '---Plot3---':
                 if self.ao:
                     self.ao.set_xlim(self.xl)
@@ -1308,7 +1308,7 @@ class exp_motion:
             self.acx.set_xlim(self.a.get_xlim())
             self.acy.set_ylim(self.a.get_ylim())
 
-        elif event.button == 3:
+        elif event.button == RIGHT_CLICK:
             self.cf = True
             if self.x:
                 self.x.remove()
