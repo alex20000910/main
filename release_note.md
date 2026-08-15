@@ -1,9 +1,24 @@
 # Change Log
 
+## Version 9.2.5 - 2026-08-15
+
+### Added
+- **Python 3.14.x Support**: Added support for Python 3.14.x. Official latest development branch with stability risks(tkinter version upgrade form tk8.6 to tk9.0 at **Python 3.14.7**) - recommend using more stable and mature Python 3.12.x, 3.13.x versions.
+
+### Changed
+- **Module Dependencies**: Updated deprecated module dependencies to address official support discontinuation.
+
+### Fixed
+- **Python VERSION Detection**: Optimized Python VERSION detection logic to improve compatibility across Python versions.
+
+# Change Log
+
 ## Version 9.2.4 - 2026-04-28
 
 ### Changed
 - **Memory Estimation in Volume Slicer**: Little update to the memory estimation calculation in `VolumeSlicer` to provide more accurate performance recommendations based on available memory.
+
+# Change Log
 
 ## Version 9.2.3 - 2026-04-11
 
