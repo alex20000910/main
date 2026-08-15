@@ -228,10 +228,10 @@ def get_file_from_github(url: str, out_path: str, token: str = None):
 def print_pr(tot=10, cur=0):
     n=' '*(tot-cur-1)
     p='█'*(cur+1)
-    print(f" Checking Source Files: |{p}{n}|[{cur+1}/{tot}]", end='\r', flush=True)
+    print(f"\r Checking Source Files: |{p}{n}|[{cur+1}/{tot}]", end='\r', flush=True)
 
 def get_src(ver=False):
-    branch = 'main'
+    branch = 'update'
     base_url = rf"https://github.com/alex20000910/main/blob"
     tool, img = rf"src/tool", rf"src/img"
     url = [rf"{base_url}/{branch}/MDC_cut.py",
