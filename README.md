@@ -1,5 +1,5 @@
 # MDC_cut: An ARPES data analysis tool
-![Python Version](https://img.shields.io/badge/Python-3.12_|_3.13-3776AB?logo=python&logoColor=%233776AB&style=plastic)
+![Python Version](https://img.shields.io/badge/Python-3.12_|_3.13_|_3.14-3776AB?logo=python&logoColor=%233776AB&style=plastic)
 ![Platform](https://img.shields.io/badge/Platform-Windows_|_macOS-purple?logo=macos)
 [![codecov](https://codecov.io/github/alex20000910/main/graph/badge.svg?token=8OSRR75JVV)](https://codecov.io/github/alex20000910/main)
 [![GitHub License](https://img.shields.io/github/license/alex20000910/main?logo=licenses&logoColor=white&style=plastic)](LICENSE)
@@ -202,34 +202,36 @@ You don't need to manually install the dependencies. `MDC_cut.py` will automatic
 The following are the tested Python versions and their corresponding package versions:
 <div align="center">
 
-|![Python 3.12.x](https://img.shields.io/badge/Python-3.12.x-3376AB?logo=python)|![Python 3.13.x](https://img.shields.io/badge/Python-3.13.x-3376AB?logo=python)|
-|:---:|:---:|
-|![numpy 1.26.4](https://img.shields.io/badge/numpy-1.26.4-013243?logo=numpy&logoColor=013243&labelColor=676767)|![numpy 2.2.6](https://img.shields.io/badge/numpy-2.2.6-013243?logo=numpy&logoColor=013243&labelColor=676767)|
-|![opencv-python 4.10.0.84](https://img.shields.io/badge/opencv--python-4.10.0.84-5C3EE8?logo=opencv&logoColor=5C3EE8&labelColor=676767)|![opencv-python 4.12.0.88](https://img.shields.io/badge/opencv--python-4.12.0.88-5C3EE8?logo=opencv&logoColor=5C3EE8&labelColor=676767)|
-|![matplotlib 3.10.5](https://img.shields.io/badge/matplotlib-3.10.5-3376AB?logo=pypi&labelColor=676767)|![matplotlib 3.10.5](https://img.shields.io/badge/matplotlib-3.10.5-3376AB?logo=pypi&labelColor=676767)|
-|![xarray 2025.7.1](https://img.shields.io/badge/xarray-2025.7.1-3376AB?logo=pypi&labelColor=676767)|![xarray 2025.7.1](https://img.shields.io/badge/xarray-2025.7.1-3376AB?logo=pypi&labelColor=676767)|
-|![h5py 3.14.0](https://img.shields.io/badge/h5py-3.14.0-3376AB?logo=pypi&labelColor=676767)|![h5py 3.14.0](https://img.shields.io/badge/h5py-3.14.0-3376AB?logo=pypi&labelColor=676767)|
-|![Pillow 11.3.0](https://img.shields.io/badge/Pillow-11.3.0-3376AB?logo=pypi&labelColor=676767)|![Pillow 11.3.0](https://img.shields.io/badge/Pillow-11.3.0-3376AB?logo=pypi&labelColor=676767)|
-|![scipy 1.16.1](https://img.shields.io/badge/scipy-1.16.1-8CAAE6?logo=scipy&labelColor=676767)|![scipy 1.16.1](https://img.shields.io/badge/scipy-1.16.1-8CAAE6?logo=scipy&labelColor=676767)|
-|![lmfit 1.3.4](https://img.shields.io/badge/lmfit-1.3.4-3376AB?logo=pypi&labelColor=676767)|![lmfit 1.3.4](https://img.shields.io/badge/lmfit-1.3.4-3376AB?logo=pypi&labelColor=676767)|
-|![tqdm 4.67.1](https://img.shields.io/badge/tqdm-4.67.1-FFC107?logo=tqdm&labelColor=676767)|![tqdm 4.67.1](https://img.shields.io/badge/tqdm-4.67.1-FFC107?logo=tqdm&labelColor=676767)|
-|![pywin32 311](https://img.shields.io/badge/pywin32-311-3376AB?logo=pypi&labelColor=676767)|![pywin32 311](https://img.shields.io/badge/pywin32-311-3376AB?logo=pypi&labelColor=676767)|
-|![originpro 1.1.13](https://img.shields.io/badge/originpro-1.1.13-3376AB?logo=pypi&labelColor=676767)|![originpro 1.1.13](https://img.shields.io/badge/originpro-1.1.13-3376AB?logo=pypi&labelColor=676767)|
-|![py-cpuinfo 9.0.0](https://img.shields.io/badge/py--cpuinfo-9.0.0-3376AB?logo=pypi&labelColor=676767)|![py-cpuinfo 9.0.0](https://img.shields.io/badge/py--cpuinfo-9.0.0-3376AB?logo=pypi&labelColor=676767)|
-|![psutil 7.0.0](https://img.shields.io/badge/psutil-7.0.0-3376AB?logo=pypi&labelColor=676767)|![psutil 7.0.0](https://img.shields.io/badge/psutil-7.0.0-3376AB?logo=pypi&labelColor=676767)|
-|![zarr 3.1.1](https://img.shields.io/badge/zarr-3.1.1-3376AB?logo=pypi&labelColor=676767)|![zarr 3.1.1](https://img.shields.io/badge/zarr-3.1.1-3376AB?logo=pypi&labelColor=676767)|
-|![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-3376AB?logo=pypi&labelColor=676767)|![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-3376AB?logo=pypi&labelColor=676767)|
-|![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-3376AB?logo=pypi&labelColor=676767)|![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-3376AB?logo=pypi&labelColor=676767)|
-|![tkinterdnd 0.4.3](https://img.shields.io/badge/tkinterdnd-0.4.3-3376AB?logo=pypi&labelColor=676767)|![tkinterdnd 0.4.3](https://img.shields.io/badge/tkinterdnd-0.4.3-3376AB?logo=pypi&labelColor=676767)|
-|![google-crc32c 1.8.0](https://img.shields.io/badge/google--crc32c-1.8.0-3376AB?logo=pypi&labelColor=676767)|![google-crc32c 1.8.0](https://img.shields.io/badge/google--crc32c-1.8.0-3376AB?logo=pypi&labelColor=676767)|
-|![markdown 3.10.1](https://img.shields.io/badge/markdown-3.10.1-202020?logo=markdown&labelColor=676767)|![markdown 3.10.1](https://img.shields.io/badge/markdown-3.10.1-202020?logo=markdown&labelColor=676767)|
-|![tkhtmlview 0.3.1](https://img.shields.io/badge/tkhtmlview-0.3.1-3376AB?logo=pypi&labelColor=676767)|![tkhtmlview 0.3.1](https://img.shields.io/badge/tkhtmlview-0.3.1-3376AB?logo=pypi&labelColor=676767)|
+|![Python 3.12.x](https://img.shields.io/badge/Python-3.12.x-3376AB?logo=python)|![Python 3.13.x](https://img.shields.io/badge/Python-3.13.x-3376AB?logo=python)|![Python 3.14.x](https://img.shields.io/badge/Python-3.14.x-3376AB?logo=python)|
+|:---:|:---:|:---:|
+|![numpy 1.26.4](https://img.shields.io/badge/numpy-1.26.4-013243?logo=numpy&logoColor=013243&labelColor=676767)|![numpy 2.2.6](https://img.shields.io/badge/numpy-2.2.6-013243?logo=numpy&logoColor=013243&labelColor=676767)|![numpy 2.5.2](https://img.shields.io/badge/numpy-2.5.2-013243?logo=numpy&logoColor=013243&labelColor=676767)|
+|![opencv-python 4.10.0.84](https://img.shields.io/badge/opencv--python-4.10.0.84-5C3EE8?logo=opencv&logoColor=5C3EE8&labelColor=676767)|![opencv-python 4.12.0.88](https://img.shields.io/badge/opencv--python-4.12.0.88-5C3EE8?logo=opencv&logoColor=5C3EE8&labelColor=676767)|![opencv-python 5.0.0.93](https://img.shields.io/badge/opencv--python-5.0.0.93-5C3EE8?logo=opencv&logoColor=5C3EE8&labelColor=676767)|
+|![matplotlib 3.10.5](https://img.shields.io/badge/matplotlib-3.10.5-3376AB?logo=pypi&labelColor=676767)|![matplotlib 3.10.5](https://img.shields.io/badge/matplotlib-3.10.5-3376AB?logo=pypi&labelColor=676767)|![matplotlib 3.10.5](https://img.shields.io/badge/matplotlib-3.10.5-3376AB?logo=pypi&labelColor=676767)|
+|![xarray 2025.7.1](https://img.shields.io/badge/xarray-2025.7.1-3376AB?logo=pypi&labelColor=676767)|![xarray 2025.7.1](https://img.shields.io/badge/xarray-2025.7.1-3376AB?logo=pypi&labelColor=676767)|![xarray 2025.7.1](https://img.shields.io/badge/xarray-2025.7.1-3376AB?logo=pypi&labelColor=676767)|
+|![h5py 3.14.0](https://img.shields.io/badge/h5py-3.14.0-3376AB?logo=pypi&labelColor=676767)|![h5py 3.14.0](https://img.shields.io/badge/h5py-3.14.0-3376AB?logo=pypi&labelColor=676767)|![h5py 3.16.0](https://img.shields.io/badge/h5py-3.16.0-3376AB?logo=pypi&labelColor=676767)|
+|![Pillow 11.3.0](https://img.shields.io/badge/Pillow-11.3.0-3376AB?logo=pypi&labelColor=676767)|![Pillow 11.3.0](https://img.shields.io/badge/Pillow-11.3.0-3376AB?logo=pypi&labelColor=676767)|![Pillow 11.3.0](https://img.shields.io/badge/Pillow-11.3.0-3376AB?logo=pypi&labelColor=676767)|
+|![scipy 1.16.1](https://img.shields.io/badge/scipy-1.16.1-8CAAE6?logo=scipy&labelColor=676767)|![scipy 1.16.1](https://img.shields.io/badge/scipy-1.16.1-8CAAE6?logo=scipy&labelColor=676767)|![scipy 1.16.1](https://img.shields.io/badge/scipy-1.16.1-8CAAE6?logo=scipy&labelColor=676767)|
+|![lmfit 1.3.4](https://img.shields.io/badge/lmfit-1.3.4-3376AB?logo=pypi&labelColor=676767)|![lmfit 1.3.4](https://img.shields.io/badge/lmfit-1.3.4-3376AB?logo=pypi&labelColor=676767)|![lmfit 1.3.4](https://img.shields.io/badge/lmfit-1.3.4-3376AB?logo=pypi&labelColor=676767)|
+|![tqdm 4.67.1](https://img.shields.io/badge/tqdm-4.67.1-FFC107?logo=tqdm&labelColor=676767)|![tqdm 4.67.1](https://img.shields.io/badge/tqdm-4.67.1-FFC107?logo=tqdm&labelColor=676767)|![tqdm 4.67.1](https://img.shields.io/badge/tqdm-4.67.1-FFC107?logo=tqdm&labelColor=676767)|
+|![pywin32 311](https://img.shields.io/badge/pywin32-311-3376AB?logo=pypi&labelColor=676767)|![pywin32 311](https://img.shields.io/badge/pywin32-311-3376AB?logo=pypi&labelColor=676767)|![pywin32 311](https://img.shields.io/badge/pywin32-311-3376AB?logo=pypi&labelColor=676767)|
+|![originpro 1.1.13](https://img.shields.io/badge/originpro-1.1.13-3376AB?logo=pypi&labelColor=676767)|![originpro 1.1.13](https://img.shields.io/badge/originpro-1.1.13-3376AB?logo=pypi&labelColor=676767)|![originpro 1.1.13](https://img.shields.io/badge/originpro-1.1.13-3376AB?logo=pypi&labelColor=676767)|
+|![py-cpuinfo 9.0.0](https://img.shields.io/badge/py--cpuinfo-9.0.0-3376AB?logo=pypi&labelColor=676767)|![py-cpuinfo 9.0.0](https://img.shields.io/badge/py--cpuinfo-9.0.0-3376AB?logo=pypi&labelColor=676767)|![py-cpuinfo 9.0.0](https://img.shields.io/badge/py--cpuinfo-9.0.0-3376AB?logo=pypi&labelColor=676767)|
+|![psutil 7.0.0](https://img.shields.io/badge/psutil-7.0.0-3376AB?logo=pypi&labelColor=676767)|![psutil 7.0.0](https://img.shields.io/badge/psutil-7.0.0-3376AB?logo=pypi&labelColor=676767)|![psutil 7.0.0](https://img.shields.io/badge/psutil-7.0.0-3376AB?logo=pypi&labelColor=676767)|
+|![zarr 3.1.1](https://img.shields.io/badge/zarr-3.1.1-3376AB?logo=pypi&labelColor=676767)|![zarr 3.1.1](https://img.shields.io/badge/zarr-3.1.1-3376AB?logo=pypi&labelColor=676767)|![zarr 3.1.1](https://img.shields.io/badge/zarr-3.1.1-3376AB?logo=pypi&labelColor=676767)|
+|![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-3376AB?logo=pypi&labelColor=676767)|![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-3376AB?logo=pypi&labelColor=676767)|![PyQt5 5.15.11](https://img.shields.io/badge/PyQt5-5.15.11-3376AB?logo=pypi&labelColor=676767)|
+|![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-3376AB?logo=pypi&labelColor=676767)|![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-3376AB?logo=pypi&labelColor=676767)|![pyqtgraph 0.13.7](https://img.shields.io/badge/pyqtgraph-0.13.7-3376AB?logo=pypi&labelColor=676767)|
+|![tkinterdnd2 0.4.3](https://img.shields.io/badge/tkinterdnd2-0.4.3-3376AB?logo=pypi&labelColor=676767)|![tkinterdnd2 0.4.3](https://img.shields.io/badge/tkinterdnd2-0.4.3-3376AB?logo=pypi&labelColor=676767)|![tkinterdnd2 0.6.2](https://img.shields.io/badge/tkinterdnd2-0.6.2-3376AB?logo=pypi&labelColor=676767)|
+|![google-crc32c 1.8.0](https://img.shields.io/badge/google--crc32c-1.8.0-3376AB?logo=pypi&labelColor=676767)|![google-crc32c 1.8.0](https://img.shields.io/badge/google--crc32c-1.8.0-3376AB?logo=pypi&labelColor=676767)|![google-crc32c 1.8.0](https://img.shields.io/badge/google--crc32c-1.8.0-3376AB?logo=pypi&labelColor=676767)|
+|![markdown 3.10.1](https://img.shields.io/badge/markdown-3.10.1-202020?logo=markdown&labelColor=676767)|![markdown 3.10.1](https://img.shields.io/badge/markdown-3.10.1-202020?logo=markdown&labelColor=676767)|![markdown 3.10.1](https://img.shields.io/badge/markdown-3.10.1-202020?logo=markdown&labelColor=676767)|
+|![tkhtmlview 0.3.2](https://img.shields.io/badge/tkhtmlview-0.3.2-3376AB?logo=pypi&labelColor=676767)|![tkhtmlview 0.3.2](https://img.shields.io/badge/tkhtmlview-0.3.2-3376AB?logo=pypi&labelColor=676767)|![tkhtmlview 0.3.2](https://img.shields.io/badge/tkhtmlview-0.3.2-3376AB?logo=pypi&labelColor=676767)|
 
 </div>
 
 The only difference between Python 3.12.x and 3.13.x environments is the numpy and opencv-python versions due to pip version compatibility.
 You can find the full list of required packages in the beginning section of `MDC_cut.py`.(**REQUIREMENTS**)
-The highest tested Python version is **3.12.8** and **3.13.11**.
+The highest tested Python version is **3.12.13**, **3.13.15**, and**3.14.7**.
+Notice that the **3.14.x** series is still in development and may have some compatibility issues with certain packages.
+The suggested Python version is **3.12.x** or **3.13.x** for better stability and compatibility.
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
