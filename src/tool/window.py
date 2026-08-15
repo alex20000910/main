@@ -688,6 +688,7 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         btn_update = tk.Button(yn_frame, text="Update", command=self.update_now, font=("Arial", self.size(16), 'bold'))
                         btn_update.pack(side=tk.LEFT, padx=5)
                         def later():
+                            self.clear()
                             self.destroy()
                         btn_later = tk.Button(yn_frame, text="Later", command=later, font=("Arial", self.size(16), 'bold'))
                         btn_later.pack(side=tk.LEFT, padx=5)
@@ -695,14 +696,10 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         self.bind('<Return>', lambda e: self.update_now())
                         self.grab_set()
                         self.focus_set()
+                    else:
+                        self.clear()
                     break
         tg.done()
-        if os.name == 'nt':
-            os.system(f'del {path}')
-            os.system(f'del {mdpath}')
-        elif os.name == 'posix':
-            os.system(f'rm -rf {path}')
-            os.system(f'rm -rf {mdpath}')
     
     def update_now(self):
         self.destroy()
@@ -711,8 +708,6 @@ class VersionCheckWindow(tk.Toplevel, ABC):
             windll.user32.SetForegroundWindow(self.hwnd)
         elif os.name == 'posix':
             subprocess.run(['open', '-a', 'Terminal'])
-        print('\033[36m\nUpdating to the latest version...\nPlease wait...\033[0m')
-        self.get_src()
         v_check_path = os.path.join(self.cdir, '.MDC_cut', 'version.check')
         os.remove(v_check_path)
         src = self.path
@@ -723,16 +718,19 @@ class VersionCheckWindow(tk.Toplevel, ABC):
         elif os.name == 'posix':
             import sys
             try:
-                os.system(f'cp "{src}" "{dst}"')
-                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
-                os.system('clear')
+                subprocess.run(f'cp "{src}" "{dst}"', shell=True)
+                subprocess.run(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &', shell=True)
+                subprocess.run('clear', shell=True)
             except:
-                os.system(f'cp "{src}" "{dst}"')
-                os.system(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &')
-                os.system('clear')
-        os.remove(src)
-        os.remove(self.mdpath)
+                subprocess.run(f'cp "{src}" "{dst}"', shell=True)
+                subprocess.run(f'{sys.executable} -W ignore::SyntaxWarning -W ignore::UserWarning "{dst}" &', shell=True)
+                subprocess.run('clear', shell=True)
+        self.clear()
         quit()
+    
+    def clear(self):
+        os.remove(self.path)
+        os.remove(self.mdpath)
     
     def size(self, s: int) -> int:
         return(int(self.scale*s))
