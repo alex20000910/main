@@ -322,7 +322,10 @@ class main(MainWindow):
         self.keyPressEvent = self.on_key_press
         if os.name == 'posix':
             QMessageBox.warning(self, "Reminder", "Use the default system resolution scaling (100%) for best experience.")
-        QMessageBox.information(self, "Info", "Use Ctrl+Z to Undo, Ctrl+Y to Redo.\nUse Left/Right Key to move index.\nUse Up/Down Key to adjust baseline.\nUse \"<<\" and \">>\" buttons to jump to previous/next index with different fitting status.")
+            self.ctrl = 'Command'
+        else:
+            self.ctrl = 'Ctrl'
+        QMessageBox.information(self, "Info", f"{self.ctrl}+Z: Undo\n{self.ctrl}+Y: Redo\nLeft/Right Key: Move index\nUp/Down Key: Adjust Baseline\n\"<<\" and \">>\" buttons: Jump to previous/next index with different fitting status")
     
     def init_data(self):
         self.data = self.lfs.get(0)
@@ -395,13 +398,13 @@ class main(MainWindow):
         action_layout = QVBoxLayout()
         label_dict = {
             "Shortcut": "Action",
-            "Ctrl + O": "Load File",
-            "Ctrl + Q": "Quit",
-            "Ctrl + Z": "Undo",
-            "Ctrl + Y": "Redo",
-            "Ctrl + S": "Save Fitting Parameters as NPZ",
-            "Ctrl + ←": "Move to previous index with different fitting status",
-            "Ctrl + →": "Move to next index with different fitting status",
+            f"{self.ctrl} + O": "Load File",
+            f"{self.ctrl} + Q": "Quit",
+            f"{self.ctrl} + Z": "Undo",
+            f"{self.ctrl} + Y": "Redo",
+            f"{self.ctrl} + S": "Save Fitting Parameters as NPZ",
+            f"{self.ctrl} + ←": "Move to previous index with different fitting status",
+            f"{self.ctrl} + →": "Move to next index with different fitting status",
             "←": "Move to previous index",
             "→": "Move to next index",
             "↑": "Increase baseline value and fit",
