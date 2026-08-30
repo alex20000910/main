@@ -8,6 +8,8 @@
 
 ### Changed
 - **Upgrade and Download Progress Display**: Improved the progress display style for upgrades and file downloads for clearer status feedback.
+
+### Unreleased
 - **File Download Flow**: Improved the version update flow for better efficiency and smoother upgrades.
 
 # Change Log
