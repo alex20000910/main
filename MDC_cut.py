@@ -1,6 +1,6 @@
 # MDC cut GUI
-__version__ = "9.2.5"
-__release_date__ = "2026-08-15"
+__version__ = "9.2.6"
+__release_date__ = "2026-08-30"
 # import tracemalloc
 # tracemalloc.start()
 import os, inspect
@@ -231,7 +231,7 @@ def print_pr(tot=10, cur=0):
     print(f"\r Checking Source Files: |{p}{n}|[{cur+1}/{tot}]\r", end='\r', flush=True)
 
 def get_src(ver=False):
-    branch = 'update'
+    branch = 'main'
     base_url = rf"https://github.com/alex20000910/main/blob"
     tool, img = rf"src/tool", rf"src/img"
     url = [rf"{base_url}/{branch}/MDC_cut.py",

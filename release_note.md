@@ -1,5 +1,17 @@
 # Change Log
 
+## Version 9.2.6 - 2026-08-30
+
+### Added
+- **Shortcut Hint Guide in MDC Fitter**: Added a shortcut hint guide in the info shown when opening the MDC Fitter.
+- **Platform-Specific Shortcut Labels**: Updated the shortcut reference table to display the correct 'Ctrl' or 'Command' labels.
+
+### Changed
+- **Upgrade and Download Progress Display**: Improved the progress display style for upgrades and file downloads for clearer status feedback.
+- **File Download Flow**: Improved the version update flow for better efficiency and smoother upgrades.
+
+# Change Log
+
 ## Version 9.2.5 - 2026-08-15
 
 ### Added
