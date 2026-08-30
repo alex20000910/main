@@ -325,7 +325,12 @@ class main(MainWindow):
             self.ctrl = 'Command'
         else:
             self.ctrl = 'Ctrl'
-        QMessageBox.information(self, "Info", f"{self.ctrl}+Z: Undo\n{self.ctrl}+Y: Redo\nLeft/Right Key: Move index\nUp/Down Key: Adjust Baseline\n\"<<\" and \">>\" buttons: Jump to previous/next index with different fitting status")
+        QMessageBox.information(self, "Info", f"Help -> Shortcuts: Show all keyboard shortcuts\n\n\
+{self.ctrl}+Z: Undo\n\
+{self.ctrl}+Y: Redo\n\
+←/→: Move index\n\
+↑/↓: Adjust Baseline\n\
+\"<<\" and \">>\" buttons: Jump to previous/next index with different fitting status")
     
     def init_data(self):
         self.data = self.lfs.get(0)
