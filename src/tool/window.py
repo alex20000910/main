@@ -696,10 +696,9 @@ class VersionCheckWindow(tk.Toplevel, ABC):
                         self.bind('<Return>', lambda e: self.update_now())
                         self.grab_set()
                         self.focus_set()
-                    else:
-                        self.clear()
                     break
         tg.done()
+        self.clear()
     
     def update_now(self):
         self.destroy()
@@ -729,9 +728,13 @@ class VersionCheckWindow(tk.Toplevel, ABC):
         quit()
     
     def clear(self):
-        os.remove(self.path)
-        os.remove(self.mdpath)
-    
+        if os.name == 'nt':
+            subprocess.run(f'del {self.path}', shell=True)
+            subprocess.run(f'del {self.mdpath}', shell=True)
+        elif os.name == 'posix':
+            subprocess.run(f'rm -rf {self.path}', shell=True)
+            subprocess.run(f'rm -rf {self.mdpath}', shell=True)
+
     def size(self, s: int) -> int:
         return(int(self.scale*s))
 
